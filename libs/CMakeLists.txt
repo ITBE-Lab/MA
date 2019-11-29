@@ -10,6 +10,10 @@ cmake_minimum_required (VERSION 3.8)
 message( "Include util ..." )
 add_subdirectory (util)
 
+# Include DB-connector.
+message( "Include DB-connector ..." )
+add_subdirectory (db_connect)
+
 # kswcpp is always compiled in the Release-mode because without
 # optimization it is too slow.
 message( "Include libkswcpp ..." )

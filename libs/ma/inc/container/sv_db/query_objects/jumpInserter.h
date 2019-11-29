@@ -49,8 +49,10 @@ class SvJumpInserter
         } // method
     }; // class
 
-    /**@brief Constructor 
-     * @param database and caller run id
+    /**
+     * @brief Constructor 
+     * @param pDB database
+     * @param iSvJumpRunId caller run id
      */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId )
         : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvJumpRunId( iSvJumpRunId )

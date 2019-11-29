@@ -3,15 +3,13 @@
  * Created: Oct. 2018
  * MIT License
  * @file sqlite3.h
+ * For MySQL http://zetcode.com/db/mysqlc/
  */
-#define USE_NEW_DB_CODE
-#ifdef USE_NEW_DB_CODE
-#include <db_sql.h>
-#else
 
 #pragma once
 
-#include "debug.h"
+#include "meta.h"
+// #include "util/debug.h" // For the moment all DEBUG stuff is deactivated
 #include <CppSQLite3.h>
 #include <cassert>
 #include <iostream>
@@ -21,12 +19,12 @@
 #include <string>
 #include <vector>
 
-/* Forward declaration of class for SQL statements
- */
+// For keeping compatibility with older code
+#define CppSQLiteDBExtended SQL_DB 
+
+//Forward declaration of class for SQL statements
 class CppSQLiteExtStatementParent;
-
 template <class... Types> class CppSQLiteExtQueryStatementParent;
-
 template <class... Types> struct SQLQueryTemplateString;
 
 /* Enumerated type for transporting data with respect to the database opening mode.
@@ -37,126 +35,6 @@ enum enumSQLite3DBOpenMode
     eCREATE_DB
 }; // enum
 
-/* METAPROGRAMMING
- * Unpack a tuple to call a matching function.
- * FIX ME: Better naming scheme, more documentation.
- * http://stackoverflow.com/questions/7858817/unpacking-a-tuple-to-call-a-matching-function-pointer
- * FIXME: Use the construct from the standard
- */
-template <int...> struct Seq
-{};
-
-template <int N, int... S> struct Gens : Gens<N - 1, N - 1, S...>
-{};
-
-template <int... S> struct Gens<0, S...>
-{
-    typedef Seq<S...> type;
-};
-
-/* METAPROGRAMMING
- * For a solution without std::function look over here: // DEPRECATED - use the below form now.
- * http://stackoverflow.com/questions/9535680/functions-functors-as-template-parameters-can-they-be-stored
- * FIXME: Use the construct from the standard
- */
-template <typename... Args> struct TupleUnpackToParameterByReference
-{ /* CHECK ME: Shouldn't we use a reference here? Hmm.. There is some discussion about on stackoverflow.
-   */
-    const std::function<void( const Args&... )>& func;
-
-    template <int... S> void callFunc( const std::tuple<Args...>& params, Seq<S...> )
-    {
-        func( std::get<S>( params )... );
-    }
-
-    void operator( )( const std::tuple<Args...>& params )
-    {
-        callFunc( params, typename Gens<sizeof...( Args )>::type( ) );
-    }
-
-    TupleUnpackToParameterByReference( const std::function<void( const Args&... )>& func ) : func( func )
-    {} // constructor
-}; // struct
-
-/* METAPROGRAMMING
- * Unpacks a tuple for function application.
- */
-template <typename... Args> struct TupleUnpackAndCallFunctor
-{
-    const std::tuple<Args...>& _params;
-
-    template <typename Functor, int... S> void callFunc( Functor&& f, Seq<S...> )
-    {
-        f( std::get<S>( _params )... );
-    } // method
-
-    template <typename Functor> void operator( )( Functor&& f )
-    {
-        callFunc( std::forward<Functor>( f ), typename Gens<sizeof...( Args )>::type( ) );
-    } // operator ()
-
-    TupleUnpackAndCallFunctor( const std::tuple<Args...>& params ) : _params( params )
-    {} // constructor
-
-    /* Constructor that involves directly the functor call. */
-    template <typename Functor>
-    TupleUnpackAndCallFunctor( Functor&& f, const std::tuple<Args...>& params ) : _params( params )
-    {
-        callFunc( std::forward<Functor>( f ), typename Gens<sizeof...( Args )>::type( ) );
-    } // constructor
-}; // struct
-
-/* METAPROGRAMMING
- * 1. Application of some function f to all elements of some tuple.
- * Iteration starts with index 0.
- * Works with the empty tuple as well!
- * Taken from http://pastebin.com/h0Je0453
- */
-template <int I, int TYPE_SIZE, typename Tuple>
-struct iterate_over_tuple_impl : public iterate_over_tuple_impl<I + 1, TYPE_SIZE, Tuple>
-{
-    typedef typename std::tuple_element<I, Tuple>::type tp;
-
-    template <typename Function> void operator( )( Function&& f, Tuple& t )
-    {
-        /* Application of the function to the i-th element of the tuple.
-         * Improvement: Deliver the I and TYPE_SZIE as integral template parameter.
-         */
-        f( std::get<I>( t ), I, TYPE_SIZE );
-
-        iterate_over_tuple_impl<I + 1, TYPE_SIZE, Tuple>::operator( )( std::forward<Function>( f ), t );
-    } // operator
-}; // struct
-
-/* METAPROGRAMMING */
-template <int I, typename Tuple> struct iterate_over_tuple_impl<I, I, Tuple>
-{
-    template <typename Function> void operator( )( Function&& f, Tuple& t )
-    {}
-}; // struct
-
-/* METAPROGRAMMING
- * Fills the element of the given tuple t by repeatedly calling the function f.
- * Starts with tuple element 0 and wok up to tuple element sizeof...(TupleTypes).
- */
-template <typename Functor, typename... TupleTypes>
-void iterateOverTuple( Functor&& functor, std::tuple<TupleTypes...>& tuple )
-{
-    iterate_over_tuple_impl<0, sizeof...( TupleTypes ), std::tuple<TupleTypes...>>( )( std::forward<Functor>( functor ),
-                                                                                       tuple ); // function call
-}; // struct
-
-/* METAPROGRAMMING
- * Like iterateOverTuple but with an additional currying of 2 arguments.
- * (So, iterateOverTupleCurry2 requires a functor that expects two arguments.)
- */
-template <typename Functor, typename... TupleTypes>
-void iterateOverTupleCurry2( Functor&& functor, std::tuple<TupleTypes...>& tuple )
-{
-    iterate_over_tuple_impl<0, sizeof...( TupleTypes ), std::tuple<TupleTypes...>>( )(
-        std::bind( std::forward<Functor>( functor ), std::placeholders::_1, std::placeholders::_2 ),
-        tuple ); // function call
-}; // struct
 
 struct GetTupleElement
 {
@@ -165,21 +43,20 @@ struct GetTupleElement
     GetTupleElement( CppSQLite3Query& rxQuery ) : rxQuery( rxQuery )
     {}
 
-    /* int CppSQLite3Query::getIntField(int nField, int nNullValue
-     * const char* CppSQLite3Query::fieldValue(int nField) [delivers the field value generally as string]
-     * long long CppSQLite3Query::getInt64Field(int nField, long long nNullValue=0)
-     * double CppSQLite3Query::getFloatField(int nField, double fNullValue=0.0)
-     * const char* CppSQLite3Query::getStringField(int nField, const char* szNullValue="")
-     * const unsigned char* CppSQLite3Query::getBlobField(int nField, int& nLen)
-     */
+    // int CppSQLite3Query::getIntField(int nField, int nNullValue
+    // const char* CppSQLite3Query::fieldValue(int nField) [delivers the field value generally as string]
+    // long long CppSQLite3Query::getInt64Field(int nField, long long nNullValue=0)
+    // double CppSQLite3Query::getFloatField(int nField, double fNullValue=0.0)
+    // const char* CppSQLite3Query::getStringField(int nField, const char* szNullValue="")
+    // const unsigned char* CppSQLite3Query::getBlobField(int nField, int& nLen)
+
     void getColumnElement( int& rValue, const int iFieldIndex )
     {
         rValue = rxQuery.getIntField( iFieldIndex );
     } // method
 
-/* The long datatype has different sizes depending on different platforms.
- * So, we have to carefully distinguish over here.
- */
+    // The long datatype has different sizes depending on different platforms.
+    // So, we have to carefully distinguish over here.
 #ifdef __LP64__
     static_assert( sizeof( long ) == 8, "size of long is not 8 bytes for this compiler" ); // GCC 64 Bit
 #else
@@ -211,8 +88,7 @@ struct GetTupleElement
 
     void getColumnElement( std::string& rValue, const int iFieldIndex )
     {
-        /* This triggers a copy of the string referred by the received reference
-         */
+        // This triggers a copy of the string referred by the received reference
         rValue = rxQuery.getStringField( iFieldIndex );
     } // method
 
@@ -253,56 +129,49 @@ struct GetTupleElement
     } // operator
 }; // struct
 
-struct PrintTupleElement
-{
-    template <typename TP> void operator( )( TP& rElement )
-    {
-        getColumnElement( rElement );
-    } // operator
-}; // struct
-
-
-/* TODO: here we could work with precompiled statements, in order to boost execution time.
+#if 0 // deleted because deprecated 
+/** @brief: Creates text for a SQL request.
  * Idea: We compile the statement with its first execution.
  *       We use parameter binding in order to get the values into the query(request).
  */
 struct SQLRequest
 {
-    /* The request text itself. */
+    /* The basic request with place holders for arguments */
     const char* pcText;
 
     /* Internal text-buffer used for the storage of compiles statements. */
     CppSQLite3Buffer textBuffer;
-
+	
+	/* Creates request and returns it */
     template <class... ArgTypes> const char* insertArguments( ArgTypes... args )
     {
         return textBuffer.format( pcText, args... );
     } // generic method
 }; // struct
+#endif
 
-
-/* In this approach we give the types of all columns
+/**
+ * @brief Table that keeps the result of a SQL query.
+ * @detail
  */
-template <class... Types> class CppSQLite3IteratorTable
+template <class... Types> class QueryResultTable
 {
-    /* We give CppSQLiteDBExtended access to the internal table */
-    friend class CppSQLiteDBExtended;
+    // We give SQL_DB access to the internal table
+    friend class SQL_DB;
 
   private:
-    /* Here we store the internal table
-     */
+    // Internal table (The table is filled via methods in SQL_DB)
     std::vector<std::tuple<Types...>> xInternalTable;
 
   public:
-    /* Prevent object copies and assignment for this class. */
-    CppSQLite3IteratorTable( CppSQLite3IteratorTable const& ) = delete;
-    CppSQLite3IteratorTable& operator=( CppSQLite3IteratorTable const& ) = delete;
+    // Prevent object copies and assignment for this class.
+    QueryResultTable( QueryResultTable const& ) = delete;
+    QueryResultTable& operator=( QueryResultTable const& ) = delete;
 
-    /* The type of a single row in the table.
-     */
+    // The type of a single row in the table.
     typedef std::tuple<Types...> tpRowType;
 
-    template <int C> struct getTuple
+    template <int C> struct getComponent
     {
         typedef typename std::tuple_element<C, std::tuple<Types...>>::type result_type;
 
@@ -312,10 +181,11 @@ template <class... Types> class CppSQLite3IteratorTable
         } // method
     }; // struct
 
+#if 0
     /* Moves the content of the argument table into the current table.
      * Uses move semantics, so the argument table stays in some undefined state.
      */
-    void moveContentFromArgumentTableToCurrentTable( CppSQLite3IteratorTable& rxTableRef )
+    void moveContentFromArgumentTableToCurrentTable( QueryResultTable& rxTableRef )
     {
         xInternalTable.reserve( xInternalTable.size( ) + rxTableRef.xInternalTable.size( ) );
         std::move( rxTableRef.xInternalTable.begin( ),
@@ -332,7 +202,7 @@ template <class... Types> class CppSQLite3IteratorTable
 
         for( auto xRow : xInternalTable )
         {
-            xResultSet.insert( getTuple<C>( xRow ) );
+            xResultSet.insert( getComponent<C>( xRow ) );
         } // for
 
         return xResultSet;
@@ -347,15 +217,12 @@ template <class... Types> class CppSQLite3IteratorTable
 
         for( auto xRow : xInternalTable )
         {
-            xResultSet.emplace_back( std::move( getTuple<C>( xRow ) ) );
+            xResultSet.emplace_back( std::move( getComponent<C>( xRow ) ) );
         } // for
 
         return xResultSet;
     } // method
-
-    /* Delivers the first column in form of some vector.
-     */
-    // std::vector< std::tuple_element< 0, std::tuple<Types...> >::type >
+#endif
 
     auto begin( ) -> decltype( xInternalTable.begin( ) )
     {
@@ -384,12 +251,12 @@ template <class... Types> class CppSQLite3IteratorTable
 
     /* Constructor
      */
-    CppSQLite3IteratorTable( )
+    QueryResultTable( )
     {} // constructor
 
     /* Destructor
      */
-    ~CppSQLite3IteratorTable( )
+    ~QueryResultTable( )
     {
         vFinalize( );
     } // destructor
@@ -399,19 +266,28 @@ template <class... Types> class CppSQLite3IteratorTable
     {} // method
 }; // class
 
-/* Extended from of the basic SQLite DB wrapper.
+
+/**
+ * @brief SQL database.
+ * @detail For transparent SQL database connections and management
  */
-class CppSQLiteDBExtended : public CppSQLite3DB
+class SQL_DB // deprecated : public CppSQLite3DB
 {
+  public:
+    // Database connector
+    const std::unique_ptr<CppSQLite3DB> pDBConnector;
+
   private:
-    /* If we deliver an already existing table reference as second parameter the method works in an append-mode.
+    /* Executes the query and writes the outcome into a query result table.
+     * If we deliver an already existing table reference as second parameter the method works in an append-mode.
      * I.e. all fresh table rows are pushed to the end of some existing table.
      * Be careful that types does not comprise (const char *), because this results in major trouble.
+     * Design Flaw: Code should be part of QueryResultTable
      */
     template <class... Types>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>> ExecuteQueryTableCore( CppSQLite3Query& xQuery )
+    std::unique_ptr<QueryResultTable<Types...>> ExecuteQueryTableCore( CppSQLite3Query& xQuery )
     {
-        /* We check whether the number of columns is ok. */
+        // We check whether the number of columns is ok.
         if( xQuery.numFields( ) != ( sizeof...( Types ) ) )
         {
             throw CppSQLite3Exception( CPPSQLITE_ERROR,
@@ -420,65 +296,62 @@ class CppSQLiteDBExtended : public CppSQLite3DB
             );
         } // if
 
-        /* Creation of the result table */
-        std::unique_ptr<CppSQLite3IteratorTable<Types...>> pResultTableRef( new CppSQLite3IteratorTable<Types...> );
+        // Creation of the query result table
+        // Ownership is managed by a unique pointer.
+        std::unique_ptr<QueryResultTable<Types...>> pResultTableRef( new QueryResultTable<Types...> );
 
-        /* We create a functor object for the following repeated iterations over the tuple. */
+        // We create a functor object for the following repeated iterations over the tuple.
         auto xGetElementFunctor = GetTupleElement( xQuery );
 
-        /* We iterate over all rows of our table. */
+        // Fill the internal result table (row by row)
         while( !xQuery.eof( ) )
         {
-            { /* We store single rows as tuples. By means of tuples we can keep all type info. */
+            {
+                // Append empty row
                 pResultTableRef->xInternalTable.emplace_back( std::tuple<Types...>( ) );
-
                 std::tuple<Types...>& xSingleRowAsTuple = pResultTableRef->xInternalTable.back( );
-
+                // Copy row from query buffer to internal table
                 iterateOverTupleCurry2( xGetElementFunctor, xSingleRowAsTuple );
             } // inner block
-
             xQuery.nextRow( );
         } // while
 
         return pResultTableRef;
     } // private method
 
-    /* The start of an immediate transaction can boost the execution speed.
-     * We have to work with unique pointers over here, because the members of the type CppSQLiteExtStatement are unknown
-     * over here.
-     */
+    // The start of an immediate transaction can boost the execution speed.
+    // We have to work with unique pointers over here, because the members of the type CppSQLiteExtStatement are unknown
+    // over here.
     std::unique_ptr<CppSQLiteExtStatementParent> xStatementBeginTransaction = nullptr;
     std::unique_ptr<CppSQLiteExtStatementParent> xStatementEndTransaction = nullptr;
 
-    /* Externally defined method that initialized the above attributes.
-     */
+    /* Externally defined method that initialized the above attributes. */
     void vInititializeTransactionStatement( void );
 
   public:
     friend class CppSQLiteExtImmediateTransactionContext;
 
-    /* Here we communicate the construction mode to other objects.
-     */
+	// Mode of DB operation (Create or Open) 
     const enumSQLite3DBOpenMode eDatabaseOpeningMode;
 
-    /* Sophisticated constructor that deletes an existing physical database file before creating a new database.
-     * The finally open command creates a fresh database.
-     */
-    CppSQLiteDBExtended(
+    /* Constructor */
+    SQL_DB(
         const std::string& rsWorkingDirectory, // directory location of the database
         const std::string& sDataBaseName, // name of the database
         const enumSQLite3DBOpenMode eDatabaseOpeningMode // how to open the database (creation or simply opening)
         )
-        : CppSQLite3DB( ), // call superclass constructor
+        : // CppSQLite3DB( ), // deprecated
+          pDBConnector( new CppSQLite3DB( ) ), // build connector object
           eDatabaseOpeningMode( eDatabaseOpeningMode )
     {
-        /* Construct the full database name.*/
+        // Construct the full database name.
+        // IMPROVEMENT: Use std::filesystem over here.
         std::string xDatabaseFileName = rsWorkingDirectory + sDataBaseName;
 
+#if 0 // deleted because deprecated 
         /* In the case of a fresh creation delete any already physically existing database file.
          * FIXME: re-implement this without boost...
          */
-#if 0
         if( ( eDatabaseOpeningMode == eCREATE_DB ) && ( boost::filesystem::exists( xDatabaseFileName ) ) )
         { /* Rename and remove the existing database file.
            */
@@ -492,27 +365,24 @@ class CppSQLiteDBExtended : public CppSQLite3DB
         } // if
 #endif
 
-        /* Finally create/open the database.
-         * If the database does not exist, it is created over here.
-         */
-        this->open( xDatabaseFileName.c_str( ) );
+        // Finally create/open the database.
+        // If the database does not exist, it is created over here.
+        pDBConnector->open( xDatabaseFileName.c_str( ) );
 
-        /* Initialize the transaction statements.
-         */
+        // Initialize the transaction statements for the database
         vInititializeTransactionStatement( );
     } // constructor
 
-    /* Simplified constructor that does not require expect the specification of a working directory.
-     */
-    CppSQLiteDBExtended( const std::string& sDataBaseName, // name of the database
+    /* Simplified constructor that does not require expect the specification of a working directory. */
+    SQL_DB( const std::string& sDataBaseName, // name of the database
                          const enumSQLite3DBOpenMode eDatabaseOpeningMode // how to open the database
                          )
-        : CppSQLiteDBExtended( "", sDataBaseName, eDatabaseOpeningMode )
+        : SQL_DB( "", sDataBaseName, eDatabaseOpeningMode ) // redirect constructor
     {} // constructor
 
     /* We need some virtual destructor due to the inheritance
      */
-    virtual ~CppSQLiteDBExtended( )
+    virtual ~SQL_DB( )
     {} // destructor
 
     /* TODO: Insert data-type check */
@@ -534,12 +404,12 @@ class CppSQLiteDBExtended : public CppSQLite3DB
                        const std::vector<std::string>& vConstraints = {},
                        const bool bWithoutRowId = false ); // method prototype
 
+#if 0
     /* We query a result table.
      * The parameter types correspond to the types of the columns.
      * The statement is currently still given as text, later we should work with pre-compiled statements here.
      */
-    template <class... Types>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>> queryTable( const char* pcSQLStatement )
+    template <class... Types> std::unique_ptr<QueryResultTable<Types...>> queryTable( const char* pcSQLStatement )
     {
         /* We create a SQL query object by compiling the statement.
          */
@@ -554,11 +424,10 @@ class CppSQLiteDBExtended : public CppSQLite3DB
     template <class... Types, class... ArgTypes>
     std::unique_ptr<CppSQLite3IteratorTable<Types...>> queryTable( SQLRequest request, const ArgTypes&... args )
     {
-        /* We forward the query to the code that works with requests in the form of plain strings.
-         */
+        // We forward the query to the code that works with requests in the form of plain strings.
         return queryTable<Types...>( request.insertArguments( args... ) );
     } // public method
-
+#endif
     /* Query statement for some pre-compiled query statement, incl. all argument binding.
      * Here we need an r-value reference, because
      *  - const would not be really ok with CppSQLiteExtQueryStatement.
@@ -566,8 +435,8 @@ class CppSQLiteDBExtended : public CppSQLite3DB
      * If pResultTableRef is not a null-pointer the query works in an append-mode
      */
     template <class... Types, class... ArgTypes>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>>
-    getTable( CppSQLiteExtQueryStatementParent<Types...>&& rCompiledQuery, ArgTypes&&... args )
+    std::unique_ptr<QueryResultTable<Types...>> getTable( CppSQLiteExtQueryStatementParent<Types...>&& rCompiledQuery,
+                                                          ArgTypes&&... args )
     {
         /* We bind all arguments and execute the statement.
          * This process can fail and throw an exception.
@@ -580,8 +449,8 @@ class CppSQLiteDBExtended : public CppSQLite3DB
      * (pre-complied, but with l-value reference instead of r-value reference)
      */
     template <class... Types, class... ArgTypes>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>>
-    getTable( CppSQLiteExtQueryStatementParent<Types...>& rCompiledQuery, ArgTypes&&... args )
+    std::unique_ptr<QueryResultTable<Types...>> getTable( CppSQLiteExtQueryStatementParent<Types...>& rCompiledQuery,
+                                                          ArgTypes&&... args )
     {
         return getTable( std::move( rCompiledQuery ), std::forward<ArgTypes>( args )... );
     } // public method
@@ -590,11 +459,30 @@ class CppSQLiteDBExtended : public CppSQLite3DB
      * The template is compiled, argument binding happens and then the query is executed.
      */
     template <class... Types, class... ArgTypes>
-    std::unique_ptr<CppSQLite3IteratorTable<Types...>>
-    queryTable( const SQLQueryTemplateString<Types...>& rxQueryTemplate, const ArgTypes&... args )
+    std::unique_ptr<QueryResultTable<Types...>> queryTable( const SQLQueryTemplateString<Types...>& rxQueryTemplate,
+                                                            const ArgTypes&... args )
     {
         return getTable<Types...>( rxQueryTemplate( *this ), args... );
     } // public method
+
+    /* Forward is required due to svDb.h */
+    sqlite_int64 lastRowId( )
+    {
+        return pDBConnector->lastRowId( );
+	} // public method
+
+	/* Forward is required due to svDb.h */
+    int execDML( const char* pcSQL )
+    {
+        return pDBConnector->execDML( pcSQL );
+    } // public method
+
+	void set_num_threads( const int uiNumThreads )
+	{
+        return pDBConnector->set_num_threads( uiNumThreads );
+	} // public method
+
+	// Design flaws: compileStatement( pcStatementText ) should be part of this class
 }; // class
 
 /* Creates the text for a SQL INSERT statement.
@@ -680,14 +568,15 @@ class CppSQLiteExtStatementParent : public CppSQLite3Statement
         throw CppSQLite3Exception( 1, "Database operation failed after 2 tries.", false );
     } // operator
 
-    CppSQLiteExtStatementParent( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+    CppSQLiteExtStatementParent( SQL_DB& rxDatabase, const char* pcStatementText )
 #if DEBUG_LEVEL > 0
         : sStatementText( pcStatementText )
 #endif
-    { /* We compile the statement by using the database object.
-       * tricky use of the assignment operator defined in the base class. (hmm... C++)
-       */
-        CppSQLite3Statement::operator=( rxDatabase.compileStatement( pcStatementText ) );
+    {
+        // We compile the statement by using the database object.
+        // tricky use of the assignment operator defined in the base class. (hmm... C++)
+        // CppSQLite3Statement is part of the connector
+        CppSQLite3Statement::operator=( rxDatabase.pDBConnector->compileStatement( pcStatementText ) );
     } // constructor
 
     /* Virtual destructor for inheritance purposes.
@@ -704,17 +593,17 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
 {
   private:
     /* FIXME: It would be more secure to use a shared pointer over here. */
-    CppSQLiteDBExtended& rxDatabase; // SHARED POINTER REQUIRED !!!!
+    SQL_DB& rxDatabase; // SHARED POINTER REQUIRED !!!!
 
   public:
     /* Constructor, where we get the SQL-statement from some query template. */
-    // CppSQLiteExtQueryStatementParent<Types...>( CppSQLiteDBExtended& rxDatabase,
+    // CppSQLiteExtQueryStatementParent<Types...>( SQL_DB& rxDatabase,
     //                                       const SQLQueryTemplateString<Types...>& rSQLQueryTemplate )
     //     : rxDatabase( rxDatabase ), CppSQLiteExtStatementParent( rxDatabase, rSQLQueryTemplate.pcText )
     // {} // constructor
 
     /* Constructor, where we get the SQL-statement directly as const string. */
-    CppSQLiteExtQueryStatementParent<Types...>( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+    CppSQLiteExtQueryStatementParent<Types...>( SQL_DB& rxDatabase, const char* pcStatementText )
         : CppSQLiteExtStatementParent( rxDatabase, pcStatementText ), rxDatabase( rxDatabase )
     {} // constructor
 
@@ -804,7 +693,7 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
     /* Creates a SQL-table (vector of tuples) as output.
      * Types shouldn't comprise some const char *, because of memory allocation problems
      */
-    template <class... ArgTypes> std::unique_ptr<CppSQLite3IteratorTable<Types...>> exec( ArgTypes&&... args )
+    template <class... ArgTypes> std::unique_ptr<QueryResultTable<Types...>> exec( ArgTypes&&... args )
     {
         return rxDatabase.getTable( *this, std::forward<ArgTypes>( args )... );
     } // public method
@@ -861,22 +750,21 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
     } // method
 
     /* Like vExecuteAndForAllRowsDo, but with the extension that the
-     * tuple is unapcked to parameter by reference
+     * tuple is unpacked to parameter by reference
      */
     template <typename TP_FUNC_APPLY, class... ArgTypes>
     void vExecuteAndForAllRowsUnpackedDo( TP_FUNC_APPLY&& functor, //
                                           ArgTypes&&... args )
-    { /* We use vExecuteAndForAllRowsDo and unpack the tuples in the context of the functor calls.
-       */
+    {
+        // We use vExecuteAndForAllRowsDo and unpack the tuples in the context of the functor calls.
         vExecuteAndForAllRowsDo(
-            [&functor]( const std::tuple<Types...>&
-                            rxRowAsTuple ) { /* Unpack the tuple that contains the data of the current table-row and
-                                              * call the functor given the unpacked tuple data as arguments.
-                                              * Seems that perfect forwarding within a lambda works well, although there
-                                              * is some capturing by reference involved.
-                                              */
-                                             ( TupleUnpackToParameterByReference<Types...>(
-                                                 std::forward<TP_FUNC_APPLY>( functor ) ) )( rxRowAsTuple );
+            [&functor]( const std::tuple<Types...>& rxRowAsTuple ) {
+                // Unpack the tuple that contains the data of the current table-row and
+                // call the functor given the unpacked tuple data as arguments.
+                // Seems that perfect forwarding within a lambda works well, although
+                // there is some capturing by reference involved.
+                ( TupleUnpackToParameterByReference<Types...>( std::forward<TP_FUNC_APPLY>( functor ) ) )(
+                    rxRowAsTuple );
             }, // lambda
 
             std::forward<ArgTypes>( args )... // arguments of the query
@@ -980,7 +868,7 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
     {
         auto pTableRef = exec( std::forward<ArgTypes>( args )... );
 
-        if( pTableRef->size() == 0 )
+        if( pTableRef->size( ) == 0 )
             throw std::runtime_error( "EoF; no scalar value in query" );
 
         return std::get<0>( *( pTableRef->begin( ) ) );
@@ -993,6 +881,7 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
  * @details
  * It is necessary, so that we can run EXPLAIN QUERY PLAN in debug mode.
  * Look at CppSQLiteExtStatementParent for all relevant method definitions & implementations
+ * EXPLAIN QUERY PLAN is a SQLite specific extension.
  */
 template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
 {
@@ -1023,7 +912,7 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
     } // method
 #endif
 
-    CppSQLiteExtDebugWrapper( CppSQLiteDBExtended& rxDatabase, const char* pcStatementText )
+    CppSQLiteExtDebugWrapper( SQL_DB& rxDatabase, const char* pcStatementText )
         : STATEMENT( rxDatabase, pcStatementText )
 #if DEBUG_LEVEL > 0
           ,
@@ -1036,6 +925,7 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
     virtual ~CppSQLiteExtDebugWrapper( )
     {} // destructor
 }; // class
+
 
 class CppSQLiteExtStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtStatementParent>
 {
@@ -1060,6 +950,7 @@ class CppSQLiteExtStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtStatem
     virtual ~CppSQLiteExtStatement( )
     {} // destructor
 }; // class
+
 
 template <class... Types>
 class CppSQLiteExtQueryStatement : public CppSQLiteExtDebugWrapper<CppSQLiteExtQueryStatementParent<Types...>>
@@ -1097,7 +988,7 @@ template <class... Types> struct SQLQueryTemplateString
 
     /* Generator for a prepared statement stored in the database object.
      */
-    CppSQLiteExtQueryStatement<Types...> operator( )( CppSQLiteDBExtended& rxDatabase ) const
+    CppSQLiteExtQueryStatement<Types...> operator( )( SQL_DB& rxDatabase ) const
     {
         return CppSQLiteExtQueryStatement<Types...>( rxDatabase, sSQLQueryText.c_str( ) );
     } // operator
@@ -1110,12 +1001,12 @@ class CppSQLiteExtImmediateTransactionContext
   private:
     /* The database for the transaction context
      */
-    CppSQLiteDBExtended& rxDatabase;
+    SQL_DB& rxDatabase;
 
   public:
     /* The constructor initializes the database and starts the transaction.
      */
-    CppSQLiteExtImmediateTransactionContext( CppSQLiteDBExtended& rxDatabase ) : rxDatabase( rxDatabase )
+    CppSQLiteExtImmediateTransactionContext( SQL_DB& rxDatabase ) : rxDatabase( rxDatabase )
     {
 #if DEBUG_LEVEL > 0
         std::cout << "Begin transaction" << std::endl;
@@ -1142,7 +1033,7 @@ template <typename TP_TYPE> std::string getSQLTypeName( )
     return "BLOB";
 } // method
 
-// list of valied types:
+// list of valid types:
 template <> std::string getSQLTypeName<std::string>( );
 template <> std::string getSQLTypeName<bool>( );
 // numeric:
@@ -1174,7 +1065,7 @@ template <typename... Types> class CppSQLiteExtBasicTable
     /* database that contains the table.
      * This construct can become quite dangerous. Better we take same shared pointer over here.
      */
-    CppSQLiteDBExtended& rxDatabase;
+    SQL_DB& rxDatabase;
 
     /* If this value is true we have an automatic primary key generation.
      */
@@ -1225,7 +1116,7 @@ template <typename... Types> class CppSQLiteExtBasicTable
     /* Constructor that creates the table within the database
      */
     CppSQLiteExtBasicTable(
-        CppSQLiteDBExtended& rxDatabase, // the database where the table resides
+        SQL_DB& rxDatabase, // the database where the table resides
         const std::string& rsTableName, // name of the table in the database
         const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
         bool bAutomaticPrimaryKeyColumn, // true == we build automatically a column for the primary key
@@ -1265,12 +1156,12 @@ template <typename... Types> class CppSQLiteExtBasicTable
  */
 template <typename... Types> class CppSQLiteExtInsertStatement : public CppSQLiteExtStatement
 {
-    CppSQLiteDBExtended& rxDatabase;
+    SQL_DB& rxDatabase;
 
   public:
     /* Constructor for insertion statement.
      */
-    CppSQLiteExtInsertStatement( CppSQLiteDBExtended& rxDatabase, // the database where the insertion shall happen
+    CppSQLiteExtInsertStatement( SQL_DB& rxDatabase, // the database where the insertion shall happen
                                  const char* pcTableName, // name of the table where we want to insert
                                  bool bFirstColumnAsNULL = true // shall the first column automatically inserted as NULL
                                                                 // (for tables with automatic primary key)
@@ -1487,7 +1378,7 @@ template <typename... Types> class CppSQLiteExtTable : public CppSQLiteExtBasicT
     } // method
 
     /* Table constructor. */
-    CppSQLiteExtTable( CppSQLiteDBExtended& rxDatabase, // the database where the table resides
+    CppSQLiteExtTable( SQL_DB& rxDatabase, // the database where the table resides
                        const std::string& rsTableName, // name of the table in the database
                        const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
                        bool bAutomaticPrimaryKeyColumn, // true == we build automatically a column for the primary key
@@ -1562,7 +1453,7 @@ template <typename... Types> class CppSQLiteExtTableWithAutomaticPrimaryKey : pu
     /* Constructor for table with automatic primary key.
      */
     CppSQLiteExtTableWithAutomaticPrimaryKey(
-        CppSQLiteDBExtended& rxDatabase, // the database where the table resides
+        SQL_DB& rxDatabase, // the database where the table resides
         const std::string& rsTableName, // name of the table in the database
         const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
         const std::vector<std::string>& vConstraints = {} )
@@ -1577,7 +1468,7 @@ template <typename... Types> class CppSQLiteExtTableWithAutomaticPrimaryKey : pu
     {} // constructor
 }; // class
 
-/* WARNING: WITHOUT ROWID optimization is only helpfull in very few scenarios
+/* WARNING: WITHOUT ROWID optimization is only helpful in very few scenarios
  * read https://www.sqlite.org/withoutrowid.html before using this tabletype
  */
 template <typename... Types> class CppSQLiteExtTableWithoutRowId : public CppSQLiteExtTable<Types...>
@@ -1612,7 +1503,7 @@ template <typename... Types> class CppSQLiteExtTableWithoutRowId : public CppSQL
 
     /* Constructor for table without rowid.
      */
-    CppSQLiteExtTableWithoutRowId( CppSQLiteDBExtended& rxDatabase, // the database where the table resides
+    CppSQLiteExtTableWithoutRowId( SQL_DB& rxDatabase, // the database where the table resides
                                    const std::string& rsTableName, // name of the table in the database
                                    const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
                                    const std::vector<std::string>& vConstraints = {} )
@@ -1626,4 +1517,3 @@ template <typename... Types> class CppSQLiteExtTableWithoutRowId : public CppSQL
 #endif
     {} // constructor
 }; // class
-#endif

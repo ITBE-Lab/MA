@@ -37,7 +37,7 @@ set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Set includes and library dependencies 
 target_include_directories(MA PUBLIC inc)
-target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 contrib_CPP_header util )
+target_link_libraries ( MA LINK_PUBLIC kswcpp dbSQL contrib_CPP_header util )
 if( ZLIB_FOUND )
     target_link_libraries ( MA LINK_PUBLIC minimizerscpp )
 endif()
