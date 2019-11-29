@@ -10,6 +10,7 @@ project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 # optional features
 option(WITH_PYTHON "Build python integration of libMA." ON)
 option(WITH_ZLIB "Build gz file readers using zlib." ON)
+option(WITH_DOCS "Build doxygen documentation." ON)
 option(WITH_GUI "Build maGUI" ON)
 
 # assert that the compiler knows c++17
@@ -102,6 +103,25 @@ if(WITH_ZLIB)
     if( ZLIB_FOUND )
         message( "Found zlib" )
     endif()
+endif()
+
+if(WITH_DOCS)
+    # check if Doxygen is installed
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen.config)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config.out)
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target( docs
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM )
+    else (DOXYGEN_FOUND)
+        message("Doxygen needs to be installed in order to generate the documentation")
+    endif (DOXYGEN_FOUND)
 endif()
 
 # Required for linking via libpthreads on UNIX systems

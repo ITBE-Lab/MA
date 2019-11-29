@@ -5,7 +5,7 @@
 
 #undef snprintf // required under MSVC
 // Documentation: https://github.com/nlohmann/json
-#include "contrib/json/json.hpp" // FIXME: Move to different location
+#include "json.hpp" // FIXME: Move to different location
 
 using namespace libMA;
 namespace json = nlohmann;

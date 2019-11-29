@@ -36,8 +36,8 @@ target_compile_definitions( MA PRIVATE EXPORT )
 set_property(TARGET MA PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Set includes and library dependencies 
-target_include_directories(MA PUBLIC inc ../kswcpp/inc)
-target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 )
+target_include_directories(MA PUBLIC inc)
+target_link_libraries ( MA LINK_PUBLIC kswcpp CppSQLite3 contrib_CPP_header )
 if( ZLIB_FOUND )
     target_link_libraries ( MA LINK_PUBLIC minimizerscpp )
 endif()

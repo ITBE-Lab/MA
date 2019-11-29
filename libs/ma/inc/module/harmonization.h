@@ -8,7 +8,7 @@
 
 #include "container/segment.h"
 #include "container/soc.h"
-#include "contrib/intervalTree/IntervalTree.h"
+#include "IntervalTree.h"
 #include "module/module.h"
 #include <algorithm>
 #include <unordered_map>

@@ -9,7 +9,7 @@
 #include "container/sv_db/svDb.h"
 #include "container/sv_db/query_objects/fetchCalls.h"
 #include "container/svJump.h"
-#include "contrib/intervalTree/IntervalTree.h"
+#include "IntervalTree.h"
 #include "module/module.h"
 
 namespace libMA
