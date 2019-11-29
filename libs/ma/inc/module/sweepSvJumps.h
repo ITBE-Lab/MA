@@ -6,6 +6,8 @@
 
 #include "container/squeezedVector.h"
 #include "container/sv_db/svDb.h"
+#include "container/sv_db/query_objects/callInserter.h"
+#include "container/sv_db/query_objects/fetchSvJump.h"
 #include "module/module.h"
 #include <cmath>
 
@@ -97,7 +99,7 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
     {
         {
             std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
-            auto pInserter = std::make_shared<SV_DB::SvCallInserter>( pDB, iRunId );
+            auto pInserter = std::make_shared<SvCallInserter>( pDB, iRunId );
             for( auto pCall : pVec->vContent )
                 pInserter->insertCall( *pCall );
         } // scope for pInserter (transaction)
@@ -130,7 +132,7 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
             return;
         std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
         // creates transaction
-        auto pInserter = std::make_shared<SV_DB::SvCallInserter>( pDB, iRunId );
+        auto pInserter = std::make_shared<SvCallInserter>( pDB, iRunId );
         for( auto pVec : vContent )
             for( auto pCall : pVec->vContent )
                 pInserter->insertCall( *pCall );

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "container/sv_db/svDb.h"
+#include "container/sv_db/query_objects/callInserter.h"
 namespace libMA
 {
 size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb,
@@ -38,7 +39,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         "WHERE sv_call_support_table.call_id == ? " );
 
 
-    SV_DB::SvCallInserter xInserter( pDb, iSvCallerId ); // also triggers transaction
+    SvCallInserter xInserter( pDb, iSvCallerId ); // also triggers transaction
     auto vQuery1Res = xQuery.executeAndStoreAllInVector( iSvCallerId );
 
     size_t uiRet = 0;
