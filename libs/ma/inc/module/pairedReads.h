@@ -66,7 +66,7 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
 
 #ifdef WITH_PYTHON
 /**
- * @brief export the PairedReads and PairedAlignment @ref Module "module" to python.
+ * @brief export the PairedReads and PairedAlignment @ref libMA::Module "module" to python.
  * @ingroup export
  */
 #ifdef WITH_BOOST

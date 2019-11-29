@@ -10,7 +10,7 @@
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <functional>
 #include <iostream>
-/// #endcond
+/// @endcond DOXYGEN_SHOW_SYSTEM_INCLUDES
 
 namespace libMA{
 /**

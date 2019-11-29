@@ -297,7 +297,7 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
 
 #ifdef WITH_PYTHON
 /**
- * @brief exports the Segmentation @ref Module "module" to python.
+ * @brief exports the Segmentation @ref libMA::Module "module" to python.
  * @ingroup export
  */
 void exportComputeCoverage( py::module& rxPyModuleId );

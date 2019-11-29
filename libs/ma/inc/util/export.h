@@ -3,7 +3,7 @@
  * @brief Provides the boost-python main method.
  * @author Markus Schmidt
  * @details
- * Calls the export functions of the various @ref Module "modules" and Containers.
+ * Calls the export functions of the various @ref libMA::Module "modules" and Containers.
  * @copyright
 Copyright 2018 Markus Schmidt, Arne Kutzner
 
@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /**
- * @mainpage @ref Documentation Main Page
+ * @mainpage
  * @tableofcontents
  * @section intro_sec Introduction
  *
@@ -51,7 +51,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * A C++ Module is available for each of these tasks, respectively.
  *
  *
- * @ref Container "Containers" are used for the inputs and outputs of the @ref Module "modules".
+ * @ref libMA::Container "Containers" are used for the inputs and outputs of the @ref libMA::Module "modules".
  * The Expected in- and out- puts for each of the three main steps is as follows:
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
@@ -74,7 +74,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @section quick_start_sec Quick start
  *
- * Here is some python code that sets up the three main @ref Module "modules" reqired for alignment:
+ * Here is some python code that sets up the three main @ref libMA::Module "modules" reqired for alignment:
  * @code{.py}
  * # A module that creates seeds.
  * seg = BinarySeeding()
@@ -86,8 +86,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * printer = AlignmentPrinter()
  * @endcode
  *
- * Here we set up the @ref Module "modules" we need for the alignment process.
- * The @ref Module "modules" themselves do not store data. They can be used multiple times.
+ * Here we set up the @ref libMA::Module "modules" we need for the alignment process.
+ * The @ref libMA::Module "modules" themselves do not store data. They can be used multiple times.
  * Note that while BinarySeeding and NeedlemanWunsch are C++ modules,
  * SweepAllReturnBest and AlignmentPrinter are implemented in Python.
  *
@@ -108,7 +108,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * query = NucSeq(query_string)
  * @endcode
  *
- * Here we setup the @ref Container "containers" holding the data we need.
+ * Here we setup the @ref libMA::Container "containers" holding the data we need.
  *
  * @code{.py}
  * # Call the segmentation module.
@@ -135,8 +135,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /**
- * @defgroup export
- * @brief functions that are used to export Container and @ref Module "module" classes to Python
+ * @defgroup export Exporters
+ * @brief functions that are used to export Container and @ref libMA::Module "module" classes to Python
  * @details
  * When the library is imported in python we need to tell python which classes functions etc.
  * we provide.

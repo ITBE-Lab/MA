@@ -33,7 +33,7 @@ namespace py = pybind11;
  */
 namespace libMA
 {
-
+/// @cond PRIVATE
 /* +++++++++++++++++++++++++++++++++++++++++++++++++
  * 4. Unpack a tuple to call a matching function.
  * FIX ME: Better naming scheme, more documentation.
@@ -49,10 +49,10 @@ template <int... S> struct gens<0, S...>
 {
     typedef seq<S...> type;
 };
-
+/// @endcond
 
 /**
- * @defgroup module
+ * @defgroup module_group Modules
  * @brief All classes implementing some algorithm.
  * @details
  * These classes should all inherit from Module.
@@ -61,8 +61,7 @@ template <int... S> struct gens<0, S...>
 /**
  * @brief Abstract class intended for the implementaiton of various algorithms.
  * @details
- * All computing on data should inherit from this class
- * @see the Python implementation of @ref MA.aligner.Module "module".
+ * All Classes computing on data should inherit from this one.
  * @ingroup module
  */
 template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> class Module

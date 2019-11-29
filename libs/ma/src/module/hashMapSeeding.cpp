@@ -1,5 +1,5 @@
 /**
- * @file hash_map_seeding.cpp
+ * @file hashMapSeeding.cpp
  * @author Markus Schmidt
  */
 #include "module/hashMapSeeding.h"

@@ -2,11 +2,6 @@
 # @package MA
 # @brief The Python part of the library is within this package
 # @package MA.aligner
-# @brief Implements @ref MA.aligner.Module "Module" and
-# @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
-# @file aligner.py
-# @brief Implements @ref MA.aligner.Module "Module" and
-# @ref MA.aligner.SweepAllReturnBest "SweepAllReturnBest".
 # @author Markus Schmidt
 #
 
@@ -57,7 +52,7 @@ def promise_me(module, *args):
             "module must be an instance of Module or VolatileModule")
 
 
-##
+#
 # @brief A nucleotide sequence.
 # @details
 #

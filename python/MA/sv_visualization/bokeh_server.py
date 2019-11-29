@@ -1,5 +1,5 @@
-from renderer import Renderer
-from renderer.util import *
+from .renderer import Renderer
+from .renderer.util import *
 import os.path
 import json
 from bokeh.layouts import column, row, grid
@@ -13,12 +13,6 @@ from bokeh.models.axes import LinearAxis
 from MA import *
 import math
 
-# AKFIX
-"""Markus @ Zeus""" 
-# svdb_dir = "/MAdata/sv_datasets/" # AKFIX
-
-"""Arne @ home """
-svdb_dir = "C:/MAdata/sv_datasets/"
 
 server_context = curdoc().session_context.server_context
 
@@ -35,7 +29,7 @@ def args_get(name, convert, default):
         return default
 
 
-dataset_name = args_get("dataset_name", None, b'minimal').decode()
+dataset_name = args_get("dataset_name", None, b'/MAdata/sv_datasets/minimal').decode()
 json_info_file = None  # noop
 
 render_area_factor = 1
@@ -217,8 +211,8 @@ if not hasattr(server_context, "ref_genome"):
     setattr(server_context, "sv_db", None)
     setattr(server_context, "dataset_name", None)
 
-if os.path.isfile(svdb_dir + dataset_name + "/info.json"):
-    with open(svdb_dir + dataset_name + "/info.json", "r") as json_file:
+if os.path.isfile(dataset_name + "/info.json"):
+    with open(dataset_name + "/info.json", "r") as json_file:
         json_info_file = json.loads(json_file.read(), object_hook=decode)
     ref_genome = json_info_file["reference_path"] + "/ma/genome"
 
@@ -235,7 +229,7 @@ if os.path.isfile(svdb_dir + dataset_name + "/info.json"):
     if server_context.dataset_name == dataset_name:
         print("using cached sv_db")
     else:
-        sv_db = SV_DB(svdb_dir + dataset_name + "/svs.db", "open")
+        sv_db = SV_DB(dataset_name + "/svs.db", "open")
         server_context.sv_db = sv_db
         server_context.dataset_name = dataset_name
 
@@ -255,7 +249,6 @@ if os.path.isfile(svdb_dir + dataset_name + "/info.json"):
 
     redered_everything = renderer.render()
 else:
-    print("COULD NOT FIND FILE")
     xe = 0
     ye = 0
 

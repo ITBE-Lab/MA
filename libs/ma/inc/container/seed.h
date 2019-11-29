@@ -220,7 +220,9 @@ class SVInfo
     std::vector<size_t> vSeedIndicesOfSVIndels;
 }; // class
 
-DEBUG( class SoCPriorityQueue; ) // DEBUG
+#if DEBUG_LEVEL > 0
+    class SoCPriorityQueue; // DEBUG
+#endif
 
 /**
  * @brief A set with Seed elements.
@@ -236,7 +238,9 @@ class Seeds : public Container
     TP_VEC vContent;
 
   public:
-    DEBUG( std::shared_ptr<SoCPriorityQueue> pSoCIn; ) // DEBUG
+#if DEBUG_LEVEL > 0
+    std::shared_ptr<SoCPriorityQueue> pSoCIn;
+#endif
 
     typedef typename TP_VEC::value_type value_type;
     typedef typename TP_VEC::size_type size_type;
@@ -280,7 +284,7 @@ class Seeds : public Container
             push_back( rS );
     } // method
 
-    /// @briefreturn wether this seed set is larger according to getScore()
+    /// @brief return wether this seed set is larger according to getScore()
     inline bool larger( const std::shared_ptr<Container> pOther ) const
     {
         const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>( pOther );

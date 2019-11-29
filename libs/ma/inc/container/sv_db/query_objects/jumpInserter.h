@@ -51,7 +51,7 @@ class SvJumpInserter
 
     /**
      * @brief Constructor 
-     * @param pDB database
+     * @param pDB the sv database
      * @param iSvJumpRunId caller run id
      */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId )
@@ -59,8 +59,8 @@ class SvJumpInserter
     {} // constructor
 
     /**@brief Constructor 
-     * @param database
-     * @detail Extracts the caller run id from databse
+     * @details
+     * Extracts the caller run id from databse
      */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, const std::string& rsSvCallerName, const std::string& rsSvCallerDesc )
         : pDB( pDB ),

@@ -1,6 +1,6 @@
 /**
  * @file harmonization.h
- * @brief Implements the harmonization @ref Module "module"
+ * @brief Implements the harmonization @ref libMA::Module "module"
  * @author Markus Schmidt
  */
 #ifndef LINESWEEP_H
@@ -686,7 +686,7 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
 
 #ifdef WITH_PYTHON
 /**
- * @brief Exposes the Harmonization @ref Module "module" to boost python.
+ * @brief Exposes the Harmonization @ref libMA::Module "module" to boost python.
  * @ingroup export
  */
 #ifdef WITH_BOOSt

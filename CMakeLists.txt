@@ -105,25 +105,6 @@ if(WITH_ZLIB)
     endif()
 endif()
 
-if(WITH_DOCS)
-    # check if Doxygen is installed
-    find_package(Doxygen)
-    if (DOXYGEN_FOUND)
-
-        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen.config)
-        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config.out)
-        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        # note the option ALL which allows to build the docs together with the application
-        add_custom_target( docs
-            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "Generating API documentation with Doxygen"
-            VERBATIM )
-    else (DOXYGEN_FOUND)
-        message("Doxygen needs to be installed in order to generate the documentation")
-    endif (DOXYGEN_FOUND)
-endif()
-
 # Required for linking via libpthreads on UNIX systems
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -142,6 +123,42 @@ add_subdirectory ( libs )
 # Build wxWidgets GUI
 if(WITH_GUI)
     add_subdirectory ( gui )
+endif()
+
+if(WITH_DOCS)
+    # check if Doxygen is installed
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen.config)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config.out)
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target( docs-cpp
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM )
+    else (DOXYGEN_FOUND)
+        message("Doxygen needs to be installed in order to generate a cpp documentation")
+    endif (DOXYGEN_FOUND)
+
+    # determine wether pdoc can be called from the command line
+    execute_process (
+        COMMAND pdoc --version
+        RESULT_VARIABLE PDOC_FOUND
+        )
+    # if so create the docs-py target
+    if (${PDOC_FOUND} EQUAL 0)
+        add_custom_target( docs-py
+            COMMAND pdoc --html --force -o build/docs/py libMA
+            DEPENDS MA
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with pdoc"
+            VERBATIM )
+    else()
+        message("pdoc needs to be installed in order to generate a python documentation")
+    endif()
 endif()
 
 # Build the MA executable itself

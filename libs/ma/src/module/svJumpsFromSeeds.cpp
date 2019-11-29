@@ -1,5 +1,5 @@
 /**
- * @file svJumsFromSeeds.cpp
+ * @file svJumpsFromSeeds.cpp
  * @author Markus Schmidt
  */
 #include "module/svJumpsFromSeeds.h"
