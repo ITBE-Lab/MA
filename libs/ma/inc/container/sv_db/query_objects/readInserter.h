@@ -1,3 +1,8 @@
+/**
+ * @file readInserter.h
+ * @brief implements libMA::ReadInserter that inserts reads into the DB.
+ * @author Markus Schmidt
+ */
 #include "container/sv_db/svDb.h"
 
 #pragma once
@@ -5,6 +10,7 @@
 namespace libMA
 {
 
+/// @brief inserts reads into the DB via a transaction
 class ReadInserter
 {
   private:
@@ -14,8 +20,10 @@ class ReadInserter
     CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
   public:
+    /// @brief the sequencer id this inserter is attached to
     int64_t uiSequencerId;
 
+    /// @brief creates a new sequencer entry with the name sSequencerName and transaction
     ReadInserter( std::shared_ptr<SV_DB> pDB, std::string sSequencerName, std::shared_ptr<Pack> pPack )
         : pDB( pDB ),
           xTransactionContext( *pDB->pDatabase ),
@@ -24,18 +32,22 @@ class ReadInserter
         pDB->pContigCovTable->insert( uiSequencerId, pPack );
     } // constructor
 
+    /// @brief cannot be copied
     ReadInserter( const ReadInserter& rOther ) = delete; // delete copy constructor
 
+    /// @brief insert a unpaired read
     inline void insertRead( std::shared_ptr<NucSeq> pRead )
     {
         pDB->pReadTable->insertRead( uiSequencerId, pRead );
     } // method
 
+    /// @brief insert paired reads
     inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
         pDB->pPairedReadTable->insertRead( uiSequencerId, pReadA, pReadB );
     } // method
 
+    /// @brief insert a file of unpaired reads
     inline void insertFastaFiles( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
     {
         FileListReader xReader( rParameters, vsFileNames );
@@ -64,6 +76,7 @@ class ReadInserter
         } // scope for thread pool
     } // method
 
+    /// @brief insert files of paired reads
     inline void insertPairedFastaFiles( const ParameterSetManager& rParameters,
                                         const std::vector<fs::path>& vsFileNames1,
                                         const std::vector<fs::path>& vsFileNames2 )
@@ -98,5 +111,6 @@ class ReadInserter
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+/// @brief expose libMA::ReadInsert to python
 void exportReadInserter( py::module& rxPyModuleId );
 #endif

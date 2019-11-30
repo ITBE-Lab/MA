@@ -1,10 +1,15 @@
+/**
+ * @file nucSeqSql.h
+ * @brief implements libMA::AllNucSeqFromSql that fetches reads from the DB.
+ * @author Markus Schmidt
+ */
 #include "container/sv_db/svDb.h"
 
 #pragma once
 
 namespace libMA
 {
-
+/// @brief fetches all reads from the DB.
 class AllNucSeqFromSql : public Module<NucSeq, true>
 {
     /// this wrapper is required so that the iterator is never copied
@@ -34,6 +39,7 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
     uint32_t uiModulo;
 
   public:
+    /// @brief fetch all reads from the database.
     AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
@@ -44,6 +50,7 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
           uiModulo( 0 )
     {} // constructor
 
+    /// @brief fetch all reads with the given iSequencerId from the database.
     AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId,
                       size_t uiRes, size_t uiModulo )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
@@ -67,6 +74,7 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
 #endif
     } // constructor
 
+    /// @brief returns one read at a time until isFinished returns true.
     std::shared_ptr<NucSeq> execute( )
     {
         if( pTableIterator == nullptr && iSequencerId != -1 && uiModulo != 1 )
@@ -90,6 +98,7 @@ class AllNucSeqFromSql : public Module<NucSeq, true>
     } // method
 }; // class
 
+/// @brief fetches all unpaired-reads from the DB.
 class NucSeqFromSql : public Module<NucSeq, true>
 {
     std::shared_ptr<SV_DB> pDb;
@@ -97,6 +106,7 @@ class NucSeqFromSql : public Module<NucSeq, true>
     CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
+    /// @brief fetch all unpaired-reads with the given iSequencerId from the database.
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
@@ -114,6 +124,7 @@ class NucSeqFromSql : public Module<NucSeq, true>
             setFinished( );
     } // constructor
 
+    /// @brief fetch all unpaired-reads from the database.
     NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
@@ -130,6 +141,7 @@ class NucSeqFromSql : public Module<NucSeq, true>
             setFinished( );
     } // constructor
 
+    /// @brief returns one unpaired-read at a time until isFinished returns true.
     std::shared_ptr<NucSeq> execute( )
     {
         if( xTableIterator.eof( ) )
@@ -145,13 +157,14 @@ class NucSeqFromSql : public Module<NucSeq, true>
         return std::get<0>( xTup ).pNucSeq;
     } // method
 
-    // override
+    /// @brief this module requires a lock (in the computational graph)
     bool requiresLock( ) const
     {
         return true;
     } // method
 }; // class
 
+/// @brief fetches all paired-reads from the DB.
 class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq>>, true>
 {
     std::shared_ptr<SV_DB> pDb;
@@ -160,6 +173,7 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
     const bool bRevCompMate;
 
   public:
+    /// @brief fetch all paired-reads with the given iSequencerId from the database.
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSequencerId )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
@@ -176,6 +190,7 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
             setFinished( );
     } // constructor
 
+    /// @brief fetch all paired-reads from the database.
     PairedNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
         : pDb( std::make_shared<SV_DB>( *pDb ) ),
           xQuery( *this->pDb->pDatabase,
@@ -191,6 +206,7 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
             setFinished( );
     } // constructor
 
+    /// @brief returns one paired-read at a time until isFinished returns true.
     std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>> execute( )
     {
         if( xTableIterator.eof( ) )
@@ -217,7 +233,7 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
         return pRet;
     } // method
 
-    // override
+    /// @brief this module requires a lock (in the computational graph)
     bool requiresLock( ) const
     {
         return true;
@@ -227,5 +243,6 @@ class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+/// @brief expose the NucSeqFromSql classes to python
 void exportNucSeqSql( py::module& rxPyModuleId );
 #endif

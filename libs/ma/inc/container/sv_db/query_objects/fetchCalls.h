@@ -1,10 +1,19 @@
+/**
+ * @file fetchCalls.h
+ * @brief implements libMA::SvCallsFromDb; a class that fetches libMA::SvCall objects from a DB.
+ * @author Markus Schmidt
+ */
 #include "container/sv_db/svDb.h"
 
 #pragma once
 
 namespace libMA
 {
-
+/**
+ * @brief fetches libMA::SvCall objects from a DB.
+ * @details
+ * Can do several 2d range queries.
+ */
 class SvCallsFromDb
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
@@ -17,6 +26,9 @@ class SvCallsFromDb
                                uint32_t>::Iterator xTableIterator;
 
   public:
+    /**
+     * @brief fetches all calls of a specific caller id.
+     */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
@@ -34,7 +46,15 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId ) )
     {} // constructor
 
-    // fetch overlapping or non overlapping calls:
+    /**
+     * @brief fetches calls depending on two caller ID's
+     * @details
+     * this fetches all calls with run id == iSvCallerIdA that:
+     *  - bOverlapping==true: overlap with at least one call from iSvCallerIdB
+     *  - bOverlapping==false: overlap with no call from iSvCallerIdB
+     *  - do not overlap with a call form iSvCallerIdA with higher score
+     * calls that are no further than iAllowedDist from each other are considered overlapping
+     */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerIdA,
                    int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
         : pSelectedSetting( rParameters.getSelected( ) ),
@@ -88,6 +108,9 @@ class SvCallsFromDb
                                                             iAllowedDist, iAllowedDist, iAllowedDist ) )
     {} // constructor
 
+    /**
+     * @brief fetches all calls of a specific caller id with a minimum score of dMinScore.
+     */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
                    double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
@@ -107,6 +130,9 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, dMinScore ) )
     {} // constructor
 
+    /**
+     * @brief fetches all calls of a specific caller id in the rectangle described by uiX,uiY,uiW,uiH.
+     */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId,
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
         : pSelectedSetting( rParameters.getSelected( ) ),
@@ -129,6 +155,9 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH ) )
     {} // constructor
 
+    /**
+     * @brief fetches all calls of a specific caller id in the rectangle uiX,uiY,uiW,uiH with a score >= dMinScore.
+     */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvCallerId, int64_t iX,
                    int64_t iY, int64_t iW, int64_t iH, double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
@@ -152,6 +181,11 @@ class SvCallsFromDb
           xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, iX, iY, iX + iW, iY + iH, dMinScore ) )
     {} // constructor
 
+    /**
+     * @brief fetches the next call.
+     * @details
+     * behaviour is undefined if libMA::SvCallsFromDb::hasNext returns false
+     */
     SvCall next( )
     {
         auto xTup = xTableIterator.get( );
@@ -180,6 +214,9 @@ class SvCallsFromDb
         return xRet;
     } // method
 
+    /**
+     * @brief returns true if there is another call to fetch using libMA::SvCallsFromDb::next
+     */
     bool hasNext( )
     {
         return !xTableIterator.eof( );
@@ -189,5 +226,8 @@ class SvCallsFromDb
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+/**
+ * @brief used to expose libMA::SvCallsFromDb to python
+ */
 void exportCallsFromDb( py::module& rxPyModuleId );
 #endif

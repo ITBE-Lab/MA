@@ -1,3 +1,8 @@
+/**
+ * @file jumpInserter.h
+ * @brief implements libMA::SvJumpInserter that inserts libMA::SvJump objects into the DB.
+ * @author Markus Schmidt
+ */
 #include "container/sv_db/svDb.h"
 
 #pragma once
@@ -5,7 +10,8 @@
 namespace libMA
 {
 
-/**@brief Idea: Insertion of Jumps (...) into the database.
+/**
+ * @brief Idea: Insertion of libMA::SvJump into the database.
  */
 class SvJumpInserter
 {
@@ -15,10 +21,12 @@ class SvJumpInserter
     CppSQLiteExtImmediateTransactionContext xTransactionContext;
 
   public:
+    /// @brief the id of the run this inserter is attached to.
     const int64_t iSvJumpRunId;
 
-    /**@brief Inner helper class. Memories the coontext for a single read.
-     * @details COntext: Read ID, ID of current caller run, holds the table via shared pointer 
+    /**
+     * @brief Inner helper class. Memorizes the context for a single read.
+     * @details Context: Read ID, ID of current caller run, holds the table via shared pointer
      */
     class ReadContex
     {
@@ -28,10 +36,18 @@ class SvJumpInserter
         const int64_t iReadId;
 
       public:
+        /// @brief create the context for the jump run iSvJumpRunId and read iReadId.
         ReadContex( std::shared_ptr<SvJumpTable> pSvJumpTable, const int64_t iSvJumpRunId, const int64_t iReadId )
             : pSvJumpTable( pSvJumpTable ), iSvJumpRunId( iSvJumpRunId ), iReadId( iReadId )
         {} // constructor
 
+        /** @brief insert the jump rJump into the DB.
+         * @details
+         * expects rJump not to be in the DB.
+         * rJump.iId will be assigned the new id of rJump
+         * rJump.iReadId must must match the read this contig was created for.
+         * if rJump.iReadId == -1 the jump's read id will be overritten with the correct read id.
+         */
         inline void insertJump( SvJump& rJump )
         {
             // make sure the read id matches the read context
@@ -50,7 +66,7 @@ class SvJumpInserter
     }; // class
 
     /**
-     * @brief Constructor 
+     * @brief creates a jump inserter for the run with id = iSvJumpRunId
      * @param pDB the sv database
      * @param iSvJumpRunId caller run id
      */
@@ -58,9 +74,10 @@ class SvJumpInserter
         : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvJumpRunId( iSvJumpRunId )
     {} // constructor
 
-    /**@brief Constructor 
+    /**
+     * @brief creates a jump inserter for a new jump-run.
      * @details
-     * Extracts the caller run id from databse
+     * The new run gets a name and description
      */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, const std::string& rsSvCallerName, const std::string& rsSvCallerDesc )
         : pDB( pDB ),
@@ -68,8 +85,8 @@ class SvJumpInserter
           iSvJumpRunId( pDB->pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
     {} // constructor
 
-    
-    /**@brief OPen ths context for the read, which can be later used for inserting jumps.
+    /**
+     * @brief Open a context for the read with id = iReadId, which can be later used for inserting jumps.
      */
     inline ReadContex readContext( int64_t iReadId )
     {
@@ -79,20 +96,23 @@ class SvJumpInserter
 }; // class
 
 
-/**@brief Wraps a jump inserter, so that it can become part of a computational graph.
+/**
+ * @brief Wraps a jump inserter, so that it can become part of a computational graph.
  */
 class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
     std::shared_ptr<SV_DB> pDb;
 
   public:
-    // this creates a transaction
+    /// @brief the jump inserter; This creates a transaction
     SvJumpInserter xInserter;
 
+    ///@brief creates a new jump-run with the name MA-SV.
     SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, std::string sRunDesc )
         : pDb( pDb ), xInserter( this->pDb, "MA-SV", sRunDesc )
     {} // constructor
 
+    /// @brief insert all jumps in pJumps for the read pRead
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
@@ -106,19 +126,32 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
     } // method
 }; // class
 
+/**
+ * @brief Wraps a jump inserter, so that it can become part of a computational graph.
+ * @details
+ * buffers all jumps in a vector and then bulk inserts them once commit is called.
+ * The destructor calls commit as well.
+ */
 class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
     std::shared_ptr<SV_DB> pDb;
     int64_t iSvJumpRunId;
 
   public:
+    /// @brief the buffer containing all jumps that are not yet commited
     std::vector<std::pair<std::shared_ptr<ContainerVector<SvJump>>, int64_t>> vBuffer;
-    // this creates a transaction
 
+
+    /**
+     * @brief create the inserter for the run with id iSvJumpRunId
+     * @details
+     * the run with id iSvJumpRunId must exist.
+     */
     BufferedSvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvJumpRunId )
         : pDb( pDb ), iSvJumpRunId( iSvJumpRunId )
     {} // constructor
 
+    /// @brief bulk insert all jumps in the buffer; then clear the buffer
     inline void commit( )
     {
         if( vBuffer.size( ) == 0 )
@@ -135,11 +168,13 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
         // end of scope for lock guard
     } // method
 
+    /// @brief triggers commit
     ~BufferedSvDbInserter( )
     {
         commit( );
     } // destructor
 
+    /// @brief buffer all jumps in pJumps for the read pRead
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         vBuffer.emplace_back( pJumps, pRead->iId );
@@ -150,5 +185,6 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
 } // namespace libMA
 
 #ifdef WITH_PYTHON
+/// @brief used to expose libMA::SvJumpInserter to python
 void exportSvJumpInserter( py::module& rxPyModuleId );
 #endif
