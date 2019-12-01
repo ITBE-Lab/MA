@@ -142,7 +142,8 @@ void exportHashMapSeeding( py::module& rxPyModuleId )
     exportModule<HashMapSeeding>( rxPyModuleId, "HashMapSeeding", []( auto&& x ) {
         x.def( "getIndex", &HashMapSeeding::getIndex ) //
             .def( "getSeeds", &HashMapSeeding::getSeeds ) //
-            .def( "getAllSeeds", &HashMapSeeding::getAllSeeds );
+            .def( "getAllSeeds", &HashMapSeeding::getAllSeeds )
+            .def_readwrite( "seed_size", &HashMapSeeding::uiSeedSize );
     } );
 #if 0
     // export the ReSeeding class

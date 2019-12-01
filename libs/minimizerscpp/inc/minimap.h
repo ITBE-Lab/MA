@@ -255,20 +255,6 @@ struct mm_tbuf_s
 // memory buffer for thread-local storage during mapping
 typedef struct mm_tbuf_s mm_tbuf_t;
 
-static mm_tbuf_t *mm_tbuf_init(void)
-{
-	mm_tbuf_t *b;
-	b = (mm_tbuf_t*)calloc(1, sizeof(mm_tbuf_t));
-	if (!(mm_dbg_flag & 1)) b->km = km_init();
-	return b;
-}
-
-static void mm_tbuf_destroy(mm_tbuf_t *b)
-{
-	if (b == 0) return;
-	km_destroy(b->km);
-	free(b);
-}
 
 // markus: expose this function
 int32_t mm_idx_cal_max_occ(const mm_idx_t *mi, float f);

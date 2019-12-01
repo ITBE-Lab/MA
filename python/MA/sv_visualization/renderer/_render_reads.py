@@ -1,7 +1,7 @@
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet, FixedTicker
 from bokeh.models.callbacks import CustomJS
-from bokeh.palettes import Plasma
+from bokeh.palettes import Plasma, Plasma256
 from MA import *
 import math
 from .util import *
@@ -67,6 +67,22 @@ def render_reads(self):
         seeds = libMA.Seeds()
         layer_of_seeds, rectangles = jumps_from_seeds.cpp_module.execute_helper(
             segments, self.pack, self.fm_index, read, seeds)
+        if self.render_mems == 1 and self.selected_read_id == read_id:
+            hash_map_seeder = HashMapSeeding(self.params)
+            hash_map_seeder.cpp_module.seed_size = 9
+            query_section = NucSeq(str(read)[int(self.seed_plot_y_s):int(self.seed_plot_y_e)])
+            ref_section = self.pack.extract_from_to(int(self.xs), int(self.xe))
+            all_k_mers = hash_map_seeder.execute(query_section, ref_section)
+            all_mems = SeedLumping(self.params).execute(all_k_mers)
+            filter_module = FilterToUnique(self.params)
+            filter_module.cpp_module.num_mm = 0
+            filtered_mems = filter_module.execute(all_mems, query_section, ref_section)
+            #filtered_mems = all_mems
+            for idx in range(len(filtered_mems)):
+                filtered_mems[idx].start += int(self.seed_plot_y_s)
+                filtered_mems[idx].start_ref += int(self.xs)
+                layer_of_seeds.append(-1)
+            seeds.extend(filtered_mems)
         for rectangle in rectangles:
             if self.selected_read_id == read_id:
                 initial_rect_plot_data["l"].append(rectangle.x_axis.start)
@@ -80,6 +96,7 @@ def render_reads(self):
         end_column = []
         seeds_n_idx = list(enumerate(sorted([(x, y) for x, y in zip(seeds, layer_of_seeds)],
                                             key=lambda x: x[0].start)))
+        max_seed_size = max(seed.size for seed in seeds)
         for idx, (seed, layer) in sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref):
             seed_size = seed.size - 1
             if seed.on_forward_strand:
@@ -87,7 +104,10 @@ def render_reads(self):
                 if self.selected_read_id != -1 and self.selected_read_id != read_id:
                     read_dict["c"].append("lightgrey")
                 else:
-                    read_dict["c"].append("green")
+                    if layer == -1:
+                        read_dict["c"].append(Plasma256[ (255 * seed_size) // max_seed_size])
+                    else:
+                        read_dict["c"].append("green")
                 read_dict["r"].append(seed.start_ref)
                 read_dict["x"].append(
                     [seed.start_ref, seed.start_ref+seed.size])
@@ -98,7 +118,10 @@ def render_reads(self):
                 if self.selected_read_id != -1 and self.selected_read_id != read_id:
                     read_dict["c"].append("lightgrey")
                 else:
-                    read_dict["c"].append("purple")
+                    if layer == -1:
+                        read_dict["c"].append(Plasma256[ (255 * seed_size) // max_seed_size])
+                    else:
+                        read_dict["c"].append("purple")
                 read_dict["r"].append(seed.start_ref - seed.size + 1)
                 read_dict["x"].append(
                     [seed.start_ref + 1, seed.start_ref - seed.size + 1])
@@ -135,7 +158,7 @@ def render_reads(self):
         col_ids.append(curr_col_id)
         category_counter += len(end_column) + 2
         read_id_n_cols[curr_col_id] = read_id
-    if len(read_dict["c"]) < self.max_num_ele:
+    if len(read_dict["c"]) < self.max_num_ele or self.render_mems == 1:
         read_source = ColumnDataSource(read_dict)
         self.l_plot[1].rect(x="category", y="center", width=1, height="size",
                             fill_color="c", line_width=0, source=read_source, name="hover5")
@@ -164,12 +187,13 @@ def render_reads(self):
                                                   fill_alpha=0.2, line_width=0, name="hover6",
                                                   source=ColumnDataSource(initial_rect_plot_data))
         read_plot_line = self.read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
+                                                   line_alpha=0.5 if self.render_mems == 1 else 1,
                                                    source=ColumnDataSource(read_plot_dict), name="hover5")
         l_read_plot_data = self.l_read_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
                                                  source=ColumnDataSource(initial_l_data), name="hover4")
         # auto adjust y-range of read plot
         js_auto_adjust_y_range = js_file("auto_adjust")
-        self.plot.x_range.js_on_change('start', CustomJS(args=dict(checkbox_group=self.checkbox_group,
+        self.plot.x_range.js_on_change('start', CustomJS(args=dict(radio_group=self.radio_group,
                                                                    read_plot=self.read_plot, plot=self.plot,
                                                                    read_plot_line=read_plot_line.data_source),
                                                          code=js_auto_adjust_y_range+"auto_adjust();"))
@@ -186,7 +210,7 @@ def render_reads(self):
         # the tapping callback on seeds
         code = js_auto_adjust_y_range+js_file("seed_tap")
         self.l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                             checkbox_group=self.checkbox_group,
+                                                             radio_group=self.radio_group,
                                                              plot=self.plot,
                                                              read_source=read_source,
                                                              range=self.d_plot[1].y_range,
@@ -201,7 +225,7 @@ def render_reads(self):
                                                 var curr_y = cb_obj.x;
                                                 """ + code))
         self.d_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                             checkbox_group=self.checkbox_group,
+                                                             radio_group=self.radio_group,
                                                              plot=self.plot,
                                                              read_source=read_source,
                                                              range=self.d_plot[1].y_range,

@@ -754,13 +754,13 @@ class Presetting : public ParameterSetBase
           xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
           xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
           xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
-          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
+          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 25, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
-          xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 150 ),
-          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 50 ),
+          xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 100 ),
+          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
           xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
@@ -974,15 +974,15 @@ class ParameterSetManager
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
         // xParametersSets[ "sv-pacbio" ]->xJumpM->set( 0.25 );
-        xParametersSets[ "sv-pacbio" ]->xMinDistDummy->set( 200 );
-        xParametersSets[ "sv-pacbio" ]->xMaxFuzzinessFilter->set( 100 );
-        xParametersSets[ "sv-pacbio" ]->xJumpH->set( 300 );
+        // xParametersSets[ "sv-pacbio" ]->xMinDistDummy->set( 200 );
+        // xParametersSets[ "sv-pacbio" ]->xMaxFuzzinessFilter->set( 100 );
+        // xParametersSets[ "sv-pacbio" ]->xJumpH->set( 300 );
         xParametersSets.emplace( "sv-ont", std::make_shared<Presetting>( "SV-ONT" ) );
-        xParametersSets[ "sv-ont" ]->xJumpS->set( 250 );
-        xParametersSets[ "sv-ont" ]->xJumpSNeg->set( 100 );
-        xParametersSets[ "sv-ont" ]->xMinDistDummy->set( 300 );
-        xParametersSets[ "sv-ont" ]->xMaxFuzzinessFilter->set( 150 );
-        xParametersSets[ "sv-ont" ]->xJumpH->set( 600 );
+        // xParametersSets[ "sv-ont" ]->xJumpS->set( 250 );
+        // xParametersSets[ "sv-ont" ]->xJumpSNeg->set( 100 );
+        // xParametersSets[ "sv-ont" ]->xMinDistDummy->set( 300 );
+        // xParametersSets[ "sv-ont" ]->xMaxFuzzinessFilter->set( 150 );
+        // xParametersSets[ "sv-ont" ]->xJumpH->set( 600 );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "default" ];

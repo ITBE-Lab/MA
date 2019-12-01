@@ -442,7 +442,7 @@ void mm_idx_dump(FILE *fp, const mm_idx_t *mi)
 		fwrite(&mi->seq[i].len, 4, 1, fp);
 		sum_len += mi->seq[i].len;
 	}
-	for (i = 0; i < 1<<mi->b; ++i) {
+	for (i = 0; i < (uint32_t)1<<mi->b; ++i) {
 		mm_idx_bucket_t *b = &mi->B[i];
 		khint_t k;
 		idxhash_t *h = (idxhash_t*)b->h;
@@ -489,7 +489,7 @@ mm_idx_t *mm_idx_load(FILE *fp)
 		s->offset = sum_len;
 		sum_len += s->len;
 	}
-	for (i = 0; i < 1<<mi->b; ++i) {
+	for (i = 0; i < (uint32_t)1<<mi->b; ++i) {
 		mm_idx_bucket_t *b = &mi->B[i];
 		uint32_t j, size;
 		khint_t k;

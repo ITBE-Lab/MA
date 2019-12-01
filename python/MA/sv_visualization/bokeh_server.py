@@ -1,5 +1,5 @@
-from .renderer import Renderer
-from .renderer.util import *
+from renderer import Renderer
+from renderer.util import *
 import os.path
 import json
 from bokeh.layouts import column, row, grid
@@ -7,7 +7,7 @@ from bokeh.models import Button, Slider, FuncTickFormatter
 from bokeh.plotting import figure, curdoc
 from bokeh.models.callbacks import CustomJS
 from bokeh.events import ButtonClick
-from bokeh.models.widgets import Dropdown, TextInput, RadioGroup
+from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup
 from bokeh.models.tools import HoverTool
 from bokeh.models.axes import LinearAxis
 from MA import *
@@ -29,13 +29,15 @@ def args_get(name, convert, default):
         return default
 
 
-dataset_name = args_get("dataset_name", None, b'/MAdata/sv_datasets/minimal').decode()
+dataset_name = args_get("dataset_name", None, b'/MAdata/sv_datasets/minimal-2').decode()
 json_info_file = None  # noop
 
 render_area_factor = 1
 
 xs = args_get("xs", float, 0)
 ys = args_get("ys", float, 0)
+seed_plot_y_s = args_get("seed_plot_y_s", float, 0)
+seed_plot_y_e = args_get("seed_plot_y_e", float, 0)
 read_plot_start = args_get("read_plot_start", float, None)
 selected_read_id = args_get("selected_read_id", int, -1)
 read_plot_end = args_get("read_plot_end", float, None)
@@ -43,7 +45,8 @@ range_link = args_get("range_link", int, 0)
 run_id = args_get("run_id", int, -1)
 ground_truth_id = args_get("ground_truth_id", int, -1)
 min_score = args_get("min_score", float, 0)
-max_elements = args_get("max_elements", int, 2000)
+max_elements = args_get("max_elements", int, 25000)
+render_mems = args_get("render_mems", int, 0)
 active_tools = args_get("active_tools", None, b"pan.wheel_zoom.hover1,hover2,hover3,hover4").decode().split(".")
 
 
@@ -199,7 +202,7 @@ hover6 = HoverTool(tooltips=[("left", "@l"), ("bottom", "@b"), ("right", "@r"), 
                    names=['hover6'], name="Hover rects")
 read_plot.add_tools(hover6)
 
-checkbox_group = RadioGroup(
+radio_group = RadioGroup(
     labels=["Link read plot to x-range", "Link read plot to y-range"], active=range_link)
 
 redered_everything = True
@@ -244,8 +247,8 @@ if os.path.isfile(dataset_name + "/info.json"):
     renderer = Renderer(plot, [l_plot, l2_plot], [d_plot, d2_plot], xs, xe, ys, ye,
                         server_context.pack, server_context.fm_index, server_context.sv_db, run_id,
                         ground_truth_id, min_score, max_elements, dataset_name, active_tools,
-                        checkbox_group, read_plot, selected_read_id, l_read_plot, d_read_plot,
-                        json_info_file["reference_path"] + "/ma/genome")
+                        radio_group, read_plot, selected_read_id, l_read_plot, d_read_plot, render_mems, seed_plot_y_s, 
+                        seed_plot_y_e, json_info_file["reference_path"] + "/ma/genome")
 
     redered_everything = renderer.render()
 else:
@@ -264,15 +267,20 @@ make_js_callback_file = js_file("reload_callback")
 def make_js_callback(condition):
     return CustomJS(args=dict(xr=plot.x_range, yr=plot.y_range, xs=xs, xe=xe, ys=ys, ye=ye,
                               run_id=run_id, min_score=min_score, plot=plot, max_elements=max_elements,
-                              ground_truth_id=ground_truth_id, checkbox_group=checkbox_group,
+                              ground_truth_id=ground_truth_id, radio_group=radio_group,
                               read_plot_range=l2_plot.x_range, dataset_name=dataset_name,
+                              read_plot_y_range=read_plot.y_range, render_mems=0,
                               selected_read_id=selected_read_id),
                     code=condition + make_js_callback_file)
 
+render_mems_button = Button(label="render MEMs")
+render_mems_button.js_on_event(ButtonClick, make_js_callback("""
+        render_mems = 1;
+    """))
 
 # reset button
 delete_button = Button(label="Delete Dataset")
-delete_button.js_on_event(ButtonClick, make_js_callback("""
+delete_button.js_on_event(ButtonClick,  CustomJS(code="""
         s = document.location.href.split("bokeh_server")
         //alert(s);
         document.location.href = s[0] + "delete_run" + s[1];
@@ -321,7 +329,7 @@ if not server_context.sv_db is None and server_context.sv_db.run_exists(run_id):
     max_score_slider = server_context.sv_db.get_max_score(run_id)
 else:
     max_score_slider = 100
-score_slider = Slider(start=0, end=max_score_slider,
+score_slider = Slider(start=0, end=max(max_score_slider, 1),
                       value=min_score, step=.1, callback_policy='mouseup', title="min score")
 score_slider.callback = make_js_callback("""
         min_score = cb_obj.value;
@@ -342,6 +350,6 @@ file_input.js_on_change("value", make_js_callback("""
 curdoc().add_root(row(
     grid([[l2_plot, l_plot, plot], [None, None, d_plot], [None, None, d2_plot]]),
     column(file_input, run_id_dropdown, ground_truth_id_dropdown, score_slider,
-           max_elements_slider, checkbox_group, reset_button, delete_button,
+           max_elements_slider, radio_group, render_mems_button, reset_button, delete_button,
            grid([[l_read_plot, read_plot], [None, d_read_plot]]))
 ))

@@ -137,7 +137,7 @@ static mm_match_t* collect_matches( void* km, int* _n_m, int max_occ, const mm_i
     *_n_m = n_m;
     return m;
 }
-
+#if 0
 /**
  *
  * @param rep_len returns the number of nucleotides that are not covered by minimizers
@@ -292,6 +292,7 @@ static mm_match_t* collect_matches_adaptive_filter( void* km, int* _n_m, int max
     *_n_m = n_m;
     return m;
 }
+#endif
 
 static inline int skip_seed( int flag, uint64_t r, const mm_match_t* q, const char* qname, int qlen, const mm_idx_t* mi,
                              int* is_self )
@@ -339,7 +340,7 @@ static mm128_t* collect_seed_hits_heap( void* km, const mm_mapopt_t* opt, int ma
     mm_match_t* m;
     mm128_t *a, *heap;
 
-    m = collect_matches_adaptive_filter( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
+    m = collect_matches( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
 
     heap = (mm128_t*)kmalloc( km, n_m * sizeof( mm128_t ) );
     a = (mm128_t*)kmalloc( km, *n_a * sizeof( mm128_t ) );
@@ -418,7 +419,7 @@ static mm128_t* collect_seed_hits( void* km, const mm_mapopt_t* opt, int max_occ
     int i, n_m;
     mm_match_t* m;
     mm128_t* a;
-    m = collect_matches_adaptive_filter( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
+    m = collect_matches( km, &n_m, max_occ, mi, mv, n_a, rep_len, n_mini_pos, mini_pos );
     a = (mm128_t*)kmalloc( km, *n_a * sizeof( mm128_t ) ); // result vector holding seeds
     for( i = 0, *n_a = 0; i < n_m; ++i )
     {

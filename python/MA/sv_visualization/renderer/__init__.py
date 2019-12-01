@@ -1,7 +1,7 @@
 class Renderer():
     def __init__(self, plot, l_plot, d_plot, xs, xe, ys, ye, pack, fm_index, sv_db, run_id, ground_truth_id, min_score,
-                 max_num_ele, dataset_name, active_tools, checkbox_group, read_plot, selected_read_id, l_read_plot,
-                 d_read_plot, index_prefix):
+                 max_num_ele, dataset_name, active_tools, radio_group, read_plot, selected_read_id, l_read_plot,
+                 d_read_plot, render_mems, seed_plot_y_s, seed_plot_y_e, index_prefix):
         self.plot = plot
         self.l_plot = l_plot
         self.d_plot = d_plot
@@ -18,10 +18,13 @@ class Renderer():
         self.max_num_ele = max_num_ele
         self.dataset_name = dataset_name
         self.active_tools = active_tools
-        self.checkbox_group = checkbox_group
+        self.radio_group = radio_group
         self.read_plot = read_plot
         self.selected_read_id = selected_read_id
         self.index_prefix = index_prefix
+        self.render_mems = render_mems
+        self.seed_plot_y_s = seed_plot_y_s
+        self.seed_plot_y_e = seed_plot_y_e
         self.w = None
         self.h = None
         self.params = None

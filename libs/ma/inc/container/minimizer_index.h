@@ -43,6 +43,21 @@ class Index
                 mm_idx_reader_close( idx_rdr );
         } // destructor
     }; // class
+    
+    mm_tbuf_t *mm_tbuf_init(void)
+    {
+        mm_tbuf_t *b;
+        b = (mm_tbuf_t*)calloc(1, sizeof(mm_tbuf_t));
+        if (!(mm_dbg_flag & 1)) b->km = km_init();
+        return b;
+    }
+
+    void mm_tbuf_destroy(mm_tbuf_t *b)
+    {
+        if (b == 0) return;
+        km_destroy(b->km);
+        free(b);
+    }
 
     void mm_mapopt_init( mm_mapopt_t* opt )
     {

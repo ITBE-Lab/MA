@@ -1,9 +1,9 @@
 function auto_adjust() {
-    if (checkbox_group.active == 0) {
+    if (radio_group.active == 0) {
         read_plot.x_range.start = plot.x_range.start;
         read_plot.x_range.end = plot.x_range.end;
     }
-    if (checkbox_group.active == 1) {
+    if (radio_group.active == 1) {
         read_plot.x_range.start = plot.y_range.start;
         read_plot.x_range.end = plot.y_range.end;
     }

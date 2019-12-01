@@ -389,6 +389,30 @@ class SvJumpsFromSeeds(libMA.SvJumpsFromSeeds):
 
 
 ##
+# @brief The HashMapSeeding Module.
+# @ingroup module
+#
+class HashMapSeeding(libMA.HashMapSeeding):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(HashMapSeeding, self).execute(vec)
+
+
+##
+# @brief The FilterToUnique Module.
+# @ingroup module
+#
+class FilterToUnique(libMA.FilterToUnique):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(FilterToUnique, self).execute(vec)
+
+
+##
 # @brief convert bytes to a NucSeq
 # @details
 # Usefull for converting reads stored as blob data in sqlite3 to NucSeq objects.

@@ -3,7 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/svJumpsFromSeeds.h"
-#include "pybind11/stl.h"
+#include "pybind11/stl.h" // @todo this causes compile issues
 #include <cmath>
 #include <csignal>
 

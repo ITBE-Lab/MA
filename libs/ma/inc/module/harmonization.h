@@ -6,9 +6,9 @@
 #ifndef LINESWEEP_H
 #define LINESWEEP_H
 
+#include "IntervalTree.h"
 #include "container/segment.h"
 #include "container/soc.h"
-#include "IntervalTree.h"
 #include "module/module.h"
 #include <algorithm>
 #include <unordered_map>
@@ -181,8 +181,9 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED
-    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
+                                                     std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -502,6 +503,52 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
 }; // class
 #endif
 
+/**
+ * @brief Filters a set of seeds until there are only unique seeds left
+ * @details
+ * allows up to n missmatches
+ * implemented very inefficiently at the moment.
+ * @ingroup module
+ */
+class FilterToUnique : public Module<Seeds, false, Seeds, NucSeq, NucSeq>
+{
+  public:
+    size_t uiNumMissmatchesAllowed = 3;
+
+    FilterToUnique( const ParameterSetManager& rParameters )
+    {} // default constructor
+    FilterToUnique( )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<NucSeq> pRef )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+        for( auto& rSeed : *pSeeds )
+        {
+            bool bFoundMatch = false;
+            for( nucSeqIndex uiI = 0; uiI < pRef->length( ) - rSeed.size( ); uiI++ )
+            {
+                size_t uiCurrNumMM = 0;
+                if( uiI != rSeed.start_ref( ) )
+                {
+                    for( nucSeqIndex uiJ = 0; uiJ < rSeed.size( ); uiJ++ )
+                        if( ( *pRef )[ uiI + uiJ ] != ( *pQuery )[ rSeed.start( ) + uiJ ] )
+                            uiCurrNumMM++;
+                    if( uiCurrNumMM <= uiNumMissmatchesAllowed )
+                    {
+                        bFoundMatch = true;
+                        break;
+                    } // if
+                }
+            } // for
+            if( !bFoundMatch )
+                pRet->push_back( rSeed );
+        } // for
+        return pRet;
+    } // method
+}; // class
 
 #if 1
 /**
@@ -575,8 +622,8 @@ class MinLength : public Module<Seeds, false, Seeds>
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
     {
         pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
-                                    [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
-                    pSeeds->end( ) );
+                                       [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
+                       pSeeds->end( ) );
         return pSeeds;
     } // method
 

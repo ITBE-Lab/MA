@@ -29,12 +29,15 @@
                                             "&xe=" + xr.end +
                                             "&ys=" + yr.start +
                                             "&ye=" + yr.end +
+                                            "&seed_plot_y_s=" + read_plot_y_range.start +
+                                            "&seed_plot_y_e=" + read_plot_y_range.end +
                                             "&run_id=" + run_id +
+                                            "&render_mems=" + render_mems +
                                             "&max_elements=" + max_elements +
                                             "&dataset_name=" + dataset_name +
                                             "&min_score=" + min_score +
                                             "&ground_truth_id=" + ground_truth_id +
-                                            "&range_link=" + checkbox_group.active +
+                                            "&range_link=" + radio_group.active +
                                             "&read_plot_start=" + read_plot_range.start +
                                             "&read_plot_end=" + read_plot_range.end +
                                             "&selected_read_id=" + window.selected_read_id +
