@@ -5,22 +5,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("Utility Library" VERSION 0.1 DESCRIPTION "")
 
-file(GLOB_RECURSE UTIL_SRC
-    "src/*.cpp"
-) # file
-
-
-# Define the target (library util)
-add_library( util STATIC ${UTIL_SRC} )
-
-# cmake will add the -fPIC for compilation with GCC
-set_property( TARGET util PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-# Activate __declspec(dllexport) for DLL export 
-# PRIVATE => depending projects will not inherit the EXPORT definition
-target_compile_definitions( util PRIVATE EXPORT )
-
-# location of all includes with the util library
-target_include_directories( util PUBLIC inc )
-
-target_link_libraries ( util LINK_PUBLIC dbSQL )
+# Define a header only library as taeget
+add_library(util INTERFACE)
+# Include location of header files
+target_include_directories(util INTERFACE inc)

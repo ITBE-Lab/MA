@@ -8,7 +8,7 @@
 
 #include "container/nucSeq.h"
 #include "module/module.h"
-#include "support.h"
+#include "util/support.h"
 
 
 #ifdef WITH_ZLIB

@@ -2,8 +2,8 @@
  * @file svJumpsFromSeeds.cpp
  * @author Markus Schmidt
  */
+#include "module/module.h"
 #include "module/svJumpsFromSeeds.h"
-#include "pybind11/stl.h" // @todo this causes compile issues
 #include <cmath>
 #include <csignal>
 
@@ -16,7 +16,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 {
     // seeds are overlapping on query -> rectange size zero
     if( rNext.start( ) < rLast.end( ) )
-        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
     int64_t iLastRef; // inclusive
     int64_t iNextRef; // inclusive
@@ -55,7 +56,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     int64_t iRefStart = std::min( iLastRef, iNextRef );
     int64_t iRefEnd = std::max( iLastRef, iNextRef );
     if( iRefStart == iRefEnd )
-        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     int64_t iRefSize = iRefEnd - iRefStart;
     if( iRefSize > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) && &rLast != &xDummySeed && &rNext != &xDummySeed )
         return std::make_pair( getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), uiRSize ).first,
@@ -64,7 +66,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
     return std::make_pair( libMA::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
-                                                   (nucSeqIndex)iRefSize, ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
+                                                          (nucSeqIndex)iRefSize,
+                                                          ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
                            libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 } // method
 
@@ -72,46 +75,83 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
                                      std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet )
 {
-    if( getKMerSizeForRectangle( xArea ) > xArea.xXAxis.size( ) ||
-        getKMerSizeForRectangle( xArea ) > xArea.xYAxis.size( ) )
-        return;
-
-    HashMapSeeding xHashMapSeeder;
-    xHashMapSeeder.uiSeedSize = getKMerSizeForRectangle( xArea );
-    // @todo this is inefficient:
-    auto pQuerySegment = std::make_shared<NucSeq>( pQuery->fromTo( xArea.xYAxis.start( ), xArea.xYAxis.end( ) ) );
-    auto pRef = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
-    auto pSeeds = xHashMapSeeder.execute( pQuerySegment, pRef );
-
-    pRef->vReverseAll( );
-    pRef->vSwitchAllBasePairsToComplement( );
-    auto pSeedsRev = xHashMapSeeder.execute( pQuerySegment, pRef );
-    // fix seed positions on forward strand
-    for( Seed& rSeed : *pSeeds )
+    if( sampleKMerSizeFromRef( xArea, pRefSeq ) <= uiMaxAddSeedSize )
     {
-        rSeed.uiPosOnReference += xArea.xXAxis.start( );
-        rSeed.iStart += xArea.xYAxis.start( );
-        assert( rSeed.end( ) <= pQuery->length( ) );
-    } // for
-    // fix seed positions on reverse strand
-    for( Seed& rSeed : *pSeedsRev )
+        if( getKMerSizeForRectangle( xArea ) > xArea.xXAxis.size( ) ||
+            getKMerSizeForRectangle( xArea ) > xArea.xYAxis.size( ) )
+            return;
+
+        HashMapSeeding xHashMapSeeder;
+        xHashMapSeeder.uiSeedSize = getKMerSizeForRectangle( xArea );
+        // @todo this is inefficient:
+        auto pQuerySegment = std::make_shared<NucSeq>( pQuery->fromTo( xArea.xYAxis.start( ), xArea.xYAxis.end( ) ) );
+        auto pRef = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
+        auto pSeeds = xHashMapSeeder.execute( pQuerySegment, pRef );
+
+        pRef->vReverseAll( );
+        pRef->vSwitchAllBasePairsToComplement( );
+        auto pSeedsRev = xHashMapSeeder.execute( pQuerySegment, pRef );
+        // fix seed positions on forward strand
+        for( Seed& rSeed : *pSeeds )
+        {
+            rSeed.uiPosOnReference += xArea.xXAxis.start( );
+            rSeed.iStart += xArea.xYAxis.start( );
+            assert( rSeed.end( ) <= pQuery->length( ) );
+        } // for
+        // fix seed positions on reverse strand
+        for( Seed& rSeed : *pSeedsRev )
+        {
+            rSeed.bOnForwStrand = false;
+            // undo reversion of reference
+            assert( xArea.xXAxis.size( ) >= rSeed.uiPosOnReference + 1 );
+            // rSeed.uiPosOnReference = xArea.xXAxis.size( ) - rSeed.uiPosOnReference - 1;
+            // rSeed.uiPosOnReference += xArea.xXAxis.start( );
+            assert( xArea.xXAxis.end( ) - rSeed.uiPosOnReference >= 1 );
+            rSeed.uiPosOnReference = xArea.xXAxis.end( ) - rSeed.uiPosOnReference - 1;
+            rSeed.iStart += xArea.xYAxis.start( );
+            assert( rSeed.end( ) <= pQuery->length( ) );
+        } // for
+
+        pSeeds->confirmSeedPositions( pQuery, pRefSeq, false );
+        pSeedsRev->confirmSeedPositions( pQuery, pRefSeq, false );
+
+        rvRet->append( pSeeds );
+        rvRet->append( pSeedsRev );
+    }
+    else
     {
-        rSeed.bOnForwStrand = false;
-        // undo reversion of reference
-        assert( xArea.xXAxis.size( ) >= rSeed.uiPosOnReference + 1 );
-        // rSeed.uiPosOnReference = xArea.xXAxis.size( ) - rSeed.uiPosOnReference - 1;
-        // rSeed.uiPosOnReference += xArea.xXAxis.start( );
-        assert( xArea.xXAxis.end( ) - rSeed.uiPosOnReference >= 1 );
-        rSeed.uiPosOnReference = xArea.xXAxis.end( ) - rSeed.uiPosOnReference - 1;
-        rSeed.iStart += xArea.xYAxis.start( );
-        assert( rSeed.end( ) <= pQuery->length( ) );
-    } // for
+        auto pRef = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
+        auto pAlignment = std::make_shared<Alignment>( xArea.xXAxis.start( ), xArea.xYAxis.start( ) );
+        AlignedMemoryManager xMemoryManager; // @todo this causes frequent (de-)&allocations; move this outwards
+        xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pAlignment,
+                 xMemoryManager );
+        auto pForwSeeds = pAlignment->toSeeds( );
 
-    pSeeds->confirmSeedPositions( pQuery, pRefSeq, false );
-    pSeedsRev->confirmSeedPositions( pQuery, pRefSeq, false );
-
-    rvRet->append( pSeeds );
-    rvRet->append( pSeedsRev );
+        // and now the reverse strand seeds
+        pRef->vReverseAll( );
+        pRef->vSwitchAllBasePairsToComplement( );
+        pAlignment = std::make_shared<Alignment>( );
+        xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pAlignment,
+                 xMemoryManager );
+        auto pRevSeeds = pAlignment->toSeeds( );
+        for( Seed& rSeed : *pRevSeeds )
+        {
+            rSeed.bOnForwStrand = false;
+            // undo reversion of reference
+            assert( xArea.xXAxis.size( ) >= rSeed.uiPosOnReference + 1 );
+            // rSeed.uiPosOnReference = xArea.xXAxis.size( ) - rSeed.uiPosOnReference - 1;
+            // rSeed.uiPosOnReference += xArea.xXAxis.start( );
+            assert( xArea.xXAxis.end( ) - rSeed.uiPosOnReference >= 1 );
+            rSeed.uiPosOnReference = xArea.xXAxis.end( ) - rSeed.uiPosOnReference - 1;
+            rSeed.iStart += xArea.xYAxis.start( );
+            assert( rSeed.end( ) <= pQuery->length( ) );
+        } // for
+        // @todo use alignment score instead...
+        if( pForwSeeds->getAverageSeedSize( ) >= pRevSeeds->getAverageSeedSize( ) )
+            rvRet->append( pForwSeeds );
+        else
+            rvRet->append( pRevSeeds );
+    } // else
 } // method
 
 std::shared_ptr<Seeds>
@@ -127,6 +167,8 @@ SvJumpsFromSeeds::computeSeeds( std::pair<libMA::Rectangle<nucSeqIndex>, libMA::
 
     // turn k-mers into maximally extended seeds
     auto pvLumpedSeeds = xSeedLumper.execute( pSeeds );
+#if 0 
+    // this eliminates seeds that indicate translocations...
     nucSeqIndex uiMaxSeedSize = 0;
     for( auto& rSeed : *pvLumpedSeeds )
         uiMaxSeedSize = std::max( uiMaxSeedSize, rSeed.size( ) );
@@ -134,6 +176,7 @@ SvJumpsFromSeeds::computeSeeds( std::pair<libMA::Rectangle<nucSeqIndex>, libMA::
     pvLumpedSeeds->erase( std::remove_if( pvLumpedSeeds->begin( ), pvLumpedSeeds->end( ),
                                           [&]( auto& rSeed ) { return rSeed.size( ) < uiMaxSeedSize; } ),
                           pvLumpedSeeds->end( ) );
+#endif
     // seeds that touch end of rectangle might not be maximally extended
     return SeedExtender( ).execute( pvLumpedSeeds, pQuery, pRefSeq );
 } // method
@@ -161,7 +204,8 @@ nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( libMA::Rectangle<nucSeqIn
     return std::min( w, h ) + 1;
 } // method
 
-nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( libMA::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq )
+nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( libMA::Rectangle<nucSeqIndex>& xArea,
+                                                     std::shared_ptr<Pack> pRefSeq )
 {
     if( pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.start( ) ) !=
         pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.end( ) - 1 ) )
@@ -192,12 +236,11 @@ nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( libMA::Rectangle<nucSeqInde
 } // method
 
 
-void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
-                                                      std::shared_ptr<Pack> pRefSeq,
-                                                      std::shared_ptr<ContainerVector<SvJump>>& pRet, size_t uiLayer,
-                                                      std::shared_ptr<Seeds> pSeeds,
-                                                      std::vector<size_t>* pvLayerOfSeeds,
-                                                      std::vector<libMA::Rectangle<nucSeqIndex>>* pvRectanglesOut )
+void SvJumpsFromSeeds::makeJumpsByReseedingRecursive(
+    Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+    std::shared_ptr<ContainerVector<SvJump>>& pRet, size_t uiLayer, std::shared_ptr<Seeds> pSeeds,
+    std::vector<size_t>* pvLayerOfSeeds, std::vector<libMA::Rectangle<nucSeqIndex>>* pvRectanglesOut,
+    std::vector<double>* pvRectangleFillPercentage, std::vector<size_t>* pvRectangleReferenceAmbiguity )
 {
     // returns a (reference pos, query pos, width [on reference], height [on query])
     auto xRectangles =
@@ -207,9 +250,19 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
         pvRectanglesOut->push_back( xRectangles.first );
         pvRectanglesOut->push_back( xRectangles.second );
     } // if
+    if( pvRectangleReferenceAmbiguity != nullptr )
+    {
+        pvRectangleReferenceAmbiguity->push_back( sampleKMerSizeFromRef( xRectangles.first, pRefSeq ) );
+        pvRectangleReferenceAmbiguity->push_back( sampleKMerSizeFromRef( xRectangles.second, pRefSeq ) );
+    } // if
 
     // reseed and recursiveley call this function again
     std::shared_ptr<Seeds> pvSeeds = computeSeeds( xRectangles, pQuery, pRefSeq );
+    if( pvRectangleFillPercentage != nullptr )
+    {
+        pvRectangleFillPercentage->push_back( rectFillPercentage( pvSeeds, xRectangles ) );
+        pvRectangleFillPercentage->push_back( rectFillPercentage( pvSeeds, xRectangles ) );
+    } // if
 
     std::sort( pvSeeds->begin( ), pvSeeds->end( ),
                []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
@@ -229,11 +282,11 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
         for( auto& rSeed : *pvSeeds )
         {
             makeJumpsByReseedingRecursive( *pCurr, rSeed, pQuery, pRefSeq, pRet, uiLayer + 1, pSeeds, pvLayerOfSeeds,
-                                           pvRectanglesOut );
+                                           pvRectanglesOut, pvRectangleFillPercentage, pvRectangleReferenceAmbiguity );
             pCurr = &rSeed;
         } // for
         makeJumpsByReseedingRecursive( *pCurr, rNext, pQuery, pRefSeq, pRet, uiLayer + 1, pSeeds, pvLayerOfSeeds,
-                                       pvRectanglesOut );
+                                       pvRectanglesOut, pvRectangleFillPercentage, pvRectangleReferenceAmbiguity );
 
         // we found at least one seed so we do not need to create a jump between rLast and rNext
         return;
@@ -269,7 +322,9 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
                                   std::shared_ptr<Seeds>
                                       pSeeds,
                                   std::vector<size_t>* pvLayerOfSeeds,
-                                  std::vector<libMA::Rectangle<nucSeqIndex>>* pvRectanglesOut )
+                                  std::vector<libMA::Rectangle<nucSeqIndex>>* pvRectanglesOut,
+                                  std::vector<double>* pvRectangleFillPercentage,
+                                  std::vector<size_t>* pvRectangleReferenceAmbiguity )
 {
     AlignedMemoryManager xMemoryManager;
     auto pRet = std::make_shared<ContainerVector<SvJump>>( );
@@ -282,11 +337,11 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
     vSeeds.reserve( pSegments->size( ) * 2 );
 
     // filter ambiguous segments -> 1; don't -> 0
-#if 1
+#if 0
     /**
      * This filters segments that occur multiple times on the reference:
      * For each of those segments extract all seeds.
-     * Then pick the one seed that is closest, on the reference, to:
+     * Then pick the one seed that is closest, via their delta pos, to:
      *  - either the last (on query) unique seed
      *  - or the next (on query) unique seed
      * This drastically reduces the number of seeds.
@@ -295,7 +350,7 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
      */
     std::vector<Segment*> vTemp;
     size_t uiNumSeedsTotal = 0;
-    int64_t iLastUniqueRefPos = -1;
+    int64_t iLastUniqueDelta = -1;
     for( Segment& rSegment : *pSegments )
     {
         if( rSegment.size( ) < uiMinSeedSizeSV )
@@ -305,17 +360,18 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
         if( rSegment.saInterval( ).size( ) == 1 )
             rSegment.forEachSeed( *pFM_index, [&]( Seed& rS ) {
                 // deal with vTemp
-                int64_t iCurrUniqueRefPos = (int64_t)rS.start_ref( );
+                int64_t iCurrUniqueDelta = (int64_t)rS.start( ) - (int64_t)rS.start_ref( );
                 for( Segment* pSeg : vTemp )
                 {
                     Seed xBest;
                     int64_t iMinDist = -1;
                     pSeg->forEachSeed( *pFM_index, [&]( Seed& rS ) {
-                        int64_t iStart = (int64_t)rS.start_ref( );
-                        int64_t iDist = std::abs( iStart - iCurrUniqueRefPos );
+                        // @todo this should be useing the delta distances...
+                        int64_t iDelta = (int64_t)rS.start( ) - (int64_t)rS.start_ref( );
+                        int64_t iDist = std::abs( iDelta - iCurrUniqueDelta );
                         // if the segment is not the first segment this triggers
-                        if( iLastUniqueRefPos != -1 )
-                            iDist = std::min( iDist, std::abs( iStart - iLastUniqueRefPos ) );
+                        if( iLastUniqueDelta != -1 )
+                            iDist = std::min( iDist, std::abs( iDelta - iLastUniqueDelta ) );
                         if( iMinDist == -1 || iDist < iMinDist )
                         {
                             xBest = rS;
@@ -328,7 +384,7 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
                 } // for
                 vTemp.clear( );
 
-                iLastUniqueRefPos = (int64_t)rS.end_ref( );
+                iLastUniqueDelta = (int64_t)rS.start( ) - (int64_t)rS.start_ref( );
                 vSeeds.push_back( rS );
                 return true;
             } ); // forEachSeed function call \ if
@@ -341,8 +397,8 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
         Seed xBest;
         int64_t iMinDist = -1;
         pSeg->forEachSeed( *pFM_index, [&]( Seed& rS ) {
-            int64_t iStart = (int64_t)rS.start_ref( );
-            int64_t iDist = std::abs( iStart - iLastUniqueRefPos );
+            int64_t iDelta = (int64_t)rS.start( ) - (int64_t)rS.start_ref( );
+            int64_t iDist = std::abs( iDelta - iLastUniqueDelta );
             if( iMinDist == -1 || iDist < iMinDist )
             {
                 xBest = rS;
@@ -361,7 +417,7 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
     } // scope xGuard
 
 #else
-    pSegments->emplaceAllEachSeeds( *pFM_index, pQuery->length( ), uiMaxAmbiguitySv, uiMinSeedSizeSV, vSeeds,
+    pSegments->emplaceAllEachSeeds( *pFM_index, pQuery->length( ), /*uiMaxAmbiguitySv*/ 1, uiMinSeedSizeSV, vSeeds,
                                     [&]( ) { return true; } );
 #endif
 
@@ -379,12 +435,12 @@ SvJumpsFromSeeds::execute_helper( std::shared_ptr<SegmentVector> pSegments,
     Seed* pCurr = &xDummySeed;
     for( auto& rSeed : vSeeds )
     {
-        makeJumpsByReseedingRecursive( *pCurr, rSeed, pQuery, pRefSeq, pRet, 1, pSeeds, pvLayerOfSeeds,
-                                       pvRectanglesOut );
+        makeJumpsByReseedingRecursive( *pCurr, rSeed, pQuery, pRefSeq, pRet, 1, pSeeds, pvLayerOfSeeds, pvRectanglesOut,
+                                       pvRectangleFillPercentage, pvRectangleReferenceAmbiguity );
         pCurr = &rSeed;
     } // for
     makeJumpsByReseedingRecursive( *pCurr, xDummySeed, pQuery, pRefSeq, pRet, 1, pSeeds, pvLayerOfSeeds,
-                                   pvRectanglesOut );
+                                   pvRectanglesOut, pvRectangleFillPercentage, pvRectangleReferenceAmbiguity );
 
     return pRet;
 } // method
@@ -397,7 +453,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
                                                                     std::shared_ptr<NucSeq>
                                                                         pQuery )
 {
-    return execute_helper( pSegments, pRefSeq, pFM_index, pQuery, nullptr, nullptr, nullptr );
+    return execute_helper( pSegments, pRefSeq, pFM_index, pQuery, nullptr, nullptr, nullptr, nullptr, nullptr );
 } // method
 
 #ifdef WITH_PYTHON
@@ -409,6 +465,11 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
     py::class_<libMA::Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
         .def_readwrite( "x_axis", &libMA::Rectangle<nucSeqIndex>::xXAxis )
         .def_readwrite( "y_axis", &libMA::Rectangle<nucSeqIndex>::xYAxis );
+    py::class_<libMA::SvJumpsFromSeeds::HelperRetVal>( rxPyModuleId, "SvJumpsFromSeedsHelperRetVal" )
+        .def_readwrite( "layer_of_seeds", &libMA::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
+        .def_readwrite( "rectangles", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangles )
+        .def_readwrite( "rectangles_fill", &libMA::SvJumpsFromSeeds::HelperRetVal::pvRectangleFillPercentage )
+        .def_readwrite( "rectangle_ambiguity", &libMA::SvJumpsFromSeeds::HelperRetVal::pvRectangleReferenceAmbiguity );
     exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
         rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
             x.def( "commit", &SvJumpsFromSeeds::commit ) //

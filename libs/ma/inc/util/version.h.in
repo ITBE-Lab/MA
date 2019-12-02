@@ -2,7 +2,7 @@
 #define VERSION_H
 
 #include <string>
-#include "support.h"
+#include "util/support.h"
 
 #define MA_VERSION "@MA_VERSION@"
 

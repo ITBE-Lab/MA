@@ -31,7 +31,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
         rxPyModuleId, "BufferedSvCallSink", []( auto&& x ) { x.def( "commit", &BufferedSvCallSink::commit ); } );
 
 
-    exportModule<CompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
+    exportModule<CompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t, int64_t>(
         rxPyModuleId, "CompleteBipartiteSubgraphSweep", []( auto&& x ) {
             x.def_readonly( "time_init", &CompleteBipartiteSubgraphSweep::dInit )
                 .def_readonly( "time_complete_while", &CompleteBipartiteSubgraphSweep::dOuterWhile )

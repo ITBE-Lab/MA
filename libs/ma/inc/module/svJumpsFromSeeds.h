@@ -34,6 +34,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
     SeedLumping xSeedLumper;
+    NeedlemanWunsch xNW;
+    nucSeqIndex uiMaxAddSeedSize = 20;
     // @todo there should be a container for the current sequencer run;
     // this way this module would be free from keeping internal data and could be used for multiple instances in the
     // graph...
@@ -66,6 +68,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
           xSeedLumper( rParameters ),
+          xNW( rParameters ),
           iSequencerId( iSequencerId ),
           pDb( pDb ),
           xCoverageInserter( iSequencerId, pRefSeq, pDb )
@@ -106,6 +109,25 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     nucSeqIndex getKMerSizeForRectangle( Rectangle<nucSeqIndex>& rRect );
 
     /**
+     * @brief computes how much percent of the rectangles xRects is filled by seeds in pvSeeds.
+     * @details
+     * Assumes that the seeds are completeley within the rectangles.
+     */
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>> xRects )
+    {
+        nucSeqIndex uiSeedSize = 0;
+        for( auto& rSeed : *pvSeeds )
+            uiSeedSize += rSeed.size( );
+        if( xRects.first.xXAxis.size( ) * xRects.first.xYAxis.size( ) +
+                xRects.second.xXAxis.size( ) * xRects.second.xYAxis.size( ) ==
+            0 )
+            return 0;
+        return uiSeedSize / (float)( xRects.first.xXAxis.size( ) * xRects.first.xYAxis.size( ) +
+                                     xRects.second.xXAxis.size( ) * xRects.second.xYAxis.size( ) );
+    } // method
+
+    /**
      * @brief returns the size at which all k-mer's on the reference interval of xArea are unique.
      * @details
      * Currently implemented inefficiently.
@@ -143,7 +165,9 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet,
                                         size_t uiLayer, std::shared_ptr<Seeds> pSeeds,
                                         std::vector<size_t>* pvLayerOfSeeds,
-                                        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut );
+                                        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut,
+                                        std::vector<double>* pvRectangleFillPercentage,
+                                        std::vector<size_t>* pvRectangleReferenceAmbiguity );
 
     /**
      * @brief computes all SV jumps between the given seeds.
@@ -153,27 +177,38 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      *
      * Uses makeJumpsByReseedingRecursive().
      */
-    std::shared_ptr<ContainerVector<SvJump>>
-        EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<Pack> pRefSeq,
-                                 std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuery,
-                                 std::shared_ptr<Seeds> pSeeds, std::vector<size_t>* pvLayerOfSeeds,
-                                 std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut );
+    std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute_helper(
+        std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<FMIndex> pFM_index,
+        std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Seeds> pSeeds, std::vector<size_t>* pvLayerOfSeeds,
+        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut, std::vector<double>* pvRectangleFillPercentage,
+        std::vector<size_t>* pvRectangleReferenceAmbiguity );
 
-    inline std::tuple<std::vector<size_t>, std::vector<Rectangle<nucSeqIndex>>>
-    execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
-                       std::shared_ptr<Pack>
-                           pRefSeq,
-                       std::shared_ptr<FMIndex>
-                           pFM_index,
-                       std::shared_ptr<NucSeq>
-                           pQuery,
-                       std::shared_ptr<Seeds>
-                           pSeeds )
+    /// @brief this class exists mereley to expose the return value of execute_helper_py to python
+    class HelperRetVal
     {
+      public:
         std::vector<size_t> vLayerOfSeeds;
         std::vector<Rectangle<nucSeqIndex>> vRectangles;
-        execute_helper( pSegments, pRefSeq, pFM_index, pQuery, pSeeds, &vLayerOfSeeds, &vRectangles );
-        return std::make_tuple( vLayerOfSeeds, vRectangles );
+        std::vector<double> pvRectangleFillPercentage;
+        std::vector<size_t> pvRectangleReferenceAmbiguity;
+
+        HelperRetVal( ){};
+    }; // class
+
+    inline HelperRetVal execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
+                                           std::shared_ptr<Pack>
+                                               pRefSeq,
+                                           std::shared_ptr<FMIndex>
+                                               pFM_index,
+                                           std::shared_ptr<NucSeq>
+                                               pQuery,
+                                           std::shared_ptr<Seeds>
+                                               pSeeds )
+    {
+        HelperRetVal xRet;
+        execute_helper( pSegments, pRefSeq, pFM_index, pQuery, pSeeds, &xRet.vLayerOfSeeds, &xRet.vRectangles,
+                        &xRet.pvRectangleFillPercentage, &xRet.pvRectangleReferenceAmbiguity );
+        return xRet;
     } // method
 
     virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,

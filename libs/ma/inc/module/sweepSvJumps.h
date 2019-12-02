@@ -180,7 +180,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
      * @details
      */
     CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
-                                    std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId )
+                                    std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId, int64_t iSequencerId )
         : rParameters( rParameters ),
           pSvDb( std::make_shared<SV_DB>( *pSvDb ) ),
           pPack( pPack ),
@@ -194,7 +194,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
           uiCenterStripUp( 5000 ),
           uiCenterStripDown( 1000 ),
           dEstimateCoverageFactor( 0.01 ),
-          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
+          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) )
     {} // constructor
 
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>

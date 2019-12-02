@@ -572,6 +572,13 @@ class Seeds : public Container
         return xRet;
     } // method
 
+    double getAverageSeedSize() const
+    {
+        nucSeqIndex uiSeedSizeSum = 0;
+        for(auto& rSeed : vContent)
+            uiSeedSizeSum += rSeed.size();
+        return uiSeedSizeSum / (double)vContent.size();
+    } // method
 
     /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
     std::tuple<size_t, size_t, size_t> compareSeedSets( std::shared_ptr<Seeds> pOther )

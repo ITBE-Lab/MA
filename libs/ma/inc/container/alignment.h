@@ -153,6 +153,37 @@ class Alignment : public Container
         return sRet;
     }
 
+    inline std::shared_ptr<Seeds> toSeeds() const
+    {
+        auto pRet = std::make_shared<Seeds>();
+        nucSeqIndex uiQ = uiBeginOnQuery;
+        nucSeqIndex uiR = uiBeginOnRef;
+        for( auto& rPair : data )
+        {
+            switch( rPair.first )
+            {
+                case MatchType::seed:
+                case MatchType::match:
+                    // @todo make this work for rev strand alignments...
+                    pRet->emplace_back(uiQ, rPair.second, uiR, true );
+                case MatchType::missmatch: // seed and match case continue till the break
+                    uiQ += rPair.second;
+                    uiR += rPair.second;
+                    break;
+                case MatchType::insertion:
+                    uiQ += rPair.second;
+                    break;
+                case MatchType::deletion:
+                    uiR += rPair.second;
+                    break;
+                default:
+                    throw std::runtime_error( "Should never reach default case in toSeeds switch case." );
+                    break;
+            } // switch
+        } // for
+        return pRet;
+    } // method
+
     // overload
     bool canCast( std::shared_ptr<Container> c ) const
     {

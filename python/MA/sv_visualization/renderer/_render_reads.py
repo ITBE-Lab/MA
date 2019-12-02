@@ -47,12 +47,12 @@ def render_reads(self):
     all_col_ids = []
     category_counter = 0
     l_plot_nucs = {}  # dict of {"y": [], "c": [], "i": []}
-    read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": []}
+    read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
     initial_l_data = {"y": [0], "c": ["black"], "i": [""]}
-    initial_rect_plot_data = {"l": [], "b": [], "t": [], "r": []}
+    initial_rect_plot_data = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
     for read_id in sorted(self.read_ids, reverse=True):
         l_plot_nucs[read_id] = {"y": [], "c": [], "i": []}
-        read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": []}
+        read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
         read = self.sv_db.get_read(read_id)
         if self.selected_read_id == read_id:
             for value in initial_l_data.values():
@@ -65,8 +65,11 @@ def render_reads(self):
                 append_nuc_type(initial_l_data, nuc, y, "y")
         segments = seeder.execute(self.fm_index, read)
         seeds = libMA.Seeds()
-        layer_of_seeds, rectangles = jumps_from_seeds.cpp_module.execute_helper(
-            segments, self.pack, self.fm_index, read, seeds)
+        helpter_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read, seeds)
+        layer_of_seeds = helper_ret.layer_of_seeds
+        rectangles = helper_ret.rectangles
+        fill_of_rectangles = helper_ret.rectangles_fill
+        seed_sample_sizes = helper_ret.rectangle_ambiguity
         if self.render_mems == 1 and self.selected_read_id == read_id:
             hash_map_seeder = HashMapSeeding(self.params)
             hash_map_seeder.cpp_module.seed_size = 9
@@ -76,23 +79,32 @@ def render_reads(self):
             all_mems = SeedLumping(self.params).execute(all_k_mers)
             filter_module = FilterToUnique(self.params)
             filter_module.cpp_module.num_mm = 0
-            filtered_mems = filter_module.execute(all_mems, query_section, ref_section)
-            #filtered_mems = all_mems
+            #filtered_mems = filter_module.execute(all_mems, query_section, ref_section)
+            filtered_mems = all_mems
             for idx in range(len(filtered_mems)):
                 filtered_mems[idx].start += int(self.seed_plot_y_s)
                 filtered_mems[idx].start_ref += int(self.xs)
                 layer_of_seeds.append(-1)
             seeds.extend(filtered_mems)
-        for rectangle in rectangles:
+        for rectangle, fill, seed_sample_size in zip(rectangles, fill_of_rectangles, seed_sample_sizes):
+            color = Plasma256[min(seed_sample_size, 255)]
             if self.selected_read_id == read_id:
                 initial_rect_plot_data["l"].append(rectangle.x_axis.start)
                 initial_rect_plot_data["b"].append(rectangle.y_axis.start)
                 initial_rect_plot_data["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
                 initial_rect_plot_data["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
+                initial_rect_plot_data["f"].append(fill)
+                initial_rect_plot_data["c"].append(color)
+                initial_rect_plot_data["s"].append(seed_sample_size)
+            # if
             read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
             read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
             read_plot_rects[read_id]["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
             read_plot_rects[read_id]["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
+            read_plot_rects[read_id]["f"].append(fill)
+            read_plot_rects[read_id]["c"].append(color)
+            read_plot_rects[read_id]["s"].append(seed_sample_size)
+        # for
         end_column = []
         seeds_n_idx = list(enumerate(sorted([(x, y) for x, y in zip(seeds, layer_of_seeds)],
                                             key=lambda x: x[0].start)))
@@ -183,7 +195,7 @@ def render_reads(self):
                 """)
         self.d_plot[1].ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
-        rect_read_plot_data = self.read_plot.quad(left="l", bottom="b", right="r", top="t", fill_color="grey",
+        rect_read_plot_data = self.read_plot.quad(left="l", bottom="b", right="r", top="t", fill_color="c",
                                                   fill_alpha=0.2, line_width=0, name="hover6",
                                                   source=ColumnDataSource(initial_rect_plot_data))
         read_plot_line = self.read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
