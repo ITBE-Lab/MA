@@ -6,7 +6,7 @@
 #ifndef DEFAULT_PARAMETERS_H
 #define DEFAULT_PARAMETERS_H
 
-#include "util/support.h"
+#include "support.h"
 #include <string>
 
 #ifdef WITH_PYTHON

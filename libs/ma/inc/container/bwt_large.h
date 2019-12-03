@@ -6,7 +6,7 @@
 #pragma once
 
 #include "container/qSufSort.h"
-#include "util/support.h"
+#include "support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <errno.h>

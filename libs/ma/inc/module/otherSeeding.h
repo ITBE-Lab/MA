@@ -9,7 +9,7 @@
 #include "container/segment.h"
 #include "module/module.h"
 #include "system.h"
-#include "util/threadPool.h"
+#include "threadPool.h"
 
 namespace libMA
 {
