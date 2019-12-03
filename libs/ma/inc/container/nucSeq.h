@@ -810,7 +810,13 @@ class NucSeqSql : public SQL_BLOB
 
 }; // class
 
+
 } // namespace libMA
+
+template <> inline std::string getSQLTypeName<libMA::NucSeqSql>( )
+{
+    return "BLOB";
+} // specialized function
 
 #ifdef WITH_PYTHON
 void exportNucSeq( py::module& rxPyModuleId );

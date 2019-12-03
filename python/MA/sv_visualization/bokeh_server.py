@@ -326,10 +326,13 @@ ground_truth_id_dropdown.js_on_change("value", make_js_callback("""
         ground_truth_id = cb_obj.value;
     """))
 
-if not server_context.sv_db is None and server_context.sv_db.run_exists(run_id):
-    max_score_slider = server_context.sv_db.get_max_score(run_id)
-else:
-    max_score_slider = 100
+max_score_slider = 100
+try:
+    if not server_context.sv_db is None and server_context.sv_db.run_exists(run_id):
+            max_score_slider = server_context.sv_db.get_max_score(run_id)
+except:
+    pass
+
 score_slider = Slider(start=0, end=max(max_score_slider, 1),
                       value=min_score, step=.1, callback_policy='mouseup', title="min score")
 score_slider.callback = make_js_callback("""

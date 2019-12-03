@@ -65,7 +65,7 @@ def render_reads(self):
                 append_nuc_type(initial_l_data, nuc, y, "y")
         segments = seeder.execute(self.fm_index, read)
         seeds = libMA.Seeds()
-        helpter_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read, seeds)
+        helper_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read, seeds)
         layer_of_seeds = helper_ret.layer_of_seeds
         rectangles = helper_ret.rectangles
         fill_of_rectangles = helper_ret.rectangles_fill

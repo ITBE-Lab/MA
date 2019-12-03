@@ -319,14 +319,6 @@ class SQL_DB // deprecated : public CppSQLite3DB
         return pResultTableRef;
     } // private method
 
-    // The start of an immediate transaction can boost the execution speed.
-    // We have to work with unique pointers over here, because the members of the type CppSQLiteExtStatement are unknown
-    // over here.
-    std::unique_ptr<CppSQLiteExtStatementParent> xStatementBeginTransaction = nullptr;
-    std::unique_ptr<CppSQLiteExtStatementParent> xStatementEndTransaction = nullptr;
-
-    /* Externally defined method that initialized the above attributes. */
-    void vInititializeTransactionStatement( void );
 
   public:
     friend class CppSQLiteExtImmediateTransactionContext;
@@ -368,9 +360,6 @@ class SQL_DB // deprecated : public CppSQLite3DB
         // Finally create/open the database.
         // If the database does not exist, it is created over here.
         pDBConnector->open( xDatabaseFileName.c_str( ) );
-
-        // Initialize the transaction statements for the database
-        vInititializeTransactionStatement( );
     } // constructor
 
     /* Simplified constructor that does not require expect the specification of a working directory. */
@@ -402,7 +391,46 @@ class SQL_DB // deprecated : public CppSQLite3DB
                        const char* sTableName, // Database same
                        bool bInsertColumnIdAsPrimaryKey = true,
                        const std::vector<std::string>& vConstraints = {},
-                       const bool bWithoutRowId = false ); // method prototype
+                       const bool bWithoutRowId = false )
+    {
+        /* We drop the table in the case that it exists already. */
+        execDML( std::string( "DROP TABLE IF EXISTS " ).append( sTableName ).c_str( ) );
+
+        /* Generation of the table creation statement and its execution. */
+        std::string sTableCreationStatement = "CREATE TABLE IF NOT EXISTS ";
+        sTableCreationStatement.append( sTableName )
+            .append( bInsertColumnIdAsPrimaryKey ? " (id INTEGER PRIMARY KEY, " : " (" );
+
+        /* Create the sequence of column definitions in textual form */
+        for( size_t i = 0; i < xDatabaseColumns.size( ) - 1; i++ )
+            sTableCreationStatement.append( xDatabaseColumns[ i ] ).append( ", " );
+        sTableCreationStatement.append( xDatabaseColumns.back( ) );
+
+        size_t uiI = 0;
+        for( const std::string& sConstraint : vConstraints )
+        {
+            sTableCreationStatement.append( ", " )
+                .append( "CONSTRAINT " )
+                .append( sTableName )
+                .append( "_constraint_" )
+                .append( std::to_string( uiI ) )
+                .append( " " )
+                .append( sConstraint );
+            uiI++;
+        } // for
+
+        sTableCreationStatement.append( ")" );
+        if( bWithoutRowId )
+            sTableCreationStatement.append( " WITHOUT ROWID" );
+
+#ifdef SQL_VERBOSE
+        DEBUG( std::cout << "SQL table creation statement: " << sTableCreationStatement << std::endl; )
+#endif
+
+        /* Execute the table statement */
+        // std::cout << sTableCreationStatement << std::endl;
+        execDML( sTableCreationStatement.c_str( ) );
+    } // method
 
 #if 0
     /* We query a result table.
@@ -489,8 +517,33 @@ class SQL_DB // deprecated : public CppSQLite3DB
  * In the current version we automatically insert a NULL for the first column.
  * (We assume that the first column contains the primary key.)
  */
-std::string
-sCreateSQLInsertStatementText( const char* pcTableName, const unsigned int uiNumberOfArguemnts, bool = true );
+inline std::string sCreateSQLInsertStatementText( const char* pcTableName,
+                                           const unsigned int uiNumberOfArguemnts,
+                                           bool bFirstColumnAsNULL = true )
+{
+    std::string sInsertionStatement = "INSERT INTO ";
+    sInsertionStatement.append( pcTableName ).append( bFirstColumnAsNULL ? " VALUES (NULL, " : " VALUES (" );
+
+    /* Creation of comma separated list
+     */
+    for( unsigned int uiCounter = 0; uiCounter < uiNumberOfArguemnts; uiCounter++ )
+    {
+        sInsertionStatement.append( "@A" ).append( std::to_string( uiCounter ) );
+
+        if( uiCounter < uiNumberOfArguemnts - 1 )
+        {
+            sInsertionStatement.append( ", " );
+        } // if
+    } // for
+
+    sInsertionStatement.append( ")" );
+
+#ifdef SQL_VERBOSE
+    DEBUG( std::cout << "SQL insert statement: " << sInsertionStatement << std::endl; )
+#endif
+
+    return sInsertionStatement;
+} // function
 
 /* Be warned: After the database object has been gone don't use the insert anymore.
  * Design flaw: ALthough the database has been gone the insert object can still survive. :-((
@@ -1003,7 +1056,23 @@ class CppSQLiteExtImmediateTransactionContext
      */
     SQL_DB& rxDatabase;
 
+    // The start of an immediate transaction can boost the execution speed.
+    // We have to work with unique pointers over here, because the members of the type CppSQLiteExtStatement are unknown
+    // over here.
+    std::unique_ptr<CppSQLiteExtStatementParent> xStatementBeginTransaction = nullptr;
+    std::unique_ptr<CppSQLiteExtStatementParent> xStatementEndTransaction = nullptr;
+
+    /* Externally defined method that initialized the above attributes. */
+    void vInititializeTransactionStatement( SQL_DB& rxDatabase )
+    {
+        xStatementBeginTransaction = std::unique_ptr<CppSQLiteExtStatement>( new CppSQLiteExtStatement(
+            rxDatabase, "BEGIN IMMEDIATE TRANSACTION" ) ); // precompiled transaction statement
+        xStatementEndTransaction = std::unique_ptr<CppSQLiteExtStatement>(
+            new CppSQLiteExtStatement( rxDatabase, "END TRANSACTION" ) ); // precompiled transaction statement
+    } // method
+
   public:
+
     /* The constructor initializes the database and starts the transaction.
      */
     CppSQLiteExtImmediateTransactionContext( SQL_DB& rxDatabase ) : rxDatabase( rxDatabase )
@@ -1011,7 +1080,8 @@ class CppSQLiteExtImmediateTransactionContext
 #if DEBUG_LEVEL > 0
         std::cout << "Begin transaction" << std::endl;
 #endif
-        rxDatabase.xStatementBeginTransaction->execDML( );
+        vInititializeTransactionStatement( rxDatabase );
+        xStatementBeginTransaction->execDML( );
     } // constructor
 
     /* With the destruction of the object we end the transaction.
@@ -1021,40 +1091,71 @@ class CppSQLiteExtImmediateTransactionContext
 #if DEBUG_LEVEL > 0
         std::cout << "End transaction" << std::endl;
 #endif
-        rxDatabase.xStatementEndTransaction->execDML( );
+        xStatementEndTransaction->execDML( );
     } // destructor
 }; // class CppSQLiteExtImmediateTransactionContext
 
 
-template <typename TP_TYPE> std::string getSQLTypeName( )
-{
-    static_assert( std::is_base_of<SQL_BLOB, TP_TYPE>( ),
-                   "Database column type must be either a primitive or inherit from SQL_BLOB!" );
-    return "BLOB";
-} // method
+// this SHALL cause an erorr for unknown types
+template <typename TP_TYPE> std::string getSQLTypeName( );
 
 // list of valid types:
-template <> std::string getSQLTypeName<std::string>( );
-template <> std::string getSQLTypeName<bool>( );
+template <> inline std::string getSQLTypeName<std::string>( )
+{
+    return "TEXT";
+} // specialized function
+
+template <> inline std::string getSQLTypeName<bool>( )
+{
+    return "BOOLEAN";
+} // function
+
 // numeric:
 // full number:
 // sqLITE maps all numbers to INTEGER anyways?
 // signed
-template <> std::string getSQLTypeName<int8_t>( );
-template <> std::string getSQLTypeName<int16_t>( );
-template <> std::string getSQLTypeName<int32_t>( );
-template <> std::string getSQLTypeName<int64_t>( );
+template <> inline std::string getSQLTypeName<int8_t>( )
+{
+    return "INTEGER";
+} // function
+template <> inline std::string getSQLTypeName<int16_t>( )
+{
+    return "INTEGER";
+} // function
+template <> inline std::string getSQLTypeName<int32_t>( )
+{
+    return "INTEGER";
+} // function
+template <> inline std::string getSQLTypeName<int64_t>( )
+{
+    return "INTEGER";
+} // function
 
 // unsigned
-template <> std::string getSQLTypeName<uint8_t>( );
-template <> std::string getSQLTypeName<uint16_t>( );
-template <> std::string getSQLTypeName<uint32_t>( );
+template <> inline std::string getSQLTypeName<uint8_t>( )
+{
+    return "INTEGER";
+} // function
+template <> inline std::string getSQLTypeName<uint16_t>( )
+{
+    return "INTEGER";
+} // function
+template <> inline std::string getSQLTypeName<uint32_t>( )
+{
+    return "INTEGER";
+} // function
 
 // template <> std::string SQLTypeName<uint64_t>::name = "INTEGER"; <- this is too large for sqlite3
 
 // floating point:
-template <> std::string getSQLTypeName<double>( );
-template <> std::string getSQLTypeName<float>( );
+template <> inline std::string getSQLTypeName<double>( )
+{
+    return "DOUBLE";
+}
+template <> inline std::string getSQLTypeName<float>( )
+{
+    return "FLOAT";
+}
 
 
 /* C++ wrapper/interface for a SQL-table.

@@ -2,8 +2,8 @@
  * @file svJumpsFromSeeds.cpp
  * @author Markus Schmidt
  */
-#include "module/module.h"
 #include "module/svJumpsFromSeeds.h"
+#include "module/module.h"
 #include <cmath>
 #include <csignal>
 
@@ -204,8 +204,8 @@ nucSeqIndex SvJumpsFromSeeds::getKMerSizeForRectangle( libMA::Rectangle<nucSeqIn
     return std::min( w, h ) + 1;
 } // method
 
-nucSeqIndex SvJumpsFromSeeds::sampleKMerSizeFromRef( libMA::Rectangle<nucSeqIndex>& xArea,
-                                                     std::shared_ptr<Pack> pRefSeq )
+nucSeqIndex
+SvJumpsFromSeeds::sampleKMerSizeFromRef( libMA::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq )
 {
     if( pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.start( ) ) !=
         pRefSeq->bPositionIsOnReversStrand( xArea.xXAxis.end( ) - 1 ) )
@@ -470,6 +470,7 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
         .def_readwrite( "rectangles", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangles )
         .def_readwrite( "rectangles_fill", &libMA::SvJumpsFromSeeds::HelperRetVal::pvRectangleFillPercentage )
         .def_readwrite( "rectangle_ambiguity", &libMA::SvJumpsFromSeeds::HelperRetVal::pvRectangleReferenceAmbiguity );
+    py::bind_vector<std::vector<Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
     exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
         rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
             x.def( "commit", &SvJumpsFromSeeds::commit ) //
