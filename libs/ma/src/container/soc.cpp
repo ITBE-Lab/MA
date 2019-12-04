@@ -22,8 +22,6 @@ void exportSoC( py::module& rxPyModuleId )
         .def_readwrite( "rStartSoC", &SoCPriorityQueue::blub::rStartSoC )
         .def_readwrite( "rEndSoC", &SoCPriorityQueue::blub::rEndSoC );
     py::bind_vector<std::vector<SoCPriorityQueue::blub>>( rxPyModuleId, "nucSeqNucSeqIntervalVector", "docstr" );
-
-    py::bind_vector<std::vector<double>>( rxPyModuleId, "doubleVector", "docstr" );
 #endif
     py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "seedVector", "docstr" );
     // export the SoCPriorityQueue class

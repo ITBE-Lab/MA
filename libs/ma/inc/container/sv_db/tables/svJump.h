@@ -54,7 +54,7 @@ class SvJumpTable : public TP_SV_JUMP_TABLE
     {
         // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
         // index intended for the sweep over the start of all sv-rectangles
-        // interestingly sv_jump_run_id nneds to be part of the index even if it's in the condition...
+        // interestingly sv_jump_run_id needs to be part of the index even if it's in the condition...
         pDatabase->execDML( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" + std::to_string( uiRun ) +
                               " ON sv_jump_table"
                               "(sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"

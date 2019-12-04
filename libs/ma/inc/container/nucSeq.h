@@ -563,7 +563,7 @@ class NucSeq : public Container
     /** The symbol on some position in textual form.
      * We count starting from 0.
      */
-    inline char charAt( nucSeqIndex uxPosition )
+    inline char charAt( nucSeqIndex uxPosition ) const
     {
         if( uxPosition >= uiSize )
         {
@@ -642,7 +642,7 @@ class NucSeq : public Container
         return ret;
     } // function
 
-    std::string fromTo( nucSeqIndex uiStart, nucSeqIndex uiEnd )
+    std::string fromTo( nucSeqIndex uiStart, nucSeqIndex uiEnd ) const
     {
         std::string ret = "";
         for( nucSeqIndex i = uiStart; i < uiEnd && i < length( ); i++ )

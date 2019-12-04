@@ -21,7 +21,7 @@ extern int libMA::defaults::iMissMatch;
 
 void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended )
 {
-
+    return; //@todo fix 'n' and other symbols in reference...
     static const char chars[ 5 ] = {'A', 'C', 'G', 'T', 'N'};
     for( auto& rSeed : vContent )
     {

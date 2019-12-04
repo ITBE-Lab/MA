@@ -225,15 +225,6 @@ class ComputeCoverage : public Module<Container, false, SuffixArrayInterface, Nu
     std::vector<double> vEstimatedCoverageList;
     std::shared_ptr<Pack> pPack;
 
-    /**
-     * @brief Initialize a BinarySeeding Module
-     * @details
-     * if bLrExtension is True our extension scheme is used,
-     * otherwise the extension scheme by Li et Al. is used.
-     * Our approach is faster and computes seeds of higher quality.
-     * However Li et Al.s approach will increase the overall accuracy of the alignment
-     * for short queries.
-     */
     ComputeCoverage( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iCallerId,
                      int64_t iSequencerId, std::shared_ptr<Pack> pPack )
         : pDb( pDb ),

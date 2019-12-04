@@ -42,6 +42,14 @@ def render_reads(self):
         "y": [],
         "category": []
     }
+    read_ambiguous_reg_dict = {
+        "l": [],
+        "r": [],
+        "t": [],
+        "b": [],
+        "f": [],
+        "s": []
+    }
     read_id_n_cols = {}
     col_ids = []
     all_col_ids = []
@@ -86,24 +94,6 @@ def render_reads(self):
                 filtered_mems[idx].start_ref += int(self.xs)
                 layer_of_seeds.append(-1)
             seeds.extend(filtered_mems)
-        for rectangle, fill, seed_sample_size in zip(rectangles, fill_of_rectangles, seed_sample_sizes):
-            color = Plasma256[min(seed_sample_size, 255)]
-            if self.selected_read_id == read_id:
-                initial_rect_plot_data["l"].append(rectangle.x_axis.start)
-                initial_rect_plot_data["b"].append(rectangle.y_axis.start)
-                initial_rect_plot_data["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
-                initial_rect_plot_data["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
-                initial_rect_plot_data["f"].append(fill)
-                initial_rect_plot_data["c"].append(color)
-                initial_rect_plot_data["s"].append(seed_sample_size)
-            # if
-            read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
-            read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
-            read_plot_rects[read_id]["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
-            read_plot_rects[read_id]["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
-            read_plot_rects[read_id]["f"].append(fill)
-            read_plot_rects[read_id]["c"].append(color)
-            read_plot_rects[read_id]["s"].append(seed_sample_size)
         # for
         end_column = []
         seeds_n_idx = list(enumerate(sorted([(x, y) for x, y in zip(seeds, layer_of_seeds)],
@@ -168,10 +158,41 @@ def render_reads(self):
         else:
             curr_col_id = category_counter + (len(end_column)-1)/2
         col_ids.append(curr_col_id)
+        for rectangle, fill, seed_sample_size in zip(rectangles, fill_of_rectangles, seed_sample_sizes):
+            color = Plasma256[min(seed_sample_size, 255)]
+            if self.selected_read_id == read_id:
+                initial_rect_plot_data["l"].append(rectangle.x_axis.start)
+                initial_rect_plot_data["b"].append(rectangle.y_axis.start)
+                initial_rect_plot_data["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
+                initial_rect_plot_data["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
+                initial_rect_plot_data["f"].append(fill)
+                initial_rect_plot_data["c"].append(color)
+                initial_rect_plot_data["s"].append(seed_sample_size)
+            # if
+            read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
+            read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
+            read_plot_rects[read_id]["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
+            read_plot_rects[read_id]["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
+            read_plot_rects[read_id]["f"].append(fill)
+            read_plot_rects[read_id]["c"].append(color)
+            read_plot_rects[read_id]["s"].append(seed_sample_size)
+            if seed_sample_size > 10:
+                read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
+                read_ambiguous_reg_dict["b"].append(category_counter - 0.5)
+                read_ambiguous_reg_dict["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
+                read_ambiguous_reg_dict["t"].append(category_counter + len(end_column) - 0.5)
+                read_ambiguous_reg_dict["f"].append(fill)
+                read_ambiguous_reg_dict["s"].append(seed_sample_size)
         category_counter += len(end_column) + 2
         read_id_n_cols[curr_col_id] = read_id
     if len(read_dict["c"]) < self.max_num_ele or self.render_mems == 1:
         read_source = ColumnDataSource(read_dict)
+        # render ambiguous regions on top and left
+        self.d_plot[1].quad(left="l", bottom="b", right="r", top="t", fill_alpha=0.5,
+                            fill_color="red", line_width=0, source=read_ambiguous_reg_dict, name="hover6")
+        self.l_plot[1].quad(left="b", bottom="l", right="t", top="r", fill_alpha=0.5,
+                            fill_color="red", line_width=0, source=read_ambiguous_reg_dict, name="hover6")
+        # render seeds on top and left
         self.l_plot[1].rect(x="category", y="center", width=1, height="size",
                             fill_color="c", line_width=0, source=read_source, name="hover5")
         self.d_plot[1].rect(y="category", x="center", height=1, width="size",

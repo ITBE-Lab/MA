@@ -5,10 +5,11 @@
 #pragma once
 
 #include "container/squeezedVector.h"
-#include "container/sv_db/svDb.h"
 #include "container/sv_db/query_objects/callInserter.h"
 #include "container/sv_db/query_objects/fetchSvJump.h"
+#include "container/sv_db/svDb.h"
 #include "module/module.h"
+#include "util/statisticSequenceAnalysis.h"
 #include <cmath>
 
 #define ADDITIONAL_DEBUG 0
@@ -223,6 +224,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                              uiCenterStripDown );
 
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+        return pRet;
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
         std::set<int64_t> xVisitedStart;
@@ -602,8 +604,7 @@ class AbstractFilter
             std::cout << "~" << sName << ": filter kept and eliminated " << uiFilterKept << " and "
                       << uiFilterTotal - uiFilterKept << " elements respectiveley.\n\tThat's "
                       << ( ( 1000 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% and "
-                      << 100.0 - ( ( 1000* uiFilterKept ) / uiFilterTotal ) / 10.0 << "% respectiveley."
-                      << std::endl;
+                      << 100.0 - ( ( 1000 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% respectiveley." << std::endl;
     } // deconstructor
 #endif
 }; // class
@@ -787,6 +788,80 @@ class FilterLowCoverageCalls
 #endif
         // if the call has enough coverage we keep it
         return pRet;
+    } // method
+}; // class
+
+/**
+ * @brief compute the ambiguity of a call via sampling
+ * @details
+ * @todo At the moment the result of this is saved in the coverage column. \n
+ * This samples how much over the statistical value the k-mer size needs to be, so that all k-mers around the call
+ * are unique. \n
+ * We consider 4 different sections on the reference:
+ *  - To the 'left' of the 'from' coordinate of the call (on the 2d plane: left)
+ *  - To the 'right' of the 'from' coordinate of the call (on the 2d plane: right)
+ *  - To the 'left' of the 'to' coordinate of the call (on the 2d plane: bottom)
+ *  - To the 'right' of the 'to' coordinate of the call (on the 2d plane: top)
+ * We pick the maximum of two pairs, where the pairing is decided by wether or not the call switches strand:
+ *  - if we switch strands we have to combine one 'left' with one 'right'
+ *  - if we don't switch strand we have to match the two 'left's and two 'right's
+ *  - we always have to pick one 'from' and one 'to' together.
+ */
+class ComputeCallAmbiguity
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
+{
+  public:
+    ComputeCallAmbiguity( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<NucSeq> getRegion( nucSeqIndex uiPos, bool bLeftDirection, std::shared_ptr<Pack> pPack )
+    {
+        nucSeqIndex uiDistance = 20;
+        auto uiSeqId = pPack->uiSequenceIdForPosition( uiPos );
+        if( bLeftDirection )
+        {
+            nucSeqIndex iStartOfContig = pPack->startOfSequenceWithId( uiSeqId );
+            nucSeqIndex uiStart = uiPos > iStartOfContig + uiDistance ? uiPos - uiDistance : iStartOfContig;
+            return pPack->vExtract( uiStart, uiPos );
+        } // if
+        else
+        {
+            nucSeqIndex iEndOfContig = pPack->endOfSequenceWithId( uiSeqId );
+            nucSeqIndex uiEnd = uiPos + uiDistance < iEndOfContig ? uiPos + uiDistance : iEndOfContig;
+            return pPack->vExtract( uiPos, uiEnd );
+        } // else
+    } // method
+
+    nucSeqIndex sampleAmbiguity( std::shared_ptr<NucSeq> pSeqA, std::shared_ptr<NucSeq> pSeqB )
+    {
+        // + 1 to avoind division by zero error
+        return sampleKMerSize( *pSeqA, *pSeqB, 0.001 ) + 1;
+    } // method
+
+    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pPack )
+    {
+        for( auto pCall : pCalls->vContent )
+        {
+            auto pLeftFrom = getRegion( pCall->uiFromStart + pCall->uiFromSize, true, pPack );
+            auto pRightFrom = getRegion( pCall->uiFromStart, false, pPack );
+            auto pLeftTo = getRegion( pCall->uiToStart + pCall->uiToSize, true, pPack );
+            auto pRightTo = getRegion( pCall->uiToStart, false, pPack );
+
+            // if we switch strand we have to compare forward and reverse strands
+            if(pCall->bSwitchStrand)
+            {
+                pLeftTo->vReverseAll();
+                pLeftTo->vSwitchAllBasePairsToComplement();
+                pRightTo->vReverseAll();
+                pRightTo->vSwitchAllBasePairsToComplement();
+            } // if
+
+            pCall->uiCoverage = std::max( sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo ),
+                                          sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo ) );
+        } // for
+        // if the call has enough coverage we keep it
+        return pCalls;
     } // method
 }; // class
 

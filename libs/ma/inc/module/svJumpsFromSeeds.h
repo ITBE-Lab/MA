@@ -12,6 +12,7 @@
 #include "module/hashMapSeeding.h"
 #include "module/module.h"
 #include "module/needlemanWunsch.h"
+#include "util/statisticSequenceAnalysis.h"
 
 namespace libMA
 {
@@ -35,7 +36,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const size_t uiMinDistDummy;
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNW;
-    nucSeqIndex uiMaxAddSeedSize = 20;
+    nucSeqIndex uiMaxAddSeedSize = 10;
     // @todo there should be a container for the current sequencer run;
     // this way this module would be free from keeping internal data and could be used for multiple instances in the
     // graph...
@@ -102,21 +103,13 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                                                                     nucSeqIndex uiQEnd,
                                                                                     std::shared_ptr<Pack> pRefSeq );
 
-    /** @brief Determine the appropriate k-mers size for a "rectangle"
-     * @details The formula used over here is:
-     * 1 - t <= (1 - 1/4^k)^( (w-k+1)*(h-k+1) )
-     * where (1 - 1/4^k) is the probability that two k-sized nucleotide sequences do not match.
-     *	     (w-k+1)*(h-k+1) ) is the number of possible K-mer combinations within the rectangle.
-     */
-    nucSeqIndex getKMerSizeForRectangle( Rectangle<nucSeqIndex>& rRect );
-
     /**
      * @brief computes how much percent of the rectangles xRects is filled by seeds in pvSeeds.
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -130,13 +123,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     } // method
 
     /**
-     * @brief returns the size at which all k-mer's on the reference interval of xArea are unique.
-     * @details
-     * Currently implemented inefficiently.
-     */
-    nucSeqIndex sampleKMerSizeFromRef( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<Pack> pRefSeq );
-
-    /**
      * @brief computes all seeds within xArea.
      * @details
      * computes all SvJumpsFromSeeds::getKMerSizeForRectangle( xArea ) sized seeds within xArea and appends
@@ -144,7 +130,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * @note This is a helper function. Use the other computeSeeds.
      */
     void computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
-                       std::shared_ptr<Seeds> rvRet );
+                       std::shared_ptr<Seeds> rvRet, std::vector<size_t>* pvRectangleReferenceAmbiguity );
     /**
      * @brief computes all seeds within the given areas.
      * @details
@@ -153,7 +139,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      */
     std::shared_ptr<Seeds>
     computeSeeds( std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>>& xAreas,
-                  std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq );
+                  std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+                  std::vector<size_t>* pvRectangleReferenceAmbiguity );
 
     /**
      * @brief computes the SV jumps between the two given seeds.

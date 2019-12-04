@@ -202,6 +202,8 @@ hover6 = HoverTool(tooltips=[("left", "@l"), ("bottom", "@b"), ("right", "@r"), 
                              ("fill percentage", "@f"), ("additional seed size", "@s")],
                    names=['hover6'], name="Hover rects")
 read_plot.add_tools(hover6)
+l_read_plot.add_tools(hover6)
+d_read_plot.add_tools(hover6)
 
 radio_group = RadioGroup(
     labels=["Link read plot to x-range", "Link read plot to y-range"], active=range_link)
