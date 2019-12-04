@@ -97,8 +97,10 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * If the rectangle's width is more than xMaxSizeReseed (see settings) this will return
      * two rectangles using case 2; one for each seed.
      */
-    std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>>
-    getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd, nucSeqIndex uiRSize );
+    std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>> getPositionsForSeeds( Seed& rLast, Seed& rNext,
+                                                                                    nucSeqIndex uiQStart,
+                                                                                    nucSeqIndex uiQEnd,
+                                                                                    std::shared_ptr<Pack> pRefSeq );
 
     /** @brief Determine the appropriate k-mers size for a "rectangle"
      * @details The formula used over here is:
@@ -113,8 +115,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
