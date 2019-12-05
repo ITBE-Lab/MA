@@ -753,7 +753,7 @@ class Presetting : public ParameterSetBase
           xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 10, checkPositiveValue ),
           xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
           xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
-          xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
+          xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, false ),
           xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),

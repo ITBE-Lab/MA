@@ -224,7 +224,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                              uiCenterStripDown );
 
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
-        return pRet;
+        //return pRet;
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
         std::set<int64_t> xVisitedStart;

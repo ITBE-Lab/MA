@@ -71,6 +71,6 @@ def append_nuc_type(dict_, nuc, pos, pos_key):
         dict_["c"].append("yellow")
         dict_["i"].append("T @" + str(pos))
     else:
-        dict_["c"].append("lightgreen")
+        dict_["c"].append("lightgray")
         dict_["i"].append(nuc)
     dict_[pos_key].append(pos + 0.5)

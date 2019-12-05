@@ -9,13 +9,19 @@
 
 using namespace libMA;
 
-
+// @todo this whole function can be simplified a lot
 std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>>
 SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
                                         std::shared_ptr<Pack> pRefSeq )
 {
     // seeds are overlapping on query -> rectange size zero
-    if( rNext.start( ) < rLast.end( ) )
+    if(&rLast != &xDummySeed && &rNext != &xDummySeed && rNext.start( ) < rLast.end( ) )
+        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+    if(&rLast != &xDummySeed && rLast.end( ) >= uiQEnd)
+        return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+    if(&rNext != &xDummySeed && rNext.start( ) <= uiQStart)
         return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
                                libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
@@ -30,9 +36,10 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             int64_t iStartOfContig =
                 pRefSeq->startOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rNext.start_ref( ) ) ); // inclusive
             // estimate size fo rectangle based on query position of existing seed
-            iLastRef =
-                std::max( iStartOfContig, (int64_t)rNext.start_ref( ) -
-                                              ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor ) );
+            int64_t iQueryDistance = ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor );
+            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) )
+                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( );
+            iLastRef = std::max( iStartOfContig, (int64_t)rNext.start_ref( ) - iQueryDistance );
         } // if
         else
         {
@@ -40,9 +47,10 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             int64_t iEndOfContig =
                 pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rNext.start_ref( ) + 1 ) ); // exclusive
             // estimate size fo rectangle based on query position of existing seed
-            iLastRef = std::min( iEndOfContig,
-                                 (int64_t)rNext.start_ref( ) +
-                                     ( int64_t )( ( 1 + rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor ) );
+            int64_t iQueryDistance = ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor );
+            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) )
+                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( );
+            iLastRef = std::min( iEndOfContig, (int64_t)rNext.start_ref( ) + 1 + iQueryDistance );
         } // else
     } // if
     else if( rLast.bOnForwStrand )
@@ -50,7 +58,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     else
         iLastRef = (int64_t)rLast.start_ref( ) - rLast.size( ) + 1;
 
-    if( &rNext == &xDummySeed ) // @todo this is not working...
+    if( &rNext == &xDummySeed )
     {
         if( rLast.bOnForwStrand )
         {
@@ -58,9 +66,10 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             int64_t iEndOfContig =
                 pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rLast.end_ref( ) ) ); // exclusive
             // estimate size fo rectangle based on query position of existing seed
-            iNextRef = std::min( iEndOfContig,
-                                 (int64_t)rLast.end_ref( ) +
-                                     ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor ) );
+            int64_t iQueryDistance = ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor );
+            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) )
+                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( );
+            iNextRef = std::min( iEndOfContig, (int64_t)rLast.end_ref( ) + iQueryDistance );
         } // if
         else
         {
@@ -68,9 +77,11 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             int64_t iStartOfContig = pRefSeq->startOfSequenceWithId(
                 pRefSeq->uiSequenceIdForPosition( rLast.start_ref( ) + 1 - rLast.size( ) ) ); // inclusive
             // estimate size fo rectangle based on query position of existing seed
-            iNextRef = std::max( iStartOfContig, (int64_t)rLast.start_ref( ) + 1 -
-                                                     ( int64_t )( rLast.size( ) + ( uiQEnd - rLast.end( ) ) *
-                                                                                      dExtraSeedingAreaFactor ) );
+            int64_t iQueryDistance = ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor );
+            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) )
+                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( );
+            iNextRef = std::max( iStartOfContig,
+                                 (int64_t)rLast.start_ref( ) + 1 - ( int64_t )( rLast.size( ) + iQueryDistance ) );
         } // else
     } // if
     else if( rNext.bOnForwStrand )
@@ -78,18 +89,31 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     else
         iNextRef = (int64_t)rNext.start_ref( ) + 1;
 
-    int64_t iRefStart = std::min( iLastRef, iNextRef );
-    int64_t iRefEnd = std::max( iLastRef, iNextRef );
-    if( iRefStart == iRefEnd )
+    if( iLastRef == iNextRef )
         return std::make_pair( libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
                                libMA::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+    if( &rLast != &xDummySeed && &rNext != &xDummySeed )
+    {
+        int64_t iRefSize;
+        if( rLast.bOnForwStrand && rNext.bOnForwStrand )
+            iRefSize = iNextRef - iLastRef;
+        else if( !rLast.bOnForwStrand && !rNext.bOnForwStrand )
+            iRefSize = iLastRef - iNextRef;
+        else
+            iRefSize = -1; // seeds on different strands always need separate rectangles.
+
+        if( iRefSize > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) || // check for too large rectangle
+            iRefSize < 0 || // check for seeds pointing the wrong direction
+            // check for rectangle bridging multiple contigs
+            pRefSeq->uiSequenceIdForPosition( iLastRef ) != pRefSeq->uiSequenceIdForPosition( iNextRef - 1 ) )
+            // if the rectangle between the seeds is too large or spans over tow contigs, split it in two
+            return std::make_pair(
+                getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), pRefSeq ).first,
+                getPositionsForSeeds( xDummySeed, rNext, rLast.end( ), rNext.start( ), pRefSeq ).first );
+    }
+    int64_t iRefStart = std::min( iLastRef, iNextRef );
+    int64_t iRefEnd = std::max( iLastRef, iNextRef );
     int64_t iRefSize = iRefEnd - iRefStart;
-    if( &rLast != &xDummySeed && &rNext != &xDummySeed &&
-        ( iRefSize > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) ||
-          pRefSeq->uiSequenceIdForPosition( iRefStart ) != pRefSeq->uiSequenceIdForPosition( iRefEnd - 1 ) ) )
-        // if the rectangle between the seeds is too large or spans over tow contigs, split it in two
-        return std::make_pair( getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), pRefSeq ).first,
-                               getPositionsForSeeds( xDummySeed, rNext, rLast.end( ), rNext.start( ), pRefSeq ).first );
 
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
@@ -273,7 +297,7 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive(
     } // if
 
     // compute a SvJump and terminate the recursion
-    if( &rLast == &xDummySeed || &rNext == &xDummySeed )
+    if( ( &rLast == &xDummySeed || &rNext == &xDummySeed ) && bDoDummyJumps )
     {
         // we have to insert a dummy jump if the seed is far enough from the end/start of the query
         if( &rNext != &xDummySeed && rNext.start( ) > uiMinDistDummy )
