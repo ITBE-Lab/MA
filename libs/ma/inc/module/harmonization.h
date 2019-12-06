@@ -181,9 +181,8 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
-                                                     std::shared_ptr<NucSeq> pQuery,
-                                                     std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED
+    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -725,6 +724,75 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
         for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
             vRet.push_back( execute( vIn[ uiI ] ) );
         return vRet;
+    } // method
+}; // class
+#endif
+
+#if 0
+/**
+ * @brief Filters a set of seeds removing all parlindrome seeds
+ * @details
+ * parlindrome seeds are two seeds that are crossing and on opposite strands.
+ * @ingroup module
+ */
+class ParlindromeFilter : public Module<Seeds, false, Seeds>
+{
+  public:
+    ParlindromeFilter( const ParameterSetManager& rParameters )
+    {} // default constructor
+    ParlindromeFilter( )
+    {} // default constructor
+
+    /**
+     * @brief The delta value of seeds.
+     * @details
+     * uses more complicated formula, so that forward strand and reverse strand seed's delta values are not offset
+     */
+    int64_t deltaValue( Seed& rSeed )
+    {
+        if( rSeed.bOnForwStrand )
+            return rSeed.start_ref( ) - (int64_t)rSeed.start( );
+        else
+            // @todo this is wrong
+            return ( rSeed.start_ref( ) - rSeed.size( ) + 1 ) - (int64_t)rSeed.start( );
+    } // method
+
+    void incIterator( Seeds::iterator& rIt, Seeds::iterator& rEnd, bool bToForwardSeed, bool bDoInitialInc = true )
+    {
+        if( bDoInitialInc )
+            rIt++;
+        while( rIt != rEnd && rIt->bOnForwStrand != bToForwardSeed )
+            rIt++;
+    } // method
+
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+        std::sort( pSeeds->begin( ), pSeeds->end( ), [&]( Seed& rA, Seed& rB ) -> bool {
+            if( this->deltaValue( rA ) == this->deltaValue( rB ) )
+            {
+                if( rA.start( ) == rB.start( ) )
+                    return rA.size( ) < rB.size( );
+                return rA.start( ) < rB.start( );
+            } // if
+            return this->deltaValue( rA ) < this->deltaValue( rB );
+        } );
+        auto xForwIt = pSeeds->begin( );
+        incIterator( xForwIt, pSeeds->end( ), true, false );
+        auto xRevIt = pSeeds->begin( );
+        incIterator( xRevIt, pSeeds->end( ), false, false );
+        while( xForwIt != pSeeds->end( ) && xRevIt != pSeeds->end( ) )
+        {
+            if( deltaValue( *xForwIt ) < deltaValue( *xRevIt ) )
+                incIterator( xForwIt, pSeeds->end( ), true );
+            else if( deltaValue( *xForwIt ) > deltaValue( *xRevIt ) )
+                incIterator( xRevIt, pSeeds->end( ), false );
+            else
+            {
+                
+            } // else
+        } // while
+        return pRet;
     } // method
 }; // class
 #endif
