@@ -41,7 +41,8 @@ for (var j = 0; j < read_source.data.r_id.length; j++) {
 
         for (var j2 = 0; j2 < read_source.data.r_id.length; j2++) {
             if (j2 == j)
-                read_source.data.c[j2] = read_source.data.f[j] ? "green" : "purple";
+                read_source.data.c[j2] = read_source.data.parlindrome[j2] ? "red" : 
+                                                                   (read_source.data.f[j2] ? "green" : "purple");
             else
                 read_source.data.c[j2] = "lightgrey";
             // copy over to read viewer
@@ -71,7 +72,8 @@ for (var outer_j = 0; outer_j < read_source.data.r_id.length; outer_j++) {
     if (Math.abs(read_source.data.category[outer_j] - curr_y) <= 1 / 2) {
         for (var j = 0; j < read_source.data.r_id.length; j++) {
             if (read_source.data.r_id[j] == read_source.data.r_id[outer_j]) {
-                read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                read_source.data.c[j] = read_source.data.parlindrome[j] ? "red" : 
+                                                                        (read_source.data.f[j] ? "green" : "purple");
                 // copy over to read viewer
                 for (var data_list_name in read_source.data)
                     read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j]);

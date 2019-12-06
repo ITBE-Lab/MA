@@ -786,6 +786,11 @@ void exportHarmonization( py::module& rxPyModuleId )
         x.def_readwrite( "num_mm", &FilterToUnique::uiNumMissmatchesAllowed );
     } );
 
+    exportModule<ParlindromeFilter>( rxPyModuleId, "ParlindromeFilter", []( auto&& x ) {
+        x.def_readwrite( "parlindromes", &ParlindromeFilter::pParlindromes )
+            .def( "keep_parlindromes", &ParlindromeFilter::keepParlindromes );
+    } );
+
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 
     py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,

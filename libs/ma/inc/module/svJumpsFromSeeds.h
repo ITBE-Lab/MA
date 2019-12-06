@@ -9,6 +9,7 @@
 #include "container/svJump.h"
 #include "container/sv_db/svDb.h"
 #include "module/binarySeeding.h"
+#include "module/harmonization.h"
 #include "module/hashMapSeeding.h"
 #include "module/module.h"
 #include "module/needlemanWunsch.h"
@@ -36,6 +37,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const size_t uiMinDistDummy;
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNW;
+    ParlindromeFilter xParlindromeFilter;
     nucSeqIndex uiMaxAddSeedSize = 10;
     // @todo there should be a container for the current sequencer run;
     // this way this module would be free from keeping internal data and could be used for multiple instances in the
@@ -70,6 +72,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
           xSeedLumper( rParameters ),
           xNW( rParameters ),
+          xParlindromeFilter( rParameters ),
           iSequencerId( iSequencerId ),
           pDb( pDb ),
           xCoverageInserter( iSequencerId, pRefSeq, pDb )
@@ -122,6 +125,20 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                      xRects.second.xXAxis.size( ) * xRects.second.xYAxis.size( ) );
     } // method
 
+    /// @brief this class exists mereley to expose the return value of execute_helper_py to python
+    class HelperRetVal
+    {
+      public:
+        std::shared_ptr<Seeds> pSeeds;
+        std::vector<size_t> vLayerOfSeeds;
+        std::vector<bool> vParlindromeSeed;
+        std::vector<Rectangle<nucSeqIndex>> vRectangles;
+        std::vector<double> vRectangleFillPercentage;
+        std::vector<size_t> vRectangleReferenceAmbiguity;
+
+        HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ){};
+    }; // class
+
     /**
      * @brief computes all seeds within xArea.
      * @details
@@ -130,7 +147,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * @note This is a helper function. Use the other computeSeeds.
      */
     void computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
-                       std::shared_ptr<Seeds> rvRet, std::vector<size_t>* pvRectangleReferenceAmbiguity );
+                       std::shared_ptr<Seeds> rvRet, HelperRetVal* pOutExtra );
     /**
      * @brief computes all seeds within the given areas.
      * @details
@@ -139,8 +156,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      */
     std::shared_ptr<Seeds>
     computeSeeds( std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>>& xAreas,
-                  std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
-                  std::vector<size_t>* pvRectangleReferenceAmbiguity );
+                  std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq, HelperRetVal* pOutExtra );
 
     /**
      * @brief computes the SV jumps between the two given seeds.
@@ -152,11 +168,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      */
     void makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
                                         std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet,
-                                        size_t uiLayer, std::shared_ptr<Seeds> pSeeds,
-                                        std::vector<size_t>* pvLayerOfSeeds,
-                                        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut,
-                                        std::vector<double>* pvRectangleFillPercentage,
-                                        std::vector<size_t>* pvRectangleReferenceAmbiguity );
+                                        size_t uiLayer, HelperRetVal* pOutExtra );
 
     /**
      * @brief computes all SV jumps between the given seeds.
@@ -166,23 +178,14 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      *
      * Uses makeJumpsByReseedingRecursive().
      */
-    std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute_helper(
-        std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<FMIndex> pFM_index,
-        std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Seeds> pSeeds, std::vector<size_t>* pvLayerOfSeeds,
-        std::vector<Rectangle<nucSeqIndex>>* pvRectanglesOut, std::vector<double>* pvRectangleFillPercentage,
-        std::vector<size_t>* pvRectangleReferenceAmbiguity );
-
-    /// @brief this class exists mereley to expose the return value of execute_helper_py to python
-    class HelperRetVal
-    {
-      public:
-        std::vector<size_t> vLayerOfSeeds;
-        std::vector<Rectangle<nucSeqIndex>> vRectangles;
-        std::vector<double> pvRectangleFillPercentage;
-        std::vector<size_t> pvRectangleReferenceAmbiguity;
-
-        HelperRetVal( ){};
-    }; // class
+    std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments,
+                                                                      std::shared_ptr<Pack>
+                                                                          pRefSeq,
+                                                                      std::shared_ptr<FMIndex>
+                                                                          pFM_index,
+                                                                      std::shared_ptr<NucSeq>
+                                                                          pQuery,
+                                                                      HelperRetVal* pOutExtra );
 
     inline HelperRetVal execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
                                            std::shared_ptr<Pack>
@@ -190,13 +193,10 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                            std::shared_ptr<FMIndex>
                                                pFM_index,
                                            std::shared_ptr<NucSeq>
-                                               pQuery,
-                                           std::shared_ptr<Seeds>
-                                               pSeeds )
+                                               pQuery )
     {
         HelperRetVal xRet;
-        execute_helper( pSegments, pRefSeq, pFM_index, pQuery, pSeeds, &xRet.vLayerOfSeeds, &xRet.vRectangles,
-                        &xRet.pvRectangleFillPercentage, &xRet.pvRectangleReferenceAmbiguity );
+        execute_helper( pSegments, pRefSeq, pFM_index, pQuery, &xRet );
         return xRet;
     } // method
 

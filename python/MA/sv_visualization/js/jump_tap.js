@@ -30,7 +30,8 @@ for (var i = 0; i < srcs.length; i++)
                         read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
                     )
                 )
-                    read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+                    read_source.data.c[j] = read_source.data.parlindrome[j] ? "red" : 
+                                                                        (read_source.data.f[j] ? "green" : "purple");
             window.selected_read_id = src.data.r[idx];
             found_one = true;
         }
@@ -41,7 +42,8 @@ for (var i = 0; i < srcs.length; i++)
 if (!found_one)
 {
     for (var j = 0; j < read_source.data.r_id.length; j++)
-        read_source.data.c[j] = read_source.data.f[j] ? "green" : "purple";
+        read_source.data.c[j] = read_source.data.parlindrome[j] ? "red" : 
+                                                                   (read_source.data.f[j] ? "green" : "purple");
     for (var i = 0; i < srcs.length; i++)
     {
         src = srcs[i];
@@ -52,7 +54,7 @@ if (!found_one)
 else
 {
     for (var j = 0; j < read_source.data.r_id.length; j++)
-        if(read_source.data.r_id[j] == window.selected_read_id)
+        if (read_source.data.r_id[j] == window.selected_read_id)
             for (var data_list_name in read_source.data)
                 read_plot_line.data[data_list_name].push(read_source.data[data_list_name][j]);
     // copy nucleotides over to read plot

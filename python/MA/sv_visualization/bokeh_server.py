@@ -193,7 +193,7 @@ for x in active_tools[2].split(","):
 plot.toolbar.active_inspect = l
 
 hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q, r, l", "@q, @r, @l"), ("index", "@idx"),
-                             ("reseeding-layer", "@layer")],
+                             ("reseeding-layer", "@layer"), ("parlindrome-filtered", "@parlindrome")],
                    names=['hover5'], name="Hover reads")
 l2_plot.add_tools(hover5)
 d2_plot.add_tools(hover5)

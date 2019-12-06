@@ -22,6 +22,7 @@ def render_reads(self):
         "c": [],
         "f": [],
         "layer": [],
+        "parlindrome": [],
         "x": [],
         "y": [],
         "category": []
@@ -38,6 +39,7 @@ def render_reads(self):
         "c": [],
         "f": [],
         "layer": [],
+        "parlindrome": [],
         "x": [],
         "y": [],
         "category": []
@@ -72,10 +74,12 @@ def render_reads(self):
             if self.selected_read_id == read_id:
                 append_nuc_type(initial_l_data, nuc, y, "y")
         segments = seeder.execute(self.fm_index, read)
-        seeds = libMA.Seeds()
-        helper_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read, seeds)
+        # execute_helper is not threadsave 
+        helper_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read)
+        seeds = helper_ret.seeds
         layer_of_seeds = helper_ret.layer_of_seeds
         rectangles = helper_ret.rectangles
+        parlindromes = helper_ret.parlindrome
         fill_of_rectangles = helper_ret.rectangles_fill
         seed_sample_sizes = helper_ret.rectangle_ambiguity
         if self.render_mems == 1 and self.selected_read_id == read_id:
@@ -96,10 +100,10 @@ def render_reads(self):
             seeds.extend(filtered_mems)
         # for
         end_column = []
-        seeds_n_idx = list(enumerate(sorted([(x, y) for x, y in zip(seeds, layer_of_seeds)],
+        seeds_n_idx = list(enumerate(sorted([(x, y, z) for x, y, z in zip(seeds, layer_of_seeds, parlindromes)],
                                             key=lambda x: x[0].start)))
         max_seed_size = max(seed.size for seed in seeds)
-        for idx, (seed, layer) in sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref):
+        for idx, (seed, layer, parlindrome) in sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref):
             seed_size = seed.size - 1
             if seed.on_forward_strand:
                 read_dict["center"].append(seed.start_ref + seed.size/2)
@@ -108,6 +112,8 @@ def render_reads(self):
                 else:
                     if layer == -1:
                         read_dict["c"].append(Plasma256[ (255 * seed_size) // max_seed_size])
+                    elif parlindrome:
+                        read_dict["c"].append("red")
                     else:
                         read_dict["c"].append("green")
                 read_dict["r"].append(seed.start_ref)
@@ -122,6 +128,8 @@ def render_reads(self):
                 else:
                     if layer == -1:
                         read_dict["c"].append(Plasma256[ (255 * seed_size) // max_seed_size])
+                    elif parlindrome:
+                        read_dict["c"].append("red")
                     else:
                         read_dict["c"].append("purple")
                 read_dict["r"].append(seed.start_ref - seed.size + 1)
@@ -146,6 +154,7 @@ def render_reads(self):
             read_dict["q"].append(seed.start)
             read_dict["idx"].append(idx)
             read_dict["layer"].append(layer)
+            read_dict["parlindrome"].append(parlindrome)
             read_dict["f"].append(seed.on_forward_strand)
             read_dict["category"].append(
                 category_counter + curr_column)
