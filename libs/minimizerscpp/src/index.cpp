@@ -422,6 +422,17 @@ mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const cha
  * index I/O *
  *************/
 
+// by markus
+int mm_idx_dump(const char* sIndexName, const mm_idx_t *mi)
+{
+    auto* fp_out = fopen( sIndexName, "wb" );
+    if( fp_out == 0 )
+        return -11;
+    mm_idx_dump( fp_out, mi );
+    fclose( fp_out );
+    return 0;
+} // function
+
 void mm_idx_dump(FILE *fp, const mm_idx_t *mi)
 {
 	uint64_t sum_len = 0;

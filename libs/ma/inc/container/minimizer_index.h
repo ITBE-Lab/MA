@@ -191,11 +191,8 @@ class Index
     void dump( std::string sIndexName )
     {
         mm_idx_stat( pData );
-        auto* fp_out = fopen( sIndexName.c_str( ), "wb" );
-        if( fp_out == 0 )
+        if( mm_idx_dump( sIndexName.c_str( ), pData ) != 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
-        mm_idx_dump( fp_out, pData );
-        fclose( fp_out );
     } // method
 
     std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
