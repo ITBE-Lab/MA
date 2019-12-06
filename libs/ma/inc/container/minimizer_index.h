@@ -191,7 +191,7 @@ class Index
     void dump( std::string sIndexName )
     {
         mm_idx_stat( pData );
-        if( mm_idx_dump( sIndexName.c_str( ), pData ) != 0 )
+        if( mm_idx_dump_name( sIndexName.c_str( ), pData ) != 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
     } // method
 
