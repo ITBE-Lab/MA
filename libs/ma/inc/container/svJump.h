@@ -121,7 +121,7 @@ class SvJump : public Container
     } // constructor
 
     SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const nucSeqIndex qLen,
-            const bool bFromSeedStart, int64_t iReadId )
+            const bool bFromSeedStart, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
         : SvJump( pSelectedSetting,
                   /* uiFrom = */
                   bFromSeedStart
@@ -136,9 +136,10 @@ class SvJump : public Container
                       ? std::numeric_limits<uint32_t>::max( )
                       : rA.start_ref( ),
                   /* uiQueryFrom = */
-                  bFromSeedStart ? 0 : rA.end( ) - 1,
+                  bFromSeedStart ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
                   /* uiQueryTo = */
-                  !bFromSeedStart ? qLen - 1 : rA.start( ),
+                  !bFromSeedStart ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen - 1 )
+                                  : rA.start( ),
                   /* bFromForward = */ rA.bOnForwStrand,
                   /* bToForward = */ rA.bOnForwStrand,
                   /* bFromSeedStart = */ bFromSeedStart,

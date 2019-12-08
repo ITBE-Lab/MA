@@ -186,17 +186,17 @@ void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::
     }
     else
     {
-        auto pAlignment = std::make_shared<Alignment>( xArea.xXAxis.start( ), xArea.xYAxis.start( ) );
+        auto pFAlignment = std::make_shared<Alignment>( xArea.xXAxis.start( ), xArea.xYAxis.start( ) );
         AlignedMemoryManager xMemoryManager; // @todo this causes frequent (de-)&allocations; move this outwards
-        xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pAlignment,
+        xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pFAlignment,
                  xMemoryManager );
-        auto pForwSeeds = pAlignment->toSeeds( );
+        auto pForwSeeds = pFAlignment->toSeeds( );
 
         // and now the reverse strand seeds
-        pAlignment = std::make_shared<Alignment>( );
+        auto pRAlignment = std::make_shared<Alignment>( );
         xNW.ksw( pQuery, pRefRevComp, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRefRevComp->length( ) - 1,
-                 pAlignment, xMemoryManager );
-        auto pRevSeeds = pAlignment->toSeeds( );
+                 pRAlignment, xMemoryManager );
+        auto pRevSeeds = pRAlignment->toSeeds( );
         for( Seed& rSeed : *pRevSeeds )
         {
             rSeed.bOnForwStrand = false;
@@ -209,8 +209,7 @@ void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::
             rSeed.iStart += xArea.xYAxis.start( );
             assert( rSeed.end( ) <= pQuery->length( ) );
         } // for
-        // @todo use alignment score instead...
-        if( pForwSeeds->getAverageSeedSize( ) >= pRevSeeds->getAverageSeedSize( ) )
+        if( pFAlignment->score() >= pRAlignment->score() )
             rvRet->append( pForwSeeds );
         else
             rvRet->append( pRevSeeds );
@@ -298,9 +297,9 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
     {
         // we have to insert a dummy jump if the seed is far enough from the end/start of the query
         if( &rNext != &xDummySeed && rNext.start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, rNext, pQuery->length( ), false, pQuery->iId );
+            pRet->emplace_back( pSelectedSetting, rNext, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
         if( &rLast != &xDummySeed && rLast.end( ) + uiMinDistDummy <= pQuery->length( ) )
-            pRet->emplace_back( pSelectedSetting, rLast, pQuery->length( ), true, pQuery->iId );
+            pRet->emplace_back( pSelectedSetting, rLast, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
     } // if
     else
     {

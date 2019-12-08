@@ -11,6 +11,7 @@
 #include "module/module.h"
 #include "util/statisticSequenceAnalysis.h"
 #include <cmath>
+#include <csignal>
 
 #define ADDITIONAL_DEBUG 0
 
@@ -224,7 +225,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                              uiCenterStripDown );
 
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
-        //return pRet;
+        // return pRet;
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
         std::set<int64_t> xVisitedStart;
@@ -849,16 +850,18 @@ class ComputeCallAmbiguity
             auto pRightTo = getRegion( pCall->uiToStart, false, pPack );
 
             // if we switch strand we have to compare forward and reverse strands
-            if(pCall->bSwitchStrand)
+            if( pCall->bSwitchStrand )
             {
-                pLeftTo->vReverseAll();
-                pLeftTo->vSwitchAllBasePairsToComplement();
-                pRightTo->vReverseAll();
-                pRightTo->vSwitchAllBasePairsToComplement();
+                pLeftTo->vReverseAll( );
+                pLeftTo->vSwitchAllBasePairsToComplement( );
+                pRightTo->vReverseAll( );
+                pRightTo->vSwitchAllBasePairsToComplement( );
             } // if
 
-            pCall->uiCoverage = std::max( sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo ),
-                                          sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo ) );
+            auto a = sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo );
+            auto b = sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo );
+
+            pCall->uiCoverage = std::max( a, b );
         } // for
         // if the call has enough coverage we keep it
         return pCalls;

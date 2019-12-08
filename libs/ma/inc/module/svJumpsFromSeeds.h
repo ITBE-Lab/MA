@@ -35,6 +35,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     const size_t uiMaxAmbiguitySv;
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
+    const size_t uiMaxDistDummy;
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNW;
     ParlindromeFilter xParlindromeFilter;
@@ -58,7 +59,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     // depends on sequencer technique
     // lower -> less seed noise (via larger min size for seeds); worse breakpoint recognition
     // higher -> more seed noise; better breakpoint recognition (via smaller seeds)
-    double dProbabilityForRandomMatch = 0.03;
+    double dProbabilityForRandomMatch = 0.01;
 
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
@@ -70,6 +71,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
           bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
           uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
+          uiMaxDistDummy( pSelectedSetting->xMaxDistDummy->get( ) ),
           xSeedLumper( rParameters ),
           xNW( rParameters ),
           xParlindromeFilter( rParameters ),

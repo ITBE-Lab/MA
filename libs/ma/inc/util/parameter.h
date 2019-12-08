@@ -554,6 +554,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxAmbiguitySv; // max seed ambiguity for the sv caller
     AlignerParameterPointer<bool> xDoDummyJumps; // compute dummy jumps for first & last seed of read
     AlignerParameterPointer<int> xMinDistDummy; // minimal distance for seeds from read edge for dummy jumps
+    AlignerParameterPointer<int> xMaxDistDummy; // minimal distance for seeds from read edge for dummy jumps
     AlignerParameterPointer<bool> xRevCompPairedReadMates; // reverse complement all paried read mates
     AlignerParameterPointer<bool> xDoMateJumps; // compute jumps between paired reads
     AlignerParameterPointer<double> xJumpS; // s parameter for fuzziness of jumps
@@ -753,8 +754,9 @@ class Presetting : public ParameterSetBase
           xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 10, checkPositiveValue ),
           xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
           xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
-          xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, false ),
-          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
+          xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
+          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 25, checkPositiveValue ),
+          xMaxDistDummy( this, "Maximal Dummy Distance", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),

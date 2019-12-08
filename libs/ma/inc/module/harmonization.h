@@ -280,6 +280,8 @@ class SeedLumping : public Module<Seeds, false, Seeds>
                     return rA.bOnForwStrand;
                 if( rA.start_ref( ) - (int64_t)rA.start( ) != rB.start_ref( ) - (int64_t)rB.start( ) )
                     return rA.start_ref( ) - (int64_t)rA.start( ) < rB.start_ref( ) - (int64_t)rB.start( );
+                if( rA.start( ) == rB.start( ) )
+                    return rA.size( ) < rB.size( );
                 return rA.start( ) < rB.start( );
             } // lambda
         ); // sort call
