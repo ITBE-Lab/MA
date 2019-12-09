@@ -811,13 +811,14 @@ class FilterLowCoverageCalls
 class ComputeCallAmbiguity
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
 {
+    nucSeqIndex uiDistance = 20;
+
   public:
     ComputeCallAmbiguity( const ParameterSetManager& rParameters )
     {} // constructor
 
     std::shared_ptr<NucSeq> getRegion( nucSeqIndex uiPos, bool bLeftDirection, std::shared_ptr<Pack> pPack )
     {
-        nucSeqIndex uiDistance = 20;
         auto uiSeqId = pPack->uiSequenceIdForPosition( uiPos );
         if( bLeftDirection )
         {
@@ -844,24 +845,35 @@ class ComputeCallAmbiguity
     {
         for( auto pCall : pCalls->vContent )
         {
-            auto pLeftFrom = getRegion( pCall->uiFromStart + pCall->uiFromSize, true, pPack );
-            auto pRightFrom = getRegion( pCall->uiFromStart, false, pPack );
-            auto pLeftTo = getRegion( pCall->uiToStart + pCall->uiToSize, true, pPack );
-            auto pRightTo = getRegion( pCall->uiToStart, false, pPack );
+            auto f = pCall->uiFromStart + pCall->uiFromSize / 2;
+            auto t = pCall->uiToStart + pCall->uiToSize / 2;
+            // std::abs is ambigious under msvc...
+            auto uiCallSize = f >= t ? f - t : t - f;
 
-            // if we switch strand we have to compare forward and reverse strands
-            if( pCall->bSwitchStrand )
+            if( uiCallSize > uiDistance )
             {
-                pLeftTo->vReverseAll( );
-                pLeftTo->vSwitchAllBasePairsToComplement( );
-                pRightTo->vReverseAll( );
-                pRightTo->vSwitchAllBasePairsToComplement( );
+                auto pLeftFrom = getRegion( pCall->uiFromStart + pCall->uiFromSize, true, pPack );
+                auto pRightFrom = getRegion( pCall->uiFromStart, false, pPack );
+                auto pLeftTo = getRegion( pCall->uiToStart + pCall->uiToSize, true, pPack );
+                auto pRightTo = getRegion( pCall->uiToStart, false, pPack );
+
+                // if we switch strand we have to compare forward and reverse strands
+                if( pCall->bSwitchStrand )
+                {
+                    pLeftTo->vReverseAll( );
+                    pLeftTo->vSwitchAllBasePairsToComplement( );
+                    pRightTo->vReverseAll( );
+                    pRightTo->vSwitchAllBasePairsToComplement( );
+                } // if
+
+                auto a = sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo );
+                auto b = sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo );
+
+                pCall->uiCoverage = std::max( a, b );
             } // if
-
-            auto a = sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo );
-            auto b = sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo );
-
-            pCall->uiCoverage = std::max( a, b );
+            else
+                // @todo how to evaluate such calls?
+                pCall->uiCoverage = 1;
         } // for
         // if the call has enough coverage we keep it
         return pCalls;

@@ -1276,6 +1276,16 @@ class Pack : public Container
                               ) const
     {
         metaMeasureAndLogDuration<false>( "vExtractSubsectionN", [&]( ) {
+            /* Prepare sequence
+             */
+            if( !bAppend )
+            {
+                rxSequence.vClear( );
+            } // if
+
+            // sequence is of size 0; we don't have to do anything
+            if(iBegin == iEnd)
+                return;
             /* Do range-check for begin and end of extraction.
              */
             vRangeCheckAndThrowExclusive( "(vExtractSubsectionN)", static_cast<int64_t>( 0 ), iBegin,
@@ -1297,12 +1307,6 @@ class Pack : public Container
                 throw std::runtime_error( "(vExtractSubsectionN) Try to extract with begin greater than end." );
             } // if
 
-            /* Prepare sequence
-             */
-            if( !bAppend )
-            {
-                rxSequence.vClear( );
-            } // if
 
             /* Compute absolute positions. (Forward strand positions)
              */

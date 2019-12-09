@@ -54,8 +54,8 @@ def render_calls(self):
         jump = calls_from_db.next()
         if jump.num_supp_nt > self.min_score * jump.coverage:
             if jump.from_size == 1 and jump.to_size == 1:
-                accepted_plus_data["x"].append(jump.from_start)
-                accepted_plus_data["y"].append(jump.to_start)
+                accepted_plus_data["x"].append(jump.from_start + 0.5)
+                accepted_plus_data["y"].append(jump.to_start + 0.5)
             else:
                 accepted_boxes_data["x"].append(jump.from_start - 0.5)
                 accepted_boxes_data["y"].append(jump.to_start - 0.5)
@@ -84,8 +84,8 @@ def render_calls(self):
         jump = calls_from_db.next()
         if jump.num_supp_nt > self.min_score * jump.coverage:
             if jump.from_size == 1 and jump.to_size == 1:
-                ground_plus_data["x"].append(jump.from_start + jump.from_size/2)
-                ground_plus_data["y"].append(jump.to_start + jump.to_size/2)
+                ground_plus_data["x"].append(jump.from_start + 0.5)
+                ground_plus_data["y"].append(jump.to_start + 0.5)
             else:
                 ground_boxes_data["x"].append(jump.from_start - 0.5)
                 ground_boxes_data["y"].append(jump.to_start - 0.5)

@@ -300,8 +300,6 @@ class SeedLumping : public Module<Seeds, false, Seeds>
             {
                 if( xIt->end( ) > pRet->back( ).end( ) )
                     pRet->back( ).iSize = xIt->end( ) - pRet->back( ).start( );
-                assert( pRet->back( ).end( ) == xIt->end( ) );
-                assert( pRet->back( ).end_ref( ) == xIt->end_ref( ) );
             } // if
             else
             {

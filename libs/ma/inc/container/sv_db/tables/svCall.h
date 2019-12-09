@@ -7,6 +7,7 @@
 #pragma once
 
 #include "db_sql.h"
+#include <csignal>
 
 namespace libMA
 {
@@ -465,21 +466,32 @@ class SvCallTable : private TP_SV_CALL_TABLE
                     break;
                 // we have visited the next call and need to search again
 
-                // @todo this is extremely inefficient (if we have cylces in our graph wich we do not at the moment)
+                // @todo this is extremely inefficient (if we have cylces in our graph which we do not at the moment)
                 uiIntermediatePos += bForwContext ? 1 : -1;
             } while( true );
 #if 0
-                std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
-                          << " to: " << std::get<4>( tNextCall )
-                          << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << std::endl;
+            std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
+                      << " to: " << std::get<4>( tNextCall ) << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" )
+                      << std::endl;
 #endif
             if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
             {
                 metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
-                    pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                    // for jumps to the end of the genome we do not want to extract the last contig...
+                    // this check becomes necessary since the with the current index system,
+                    // we would either extract the last nucleotide of the genome twice or extract the
+                    // reverse complement of the last contig...
+                    if( pRef->uiUnpackedSizeForwardStrand != uiCurrPos )
+                        pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+
                     pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
                                            xCurrChrom );
                     xCurrChrom.vClear( );
+
+                    // part of the if above...
+                    if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
+                        return;
+
                     /*
                      * for this we make use of the id system of contigs.
                      * the n forwards contigs have the ids: x*2 | 0 <= x <= n
@@ -511,12 +523,12 @@ class SvCallTable : private TP_SV_CALL_TABLE
                     // clear xCurrChrom
                     xCurrChrom.vClear( );
                     // if the next call is several chromosomes over this loops keeps going
-                } // if
+                } // while
                 // the call is in the current chromosome / we have appended all skipped chromosomes
                 if( bForwContext )
-                    pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ), xCurrChrom, true );
+                    pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ) + 1, xCurrChrom, true );
                 else
-                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ) + 1,
+                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
                                                pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
                                                xCurrChrom,
                                                true );
