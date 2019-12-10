@@ -53,12 +53,12 @@ def render_calls(self):
             return str(jump.num_supp_nt / jump.coverage)
         jump = calls_from_db.next()
         if jump.num_supp_nt > self.min_score * jump.coverage:
-            if jump.from_size == 1 and jump.to_size == 1:
+            if jump.from_size == 0 and jump.to_size == 0:
                 accepted_plus_data["x"].append(jump.from_start + 0.5)
                 accepted_plus_data["y"].append(jump.to_start + 0.5)
             else:
-                accepted_boxes_data["x"].append(jump.from_start - 0.5)
-                accepted_boxes_data["y"].append(jump.to_start - 0.5)
+                accepted_boxes_data["x"].append(jump.from_start - 1)
+                accepted_boxes_data["y"].append(jump.to_start - 1)
                 accepted_boxes_data["w"].append(
                     jump.from_start + jump.from_size + 1)
                 accepted_boxes_data["h"].append(
@@ -83,12 +83,12 @@ def render_calls(self):
             return " score: " + str(jump.num_supp_nt / jump.coverage)
         jump = calls_from_db.next()
         if jump.num_supp_nt > self.min_score * jump.coverage:
-            if jump.from_size == 1 and jump.to_size == 1:
+            if jump.from_size == 0 and jump.to_size == 0:
                 ground_plus_data["x"].append(jump.from_start + 0.5)
                 ground_plus_data["y"].append(jump.to_start + 0.5)
             else:
-                ground_boxes_data["x"].append(jump.from_start - 0.5)
-                ground_boxes_data["y"].append(jump.to_start - 0.5)
+                ground_boxes_data["x"].append(jump.from_start - 1)
+                ground_boxes_data["y"].append(jump.to_start - 1)
                 ground_boxes_data["w"].append(jump.from_start + jump.from_size + 1)
                 ground_boxes_data["h"].append(jump.to_start + jump.to_size + 1)
                 ground_boxes_data["s"].append(score(jump))

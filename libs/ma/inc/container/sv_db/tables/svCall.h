@@ -136,7 +136,9 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                "FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
                                "WHERE inner2.id == idx_inner2.id "
                                "AND idx_inner2.id != ? "
-                               "AND (inner2.supporting_nt*1.0)/inner2.coverage >= ? "
+                               // tuple comparison here, so that overlapping calls with equal score always have one call
+                               // take priority (in this case always the one inserted after)
+                               "AND ((inner2.supporting_nt*1.0)/inner2.coverage, inner2.id) > (?, ?) "
                                "AND idx_inner2.run_id_b >= ? " // dim 1
                                "AND idx_inner2.run_id_a <= ? " // dim 1
                                "AND idx_inner2.maxX >= ? " // dim 2
@@ -331,7 +333,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                     .eof( ) )
                 continue;
             if( !xNumOverlapsHelper2
-                     .vExecuteAndReturnIterator( iId, dScore, iCallerRunIdB, iCallerRunIdB, uiFromStart - iAllowedDist,
+                     .vExecuteAndReturnIterator( iId, dScore, iId, iCallerRunIdB, iCallerRunIdB, uiFromStart - iAllowedDist,
                                                  uiFromStart + uiFromSize + iAllowedDist, uiToStart - iAllowedDist,
                                                  uiToStart + uiToSize + iAllowedDist, bSwitchStrand )
                      .eof( ) )
@@ -368,7 +370,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
             [&]( int64_t iId, double dScore, uint32_t uiFromStart, uint32_t uiFromSize, uint32_t uiToStart,
                  uint32_t uiToSize, bool bSwitchStrand ) {
                 if( xNumOverlapsHelper2
-                        .vExecuteAndReturnIterator( iCallerRunIdA, dScore, uiFromStart - iAllowedDist,
+                        .vExecuteAndReturnIterator( iCallerRunIdA, dScore, iCallerRunIdA, uiFromStart - iAllowedDist,
                                                     uiFromStart + uiFromSize + iAllowedDist, uiToStart - iAllowedDist,
                                                     uiToStart + uiToSize + iAllowedDist, bSwitchStrand )
                         .eof( ) )
