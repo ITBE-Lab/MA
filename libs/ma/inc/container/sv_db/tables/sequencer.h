@@ -14,6 +14,14 @@ namespace libMA
 typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string // sequencer name
                                                  >
     TP_SEQUENCER_TABLE;
+/**
+ * @brief contains the name of a sequencer run
+ * @details
+ * In order to create sv jumps with different parameters for different read types,
+ * each read type has to have a entry in the sequencer_table.
+ * Then jumps can be computed seperated for each sequencer_table entry.
+ * Eventhough the jumps are created seperated, they can all be used together in the line sweep.
+ */
 class SequencerTable : public TP_SEQUENCER_TABLE
 {
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;

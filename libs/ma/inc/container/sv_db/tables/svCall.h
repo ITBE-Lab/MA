@@ -309,7 +309,12 @@ class SvCallTable : private TP_SV_CALL_TABLE
     } // method
 
     /**
-     * returns how many calls of run A are overlapped by a call in run B
+     * @brief returns how many calls of run A are overlapped by a call in run B
+     * @details
+     * Only considers calls of run A with score >= to dMinScore.
+     * Calls that are no further away than iAllowedDist are considered overlapping (can be used to add some fuzziness).
+     * If two calls in run A overlap, only the one with higher score counts; If both have the same score the one with
+     * the higher id is kept.
      */
     inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
     {
@@ -345,7 +350,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
     } // method
 
     /**
-     * returns the average distance of class from the overlapped (due to fuzziness) SV
+     * @brief returns the average distance of class from the overlapped (due to fuzziness) SV
      */
     inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
     {
@@ -361,7 +366,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
     } // method
 
     /**
-     * returns how many calls are invalid because they overlap another call with higher score
+     * @brief returns how many calls are invalid because they overlap another call with higher score
      */
     inline uint32_t numInvalidCalls( int64_t iCallerRunIdA, double dMinScore, int64_t iAllowedDist )
     {
@@ -382,7 +387,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
         return uiRet;
     } // method
 
-    // returns call id, jump start pos, next context, next from position, jump end position
+    /// @brief returns call id, jump start pos, next context, next from position, jump end position
     inline std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> getNextCall( int64_t iCallerRun, //
                                                                                  uint32_t uiFrom, //
                                                                                  bool bForwardContext )

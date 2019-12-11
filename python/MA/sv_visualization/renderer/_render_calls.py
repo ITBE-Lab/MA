@@ -52,28 +52,27 @@ def render_calls(self):
                 return None
             return str(jump.num_supp_nt / jump.coverage)
         jump = calls_from_db.next()
-        if jump.num_supp_nt > self.min_score * jump.coverage:
-            if jump.from_size == 0 and jump.to_size == 0:
-                accepted_plus_data["x"].append(jump.from_start + 0.5)
-                accepted_plus_data["y"].append(jump.to_start + 0.5)
-            else:
-                accepted_boxes_data["x"].append(jump.from_start - 1)
-                accepted_boxes_data["y"].append(jump.to_start - 1)
-                accepted_boxes_data["w"].append(
-                    jump.from_start + jump.from_size + 1)
-                accepted_boxes_data["h"].append(
-                    jump.to_start + jump.to_size + 1)
-                accepted_boxes_data["n"].append(jump.num_supp_nt)
-                accepted_boxes_data["c"].append(jump.coverage)
-                accepted_boxes_data["r"].append(len(jump.supporing_jump_ids))
-                accepted_boxes_data["s"].append(score(jump))
-                accepted_plus_data["x"].append(
-                    jump.from_start + jump.from_size/2)
-                accepted_plus_data["y"].append(jump.to_start + jump.to_size/2)
-            accepted_plus_data["n"].append(jump.num_supp_nt)
-            accepted_plus_data["c"].append(jump.coverage)
-            accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
-            accepted_plus_data["s"].append(score(jump))
+        if jump.from_size == 0 and jump.to_size == 0:
+            accepted_plus_data["x"].append(jump.from_start + 0.5)
+            accepted_plus_data["y"].append(jump.to_start + 0.5)
+        else:
+            accepted_boxes_data["x"].append(jump.from_start - 1)
+            accepted_boxes_data["y"].append(jump.to_start - 1)
+            accepted_boxes_data["w"].append(
+                jump.from_start + jump.from_size + 1)
+            accepted_boxes_data["h"].append(
+                jump.to_start + jump.to_size + 1)
+            accepted_boxes_data["n"].append(jump.num_supp_nt)
+            accepted_boxes_data["c"].append(jump.coverage)
+            accepted_boxes_data["r"].append(len(jump.supporing_jump_ids))
+            accepted_boxes_data["s"].append(score(jump))
+            accepted_plus_data["x"].append(
+                jump.from_start + jump.from_size/2)
+            accepted_plus_data["y"].append(jump.to_start + jump.to_size/2)
+        accepted_plus_data["n"].append(jump.num_supp_nt)
+        accepted_plus_data["c"].append(jump.coverage)
+        accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
+        accepted_plus_data["s"].append(score(jump))
     calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.ground_truth_id,
                                   int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3, self.min_score)
     while calls_from_db.hasNext():
@@ -82,25 +81,24 @@ def render_calls(self):
                 return ""
             return " score: " + str(jump.num_supp_nt / jump.coverage)
         jump = calls_from_db.next()
-        if jump.num_supp_nt > self.min_score * jump.coverage:
-            if jump.from_size == 0 and jump.to_size == 0:
-                ground_plus_data["x"].append(jump.from_start + 0.5)
-                ground_plus_data["y"].append(jump.to_start + 0.5)
-            else:
-                ground_boxes_data["x"].append(jump.from_start - 1)
-                ground_boxes_data["y"].append(jump.to_start - 1)
-                ground_boxes_data["w"].append(jump.from_start + jump.from_size + 1)
-                ground_boxes_data["h"].append(jump.to_start + jump.to_size + 1)
-                ground_boxes_data["s"].append(score(jump))
-                ground_boxes_data["n"].append(jump.num_supp_nt)
-                ground_boxes_data["c"].append(jump.coverage)
-                ground_boxes_data["r"].append(len(jump.supporing_jump_ids))
-                ground_plus_data["x"].append(jump.from_start + jump.from_size/2)
-                ground_plus_data["y"].append(jump.to_start + jump.to_size/2)
-            ground_plus_data["n"].append(jump.num_supp_nt)
-            ground_plus_data["c"].append(jump.coverage)
-            ground_plus_data["r"].append(len(jump.supporing_jump_ids))
-            ground_plus_data["s"].append(score(jump))
+        if jump.from_size == 0 and jump.to_size == 0:
+            ground_plus_data["x"].append(jump.from_start + 0.5)
+            ground_plus_data["y"].append(jump.to_start + 0.5)
+        else:
+            ground_boxes_data["x"].append(jump.from_start - 1)
+            ground_boxes_data["y"].append(jump.to_start - 1)
+            ground_boxes_data["w"].append(jump.from_start + jump.from_size + 1)
+            ground_boxes_data["h"].append(jump.to_start + jump.to_size + 1)
+            ground_boxes_data["s"].append(score(jump))
+            ground_boxes_data["n"].append(jump.num_supp_nt)
+            ground_boxes_data["c"].append(jump.coverage)
+            ground_boxes_data["r"].append(len(jump.supporing_jump_ids))
+            ground_plus_data["x"].append(jump.from_start + jump.from_size/2)
+            ground_plus_data["y"].append(jump.to_start + jump.to_size/2)
+        ground_plus_data["n"].append(jump.num_supp_nt)
+        ground_plus_data["c"].append(jump.coverage)
+        ground_plus_data["r"].append(len(jump.supporing_jump_ids))
+        ground_plus_data["s"].append(score(jump))
 
 
     num_jumps = libMA.get_num_jumps_in_area(self.sv_db, self.pack, self.sv_db.get_run_jump_id(self.run_id),

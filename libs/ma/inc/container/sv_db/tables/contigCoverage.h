@@ -19,6 +19,12 @@ typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sequencer_id
                                                  int64_t // num_generated_nt
                                                  >
     TP_CONTIG_COV_TABLE;
+/**
+ * @brief this table contains the estimated seed coverage for each contig and sequencer pair.
+ * @details
+ * @todo this table should be removed, as the algorithm should not need this info anymore; (use ambiguity of reference
+ *       insead)
+ */
 class ContigCovTable : public TP_CONTIG_COV_TABLE
 {
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;

@@ -16,6 +16,11 @@ typedef CppSQLiteExtTableWithAutomaticPrimaryKey<std::string, // name
                                                  int64_t // timestamp
                                                  >
     TP_NAME_DESC_TABLE;
+/**
+ * @brief template for descriptive table
+ * @details
+ * template for table that saves name, description, timestamp and id
+ */
 class NameDescTable : public TP_NAME_DESC_TABLE
 {
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;

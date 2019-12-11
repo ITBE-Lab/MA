@@ -16,6 +16,9 @@ typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sequencer id (forei
                                                  NucSeqSql // read sequence
                                                  >
     TP_READ_TABLE;
+/**
+ * @brief this table saves reads
+ */
 class ReadTable : public TP_READ_TABLE
 {
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;

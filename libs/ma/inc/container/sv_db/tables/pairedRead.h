@@ -16,6 +16,9 @@ typedef CppSQLiteExtTable<int64_t, // first read (foreign key)
                           int64_t // second read (foreign key)
                           >
     TP_PAIRED_READ_TABLE;
+/**
+ * @brief this table connects reads by their ids in order to indicate paired reads
+ */
 class PairedReadTable : public TP_PAIRED_READ_TABLE
 {
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
