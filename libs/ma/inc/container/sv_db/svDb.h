@@ -19,7 +19,6 @@
 #include <ctime>
 #include <iomanip>
 // include all table definitions
-#include "container/sv_db/tables/contigCoverage.h"
 #include "container/sv_db/tables/nameDesc.h"
 #include "container/sv_db/tables/pairedRead.h"
 #include "container/sv_db/tables/read.h"
@@ -40,7 +39,6 @@ class SV_DB : public Container
     std::shared_ptr<std::mutex> pWriteLock;
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     std::shared_ptr<SequencerTable> pSequencerTable;
-    std::shared_ptr<ContigCovTable> pContigCovTable;
     std::shared_ptr<ReadTable> pReadTable;
     std::shared_ptr<PairedReadTable> pPairedReadTable;
     std::shared_ptr<NameDescTable> pSvJumpRunTable;
@@ -58,7 +56,6 @@ class SV_DB : public Container
           pWriteLock( rOther.pWriteLock ),
           pDatabase( std::make_shared<CppSQLiteDBExtended>( "", rOther.sName, eOPEN_DB ) ),
           pSequencerTable( rOther.pSequencerTable ),
-          pContigCovTable( rOther.pContigCovTable ),
           pReadTable( rOther.pReadTable ),
           pPairedReadTable( rOther.pPairedReadTable ),
           pSvJumpRunTable( rOther.pSvJumpRunTable ),
@@ -81,7 +78,6 @@ class SV_DB : public Container
           pWriteLock( std::make_shared<std::mutex>( ) ),
           pDatabase( std::make_shared<CppSQLiteDBExtended>( "", sName, xMode ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
-          pContigCovTable( std::make_shared<ContigCovTable>( pDatabase ) ),
           pReadTable( std::make_shared<ReadTable>( pDatabase ) ),
           pPairedReadTable( std::make_shared<PairedReadTable>( pDatabase, pReadTable ) ),
           pSvJumpRunTable( std::make_shared<NameDescTable>( pDatabase, "sv_jump_run_table" ) ),
@@ -169,11 +165,6 @@ class SV_DB : public Container
     inline uint32_t getNumRuns( )
     {
         return pSvCallerRunTable->size( );
-    } // method
-
-    inline std::vector<int64_t> getNumNts( int64_t iSequencerId )
-    {
-        return pContigCovTable->getNumNt( iSequencerId );
     } // method
 
     inline std::string getRunName( int64_t iId )

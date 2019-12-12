@@ -169,8 +169,6 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     size_t uiSqueezeFactor;
     size_t uiCenterStripUp;
     size_t uiCenterStripDown;
-    double dEstimateCoverageFactor;
-    std::vector<double> vEstimatedCoverageList;
 
     // record the times each step takes
     double dInit = 0;
@@ -194,9 +192,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
           uiGenomeSize( pPack->uiStartOfReverseStrand( ) ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
-          uiCenterStripDown( 1000 ),
-          dEstimateCoverageFactor( 0.01 ),
-          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) )
+          uiCenterStripDown( 1000 )
     {} // constructor
 
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -322,17 +318,8 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                            [&]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
 #endif
-                    // @todo this should not be needed anymore...
                     if( pCluster->uiFromStart < uiForwStrandEnd && pCluster->uiFromStart >= uiForwStrandStart )
-                    {
-                        double estimatedCoverage =
-                            std::min( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCluster->uiFromStart ) ],
-                                      vEstimatedCoverageList[ pPack->uiSequenceIdForPosition(
-                                          pCluster->vSupportingJumps[ 0 ]->to_start( ) ) ] );
-                        if( pCluster->estimateCoverage( ) >=
-                            std::max( dEstimateCoverageFactor * estimatedCoverage, 2.0 ) )
-                            pRet->vContent.push_back( pCluster );
-                    } // if
+                        pRet->vContent.push_back( pCluster );
                 } // if
                 auto xInnerEnd = std::chrono::high_resolution_clock::now( );
                 std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
@@ -363,8 +350,6 @@ class ExactCompleteBipartiteSubgraphSweep
 {
   public:
     std::shared_ptr<Pack> pPack;
-    double dEstimateCoverageFactor;
-    std::vector<double> vEstimatedCoverageList;
     int64_t iMaxInsertRatioDiff = 150;
     /**
      * @brief
@@ -372,14 +357,8 @@ class ExactCompleteBipartiteSubgraphSweep
      */
     ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                                          std::shared_ptr<Pack> pPack, int64_t iSequencerId )
-        : pPack( pPack ),
-          dEstimateCoverageFactor( 0.01 ),
-          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSequencerId, pPack ) )
+        : pPack( pPack )
     {
-        // std::cout << "EstimatedCoverage:" << std::endl;
-        // std::cout << "contig\tcoverage" << std::endl;
-        // for(size_t uiI = 0; uiI < vEstimatedCoverageList.size(); uiI++)
-        //    std::cout << uiI << "\t" << vEstimatedCoverageList[uiI] << std::endl;
     } // constructor
 
     inline void exact_sweep( std::vector<std::shared_ptr<SvJump>>& rvEdges, size_t uiStart, size_t uiEnd,
@@ -503,21 +482,13 @@ class ExactCompleteBipartiteSubgraphSweep
                     } // for
 #endif
 
-                    // check if the cluster still fulfills the required criteria
-                    double estimatedCoverage =
-                        std::min( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCurrCluster->uiFromStart ) ],
-                                  vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCurrCluster->uiToStart ) ] );
-                    if( pCurrCluster->estimateCoverage( ) >=
-                        std::max( dEstimateCoverageFactor * estimatedCoverage, 2.0 ) )
-                    {
-                        pCurrCluster->reEstimateClusterSize( );
-                        // we messed up this counter by removing jumps, fix that
-                        pCurrCluster->uiNumSuppNt = 0;
-                        for( auto pJump : pCurrCluster->vSupportingJumps )
-                            pCurrCluster->uiNumSuppNt += pJump->numSupportingNt( );
-                        // save the cluster
-                        pRet->vContent.push_back( pCurrCluster );
-                    } // if
+                    pCurrCluster->reEstimateClusterSize( );
+                    // we messed up this counter by removing jumps, fix that
+                    pCurrCluster->uiNumSuppNt = 0;
+                    for( auto pJump : pCurrCluster->vSupportingJumps )
+                        pCurrCluster->uiNumSuppNt += pJump->numSupportingNt( );
+                    // save the cluster
+                    pRet->vContent.push_back( pCurrCluster );
                 } // if
                 // decrement the counter vector
                 while( uiStart <= uiEnd )
@@ -750,48 +721,6 @@ class FilterDiagonalLineCalls
     } // method
 }; // class
 
-/**
- * @brief filters out calls that have a low coverage
- * @details
- * Observation: Many false positives in repetitive genomes are from calls that receive a high score due to one side
- * of the call having low coverage; Further all proper calls must be from an area that is actually sequenced to an
- * area that is actually sequenced;
- * Solution: Remove all calls with a coverage significantly lower than the coverage of the involved chromosomes.
- * @note: this filter is maybe not necessary since we could replace the sweep with it...
- */
-class FilterLowCoverageCalls
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>,
-      public AbstractFilter
-{
-  public:
-    std::vector<double> vEstimatedCoverageList;
-    FilterLowCoverageCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
-                            std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId )
-        : AbstractFilter( "FilterLowCoverageCalls" ),
-          vEstimatedCoverageList( pSvDb->pContigCovTable->getEstimatedCoverageList( iSvCallerRunId, pPack ) )
-    {} // constructor
-
-    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pPack )
-    {
-        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
-        for( auto pCall : pCalls->vContent )
-        {
-            double dMaxCoverage =
-                std::max( vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCall->uiFromStart ) ],
-                          vEstimatedCoverageList[ pPack->uiSequenceIdForPosition( pCall->uiToStart ) ] );
-            if( pCall->uiCoverage >= dMaxCoverage / 2 )
-                pRet->vContent.push_back( pCall );
-        } // for
-#if ANALYZE_FILTERS
-        std::lock_guard<std::mutex> xGuard( xLock );
-        uiFilterTotal += pCalls->vContent.size( );
-        uiFilterKept += pRet->vContent.size( );
-#endif
-        // if the call has enough coverage we keep it
-        return pRet;
-    } // method
-}; // class
 
 /**
  * @brief compute the ambiguity of a call via sampling

@@ -330,7 +330,7 @@ void NeedlemanWunsch::ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_
         } // for
     assert( rPos <= rCenter );
     assert( qPos <= qCenter );
-    // @todo why does this assertion trigger? -- i must understand something wrong about ksw...
+    // @todo why does this assertion trigger?
     // assert( qPos == qCenter || rPos == rCenter || ez_left.ez->zdropped == 1 );
     nucSeqIndex rPosRight = toRef - ez_right.ez->max_t - 1;
     nucSeqIndex qPosRight = toQuery - ez_right.ez->max_q - 1;

@@ -83,26 +83,9 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
             uiGap *= iExtend;
             if( uiGap > 0 )
                 uiGap += iGap;
-#if 0 // @todo cleanup pls
-            nucSeqIndex uiGapY = 
-                pSeed->start() - ( (pSeed-1)->start() + (pSeed-1)->size() );
-            if( pSeed->start() < ( (pSeed-1)->start() + (pSeed-1)->size() ) )
-                uiGapY = 0;
-            nucSeqIndex uiGapX = 
-                pSeed->start_ref() - ((pSeed-1)->start_ref() + (pSeed-1)->size());
-            if( pSeed->start_ref() < ( (pSeed-1)->start_ref() + (pSeed-1)->size() ) )
-                uiGapX = 0;
-            if( //check for the maximal allowed gap area
-                    //uiMaxGapArea == 0 -> disabled
-                    ( uiMaxGapArea > 0 && uiGapX > uiMaxGapArea && uiGapY != 0 )
-                        ||
-                    ( uiMaxGapArea > 0 && uiGapY > uiMaxGapArea && uiGapX != 0  )
-                        ||
-#else
             if( uiGap > uiSVPenalty && uiSVPenalty != 0 )
                 uiGap = uiSVPenalty;
             if( // check for the maximal allowed gap area
-#endif
             // check for negative score
                     iScore < (int64_t)uiGap
                 )

@@ -153,7 +153,6 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportHashMapSeeding( libMaModule );
     exportSvJumpsFromSeeds( libMaModule );
     defaults::exportDefaults( libMaModule );
-    exportComputeCoverage( libMaModule );
     exportSweepSvJump( libMaModule );
     exportConnectorPatternFilter( libMaModule );
     exportMinimizerIndex( libMaModule );

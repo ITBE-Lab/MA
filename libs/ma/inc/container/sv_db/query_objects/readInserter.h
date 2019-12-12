@@ -29,7 +29,6 @@ class ReadInserter
           xTransactionContext( *pDB->pDatabase ),
           uiSequencerId( pDB->pSequencerTable->insertSequencer( sSequencerName ) )
     {
-        pDB->pContigCovTable->insert( uiSequencerId, pPack );
     } // constructor
 
     /// @brief cannot be copied

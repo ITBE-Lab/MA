@@ -50,8 +50,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     size_t uiNumSeedsEliminatedAmbiguityFilter = 0;
     size_t uiNumSeedsKeptAmbiguityFilter = 0;
 
-    ContigCovTable::CovInserter xCoverageInserter;
-
     /// used to indicate that there is no seed for on of the parameters in the recursive call.
     Seed xDummySeed;
 
@@ -76,8 +74,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           xNW( rParameters ),
           xParlindromeFilter( rParameters ),
           iSequencerId( iSequencerId ),
-          pDb( pDb ),
-          xCoverageInserter( iSequencerId, pRefSeq, pDb )
+          pDb( pDb )
     {} // constructor
 
     ~SvJumpsFromSeeds( )
@@ -209,11 +206,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                                                            pFM_index,
                                                                        std::shared_ptr<NucSeq>
                                                                            pQuery );
-
-    void commit( )
-    {
-        xCoverageInserter.commit( );
-    } // method
 }; // class
 
 }; // namespace libMA

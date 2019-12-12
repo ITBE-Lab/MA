@@ -275,9 +275,6 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
         } // for
     } // if
 
-    // this auto locks using the DB; seeds need to be sorted by query position
-    xCoverageInserter.insert( *pvSeeds, pQuery->length( ) );
-
     if( pvSeeds->size( ) > 0 )
     {
         Seed* pCurr = &rLast;
@@ -437,9 +434,6 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute_helper( std::
         } // for
     } // if
 
-    // insert coverage
-    xCoverageInserter.insert( *pFilteredSeeds, pQuery->length( ) );
-
     // actually compute the jumps
     Seed* pCurr = &xDummySeed;
     for( auto& rSeed : *pFilteredSeeds )
@@ -484,8 +478,7 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
     py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );
     exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
         rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
-            x.def( "commit", &SvJumpsFromSeeds::commit ) //
-                .def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
+            x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
         } );
 } // function
 #endif
