@@ -34,7 +34,7 @@ class SvCallsFromDb
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
-                  "       coverage "
+                  "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? " ),
           xQuerySupport( *pDb->pDatabase,
@@ -63,7 +63,7 @@ class SvCallsFromDb
               *pDb->pDatabase,
               ( std::string(
                     "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
-                    "       coverage "
+                    "       reference_ambiguity "
                     "FROM sv_call_table AS inner "
                     "WHERE sv_caller_run_id == ? "
                     "AND " ) +
@@ -87,7 +87,8 @@ class SvCallsFromDb
                 "     FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
                 "     WHERE inner2.id == idx_inner2.id "
                 "     AND idx_inner2.id != inner.id "
-                "     AND (inner2.supporting_nt*1.0)/inner2.coverage >= (inner.supporting_nt*1.0)/inner.coverage "
+                "     AND " +
+                SvCallTable::getSqlForCallScore( "inner2" ) + " >= " + SvCallTable::getSqlForCallScore( "inner" ) +
                 "     AND idx_inner2.run_id_b >= inner.id " // dim 1
                 "     AND idx_inner2.run_id_a <= inner.id " // dim 1
                 "     AND idx_inner2.maxX >= inner.from_pos - ? " // dim 2
@@ -117,10 +118,10 @@ class SvCallsFromDb
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
-                  "       coverage "
+                  "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
-                  "AND (supporting_nt*1.0)/coverage >= ? " ),
+                  "AND " + SvCallTable::getSqlForCallScore( ) + " >= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "num_supporting_nt, sv_jump_table.id, read_id "
@@ -139,7 +140,7 @@ class SvCallsFromDb
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
-                  "       coverage "
+                  "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
                   "AND from_pos + from_size >= ? "
@@ -164,14 +165,14 @@ class SvCallsFromDb
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
-                  "       coverage "
+                  "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
                   "AND from_pos + from_size >= ? "
                   "AND to_pos + to_size >= ? "
                   "AND from_pos <= ? "
                   "AND to_pos <= ? "
-                  "AND (supporting_nt*1.0)/coverage >= ? " ),
+                  "AND " + SvCallTable::getSqlForCallScore( ) + " >= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "num_supporting_nt, sv_jump_table.id, read_id "
@@ -196,7 +197,7 @@ class SvCallsFromDb
                      std::get<5>( xTup ), // bSwitchStrand
                      std::get<7>( xTup ) // num_supporting_nt
         );
-        xRet.uiCoverage = std::get<8>( xTup );
+        xRet.uiReferenceAmbiguity = std::get<8>( xTup );
         xRet.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
         xRet.iId = std::get<0>( xTup );
         auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );

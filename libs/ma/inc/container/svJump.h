@@ -303,6 +303,7 @@ class SvJump : public Container
 class SvCall : public Container
 {
   public:
+#if 0
     class Regex
     {
       public:
@@ -359,6 +360,7 @@ class SvCall : public Container
         {}
 
     }; // class
+#endif
 
     nucSeqIndex uiFromStart;
     nucSeqIndex uiToStart;
@@ -366,10 +368,12 @@ class SvCall : public Container
     nucSeqIndex uiToSize;
     bool bSwitchStrand;
     nucSeqIndex uiNumSuppNt;
-    nucSeqIndex uiCoverage;
+    nucSeqIndex uiReferenceAmbiguity;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
+#if 0
     Regex xRegex;
+#endif
     size_t uiOpenEdges = 0;
     std::vector<nucSeqIndex> vLeft;
     std::vector<nucSeqIndex> vRight;
@@ -387,18 +391,24 @@ class SvCall : public Container
             bool bSwitchStrand,
             nucSeqIndex uiNumSuppNt,
             std::vector<int64_t> vSupportingJumpIds = {},
-            int64_t iId = -1, /* -1 == no id obtained */
-            Regex xRegex = Regex( "", 0 ) )
+            int64_t iId = -1 /* -1 == no id obtained */
+#if 0
+            , Regex xRegex = Regex( "", 0 )
+#endif
+            )
         : uiFromStart( uiFromStart ),
           uiToStart( uiToStart ),
           uiFromSize( uiFromSize ),
           uiToSize( uiToSize ),
           bSwitchStrand( bSwitchStrand ),
           uiNumSuppNt( uiNumSuppNt ),
-          uiCoverage( 1 ),
+          uiReferenceAmbiguity( 1 ),
           vSupportingJumpIds( vSupportingJumpIds ),
-          iId( iId ),
+          iId( iId )
+#if 0
+          ,
           xRegex( xRegex )
+#endif
     {} // constructor
 
     SvCall( nucSeqIndex uiFromStart,
@@ -407,10 +417,10 @@ class SvCall : public Container
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
             nucSeqIndex uiNumSuppNt,
-            uint32_t uiCoverage )
+            uint32_t uiReferenceAmbiguity )
         : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bSwitchStrand, uiNumSuppNt )
     {
-        this->uiCoverage = uiCoverage;
+        this->uiReferenceAmbiguity = uiReferenceAmbiguity;
     } // constructor
 
     SvCall( std::shared_ptr<SvJump> pJump, bool bRememberJump = true )
@@ -473,6 +483,11 @@ class SvCall : public Container
         } // else
     } // method
 
+    inline double getScore( ) const
+    {
+        return uiReferenceAmbiguity == 0 ? 0 : uiNumSuppNt / (double)uiReferenceAmbiguity;
+    } // method
+
     bool supportedJumpsLoaded( ) const
     {
         return vSupportingJumps.size( ) == vSupportingJumpIds.size( );
@@ -488,6 +503,7 @@ class SvCall : public Container
         return iId != -1;
     } // method
 
+#if 0
     Regex getDefaultRegex( )
     {
         assert( this->hasId( ) );
@@ -505,6 +521,7 @@ class SvCall : public Container
             return getDefaultRegex( );
         return xRegex;
     } // method
+#endif
 
     void clear_jumps( )
     {
@@ -608,7 +625,7 @@ class SvCall : public Container
         this->vSupportingJumpIds.insert( this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ),
                                          rOther.vSupportingJumpIds.end( ) );
         this->uiNumSuppNt += rOther.uiNumSuppNt;
-        this->uiCoverage = std::max( rOther.uiCoverage, this->uiCoverage );
+        this->uiReferenceAmbiguity = std::max( rOther.uiReferenceAmbiguity, this->uiReferenceAmbiguity );
         this->vSupportingJumps.insert( this->vSupportingJumps.end( ), rOther.vSupportingJumps.begin( ),
                                        rOther.vSupportingJumps.end( ) );
         this->uiOpenEdges += rOther.uiOpenEdges;

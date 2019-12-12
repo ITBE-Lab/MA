@@ -20,7 +20,7 @@ typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_jump_run_id (for
                                                  uint32_t, // query_from
                                                  uint32_t, // query_to
                                                  uint32_t, // num_supporting_nt
-                                                 bool, // from_forward @todo save space by compressing booleans?
+                                                 bool, // from_forward
                                                  bool, // to_forward
                                                  bool // from_seed_start
                                                  >

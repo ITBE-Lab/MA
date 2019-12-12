@@ -20,9 +20,9 @@
 #include <vector>
 
 // For keeping compatibility with older code
-#define CppSQLiteDBExtended SQL_DB 
+#define CppSQLiteDBExtended SQL_DB
 
-//Forward declaration of class for SQL statements
+// Forward declaration of class for SQL statements
 class CppSQLiteExtStatementParent;
 template <class... Types> class CppSQLiteExtQueryStatementParent;
 template <class... Types> struct SQLQueryTemplateString;
@@ -323,15 +323,14 @@ class SQL_DB // deprecated : public CppSQLite3DB
   public:
     friend class CppSQLiteExtImmediateTransactionContext;
 
-	// Mode of DB operation (Create or Open) 
+    // Mode of DB operation (Create or Open)
     const enumSQLite3DBOpenMode eDatabaseOpeningMode;
 
     /* Constructor */
-    SQL_DB(
-        const std::string& rsWorkingDirectory, // directory location of the database
-        const std::string& sDataBaseName, // name of the database
-        const enumSQLite3DBOpenMode eDatabaseOpeningMode // how to open the database (creation or simply opening)
-        )
+    SQL_DB( const std::string& rsWorkingDirectory, // directory location of the database
+            const std::string& sDataBaseName, // name of the database
+            const enumSQLite3DBOpenMode eDatabaseOpeningMode // how to open the database (creation or simply opening)
+            )
         : // CppSQLite3DB( ), // deprecated
           pDBConnector( new CppSQLite3DB( ) ), // build connector object
           eDatabaseOpeningMode( eDatabaseOpeningMode )
@@ -364,8 +363,8 @@ class SQL_DB // deprecated : public CppSQLite3DB
 
     /* Simplified constructor that does not require expect the specification of a working directory. */
     SQL_DB( const std::string& sDataBaseName, // name of the database
-                         const enumSQLite3DBOpenMode eDatabaseOpeningMode // how to open the database
-                         )
+            const enumSQLite3DBOpenMode eDatabaseOpeningMode // how to open the database
+            )
         : SQL_DB( "", sDataBaseName, eDatabaseOpeningMode ) // redirect constructor
     {} // constructor
 
@@ -497,20 +496,20 @@ class SQL_DB // deprecated : public CppSQLite3DB
     sqlite_int64 lastRowId( )
     {
         return pDBConnector->lastRowId( );
-	} // public method
+    } // public method
 
-	/* Forward is required due to svDb.h */
+    /* Forward is required due to svDb.h */
     int execDML( const char* pcSQL )
     {
         return pDBConnector->execDML( pcSQL );
     } // public method
 
-	void set_num_threads( const int uiNumThreads )
-	{
+    void set_num_threads( const int uiNumThreads )
+    {
         return pDBConnector->set_num_threads( uiNumThreads );
-	} // public method
+    } // public method
 
-	// Design flaws: compileStatement( pcStatementText ) should be part of this class
+    // Design flaws: compileStatement( pcStatementText ) should be part of this class
 }; // class
 
 /* Creates the text for a SQL INSERT statement.
@@ -518,8 +517,8 @@ class SQL_DB // deprecated : public CppSQLite3DB
  * (We assume that the first column contains the primary key.)
  */
 inline std::string sCreateSQLInsertStatementText( const char* pcTableName,
-                                           const unsigned int uiNumberOfArguemnts,
-                                           bool bFirstColumnAsNULL = true )
+                                                  const unsigned int uiNumberOfArguemnts,
+                                                  bool bFirstColumnAsNULL = true )
 {
     std::string sInsertionStatement = "INSERT INTO ";
     sInsertionStatement.append( pcTableName ).append( bFirstColumnAsNULL ? " VALUES (NULL, " : " VALUES (" );
@@ -935,6 +934,7 @@ template <class... Types> class CppSQLiteExtQueryStatementParent : public CppSQL
  * It is necessary, so that we can run EXPLAIN QUERY PLAN in debug mode.
  * Look at CppSQLiteExtStatementParent for all relevant method definitions & implementations
  * EXPLAIN QUERY PLAN is a SQLite specific extension.
+ * @note the implementation of bindAndExplain is kind of buggy
  */
 template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
 {
@@ -971,6 +971,10 @@ template <class STATEMENT> class CppSQLiteExtDebugWrapper : public STATEMENT
           ,
           xExplainQueryPlan( rxDatabase, std::string( "EXPLAIN QUERY PLAN " ).append( pcStatementText ).c_str( ) )
 #endif
+    {} // constructor
+
+    CppSQLiteExtDebugWrapper( SQL_DB& rxDatabase, std::string sStatementText )
+        : CppSQLiteExtDebugWrapper( rxDatabase, sStatementText.c_str( ) )
     {} // constructor
 
     /* Virtual destructor for inheritance purposes.
@@ -1072,7 +1076,6 @@ class CppSQLiteExtImmediateTransactionContext
     } // method
 
   public:
-
     /* The constructor initializes the database and starts the transaction.
      */
     CppSQLiteExtImmediateTransactionContext( SQL_DB& rxDatabase ) : rxDatabase( rxDatabase )

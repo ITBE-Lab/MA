@@ -130,7 +130,8 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
  * @brief Wraps a jump inserter, so that it can become part of a computational graph.
  * @details
  * buffers all jumps in a vector and then bulk inserts them once commit is called.
- * The destructor calls commit as well.
+ * The destructor calls commit automatically.
+ * If the buffer holds 10.000 elements a bulk insert is triggered as well.
  */
 class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
@@ -152,8 +153,10 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     {} // constructor
 
     /// @brief bulk insert all jumps in the buffer; then clear the buffer
-    inline void commit( )
+    inline void commit( bool bForce=false )
     {
+        if(!bForce && vBuffer.size( ) < 10000)
+            return;
         if( vBuffer.size( ) == 0 )
             return;
         SvJumpInserter xInserter( pDb, iSvJumpRunId );
@@ -171,13 +174,14 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     /// @brief triggers commit
     ~BufferedSvDbInserter( )
     {
-        commit( );
+        commit( true );
     } // destructor
 
     /// @brief buffer all jumps in pJumps for the read pRead
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         vBuffer.emplace_back( pJumps, pRead->iId );
+        commit();
         return std::make_shared<Container>( );
     } // method
 }; // class

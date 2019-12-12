@@ -20,7 +20,7 @@ typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (f
                                                  bool, // switch_strand
                                                  NucSeqSql, // inserted_sequence
                                                  uint32_t, // supporting_nt
-                                                 uint32_t, // coverage
+                                                 uint32_t, // reference_ambiguity
                                                  int64_t // regex_id
                                                  >
     TP_SV_CALL_TABLE;
@@ -50,6 +50,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
 
         }; // class
 #endif
+
 
     std::shared_ptr<CppSQLiteDBExtended> pDatabase;
     // std::shared_ptr<ReconstructionTable> pReconstructionTable;
@@ -89,12 +90,22 @@ class SvCallTable : private TP_SV_CALL_TABLE
     CppSQLiteExtStatement xUpdateCall, xUpdateRTree;
 
   public:
+    /**
+     * @brief SQL code for score computation of sv call
+     */
+    static std::string getSqlForCallScore( std::string sTableName = "" )
+    {
+        if( !sTableName.empty( ) )
+            sTableName.append( "." );
+        return " ( " + sTableName + "supporting_nt * 1.0 ) / " + sTableName + "reference_ambiguity ";
+    } // method
+
     SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
         : TP_SV_CALL_TABLE( *pDatabase, // the database where the table resides
                             "sv_call_table", // name of the table in the database
                             // column definitions of the table
                             std::vector<std::string>{"sv_caller_run_id", "from_pos", "to_pos", "from_size", "to_size",
-                                                     "switch_strand", "inserted_sequence", "supporting_nt", "coverage",
+                                                     "switch_strand", "inserted_sequence", "supporting_nt", "reference_ambiguity",
                                                      "regex_id"},
                             // constraints for table
                             std::vector<std::string>{
@@ -109,14 +120,14 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                           "WHERE sv_call_table.id == sv_call_r_tree.id "
                                           "AND sv_call_r_tree.run_id_a >= ? " // dim 1
                                           "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                                          "AND (supporting_nt*1.0)/coverage >= ? " ),
+                                          "AND " + getSqlForCallScore() + " >= ? " ),
           xNumOverlaps( *pDatabase,
                         // each inner call can overlap an outer call at most once
-                        "SELECT id, supporting_nt*1.0/coverage, from_pos, from_size, to_pos, to_size, "
+                        "SELECT id, " + getSqlForCallScore() + ", from_pos, from_size, to_pos, to_size, "
                         "       switch_strand "
                         "FROM sv_call_table "
                         "WHERE sv_caller_run_id = ? "
-                        "AND supporting_nt*1.0/coverage >= ? " ),
+                        "AND " + getSqlForCallScore() + " >= ? " ),
           xNumOverlapsHelper1( *pDatabase,
                                // make sure that inner overlaps the outer:
                                "SELECT outer.id "
@@ -138,7 +149,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                "AND idx_inner2.id != ? "
                                // tuple comparison here, so that overlapping calls with equal score always have one call
                                // take priority (in this case always the one inserted after)
-                               "AND ((inner2.supporting_nt*1.0)/inner2.coverage, inner2.id) > (?, ?) "
+                               "AND (" + getSqlForCallScore("inner2") + ", inner2.id) > (?, ?) "
                                "AND idx_inner2.run_id_b >= ? " // dim 1
                                "AND idx_inner2.run_id_a <= ? " // dim 1
                                "AND idx_inner2.maxX >= ? " // dim 2
@@ -152,19 +163,19 @@ class SvCallTable : private TP_SV_CALL_TABLE
                      "WHERE sv_call_table.id == sv_call_r_tree.id "
                      "AND sv_call_r_tree.run_id_a >= ? " // dim 1
                      "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                     "AND (supporting_nt*1.0)/coverage >= ? " ),
+                     "AND " + getSqlForCallScore() + " >= ? " ),
           xMaxScore( *pDatabase,
-                     "SELECT supporting_nt*1.0/coverage FROM sv_call_table, sv_call_r_tree "
+                     "SELECT " + getSqlForCallScore() + " FROM sv_call_table, sv_call_r_tree "
                      "WHERE sv_call_table.id == sv_call_r_tree.id "
                      "AND sv_call_r_tree.run_id_a >= ? " // dim 1
                      "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                     "ORDER BY (supporting_nt*1.0)/coverage DESC LIMIT 1 " ),
+                     "ORDER BY (" + getSqlForCallScore() + " DESC LIMIT 1 " ),
           xMinScore( *pDatabase,
-                     "SELECT (supporting_nt*1.0)/coverage FROM sv_call_table, sv_call_r_tree "
+                     "SELECT " + getSqlForCallScore() + " FROM sv_call_table, sv_call_r_tree "
                      "WHERE sv_call_table.id == sv_call_r_tree.id "
                      "AND sv_call_r_tree.run_id_a >= ? " // dim 1
                      "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                     "ORDER BY (supporting_nt*1.0)/coverage ASC LIMIT 1 " ),
+                     "ORDER BY " + getSqlForCallScore() + " ASC LIMIT 1 " ),
           xNextCallForwardContext(
               *pDatabase,
               "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
@@ -197,7 +208,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                     "LIMIT 1 " ),
           xSetCoverageForCall( *pDatabase,
                                "UPDATE sv_call_table "
-                               "SET coverage = ? "
+                               "SET reference_ambiguity = ? "
                                "WHERE id == ?" ),
           xDeleteCall1( *pDatabase,
                         "DELETE FROM sv_call_r_tree "
@@ -214,7 +225,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                        "    switch_strand = ?, "
                        "    inserted_sequence = ?, "
                        "    supporting_nt = ?, "
-                       "    coverage = ? "
+                       "    reference_ambiguity = ? "
                        "WHERE id == ? " ),
           xUpdateRTree( *pDatabase,
                         "UPDATE sv_call_r_tree "
@@ -232,8 +243,8 @@ class SvCallTable : private TP_SV_CALL_TABLE
         CppSQLiteExtStatement( *pDatabase,
                                ( "CREATE INDEX IF NOT EXISTS sv_call_table_score_index_" +
                                  std::to_string( iCallerRunId ) +
-                                 " ON sv_call_table ((supporting_nt*1.0)/coverage) "
-                                 "WHERE sv_caller_run_id == " +
+                                 " ON sv_call_table " + getSqlForCallScore() +
+                                 " WHERE sv_caller_run_id == " +
                                  std::to_string( iCallerRunId ) )
                                    .c_str( ) )
             .execDML( );
@@ -251,7 +262,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
 
     inline void updateCoverage( SvCall& rCall )
     {
-        xSetCoverageForCall.bindAndExecute( (uint32_t)rCall.uiCoverage, rCall.iId );
+        xSetCoverageForCall.bindAndExecute( (uint32_t)rCall.uiReferenceAmbiguity, rCall.iId );
     } // method
 
     inline void deleteCall( int64_t iCallId )
@@ -271,7 +282,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                             (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
                                             // NucSeqSql can deal with nullpointers
                                             NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppNt,
-                                            (uint32_t)rCall.uiCoverage, -1 );
+                                            (uint32_t)rCall.uiReferenceAmbiguity, -1 );
         rCall.iId = iCallId;
         xInsertRTree( iCallId, iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
                       (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
@@ -285,7 +296,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                     (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
                                     // NucSeqSql can deal with nullpointers
                                     NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppNt,
-                                    (uint32_t)rCall.uiCoverage, rCall.iId );
+                                    (uint32_t)rCall.uiReferenceAmbiguity, rCall.iId );
         xUpdateRTree.bindAndExecute( iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
                                      (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize,
                                      (uint32_t)rCall.uiToStart, (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize,
@@ -338,9 +349,10 @@ class SvCallTable : private TP_SV_CALL_TABLE
                     .eof( ) )
                 continue;
             if( !xNumOverlapsHelper2
-                     .vExecuteAndReturnIterator( iId, dScore, iId, iCallerRunIdB, iCallerRunIdB, uiFromStart - iAllowedDist,
-                                                 uiFromStart + uiFromSize + iAllowedDist, uiToStart - iAllowedDist,
-                                                 uiToStart + uiToSize + iAllowedDist, bSwitchStrand )
+                     .vExecuteAndReturnIterator( iId, dScore, iId, iCallerRunIdB, iCallerRunIdB,
+                                                 uiFromStart - iAllowedDist, uiFromStart + uiFromSize + iAllowedDist,
+                                                 uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist,
+                                                 bSwitchStrand )
                      .eof( ) )
                 continue;
             uiRet += 1;

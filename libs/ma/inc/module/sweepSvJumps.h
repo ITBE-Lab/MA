@@ -725,7 +725,6 @@ class FilterDiagonalLineCalls
 /**
  * @brief compute the ambiguity of a call via sampling
  * @details
- * @todo At the moment the result of this is saved in the coverage column. \n
  * This samples how much over the statistical value the k-mer size needs to be, so that all k-mers around the call
  * are unique. \n
  * We consider 4 different sections on the reference:
@@ -799,13 +798,12 @@ class ComputeCallAmbiguity
                 auto a = sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo );
                 auto b = sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo );
 
-                pCall->uiCoverage = std::max( a, b );
+                pCall->uiReferenceAmbiguity = std::max( a, b );
             } // if
             else
                 // @todo how to evaluate such calls?
-                pCall->uiCoverage = 1;
+                pCall->uiReferenceAmbiguity = 1;
         } // for
-        // if the call has enough coverage we keep it
         return pCalls;
     } // method
 }; // class

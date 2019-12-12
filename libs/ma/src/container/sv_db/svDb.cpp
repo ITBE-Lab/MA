@@ -1,6 +1,6 @@
 #include "container/sv_db/svDb.h"
-#include "module/combineOverlappingCalls.h"
 #include "container/container.h"
+#include "module/combineOverlappingCalls.h"
 
 // include classes that implement sql queries
 #include "container/sv_db/query_objects/callInserter.h"
@@ -36,7 +36,8 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> 
                                                  "AND sv_call_r_tree.minX <= ? " // dim 2
                                                  "AND sv_call_r_tree.maxY >= ? " // dim 3
                                                  "AND sv_call_r_tree.minY <= ? " // dim 3
-                                                 "AND (supporting_nt*1.0)/coverage >= ? " );
+                                                 "AND " +
+                                                     SvCallTable::getSqlForCallScore( ) + " >= ? " );
     return xQuery.scalar( iRunId, iRunId, uiX, uiX + (uint32_t)uiW, uiY, uiY + (uint32_t)uiH, dMinScore );
 } // function
 
@@ -99,8 +100,8 @@ std::vector<rect> getCallOverview( std::shared_ptr<SV_DB> pDb, std::shared_ptr<P
             auto uiEndX = std::min( uiX + uiW, (uint64_t)pPack->endOfSequenceWithId( uiContigX ) );
             auto uiStartY = std::max( uiY, (uint32_t)pPack->startOfSequenceWithId( uiContigY ) );
             auto uiEndY = std::min( uiY + uiH, (uint64_t)pPack->endOfSequenceWithId( uiContigY ) );
-            uint32_t uiNumW = ( uiEndX - uiStartX ) / uiMaxW + 1;
-            uint32_t uiNumH = ( uiEndY - uiStartY ) / uiMaxH + 1;
+            uint32_t uiNumW = ( uint32_t )( uiEndX - uiStartX ) / (uint32_t)uiMaxW + (uint32_t)1;
+            uint32_t uiNumH = ( uint32_t )( uiEndY - uiStartY ) / (uint32_t)uiMaxH + (uint32_t)1;
             double dW = ( (double)( uiEndX - uiStartX ) ) / (double)uiNumW;
             double dH = ( (double)( uiEndY - uiStartY ) ) / (double)uiNumH;
             if( dW * uiGiveUpFactor < uiW )
@@ -115,7 +116,8 @@ std::vector<rect> getCallOverview( std::shared_ptr<SV_DB> pDb, std::shared_ptr<P
                     auto c = getCallOverviewArea( pDb, pPack, iRunId, dMinScore, uiInnerX, uiInnerY, (uint32_t)dW + 1,
                                                   (uint32_t)dH + 1 );
                     if( c > 0 )
-                        vRet.emplace_back( uiInnerX, uiInnerY, (uint32_t)dW, (uint32_t)dH, c, uiContigX, uiContigY );
+                        vRet.emplace_back( (uint32_t)uiInnerX, (uint32_t)uiInnerY, (uint32_t)dW, (uint32_t)dH, c,
+                                           (uint32_t)uiContigX, (uint32_t)uiContigY );
                 } // for
         } // for
     } // for
