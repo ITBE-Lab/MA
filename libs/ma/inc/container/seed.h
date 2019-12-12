@@ -152,6 +152,29 @@ class Seed : public Container, public Interval<nucSeqIndex>
                bOnForwStrand == rxOther.bOnForwStrand;
     } // operator
 
+    /*
+     * @brief compares two Seeds.
+     * Seed ordering is defined by the ordering of their tuples (q,r,l,f).
+     * where q is the query position, r is the reference position, l is the length and f is wether the seed is on the
+     * forward strand.
+     */
+    inline bool operator<( const Seed& rxOther )
+    {
+        if( start( ) != rxOther.start( ) )
+            return start( ) < rxOther.start( );
+        if( start_ref( ) != rxOther.start_ref( ) )
+            return start_ref( ) < rxOther.start_ref( );
+        if( size( ) != rxOther.size( ) )
+            return size( ) < rxOther.size( );
+        if( bOnForwStrand != rxOther.bOnForwStrand )
+            return bOnForwStrand;
+        if( uiAmbiguity != rxOther.uiAmbiguity )
+            return uiAmbiguity;
+        if( uiDelta != rxOther.uiDelta )
+            return uiDelta;
+        return false;
+    } // operator
+
     // overload
     inline bool canCast( const std::shared_ptr<Container>& c ) const
     {

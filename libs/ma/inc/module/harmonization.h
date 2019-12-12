@@ -183,8 +183,9 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED
-    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
+                                                     std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -829,14 +830,7 @@ class ParlindromeFilter : public Module<Seeds, false, Seeds>
     {
         if( rotatedStartY( *pA ) == rotatedStartY( *pB ) && pA->bOnForwStrand == pB->bOnForwStrand )
         {
-            // comparing the pointers since we want to std::find to get the exact seed searched for.
-            if( pA->start_ref( ) == pB->start_ref( ) )
-            {
-                if( pA->start( ) == pB->start( ) )
-                    return pA->size( ) < pB->size( );
-                return pA->start( ) < pB->start( );
-            } // if
-            return pA->start_ref( ) < pB->start_ref( );
+            return *pA < *pB;
         } // if
         return rotatedStartY( *pA ) < rotatedStartY( *pB );
     } // method
@@ -941,10 +935,22 @@ class ParlindromeFilter : public Module<Seeds, false, Seeds>
                 ( xHeap.size( ) == 0 || rotatedStartX( *xForwStartIt ) <= rotatedEndX( *xHeap.front( ) ) ) &&
                 rotatedStartX( *xForwStartIt ) <= rotatedStartX( *xRevIt ) )
             {
+                // check if there was a previous seed
+                if( xForwStartIt != pSeeds->begin( ) )
+                {
+                    // the seed pointed to by xForwStartIt might be equal to a seed that we already passed
+                    if( *xForwStartIt == *( xForwStartIt - 1 ) )
+                    {
+                        // if so, ignore this duplicate
+                        xForwStartIt++;
+                        continue;
+                    } // if
+                } // if
 #if DEBUG_CODE
                 std::cout << "AAA " << ( xForwStartIt->bOnForwStrand ? "f " : "r " ) << xForwStartIt->start( ) << ","
                           << xForwStartIt->start_ref( ) << "," << xForwStartIt->size( ) << std::endl;
 #endif
+                assert( xIntervals.find( &*xForwStartIt ) == xIntervals.end( ) );
                 xIntervals[&*xForwStartIt ] = true; // insert
                 xHeap.push_back( &*xForwStartIt );
                 std::push_heap( xHeap.begin( ), xHeap.end( ), &seedIsSmallerHeap );
@@ -989,6 +995,7 @@ class ParlindromeFilter : public Module<Seeds, false, Seeds>
                           << "," << xHeap.front( )->start_ref( ) << "," << xHeap.front( )->size( ) << std::endl;
 #endif
                 auto xFind = xIntervals.find( xHeap.front( ) );
+                assert( xFind != xIntervals.end( ) );
                 if( xFind->second )
                     pRet->push_back( *xHeap.front( ) );
                 else if( pParlindromes != nullptr )
