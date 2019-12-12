@@ -484,9 +484,7 @@ class ExactCompleteBipartiteSubgraphSweep
 
                     pCurrCluster->reEstimateClusterSize( );
                     // we messed up this counter by removing jumps, fix that
-                    pCurrCluster->uiNumSuppNt = 0;
-                    for( auto pJump : pCurrCluster->vSupportingJumps )
-                        pCurrCluster->uiNumSuppNt += pJump->numSupportingNt( );
+                    pCurrCluster->uiNumSuppReads = pCurrCluster->vSupportingJumps.size();
                     // save the cluster
                     pRet->vContent.push_back( pCurrCluster );
                 } // if
@@ -608,7 +606,7 @@ class FilterLowSupportShortCalls
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
         for( auto pCall : pCalls->vContent )
             // if the call is supported by enough NT's or large enough we keep it
-            if( pCall->uiNumSuppNt > uiMaxSuppNt || pCall->size( ) > uiMaxSVSize )
+            if( pCall->uiNumSuppReads > uiMaxSuppNt || pCall->size( ) > uiMaxSVSize )
                 pRet->vContent.push_back( pCall );
 #if ANALYZE_FILTERS
         std::lock_guard<std::mutex> xGuard( xLock );

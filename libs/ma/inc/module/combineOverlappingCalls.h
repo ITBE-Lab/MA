@@ -9,7 +9,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
 {
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
         *pDb->pDatabase,
-        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt "
+        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
         "FROM sv_call_table "
         "WHERE sv_caller_run_id == ? "
         "ORDER BY id " );
@@ -18,7 +18,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
     CppSQLiteExtQueryStatement<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
         *pDb->pDatabase,
         "SELECT sv_call_r_tree.id, from_pos, to_pos, from_size, to_size, switch_strand, "
-        "       inserted_sequence, supporting_nt "
+        "       inserted_sequence, supporting_reads "
         "FROM sv_call_table, sv_call_r_tree "
         "WHERE sv_call_table.id == sv_call_r_tree.id "
         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
@@ -56,7 +56,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                       std::get<3>( xTup ), // uiFromSize
                       std::get<4>( xTup ), // uiToSize
                       std::get<5>( xTup ), // bSwitchStrand
-                      std::get<7>( xTup ) // supporting_nt
+                      std::get<7>( xTup ) // supporting_reads
         );
 
         std::vector<int64_t> vToDel;
@@ -108,7 +108,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                                  std::get<3>( xTup2 ), // uiFromSize
                                  std::get<4>( xTup2 ), // uiToSize
                                  std::get<5>( xTup2 ), // bSwitchStrand
-                                 std::get<7>( xTup2 ) // supporting_nt
+                                 std::get<7>( xTup2 ) // supporting_reads
                     );
                     xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
                     xSec.iId = std::get<0>( xTup2 );

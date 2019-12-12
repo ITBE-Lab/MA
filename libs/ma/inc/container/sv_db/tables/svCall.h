@@ -19,7 +19,7 @@ typedef CppSQLiteExtTableWithAutomaticPrimaryKey<int64_t, // sv_caller_run_id (f
                                                  uint32_t, // to_size
                                                  bool, // switch_strand
                                                  NucSeqSql, // inserted_sequence
-                                                 uint32_t, // supporting_nt
+                                                 uint32_t, // supporting_reads
                                                  uint32_t, // reference_ambiguity
                                                  int64_t // regex_id
                                                  >
@@ -97,7 +97,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
     {
         if( !sTableName.empty( ) )
             sTableName.append( "." );
-        return " ( " + sTableName + "supporting_nt * 1.0 ) / " + sTableName + "reference_ambiguity ";
+        return " ( " + sTableName + "supporting_reads * 1.0 ) / " + sTableName + "reference_ambiguity ";
     } // method
 
     SvCallTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -105,7 +105,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                             "sv_call_table", // name of the table in the database
                             // column definitions of the table
                             std::vector<std::string>{"sv_caller_run_id", "from_pos", "to_pos", "from_size", "to_size",
-                                                     "switch_strand", "inserted_sequence", "supporting_nt", "reference_ambiguity",
+                                                     "switch_strand", "inserted_sequence", "supporting_reads", "reference_ambiguity",
                                                      "regex_id"},
                             // constraints for table
                             std::vector<std::string>{
@@ -169,7 +169,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                      "WHERE sv_call_table.id == sv_call_r_tree.id "
                      "AND sv_call_r_tree.run_id_a >= ? " // dim 1
                      "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-                     "ORDER BY (" + getSqlForCallScore() + " DESC LIMIT 1 " ),
+                     "ORDER BY " + getSqlForCallScore() + " DESC LIMIT 1 " ),
           xMinScore( *pDatabase,
                      "SELECT " + getSqlForCallScore() + " FROM sv_call_table, sv_call_r_tree "
                      "WHERE sv_call_table.id == sv_call_r_tree.id "
@@ -224,7 +224,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                        "    to_size = ?, "
                        "    switch_strand = ?, "
                        "    inserted_sequence = ?, "
-                       "    supporting_nt = ?, "
+                       "    supporting_reads = ?, "
                        "    reference_ambiguity = ? "
                        "WHERE id == ? " ),
           xUpdateRTree( *pDatabase,
@@ -281,7 +281,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
         int64_t iCallId = this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
                                             (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
                                             // NucSeqSql can deal with nullpointers
-                                            NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppNt,
+                                            NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppReads,
                                             (uint32_t)rCall.uiReferenceAmbiguity, -1 );
         rCall.iId = iCallId;
         xInsertRTree( iCallId, iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
@@ -295,7 +295,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
         xUpdateCall.bindAndExecute( (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart, (uint32_t)rCall.uiFromSize,
                                     (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
                                     // NucSeqSql can deal with nullpointers
-                                    NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppNt,
+                                    NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppReads,
                                     (uint32_t)rCall.uiReferenceAmbiguity, rCall.iId );
         xUpdateRTree.bindAndExecute( iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
                                      (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize,

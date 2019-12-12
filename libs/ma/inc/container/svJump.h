@@ -367,7 +367,7 @@ class SvCall : public Container
     nucSeqIndex uiFromSize;
     nucSeqIndex uiToSize;
     bool bSwitchStrand;
-    nucSeqIndex uiNumSuppNt;
+    nucSeqIndex uiNumSuppReads;
     nucSeqIndex uiReferenceAmbiguity;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
@@ -389,7 +389,7 @@ class SvCall : public Container
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
-            nucSeqIndex uiNumSuppNt,
+            nucSeqIndex uiNumSuppReads,
             std::vector<int64_t> vSupportingJumpIds = {},
             int64_t iId = -1 /* -1 == no id obtained */
 #if 0
@@ -401,7 +401,7 @@ class SvCall : public Container
           uiFromSize( uiFromSize ),
           uiToSize( uiToSize ),
           bSwitchStrand( bSwitchStrand ),
-          uiNumSuppNt( uiNumSuppNt ),
+          uiNumSuppReads( uiNumSuppReads ),
           uiReferenceAmbiguity( 1 ),
           vSupportingJumpIds( vSupportingJumpIds ),
           iId( iId )
@@ -416,9 +416,9 @@ class SvCall : public Container
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
             bool bSwitchStrand,
-            nucSeqIndex uiNumSuppNt,
+            nucSeqIndex uiNumSuppReads,
             uint32_t uiReferenceAmbiguity )
-        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bSwitchStrand, uiNumSuppNt )
+        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bSwitchStrand, uiNumSuppReads )
     {
         this->uiReferenceAmbiguity = uiReferenceAmbiguity;
     } // constructor
@@ -429,7 +429,7 @@ class SvCall : public Container
                   pJump->from_size( ),
                   pJump->to_size( ),
                   pJump->does_switch_strand( ),
-                  pJump->numSupportingNt( ),
+                  1,
                   std::vector<int64_t>{pJump->iId} )
     {
         if( bRememberJump )
@@ -485,7 +485,7 @@ class SvCall : public Container
 
     inline double getScore( ) const
     {
-        return uiReferenceAmbiguity == 0 ? 0 : uiNumSuppNt / (double)uiReferenceAmbiguity;
+        return uiReferenceAmbiguity == 0 ? 0 : uiNumSuppReads / (double)uiReferenceAmbiguity;
     } // method
 
     bool supportedJumpsLoaded( ) const
@@ -624,7 +624,7 @@ class SvCall : public Container
         this->uiToSize = uiToEnd - this->uiToStart;
         this->vSupportingJumpIds.insert( this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ),
                                          rOther.vSupportingJumpIds.end( ) );
-        this->uiNumSuppNt += rOther.uiNumSuppNt;
+        this->uiNumSuppReads += rOther.uiNumSuppReads;
         this->uiReferenceAmbiguity = std::max( rOther.uiReferenceAmbiguity, this->uiReferenceAmbiguity );
         this->vSupportingJumps.insert( this->vSupportingJumps.end( ), rOther.vSupportingJumps.begin( ),
                                        rOther.vSupportingJumps.end( ) );

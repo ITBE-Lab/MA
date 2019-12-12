@@ -33,7 +33,7 @@ class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
                   "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? " ),
@@ -62,7 +62,7 @@ class SvCallsFromDb
           xQuery(
               *pDb->pDatabase,
               ( std::string(
-                    "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                    "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
                     "       reference_ambiguity "
                     "FROM sv_call_table AS inner "
                     "WHERE sv_caller_run_id == ? "
@@ -117,7 +117,7 @@ class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
                   "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
@@ -139,7 +139,7 @@ class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
                   "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
@@ -164,7 +164,7 @@ class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_nt, "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
                   "       reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
@@ -195,7 +195,7 @@ class SvCallsFromDb
                      std::get<3>( xTup ), // uiFromSize
                      std::get<4>( xTup ), // uiToSize
                      std::get<5>( xTup ), // bSwitchStrand
-                     std::get<7>( xTup ) // num_supporting_nt
+                     std::get<7>( xTup ) // supporting_reads
         );
         xRet.uiReferenceAmbiguity = std::get<8>( xTup );
         xRet.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
