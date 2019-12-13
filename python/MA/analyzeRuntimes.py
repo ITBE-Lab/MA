@@ -18,18 +18,27 @@ class AnalyzeRuntimes:
             out_file.write("runtime analysis:\n")
         data = []
         max_before_dot = 0
+        total_runtime = 0 
+        for name, (counter, pledges) in self.times.items():
+            total_runtime += sum(func(pledge) for pledge, func in pledges)
         for name, (counter, pledges) in self.times.items():
             seconds = round(sum(func(pledge) for pledge, func in pledges), 3)
+            percentage = int(100*seconds/total_runtime)
+            percentage_str = str(percentage) + "%"
+            if percentage < 100:
+                percentage_str = " "+percentage_str
+            if percentage < 10:
+                percentage_str = " "+percentage_str
             max_before_dot = max(max_before_dot, int(math.log10(max(1,seconds))) )
             counter_str = str(counter)
             if counter < 10:
                 counter_str = " " + counter_str
             if counter < 100:
                 counter_str = " " + counter_str
-            data.append(["[" + counter_str + "] " + name, seconds])
-        data = [(x, str(" "*int(max_before_dot-int(math.log10(max(1,y))))) + str(y) ) for x,y in data]
+            data.append(["[" + counter_str + "] " + name, seconds, percentage_str])
+        data = [(x, str(" "*int(max_before_dot-int(math.log10(max(1,y))))) + str(y), z ) for x,y,z in data]
         data.sort()
-        data.insert(0, ["Module name", "runtime [s]"])
+        data.insert(0, ["Module name", "runtime [s]", "ratio [%]"])
         print_columns(data, out_file)
         if not out_file is None:
             out_file.write("\n")
