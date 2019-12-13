@@ -1,12 +1,11 @@
 from MA import *
 import tempfile
 
-db_name = tempfile.gettempdir() + "/.tmp_2.db"
+#
+# there is a ppt file that describes the example used in this test
+#
 
-print(db_name)
-
-database = SV_DB(db_name, "create")
-def insert(database):
+def insert_calls(database):
     sv_inserter = SvCallInserter(database, "simulated sv", "the sv's that were simulated", -1)
 
     # deletion
@@ -26,26 +25,36 @@ def insert(database):
     sv_inserter.insert_call(SvCall(19, 1, 0, 0, False, 1000))  # f
     sv_inserter.insert_call(SvCall(18, 20, 0, 0, False, 1000))  # g
 
+    sv_inserter.end_transaction()
     return sv_inserter.sv_caller_run_id
 
-run_id = insert(database)
+def get_reference():
+    reference = Pack()
+    reference.append("chr1", "chr1-desc", NucSeq("GATCGTATC"))
+    reference.append("chr2", "chr2-desc", NucSeq("CTCGTCAACAG"))
+    return reference
 
-expected_sequence = "GGATCGTCCGACGAAATGTTCA"
+if __name__ == "__main__":
+    db_name = tempfile.gettempdir() + "/.tmp_2.db"
 
-reference = Pack()
-reference.append("chr1", "chr1-desc", NucSeq("GATCGTATC"))
-reference.append("chr2", "chr2-desc", NucSeq("CTCGTCAACAG"))
-reconstr = database.reconstruct_sequenced_genome(reference, run_id)
+    print(db_name)
 
-if str(reconstr.extract_forward_strand_n()) != expected_sequence:
-    print("original sequence     ", reference.extract_forward_strand_n())
-    print("expected sequence     ", expected_sequence)
-    print("reconstructed sequence", reconstr.extract_forward_strand_n())
-    for i, l in enumerate(reconstr.contigLengths()):
-        print("contig", i,"length =", l)
+    database = SV_DB(db_name, "create")
 
-assert str(reconstr.extract_forward_strand_n()) == expected_sequence
-assert reconstr.contigLengths()[0] == 8
-assert reconstr.contigLengths()[1] == 14
+    run_id = insert_calls(database)
+    reference = get_reference()
 
-exit(0)
+    expected_sequence = "GGATCGTCCGACGAAATGTTCA"
+
+    reconstr = database.reconstruct_sequenced_genome(reference, run_id)
+
+    if str(reconstr.extract_forward_strand_n()) != expected_sequence:
+        print("original sequence     ", reference.extract_forward_strand_n())
+        print("expected sequence     ", expected_sequence)
+        print("reconstructed sequence", reconstr.extract_forward_strand_n())
+        for i, l in enumerate(reconstr.contigLengths()):
+            print("contig", i,"length =", l)
+
+    assert str(reconstr.extract_forward_strand_n()) == expected_sequence
+    assert reconstr.contigLengths()[0] == 8
+    assert reconstr.contigLengths()[1] == 14

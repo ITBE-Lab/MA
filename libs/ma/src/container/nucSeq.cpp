@@ -46,7 +46,8 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def_readwrite( "id", &NucSeq::iId );
 
     // register return values of vectors of nucseqs
-    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" );
+    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" )
+        .def( py::init<>( ) );
 
     // export the NucSeqSql class
     py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( rxPyModuleId, "NucSeqSql" )

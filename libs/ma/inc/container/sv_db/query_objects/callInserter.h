@@ -19,7 +19,7 @@ class SvCallInserter
     // this is here so that it gets destructed after the transaction context
     std::shared_ptr<SV_DB> pDB;
     // must be after the DB so that it is deconstructed first
-    CppSQLiteExtImmediateTransactionContext xTransactionContext;
+    std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
 
   public:
     /// @brief id of the caller run this inserter is bound to.
@@ -78,7 +78,9 @@ class SvCallInserter
      * Expects the run to exists in the DB.
      */
     SvCallInserter( std::shared_ptr<SV_DB> pDB, const int64_t iSvCallerRunId )
-        : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvCallerRunId( iSvCallerRunId )
+        : pDB( pDB ),
+          pTransactionContext( std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase ) ),
+          iSvCallerRunId( iSvCallerRunId )
     {} // constructor
 
     /**
@@ -124,6 +126,14 @@ class SvCallInserter
         for( int64_t iId : rCall.vSupportingJumpIds )
             xContext.addSupport( iId );
     } // method
+
+    /**
+     * @brief terminates the transaction that is started by the constructor
+     */
+    inline void endTransaction( )
+    {
+        pTransactionContext.reset( );
+    }; // method
 
 }; // class
 

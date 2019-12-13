@@ -11,7 +11,8 @@ void exportSvCallInserter( py::module& rxPyModuleId )
         .def( py::init<std::shared_ptr<SV_DB>, int64_t>( ) )
         .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string, int64_t>( ) )
         .def_readonly( "sv_caller_run_id", &SvCallInserter::iSvCallerRunId )
-        .def( "insert_call", &SvCallInserter::insertCall );
+        .def( "insert_call", &SvCallInserter::insertCall )
+        .def( "end_transaction", &SvCallInserter::endTransaction );
 } // function
 
 #endif
