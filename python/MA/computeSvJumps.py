@@ -42,7 +42,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     res.simultaneous_get( parameter_set_manager.get_num_threads() )
 
     for jump_to_db in jump_to_dbs:
-        jump_to_db.cpp_module.commit()
+        jump_to_db.cpp_module.commit(True)
 
     analyze.analyze(runtime_file)
     if not runtime_file is None:

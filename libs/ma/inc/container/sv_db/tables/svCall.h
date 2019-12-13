@@ -243,7 +243,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
         CppSQLiteExtStatement( *pDatabase,
                                ( "CREATE INDEX IF NOT EXISTS sv_call_table_score_index_" +
                                  std::to_string( iCallerRunId ) +
-                                 " ON sv_call_table " + getSqlForCallScore() +
+                                 " ON sv_call_table ( " + getSqlForCallScore() + " ) " +
                                  " WHERE sv_caller_run_id == " +
                                  std::to_string( iCallerRunId ) )
                                    .c_str( ) )
