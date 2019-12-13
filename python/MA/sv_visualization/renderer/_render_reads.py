@@ -306,6 +306,7 @@ def render_reads(self):
                                                                 l_plot_nucs=l_plot_nucs,
                                                                 l_read_plot_data=l_read_plot_data.data_source,
                                                                 rect_read_plot_data=rect_read_plot_data.data_source,
+                                                                do_compressed_seeds=self.do_compressed_seeds,
                                                                 read_plot_rects=read_plot_rects),
                                                     code="""
                                                     var curr_x = cb_obj.y;
@@ -321,11 +322,25 @@ def render_reads(self):
                                                                 l_plot_nucs=l_plot_nucs,
                                                                 l_read_plot_data=l_read_plot_data.data_source,
                                                                 rect_read_plot_data=rect_read_plot_data.data_source,
+                                                                do_compressed_seeds=self.do_compressed_seeds,
                                                                 read_plot_rects=read_plot_rects),
                                                     code="""
                                                     var curr_x = cb_obj.x;
                                                     var curr_y = cb_obj.y;
                                                         """ + code))
+            self.read_plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
+                                                                radio_group=self.radio_group,
+                                                                plot=self.plot,
+                                                                read_source=read_source,
+                                                                range=self.d_plot[1].y_range,
+                                                                read_plot_line=read_plot_line.data_source,
+                                                                read_plot=self.read_plot,
+                                                                l_plot_nucs=l_plot_nucs,
+                                                                l_read_plot_data=l_read_plot_data.data_source,
+                                                                rect_read_plot_data=rect_read_plot_data.data_source,
+                                                                do_compressed_seeds=self.do_compressed_seeds,
+                                                                read_plot_rects=read_plot_rects),
+                                                    code=js_file("read_plot_seed_tap")))
 
             num_nt = self.w*3+self.h*3
             if num_nt < self.max_num_ele:
