@@ -1,3 +1,6 @@
+from MA import AnalyzeRuntimes
+import datetime
+
 class Renderer():
     def __init__(self, plot, l_plot, d_plot, xs, xe, ys, ye, pack, fm_index, sv_db, run_id, ground_truth_id, min_score,
                  max_num_ele, dataset_name, active_tools, radio_group, read_plot, selected_read_id, l_read_plot,
@@ -33,11 +36,31 @@ class Renderer():
         self.quads = []
         self.read_ids = set()
         self.give_up_factor = 1000
+        self.analyze = AnalyzeRuntimes()
+        self.do_render_seeds = True
+        self.do_compressed_seeds = True
+
+    def measure(self, name):
+        class MeasureHelper:
+            def __init__(self, name, analyze):
+                self.name = name
+                self.start = None
+                self.analyze = analyze
+            def __enter__(self):
+                self.start = datetime.datetime.now()
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                end = datetime.datetime.now()
+                delta = end - self.start
+                self.analyze.register(name, delta.total_seconds(), lambda x: x)
+        return MeasureHelper(name, self.analyze)
+
 
     # imported methdos
     from ._render import render
     from ._render_overview import render_overview
     from ._render_calls import render_calls
     from ._render_jumps import render_jumps
+    from ._render_reads import add_seed
+    from ._render_reads import add_rectangle
     from ._render_reads import render_reads
     from ._render_nucs import render_nucs

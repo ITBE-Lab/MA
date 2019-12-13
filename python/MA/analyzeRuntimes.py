@@ -21,7 +21,12 @@ class AnalyzeRuntimes:
         for name, (counter, pledges) in self.times.items():
             seconds = round(sum(func(pledge) for pledge, func in pledges), 3)
             max_before_dot = max(max_before_dot, int(math.log10(max(1,seconds))) )
-            data.append(["[" + str(counter) + "] " + name, seconds])
+            counter_str = str(counter)
+            if counter < 10:
+                counter_str = " " + counter_str
+            if counter < 100:
+                counter_str = " " + counter_str
+            data.append(["[" + counter_str + "] " + name, seconds])
         data = [(x, str(" "*int(max_before_dot-int(math.log10(max(1,y))))) + str(y) ) for x,y in data]
         data.sort()
         data.insert(0, ["Module name", "runtime [s]"])

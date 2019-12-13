@@ -27,7 +27,10 @@ def render(self):
     # plot diagonal; we need s and e since too large lines sometimes do not render...
     self.plot.line(x=[s, e], y=[s, e], line_color="black", line_width=3)
 
-    if libMA.get_call_overview_area(self.sv_db, self.pack, self.run_id, self.min_score, int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3) > self.max_num_ele:
+    with self.measure("get_call_overview_area"):
+        num_ele = libMA.get_call_overview_area(self.sv_db, self.pack, self.run_id, self.min_score,
+                                               int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
+    if num_ele > self.max_num_ele:
         return self.render_overview()
     else:
         return self.render_calls()

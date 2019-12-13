@@ -253,7 +253,9 @@ if os.path.isfile(dataset_name + "/info.json"):
                         radio_group, read_plot, selected_read_id, l_read_plot, d_read_plot, render_mems, seed_plot_y_s, 
                         seed_plot_y_e, json_info_file["reference_path"] + "/ma/genome")
 
-    redered_everything = renderer.render()
+    with renderer.measure("render"):
+        redered_everything = renderer.render()
+    renderer.analyze.analyze()
 else:
     xe = 0
     ye = 0

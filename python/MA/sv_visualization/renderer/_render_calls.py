@@ -44,8 +44,9 @@ def render_calls(self):
         "r": [],
         "s": []
     }
-    calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.run_id, int(self.xs - self.w), int(self.ys - self.h),
-                                  self.w*3, self.h*3, self.min_score)
+    with self.measure("SvCallFromDb(run_id)"):
+        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.run_id, int(self.xs - self.w),
+                                      int(self.ys - self.h), self.w*3, self.h*3, self.min_score)
     while calls_from_db.hasNext():
         jump = calls_from_db.next()
         if jump.from_size == 0 and jump.to_size == 0:
@@ -69,8 +70,9 @@ def render_calls(self):
         accepted_plus_data["c"].append(jump.reference_ambiguity)
         accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
         accepted_plus_data["s"].append(str(jump.get_score()))
-    calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.ground_truth_id,
-                                  int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3, self.min_score)
+    with self.measure("SvCallFromDb(run_id)"):
+        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.ground_truth_id,
+                                      int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3, self.min_score)
     while calls_from_db.hasNext():
         jump = calls_from_db.next()
         if jump.from_size == 0 and jump.to_size == 0:
@@ -93,10 +95,12 @@ def render_calls(self):
         ground_plus_data["s"].append(str(jump.get_score()))
 
 
-    num_jumps = libMA.get_num_jumps_in_area(self.sv_db, self.pack, self.sv_db.get_run_jump_id(self.run_id),
+    with self.measure("get_num_jumps_in_area"):
+        num_jumps = libMA.get_num_jumps_in_area(self.sv_db, self.pack, self.sv_db.get_run_jump_id(self.run_id),
                                             int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
     if num_jumps < self.max_num_ele:
-        rendered_everything = self.render_jumps()
+        with self.measure("render_jumps"):
+            rendered_everything = self.render_jumps()
     # the sv - boxes
     self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="magenta", line_width=3, fill_alpha=0,
                    source=ColumnDataSource(accepted_boxes_data), name="hover2")

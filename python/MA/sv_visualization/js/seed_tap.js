@@ -66,6 +66,7 @@ for (var j = 0; j < read_source.data.r_id.length; j++) {
     }
 }
 
+// @todo with compressed seeds this does bullshit
 // no seed is hit -> but maybe a read?
 for (var outer_j = 0; outer_j < read_source.data.r_id.length; outer_j++) {
     // correct column but no single seed matches...
