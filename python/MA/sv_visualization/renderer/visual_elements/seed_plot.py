@@ -1,5 +1,7 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
+from bokeh.plotting import ColumnDataSource
+import math
 
 class SeedPlot:
     def __init__(self, main_plot):
@@ -28,7 +30,7 @@ class SeedPlot:
         self.bottom_plot.yaxis.axis_label = "Read Id"
 
         # ambigious regions (red rectangles)
-        self.ambiguous_regions = ColumnDataSource()
+        self.ambiguous_regions = ColumnDataSource({"l":[], "b":[], "r":[], "t":[]})
         self.bottom_plot.quad(left="l", bottom="b", right="r", top="t", fill_alpha=0.5,
                             fill_color="red", line_width=0, source=self.ambiguous_regions, name="ambiguous_regions")
         self.left_plot.quad(left="b", bottom="l", right="t", top="r", fill_alpha=0.5,
@@ -46,7 +48,7 @@ class SeedPlot:
         self.bottom_plot.add_tools(hover_ambiguous_regions)
 
         # seeds
-        self.seeds = ColumnDataSource()
+        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "c":[]})
         self.left_plot.rect(x="category", y="center", width=1, height="size",
                             fill_color="c", line_width=0, source=self.seeds, name="seeds")
         self.bottom_plot.rect(y="category", x="center", height=1, width="size",
@@ -59,5 +61,5 @@ class SeedPlot:
                                           ("parlindrome-filtered", "@parlindrome")],
                                 names=['seeds'],
                                 name="Hover reads")
-        self.left_plot.add_tools(self.hover_seeds)
-        self.bottom_plot.add_tools(self.hover_seeds)
+        self.left_plot.add_tools(hover_seeds)
+        self.bottom_plot.add_tools(hover_seeds)

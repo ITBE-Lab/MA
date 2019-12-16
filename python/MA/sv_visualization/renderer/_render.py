@@ -2,13 +2,11 @@ from MA import *
 
 
 def render(self):
-    # genome outline
-    self.plot.quad(left=0, bottom=0, right=self.pack.unpacked_size_single_strand,
-                   top=self.pack.unpacked_size_single_strand,
-                   fill_alpha=0, line_color="black", line_width=3)
+    self.main_plot.genome_outline.data = {"x":[0], 
+                                          "y":[0],
+                                          "w":[self.pack.unpacked_size_single_strand],
+                                          "h":[self.pack.unpacked_size_single_strand]}
 
-    if not self.sv_db.run_exists(self.run_id):
-        return True
 
     if self.xs < 0:
         self.xs = 0
@@ -22,14 +20,20 @@ def render(self):
     self.h = int(self.ye - self.ys)
 
     s = max(min(self.xs - self.w, self.ys - self.h), 0)
-    e = min(max(self.xe + self.w, self.ye + self.h),
-            self.pack.unpacked_size_single_strand)
+    e = min(max(self.xe + self.w, self.ye + self.h), self.pack.unpacked_size_single_strand)
     # plot diagonal; we need s and e since too large lines sometimes do not render...
-    self.plot.line(x=[s, e], y=[s, e], line_color="black", line_width=3)
+    self.main_plot.diagonal_line.data = {"xs":[s, e], "ys":[s, e]}
+
+    if self.widgets.run_id_dropdown.value is None:
+        return
+    if not self.sv_db.run_exists(self.widgets.run_id_dropdown.value):
+        return
 
     with self.measure("get_call_overview_area"):
-        num_ele = libMA.get_call_overview_area(self.sv_db, self.pack, self.run_id, self.min_score,
+        num_ele = libMA.get_call_overview_area(self.sv_db, self.pack, self.widgets.run_id_dropdown.value,
+                                                self.widgets.score_slider.value,
                                                int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
+    return
     if num_ele > self.max_num_ele:
         return self.render_overview()
     else:

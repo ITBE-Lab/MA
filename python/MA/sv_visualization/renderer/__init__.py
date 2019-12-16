@@ -1,14 +1,14 @@
 from MA import AnalyzeRuntimes
 import datetime
-from visual_elements.main_plot import *
-from visual_elements.seed_plot import *
-from visual_elements.nuc_plot import *
-from visual_elements.read_plot import *
-from visual_elements.widgets import *
+from .visual_elements.main_plot import *
+from .visual_elements.seed_plot import *
+from .visual_elements.nuc_plot import *
+from .visual_elements.read_plot import *
+from .visual_elements.widgets import *
 
 class Renderer():
     def __init__(self):
-        self.main_plot = MainPlot()
+        self.main_plot = MainPlot(self)
         self.nuc_plot = NucPlot(self.main_plot)
         self.seed_plot = SeedPlot(self.main_plot)
         self.read_plot = ReadPlot(self.nuc_plot)
@@ -25,6 +25,12 @@ class Renderer():
         self.analyze = AnalyzeRuntimes()
         self.do_render_seeds = True
         self.do_compressed_seeds = True
+        self.xs = 0
+        self.ys = 0
+        self.xe = 0
+        self.ye = 0
+        self.redered_everything = False
+        self.render_area_factor = 2
 
     def measure(self, name):
         class MeasureHelper:

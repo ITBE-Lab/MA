@@ -1,5 +1,6 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
+from bokeh.plotting import ColumnDataSource
 
 class ReadPlotNucs:
     def __init__(self, nuc_plot, read_plot):
@@ -28,7 +29,7 @@ class ReadPlotNucs:
         self.bottom_plot.xaxis.axis_label = "Reference Position"
 
         # the nucleotides from the read
-        self.left_nucs = ColumnDataSource()
+        self.left_nucs = ColumnDataSource({"c":[], "x":[], "y":[]})
         self.left_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
                             source=self.left_nucs, name="nucleotides")
 
@@ -36,7 +37,7 @@ class ReadPlotNucs:
         self.bottom_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
                             source=nuc_plot.left_nucs, name="nucleotides")
         self.bottom_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
-                            source=nuc_plot.botttom_nucs, name="nucleotides")
+                            source=nuc_plot.bottom_nucs, name="nucleotides")
 
         hover_nucleotides = HoverTool(tooltips="@i", names=['nucleotides'], name="Hover nucleotides")
         self.left_plot.add_tools(hover_nucleotides)
@@ -44,7 +45,6 @@ class ReadPlotNucs:
 
 class ReadPlot:
     def __init__(self, nuc_plot):
-        self.nuc_plot = ReadPlotNucs(nuc_plot, self)
 
         self.plot = figure(
             width=900,
@@ -59,7 +59,7 @@ class ReadPlot:
         self.plot.toolbar.logo = None
 
         # the ambiguity rectangles
-        self.ambiguity_rect = ColumnDataSource()
+        self.ambiguity_rect = ColumnDataSource({"l":[], "b":[], "r":[], "t":[], "c":[]})
         self.plot.quad(left="l", bottom="b", right="r", top="t", fill_color="c",
                         fill_alpha=0.2, line_width=0, name="ambiguity_rect",
                         source=self.ambiguity_rect)
@@ -74,7 +74,7 @@ class ReadPlot:
                                      name="Hover ambiguity rects"))
 
         # the seeds
-        self.seeds = ColumnDataSource()
+        self.seeds = ColumnDataSource({"x":[], "y":[], "c":[]})
         self.plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.seeds, name="seeds")
 
         self.plot.add_tools(HoverTool(tooltips=[("read id", "@r_id"),
@@ -84,4 +84,6 @@ class ReadPlot:
                                                 ("parlindrome-filtered", "@parlindrome")],
                                       names=['seeds'],
                                       name="Hover seeds"))
+
+        self.nuc_plot = ReadPlotNucs(nuc_plot, self)
 
