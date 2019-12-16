@@ -1,38 +1,24 @@
 from MA import AnalyzeRuntimes
 import datetime
+from visual_elements.main_plot import *
+from visual_elements.seed_plot import *
+from visual_elements.nuc_plot import *
+from visual_elements.read_plot import *
+from visual_elements.widgets import *
 
 class Renderer():
-    def __init__(self, plot, l_plot, d_plot, xs, xe, ys, ye, pack, fm_index, sv_db, run_id, ground_truth_id, min_score,
-                 max_num_ele, dataset_name, active_tools, radio_group, read_plot, selected_read_id, l_read_plot,
-                 d_read_plot, render_mems, seed_plot_y_s, seed_plot_y_e, index_prefix):
-        self.plot = plot
-        self.l_plot = l_plot
-        self.d_plot = d_plot
-        self.xs = xs
-        self.xe = xe
-        self.ys = ys
-        self.ye = ye
-        self.pack = pack
-        self.fm_index = fm_index
-        self.sv_db = sv_db
-        self.run_id = run_id
-        self.ground_truth_id = ground_truth_id
-        self.min_score = min_score
-        self.max_num_ele = max_num_ele
-        self.dataset_name = dataset_name
-        self.active_tools = active_tools
-        self.radio_group = radio_group
-        self.read_plot = read_plot
-        self.selected_read_id = selected_read_id
-        self.index_prefix = index_prefix
-        self.render_mems = render_mems
-        self.seed_plot_y_s = seed_plot_y_s
-        self.seed_plot_y_e = seed_plot_y_e
+    def __init__(self):
+        self.main_plot = MainPlot()
+        self.nuc_plot = NucPlot(self.main_plot)
+        self.seed_plot = SeedPlot(self.main_plot)
+        self.read_plot = ReadPlot(self.nuc_plot)
+        self.widgets = Widgets()
+        self.pack = None
+        self.fm_index = None
+        self.sv_db = None
         self.w = None
         self.h = None
         self.params = None
-        self.l_read_plot = l_read_plot
-        self.d_read_plot = d_read_plot
         self.quads = []
         self.read_ids = set()
         self.give_up_factor = 1000
@@ -57,6 +43,7 @@ class Renderer():
 
     # imported methdos
     from ._render import render
+    from ._setup import setup
     from ._render_overview import render_overview
     from ._render_calls import render_calls
     from ._render_jumps import render_jumps

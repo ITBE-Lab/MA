@@ -1,48 +1,6 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 
-class ReadPlot:
-    def __init__(self):
-        self.plot = figure(
-            width=900,
-            height=400,
-            tools=[
-                "pan", "box_zoom",
-                "wheel_zoom", "reset"
-            ],
-            active_scroll="wheel_zoom"
-        )
-        self.plot.axis.visible = False
-        self.plot.toolbar.logo = None
-
-        # the ambiguity rectangles
-        self.ambiguity_rect = ColumnDataSource()
-        self.plot.quad(left="l", bottom="b", right="r", top="t", fill_color="c",
-                        fill_alpha=0.2, line_width=0, name="ambiguity_rect",
-                        source=self.ambiguity_rect)
-
-        self.plot.add_tools(HoverTool(tooltips=[("left", "@l"),
-                                                ("bottom", "@b"),
-                                                ("right", "@r"),
-                                                ("top", "@t"),
-                                                ("fill percentage", "@f"),
-                                                ("additional seed size", "@s")],
-                                     names=['ambiguity_rect'],
-                                     name="Hover ambiguity rects"))
-
-        # the seeds
-        self.seeds = ColumnDataSource()
-        self.plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.seeds, name="seeds")
-
-        self.plot.add_tools(HoverTool(tooltips=[("read id", "@r_id"),
-                                                ("q, r, l", "@q, @r, @l"),
-                                                ("index", "@idx"),
-                                                ("reseeding-layer", "@layer"),
-                                                ("parlindrome-filtered", "@parlindrome")],
-                                      names=['seeds'],
-                                      name="Hover seeds"))
-
-
 class ReadPlotNucs:
     def __init__(self, nuc_plot, read_plot):
         self.left_plot = figure(
@@ -83,3 +41,47 @@ class ReadPlotNucs:
         hover_nucleotides = HoverTool(tooltips="@i", names=['nucleotides'], name="Hover nucleotides")
         self.left_plot.add_tools(hover_nucleotides)
         self.bottom_plot.add_tools(hover_nucleotides)
+
+class ReadPlot:
+    def __init__(self, nuc_plot):
+        self.nuc_plot = ReadPlotNucs(nuc_plot, self)
+
+        self.plot = figure(
+            width=900,
+            height=400,
+            tools=[
+                "pan", "box_zoom",
+                "wheel_zoom", "reset"
+            ],
+            active_scroll="wheel_zoom"
+        )
+        self.plot.axis.visible = False
+        self.plot.toolbar.logo = None
+
+        # the ambiguity rectangles
+        self.ambiguity_rect = ColumnDataSource()
+        self.plot.quad(left="l", bottom="b", right="r", top="t", fill_color="c",
+                        fill_alpha=0.2, line_width=0, name="ambiguity_rect",
+                        source=self.ambiguity_rect)
+
+        self.plot.add_tools(HoverTool(tooltips=[("left", "@l"),
+                                                ("bottom", "@b"),
+                                                ("right", "@r"),
+                                                ("top", "@t"),
+                                                ("fill percentage", "@f"),
+                                                ("additional seed size", "@s")],
+                                     names=['ambiguity_rect'],
+                                     name="Hover ambiguity rects"))
+
+        # the seeds
+        self.seeds = ColumnDataSource()
+        self.plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.seeds, name="seeds")
+
+        self.plot.add_tools(HoverTool(tooltips=[("read id", "@r_id"),
+                                                ("q, r, l", "@q, @r, @l"),
+                                                ("index", "@idx"),
+                                                ("reseeding-layer", "@layer"),
+                                                ("parlindrome-filtered", "@parlindrome")],
+                                      names=['seeds'],
+                                      name="Hover seeds"))
+
