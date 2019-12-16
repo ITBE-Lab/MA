@@ -18,7 +18,7 @@ class SvJumpInserter
     // this is here so that it gets destructed after the transaction context
     std::shared_ptr<SV_DB> pDB;
     // must be after the DB so that it is deconstructed first
-    CppSQLiteExtImmediateTransactionContext xTransactionContext;
+    std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
 
   public:
     /// @brief the id of the run this inserter is attached to.
@@ -69,9 +69,22 @@ class SvJumpInserter
      * @brief creates a jump inserter for the run with id = iSvJumpRunId
      * @param pDB the sv database
      * @param iSvJumpRunId caller run id
+     * @param bTransactionLess do not create a transaction
      */
-    SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId )
-        : pDB( pDB ), xTransactionContext( *pDB->pDatabase ), iSvJumpRunId( iSvJumpRunId )
+    SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId, bool bTransactionLess )
+        : pDB( pDB ),
+          pTransactionContext( bTransactionLess
+                                   ? nullptr
+                                   : std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase ) ),
+          iSvJumpRunId( iSvJumpRunId )
+    {} // constructor
+
+    /**
+     * @brief creates a jump inserter for the run with id = iSvJumpRunId
+     * @param pDB the sv database
+     * @param iSvJumpRunId caller run id
+     */
+    SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId ) : SvJumpInserter( pDB, iSvJumpRunId, false )
     {} // constructor
 
     /**
@@ -81,7 +94,7 @@ class SvJumpInserter
      */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, const std::string& rsSvCallerName, const std::string& rsSvCallerDesc )
         : pDB( pDB ),
-          xTransactionContext( *pDB->pDatabase ),
+          pTransactionContext( std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase ) ),
           iSvJumpRunId( pDB->pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
     {} // constructor
 
@@ -153,9 +166,9 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     {} // constructor
 
     /// @brief bulk insert all jumps in the buffer; then clear the buffer
-    inline void commit( bool bForce=false )
+    inline void commit( bool bTransactionLess = true, bool bForce = false )
     {
-        if(!bForce && vBuffer.size( ) < 10000)
+        if( !bForce && vBuffer.size( ) < 10000 )
             return;
         if( vBuffer.size( ) == 0 )
             return;
@@ -174,7 +187,7 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     /// @brief triggers commit
     ~BufferedSvDbInserter( )
     {
-        commit( true );
+        commit( false, true );
     } // destructor
 
     /// @brief buffer all jumps in pJumps for the read pRead
