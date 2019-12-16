@@ -12,6 +12,10 @@ from bokeh.models.tools import HoverTool
 from bokeh.models.axes import LinearAxis
 from MA import *
 import math
+from visual_elements.main_plot import *
+from visual_elements.seed_plot import *
+from visual_elements.nuc_plot import *
+from visual_elements.read_plot import *
 
 
 server_context = curdoc().session_context.server_context
@@ -198,9 +202,7 @@ hover5 = HoverTool(tooltips=[("read id", "@r_id"), ("q, r, l", "@q, @r, @l"), ("
 l2_plot.add_tools(hover5)
 d2_plot.add_tools(hover5)
 read_plot.add_tools(hover5)
-hover6 = HoverTool(tooltips=[("left", "@l"), ("bottom", "@b"), ("right", "@r"), ("top", "@t"),
-                             ("fill percentage", "@f"), ("additional seed size", "@s")],
-                   names=['hover6'], name="Hover rects")
+
 read_plot.add_tools(hover6)
 l_read_plot.add_tools(hover6)
 d_read_plot.add_tools(hover6)
