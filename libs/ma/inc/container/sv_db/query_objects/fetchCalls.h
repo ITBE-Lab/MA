@@ -39,7 +39,7 @@ class SvCallsFromDb
                   "WHERE sv_caller_run_id == ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -100,7 +100,7 @@ class SvCallsFromDb
                   .c_str( ) ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -124,7 +124,7 @@ class SvCallsFromDb
                   "AND " + SvCallTable::getSqlForCallScore( ) + " >= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -149,7 +149,7 @@ class SvCallsFromDb
                   "AND to_pos <= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -164,8 +164,8 @@ class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery( *pDb->pDatabase,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
-                  "       reference_ambiguity "
+                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
+                  "       supporting_reads, reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id == ? "
                   "AND from_pos + from_size >= ? "
@@ -175,7 +175,7 @@ class SvCallsFromDb
                   "AND " + SvCallTable::getSqlForCallScore( ) + " >= ? " ),
           xQuerySupport( *pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "num_supporting_nt, sv_jump_table.id, read_id "
+                         "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id == ? " ),
@@ -204,7 +204,7 @@ class SvCallsFromDb
         while( !xSupportIterator.eof( ) )
         {
             auto xTup = xSupportIterator.get( );
-            xRet.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
+            xRet.vSupportingJumpIds.push_back( std::get<8>( xTup ) );
             xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
                 pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
                 std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),

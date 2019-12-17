@@ -2,6 +2,7 @@ from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
 import copy
+from bokeh.events import Tap
 
 class MainPlot:
     def __init__(self, renderer):
@@ -41,7 +42,8 @@ class MainPlot:
                                                 ("|query|", "@q"),
                                                 ("from", "@f"),
                                                 ("to", "@t"),
-                                                ("fuzziness", "@fuzz nt @f_dir")],
+                                                ("fuzziness", "@fuzz nt @f_dir"),
+                                                ("id", "@i")],
                                       names=["jump_quads"],
                                       name="Hover jumps"))
 
@@ -66,7 +68,8 @@ class MainPlot:
         self.plot.add_tools(HoverTool(tooltips=[("supp. nt", "@n"),
                                                 ("coverage", "@c"),
                                                 ("#reads", "@r"),
-                                                ("score", "@s")],
+                                                ("score", "@s"),
+                                                ("id", "@idx")],
                                       names=["call_quad", "ground_truth_quad", "call_x", "ground_truth_x"],
                                       name="Hover calls"))
         # the overview plot
@@ -80,6 +83,9 @@ class MainPlot:
 
         # range change callback
         self.plot.y_range.on_change("start", lambda x,y,z: self.range_change_callback(renderer))
+
+        # make jumps and calls clickable
+        self.plot.on_event(Tap, lambda tap: self.jump_or_call_tap(renderer, tap.x, tap.y))
 
     def range_change_callback(self, renderer):
         x_r = self.plot.x_range
@@ -99,8 +105,6 @@ class MainPlot:
             renderer.xe = x_r.end
             renderer.ys = y_r.start
             renderer.ye = y_r.end
-
-            print("range_change_callback")
 
             renderer.render()
 
@@ -134,18 +138,54 @@ class MainPlot:
                                 self.jump_quads[quad_idx].data["t"][idx] == seed_r + seed_size - 1 ) and \
                                 self.jump_quads[quad_idx].data["r"][idx] == renderer.selected_read_id
                             )
+        elif len(renderer.selected_jump_id) != 0:
+            highlight_jump(lambda quad_idx, idx: self.jump_quads[quad_idx].data["i"][idx] in renderer.selected_jump_id)
         elif not renderer.selected_read_id is None:
             highlight_jump(lambda quad_idx, idx: self.jump_quads[quad_idx].data["r"][idx] == renderer.selected_read_id)
         else:
             highlight_jump(lambda quad_idx, idx: True)
 
+    def jump_or_call_tap(self, renderer, x, y):
+        renderer.selected_seed_id = None
+        renderer.selected_call_id = set()
+        renderer.selected_jump_id = set()
 
+        def is_hit(dict, idx):
+            return dict["x"][idx] <= x and x <= dict["w"][idx] and dict["y"][idx] <= y and y <= dict["h"][idx]
 
-"""
- if (read_source.data.r_id[j] == src.data.r[idx] &&
-                    (read_source.data.r[j] == src.data.f[idx] ||
-                        read_source.data.r[j] == src.data.t[idx] ||
-                        read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.f[idx] ||
-                        read_source.data.r[j] + read_source.data.size[j] - 1 == src.data.t[idx]
-                    )
-"""
+        # check calls first
+        for idx, _ in enumerate(self.call_quad.data["x"]):
+            if is_hit(self.call_quad.data, idx):
+                renderer.selected_call_id.add(self.call_quad.data["idx"][idx])
+                for idx in self.call_quad.data["supporing_jump_ids"][idx]:
+                    renderer.selected_jump_id.add(idx)
+
+        # check jumps if no call was hit
+        sel_read_id = True
+        if len(renderer.selected_call_id) == 0:
+            for quad_idx, _ in enumerate(self.jump_quads):
+                for idx, _ in enumerate(self.jump_quads[quad_idx].data["c"]):
+                    if is_hit(self.jump_quads[quad_idx].data, idx):
+                        renderer.selected_jump_id.add(self.jump_quads[quad_idx].data["i"][idx])
+                        if sel_read_id == True:
+                            sel_read_id = self.jump_quads[quad_idx].data["r"][idx]
+                        elif sel_read_id != self.jump_quads[quad_idx].data["r"][idx]:
+                            sel_read_id = False
+
+        # if nothing at all was hit do total reset
+        if len(renderer.selected_jump_id) == 0:
+            renderer.selected_read_id = None
+
+        if sel_read_id != True and sel_read_id != False:
+            renderer.selected_read_id = sel_read_id
+            renderer.read_plot.nuc_plot.copy_nts(renderer)
+
+        self.update_selection(renderer)
+        renderer.seed_plot.update_selection(renderer)
+
+        if len(renderer.selected_jump_id) == 0:
+            renderer.read_plot.reset_seeds(renderer)
+            renderer.read_plot.nuc_plot.reset_nts(renderer)
+        else:
+            renderer.read_plot.copy_seeds(renderer, lambda idx: renderer.seed_plot.seeds.data["r_id"][idx] == \
+                                                                renderer.selected_read_id)

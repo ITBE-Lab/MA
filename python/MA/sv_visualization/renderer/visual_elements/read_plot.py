@@ -47,10 +47,11 @@ class ReadPlotNucs:
         self.bottom_plot.add_tools(hover_nucleotides)
 
     def copy_nts(self, renderer):
-        if renderer.selected_read_id is None:
-            self.left_nucs.data = {"c":[], "p":[]}
-        else:
+        if not renderer.selected_read_id is None:
             self.left_nucs.data = self.nucs_by_r_id[renderer.selected_read_id]
+
+    def reset_nts(self, renderer):
+        self.left_nucs.data = {"c":[], "p":[]}
 
 class ReadPlot:
     def __init__(self, nuc_plot, renderer):
@@ -100,7 +101,7 @@ class ReadPlot:
         renderer.main_plot.plot.x_range.on_change("start", lambda x,y,z: self.auto_adjust_y_range(renderer))
 
         # make seeds clickable
-        # self.plot.on_event(Tap, lambda tap: self.seed_tap(renderer, tap.x, tap.y))
+        self.plot.on_event(Tap, lambda tap: self.seed_tap(renderer, tap.x, tap.y))
 
     def auto_adjust_y_range(self, renderer):
         if renderer.widgets.range_link_radio.active == 0:
@@ -133,5 +134,35 @@ class ReadPlot:
                 found_at_least_one = True
         if found_at_least_one:
             self.seeds.data = seed_dict
-            self.auto_adjust_y_range(renderer)
+
+    def reset_seeds(self, renderer):
+        seed_dict = dict((key, []) for key in renderer.seed_plot.seeds.data.keys())
+        self.seeds.data = seed_dict
+
+    def seed_tap(self, renderer, x, y):
+        renderer.selected_call_id = set()
+        renderer.selected_jump_id = set()
+        renderer.selected_seed_id = None
+        mouse_delta = x-y
+        mouse_add = x+y
+        min_dist = 10
+        for idx, _ in enumerate(self.seeds.data["center"]):
+            if self.seeds.data["f"][idx]:
+                seed_delta = self.seeds.data["x"][idx][0] - self.seeds.data["y"][idx][0]
+                seed_add_1 = self.seeds.data["x"][idx][0] + self.seeds.data["y"][idx][0]
+                seed_add_2 = self.seeds.data["x"][idx][1] + self.seeds.data["y"][idx][1]
+                if seed_add_1 <= mouse_add and mouse_add <= seed_add_2 and abs(seed_delta-mouse_delta) <= min_dist:
+                    min_dist = abs(seed_delta-mouse_delta)
+                    renderer.selected_seed_id = (self.seeds.data["idx"][idx], self.seeds.data["r_id"][idx])
+            else:
+                seed_delta_1 = self.seeds.data["x"][idx][1] - self.seeds.data["y"][idx][1]
+                seed_delta_2 = self.seeds.data["x"][idx][0] - self.seeds.data["y"][idx][0]
+                seed_add = self.seeds.data["x"][idx][0] + self.seeds.data["y"][idx][0]
+                if seed_delta_1 <= mouse_delta and mouse_delta <= seed_delta_2 and abs(seed_add-mouse_add) <= min_dist:
+                    min_dist = abs(seed_add-mouse_add)
+                    renderer.selected_seed_id = (self.seeds.data["idx"][idx], self.seeds.data["r_id"][idx])
+
+        renderer.seed_plot.update_selection(renderer)
+        self.copy_seeds(renderer, lambda idx: renderer.seed_plot.seeds.data["r_id"][idx] == renderer.selected_read_id)
+        renderer.main_plot.update_selection(renderer)
 

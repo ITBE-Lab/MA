@@ -24,7 +24,7 @@ class Renderer():
         self.give_up_factor = 1000
         self.analyze = AnalyzeRuntimes()
         self.do_render_seeds = True
-        self.do_compressed_seeds = False
+        self.do_compressed_seeds = True
         self.render_mems = False
         self.xs = 0
         self.ys = 0
@@ -34,6 +34,8 @@ class Renderer():
         self.render_area_factor = 1 # @todo make this adjustable 
         self.selected_read_id = None
         self.selected_seed_id = None
+        self.selected_call_id = set()
+        self.selected_jump_id = set()
 
     def get_run_id(self):
         return int(self.widgets.run_id_dropdown.value)

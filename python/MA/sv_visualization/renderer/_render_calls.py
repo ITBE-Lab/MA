@@ -14,6 +14,8 @@ def render_calls(self):
         "n": [],
         "c": [],
         "r": [],
+        "idx": [],
+        "supporing_jump_ids": [],
         "s": []
     }
     accepted_plus_data = {
@@ -22,6 +24,7 @@ def render_calls(self):
         "n": [],
         "c": [],
         "r": [],
+        "idx": [],
         "s": []
     }
     ground_boxes_data = {
@@ -32,6 +35,8 @@ def render_calls(self):
         "n": [],
         "c": [],
         "r": [],
+        "idx": [],
+        "supporing_jump_ids": [],
         "s": []
     }
     ground_plus_data = {
@@ -40,6 +45,7 @@ def render_calls(self):
         "n": [],
         "c": [],
         "r": [],
+        "idx": [],
         "s": []
     }
     with self.measure("SvCallFromDb(run_id)"):
@@ -61,9 +67,12 @@ def render_calls(self):
             accepted_boxes_data["c"].append(jump.reference_ambiguity)
             accepted_boxes_data["r"].append(len(jump.supporing_jump_ids))
             accepted_boxes_data["s"].append(str(jump.get_score()))
+            accepted_boxes_data["idx"].append(jump.id)
+            accepted_boxes_data["supporing_jump_ids"].append(list(jump.supporing_jump_ids))
             accepted_plus_data["x"].append(
                 jump.from_start + jump.from_size/2)
             accepted_plus_data["y"].append(jump.to_start + jump.to_size/2)
+        accepted_plus_data["idx"].append(jump.id)
         accepted_plus_data["n"].append(jump.num_supp_reads)
         accepted_plus_data["c"].append(jump.reference_ambiguity)
         accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
@@ -83,11 +92,14 @@ def render_calls(self):
             ground_boxes_data["w"].append(jump.from_start + jump.from_size + 1)
             ground_boxes_data["h"].append(jump.to_start + jump.to_size + 1)
             ground_boxes_data["s"].append(str(jump.get_score()))
+            ground_boxes_data["idx"].append(jump.id)
+            ground_boxes_data["supporing_jump_ids"].append(list(jump.supporing_jump_ids))
             ground_boxes_data["n"].append(jump.num_supp_reads)
             ground_boxes_data["c"].append(jump.reference_ambiguity)
             ground_boxes_data["r"].append(len(jump.supporing_jump_ids))
             ground_plus_data["x"].append(jump.from_start + jump.from_size/2)
             ground_plus_data["y"].append(jump.to_start + jump.to_size/2)
+        ground_plus_data["idx"].append(jump.id)
         ground_plus_data["n"].append(jump.num_supp_reads)
         ground_plus_data["c"].append(jump.reference_ambiguity)
         ground_plus_data["r"].append(len(jump.supporing_jump_ids))

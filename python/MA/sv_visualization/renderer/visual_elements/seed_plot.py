@@ -93,12 +93,38 @@ class SeedPlot:
         if not renderer.selected_seed_id is None:
             highlight_seed(lambda idx: (self.seeds.data["idx"][idx],
                                         self.seeds.data["r_id"][idx]) == renderer.selected_seed_id)
+        elif len(renderer.selected_jump_id) != 0:
+            # create a dictionary that has all correct f and t positions with a set of associated read ids
+            correct_f_n_t = {}
+            for quad_idx, _ in enumerate(renderer.main_plot.jump_quads):
+                data = renderer.main_plot.jump_quads[quad_idx].data
+                for idx, _ in enumerate(data["c"]):
+                    if renderer.main_plot.jump_quads[quad_idx].data["i"][idx] in renderer.selected_jump_id:
+                        if not data["f"][idx] in correct_f_n_t:
+                            correct_f_n_t[data["f"][idx]] = set()
+                        if not data["t"][idx] in correct_f_n_t:
+                            correct_f_n_t[data["t"][idx]] = set()
+                        correct_f_n_t[data["f"][idx]].add(data["r"][idx])
+                        correct_f_n_t[data["t"][idx]].add(data["r"][idx])
+            # highlight seed if it matches an entry in correct_f_n_t
+            def seed_correct(idx):
+                seed_r = self.seeds.data["r"][idx]
+                read_id = self.seeds.data["r_id"][idx]
+                seed_size = self.seeds.data["size"][idx]
+                if seed_r in correct_f_n_t and read_id in correct_f_n_t[seed_r]:
+                    return True
+                if seed_r + seed_size - 1 in correct_f_n_t and read_id in correct_f_n_t[seed_r + seed_size - 1]:
+                    return True
+                return False
+            highlight_seed(lambda idx: seed_correct(idx))
         elif not renderer.selected_read_id is None:
             highlight_seed(lambda idx: self.seeds.data["r_id"][idx] == renderer.selected_read_id)
         else:
             highlight_seed(lambda idx: True)
 
     def seed_tap(self, renderer, x, y):
+        renderer.selected_call_id = set()
+        renderer.selected_jump_id = set()
         renderer.selected_seed_id = None
         renderer.selected_read_id = None
         for idx, _ in enumerate(self.seeds.data["center"]):
@@ -115,3 +141,4 @@ class SeedPlot:
         renderer.read_plot.nuc_plot.copy_nts(renderer)
         renderer.read_plot.copy_seeds(renderer, lambda idx: self.seeds.data["r_id"][idx] == renderer.selected_read_id)
         renderer.main_plot.update_selection(renderer)
+        renderer.read_plot.auto_adjust_y_range(renderer)
