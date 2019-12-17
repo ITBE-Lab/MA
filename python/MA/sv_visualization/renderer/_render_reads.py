@@ -12,15 +12,6 @@ def add_seed(self, seed, read_dict, max_seed_size, end_column, all_col_ids, cate
     seed_size = seed.size - 1
     if seed.on_forward_strand:
         read_dict["center"].append(seed.start_ref + seed.size/2)
-        if self.selected_read_id != -1 and self.selected_read_id != read_id:
-            read_dict["c"].append("lightgrey")
-        else:
-            if layer == -1:
-                read_dict["c"].append(Plasma256[ (255 * seed_size) // max_seed_size])
-            elif parlindrome:
-                read_dict["c"].append("red")
-            else:
-                read_dict["c"].append("green")
         read_dict["r"].append(seed.start_ref)
         read_dict["x"].append(
             [seed.start_ref, seed.start_ref+seed.size])
@@ -28,15 +19,6 @@ def add_seed(self, seed, read_dict, max_seed_size, end_column, all_col_ids, cate
         curr_start = seed.start_ref
     else:
         read_dict["center"].append(seed.start_ref - seed.size/2 + 1)
-        if self.selected_read_id != -1 and self.selected_read_id != read_id:
-            read_dict["c"].append("lightgrey")
-        else:
-            if layer == -1:
-                read_dict["c"].append(Plasma256[ (255 * seed_size) // max_seed_size])
-            elif parlindrome:
-                read_dict["c"].append("red")
-            else:
-                read_dict["c"].append("purple")
         read_dict["r"].append(seed.start_ref - seed.size + 1)
         read_dict["x"].append(
             [seed.start_ref + 1, seed.start_ref - seed.size + 1])
@@ -56,6 +38,7 @@ def add_seed(self, seed, read_dict, max_seed_size, end_column, all_col_ids, cate
         all_col_ids.append(curr_column + category_counter)
     end_column[curr_column] = (curr_end, read_id)
     read_dict["y"].append([seed.start, seed.start+seed.size])
+    read_dict["c"].append("lightgrey")
     read_dict["r_id"].append(read_id)
     read_dict["size"].append(seed.size)
     read_dict["l"].append(seed.size)
@@ -135,7 +118,6 @@ def render_reads(self):
     col_ids = []
     all_col_ids = []
     category_counter = 0
-    l_plot_nucs = {}  # dict of {"y": [], "c": [], "i": []}
     read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
     end_column = None
 
@@ -143,11 +125,11 @@ def render_reads(self):
         if self.do_render_seeds:
             all_seeds = []
             for read_id in sorted(self.read_ids, reverse=True):
-                l_plot_nucs[read_id] = {"y": [], "c": [], "i": []}
+                self.read_plot.nuc_plot.nucs_by_r_id[read_id] = {"p": [], "c": [], "i": []}
                 read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
                 read = self.sv_db.get_read(read_id)
                 for y, nuc in enumerate(str(read)):
-                    append_nuc_type(l_plot_nucs[read_id], nuc, y, "y")
+                    append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
                 with self.measure("seeder.execute"):
                     segments = seeder.execute(self.fm_index, read)
                 # execute_helper is not threadsave 
@@ -206,11 +188,12 @@ def render_reads(self):
 
             if self.do_compressed_seeds:
                 end_column = []
-                max_seed_size = max(seed[1][0].size for seed in all_seeds)
-                sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
-                for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
-                    self.add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
-                                parlindrome, layer, read_id, read_plot_dict, idx)
+                if len(all_seeds) > 0:
+                    max_seed_size = max(seed[1][0].size for seed in all_seeds)
+                    sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
+                    for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
+                        self.add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
+                                    parlindrome, layer, read_id, read_plot_dict, idx)
 
     with self.measure("rendering seeds"):
         if len(read_dict["c"]) < self.get_max_num_ele() or self.render_mems:
@@ -244,6 +227,8 @@ def render_reads(self):
             self.seed_plot.left_plot.xgrid.ticker = FixedTicker(ticks=all_col_ids)
             self.seed_plot.bottom_plot.ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
+            self.seed_plot.update_selection(self)
+
             if False:
                 args_dict = {
                     "srcs": [x.data_source for x in self.quads],
@@ -276,6 +261,7 @@ def render_reads(self):
                                                             """ + code))
                 self.read_plot.js_on_event("tap", CustomJS(args=args_dict,
                                                         code=js_file("read_plot_seed_tap")))
+
 
             num_nt = self.w*3+self.h*3
             if num_nt < self.get_max_num_ele():

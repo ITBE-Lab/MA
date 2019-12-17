@@ -10,7 +10,7 @@ class Renderer():
     def __init__(self):
         self.main_plot = MainPlot(self)
         self.nuc_plot = NucPlot(self.main_plot)
-        self.seed_plot = SeedPlot(self.main_plot)
+        self.seed_plot = SeedPlot(self.main_plot, self)
         self.read_plot = ReadPlot(self.nuc_plot, self)
         self.widgets = Widgets()
         self.pack = None
@@ -24,7 +24,7 @@ class Renderer():
         self.give_up_factor = 1000
         self.analyze = AnalyzeRuntimes()
         self.do_render_seeds = True
-        self.do_compressed_seeds = True
+        self.do_compressed_seeds = False
         self.render_mems = False
         self.xs = 0
         self.ys = 0
@@ -32,8 +32,9 @@ class Renderer():
         self.ye = 0
         self.redered_everything = False
         self.render_area_factor = 1 # @todo make this adjustable 
-        self.selected_read_id = -1
-    
+        self.selected_read_id = None
+        self.selected_seed_id = None
+
     def get_run_id(self):
         return int(self.widgets.run_id_dropdown.value)
 

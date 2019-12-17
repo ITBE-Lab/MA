@@ -39,20 +39,13 @@ def render_jumps(self):
             if jump.switch_strand_known():
                 if jump.does_switch_strand():
                     idx = 0
-                    out_dicts[idx]["c"].append("orange")
                 else:
                     idx = 1
-                    out_dicts[idx]["c"].append("blue")
             else:
                 if jump.from_known():
                     idx = 2
-                    out_dicts[idx]["c"].append("lightgreen")
                 else:
                     idx = 3
-                    out_dicts[idx]["c"].append("yellow")
-
-            if self.selected_read_id != -1 and self.selected_read_id != jump.read_id:
-                out_dicts[idx]["c"][-1] = "lightgrey"
 
             f_dir = ""
             if not jump.from_fuzziness_is_rightwards():
@@ -64,6 +57,7 @@ def render_jumps(self):
             else:
                 f_dir += "down"
 
+            out_dicts[idx]["c"].append("lightgrey")
             out_dicts[idx]["f_dir"].append(f_dir)
             out_dicts[idx]["f"].append(jump.from_pos if jump.from_known() else "unknown")
             out_dicts[idx]["t"].append(jump.to_pos if jump.to_known() else "unknown")
@@ -96,6 +90,7 @@ def render_jumps(self):
         for idx in range(4):
             self.main_plot.jump_quads[idx].data = out_dicts[idx]
         self.main_plot.jump_x.data = patch
+        self.main_plot.update_selection(self)
 
     if len(self.read_ids) < self.get_max_num_ele():
         with self.measure("render_reads"):

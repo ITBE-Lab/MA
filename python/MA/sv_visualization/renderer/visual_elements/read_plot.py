@@ -1,11 +1,13 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
+from bokeh.palettes import Plasma256
+from bokeh.events import Tap
 
 class ReadPlotNucs:
     def __init__(self, nuc_plot, read_plot):
         self.left_plot = figure(
-            width=70,
+            width=80,
             height=400,
             y_range=read_plot.plot.y_range,
             tools=["ypan", "ywheel_zoom"],
@@ -18,7 +20,7 @@ class ReadPlotNucs:
 
         self.bottom_plot = figure(
             width=900,
-            height=70,
+            height=80,
             x_range=read_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
@@ -29,6 +31,7 @@ class ReadPlotNucs:
         self.bottom_plot.xaxis.axis_label = "Reference Position"
 
         # the nucleotides from the read
+        self.nucs_by_r_id = {} # dict of {"p": [], "c": [], "i": []}
         self.left_nucs = ColumnDataSource({"c":[], "p":[]})
         self.left_plot.rect(x=0.5, y="p", width=1, height=1, fill_color="c", line_width=0,
                             source=self.left_nucs, name="nucleotides")
@@ -42,6 +45,12 @@ class ReadPlotNucs:
         hover_nucleotides = HoverTool(tooltips="@i", names=['nucleotides'], name="Hover nucleotides")
         self.left_plot.add_tools(hover_nucleotides)
         self.bottom_plot.add_tools(hover_nucleotides)
+
+    def copy_nts(self, renderer):
+        if renderer.selected_read_id is None:
+            self.left_nucs.data = {"c":[], "p":[]}
+        else:
+            self.left_nucs.data = self.nucs_by_r_id[renderer.selected_read_id]
 
 class ReadPlot:
     def __init__(self, nuc_plot, renderer):
@@ -88,14 +97,41 @@ class ReadPlot:
         self.nuc_plot = ReadPlotNucs(nuc_plot, self)
 
         # auto adjust y-range of read plot
-        self.plot.x_range.on_change("start", lambda x,y,z: self.auto_adjust_y_range(renderer))
+        renderer.main_plot.plot.x_range.on_change("start", lambda x,y,z: self.auto_adjust_y_range(renderer))
+
+        # make seeds clickable
+        # self.plot.on_event(Tap, lambda tap: self.seed_tap(renderer, tap.x, tap.y))
 
     def auto_adjust_y_range(self, renderer):
-        return
-        js_auto_adjust_y_range = js_file("auto_adjust")
-        self.plot.x_range.js_on_change('start', CustomJS(args=dict(radio_group=self.widgets.range_link_radio,
-                                                                read_plot=self.read_plot.plot,
-                                                                plot=self.main_plot.plot,
-                                                                read_plot_line=self.read_plot.seeds),
-                                                                code=js_auto_adjust_y_range+"auto_adjust();"))
+        if renderer.widgets.range_link_radio.active == 0:
+            self.plot.x_range.start = renderer.main_plot.plot.x_range.start
+            self.plot.x_range.end = renderer.main_plot.plot.x_range.end
+        else:
+            self.plot.x_range.start = renderer.main_plot.plot.y_range.start
+            self.plot.x_range.end = renderer.main_plot.plot.y_range.end
+
+        min_seed = 10000000
+        max_seed = 0
+        def in_x_range(val):
+            return self.plot.x_range.start <= val and val <= self.plot.x_range.end
+        for idx, _ in enumerate(self.seeds.data["x"]):
+            if in_x_range(self.seeds.data["x"][idx][0]) or in_x_range(self.seeds.data["x"][idx][1]):
+                min_seed = min(min_seed, *self.seeds.data["y"][idx])
+                max_seed = max(max_seed, *self.seeds.data["y"][idx])
+
+        size = max_seed - min_seed
+        self.plot.y_range.start = min_seed - size / 20
+        self.plot.y_range.end = max_seed + size / 20
+
+    def copy_seeds(self, renderer, condition):
+        seed_dict = dict((key, []) for key in renderer.seed_plot.seeds.data.keys())
+        found_at_least_one = False
+        for idx, _ in enumerate(renderer.seed_plot.seeds.data["center"]):
+            if condition(idx):
+                for key in renderer.seed_plot.seeds.data.keys():
+                    seed_dict[key].append(renderer.seed_plot.seeds.data[key][idx])
+                found_at_least_one = True
+        if found_at_least_one:
+            self.seeds.data = seed_dict
+            self.auto_adjust_y_range(renderer)
 
