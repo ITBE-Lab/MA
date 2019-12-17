@@ -23,7 +23,7 @@ class AnalyzeRuntimes:
             total_runtime += sum(func(pledge) for pledge, func in pledges)
         for name, (counter, pledges) in self.times.items():
             seconds = round(sum(func(pledge) for pledge, func in pledges), 3)
-            percentage = int(100*seconds/total_runtime)
+            percentage = (100*seconds)//total_runtime
             percentage_str = str(percentage) + "%"
             if percentage < 100:
                 percentage_str = " "+percentage_str

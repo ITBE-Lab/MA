@@ -26,15 +26,14 @@ def render(self):
 
     if self.widgets.run_id_dropdown.value is None:
         return
-    if not self.sv_db.run_exists(self.widgets.run_id_dropdown.value):
+    if not self.sv_db.run_exists(self.get_run_id()):
         return
 
     with self.measure("get_call_overview_area"):
-        num_ele = libMA.get_call_overview_area(self.sv_db, self.pack, self.widgets.run_id_dropdown.value,
-                                                self.widgets.score_slider.value,
+        num_ele = libMA.get_call_overview_area(self.sv_db, self.pack, self.get_run_id(),
+                                               self.get_min_score(),
                                                int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
-    return
-    if num_ele > self.max_num_ele:
-        return self.render_overview()
+    if num_ele > self.get_max_num_ele():
+        self.render_overview()
     else:
-        return self.render_calls()
+        self.render_calls()

@@ -5,8 +5,8 @@ from bokeh.plotting import ColumnDataSource
 class ReadPlotNucs:
     def __init__(self, nuc_plot, read_plot):
         self.left_plot = figure(
-            width=40,
-            height=900,
+            width=70,
+            height=400,
             y_range=read_plot.plot.y_range,
             tools=["ypan", "ywheel_zoom"],
             active_scroll="ywheel_zoom",
@@ -18,7 +18,7 @@ class ReadPlotNucs:
 
         self.bottom_plot = figure(
             width=900,
-            height=40,
+            height=70,
             x_range=read_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
@@ -29,14 +29,14 @@ class ReadPlotNucs:
         self.bottom_plot.xaxis.axis_label = "Reference Position"
 
         # the nucleotides from the read
-        self.left_nucs = ColumnDataSource({"c":[], "x":[], "y":[]})
-        self.left_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
+        self.left_nucs = ColumnDataSource({"c":[], "p":[]})
+        self.left_plot.rect(x=0.5, y="p", width=1, height=1, fill_color="c", line_width=0,
                             source=self.left_nucs, name="nucleotides")
 
         # the nucleotides from the rendered region on the genome (left and bottom)
-        self.bottom_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
+        self.bottom_plot.rect(x="p", y=0.5, width=1, height=1, fill_color="c", line_width=0,
                             source=nuc_plot.left_nucs, name="nucleotides")
-        self.bottom_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
+        self.bottom_plot.rect(x="p", y=0.5, width=1, height=1, fill_color="c", line_width=0,
                             source=nuc_plot.bottom_nucs, name="nucleotides")
 
         hover_nucleotides = HoverTool(tooltips="@i", names=['nucleotides'], name="Hover nucleotides")
@@ -44,7 +44,7 @@ class ReadPlotNucs:
         self.bottom_plot.add_tools(hover_nucleotides)
 
 class ReadPlot:
-    def __init__(self, nuc_plot):
+    def __init__(self, nuc_plot, renderer):
 
         self.plot = figure(
             width=900,
@@ -86,4 +86,16 @@ class ReadPlot:
                                       name="Hover seeds"))
 
         self.nuc_plot = ReadPlotNucs(nuc_plot, self)
+
+        # auto adjust y-range of read plot
+        self.plot.x_range.on_change("start", lambda x,y,z: self.auto_adjust_y_range(renderer))
+
+    def auto_adjust_y_range(self, renderer):
+        return
+        js_auto_adjust_y_range = js_file("auto_adjust")
+        self.plot.x_range.js_on_change('start', CustomJS(args=dict(radio_group=self.widgets.range_link_radio,
+                                                                read_plot=self.read_plot.plot,
+                                                                plot=self.main_plot.plot,
+                                                                read_plot_line=self.read_plot.seeds),
+                                                                code=js_auto_adjust_y_range+"auto_adjust();"))
 

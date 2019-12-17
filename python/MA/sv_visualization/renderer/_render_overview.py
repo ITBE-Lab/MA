@@ -6,9 +6,9 @@ from .util import *
 
 
 def render_overview(self):
-    self.plot.grid.visible = False
-    div = int(math.sqrt(self.max_num_ele))
-    rect_vec = libMA.get_call_overview(self.sv_db, self.pack, self.run_id, self.min_score,
+    #self.plot.grid.visible = False
+    div = int(math.sqrt(self.get_max_num_ele()))
+    rect_vec = libMA.get_call_overview(self.sv_db, self.pack, self.get_run_id(), self.get_min_score(),
                                        int(self.xs - self.w),
                                        int(self.ys - self.h),
                                        self.w*3, self.h*3,
@@ -35,13 +35,11 @@ def render_overview(self):
         cds["f"].append(names[rect.i])
         cds["t"].append(names[rect.j])
         cds["i"].append(str(rect.c))
-    self.plot.quad(left="x", bottom="y", right="w", top="h", color="c", line_width=0, source=ColumnDataSource(cds),
-              name="hover1")
+    self.main_plot.overview_quad.data = cds
 
-    url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(self.run_id) + \
-        "&min_score=" + str(self.min_score) + "&ground_truth_id=" + str(self.ground_truth_id) + "&dataset_name=" + \
-        self.dataset_name
-    taptool = self.plot.select(type=TapTool)
-    taptool.callback = OpenURL(url=url, same_tab=True)
-
-    return False
+    # @todo
+    # url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(self.run_id) + \
+    #     "&min_score=" + str(self.min_score) + "&ground_truth_id=" + str(self.ground_truth_id) + "&dataset_name=" + \
+    #     self.dataset_name
+    # taptool = self.plot.select(type=TapTool)
+    # taptool.callback = OpenURL(url=url, same_tab=True)

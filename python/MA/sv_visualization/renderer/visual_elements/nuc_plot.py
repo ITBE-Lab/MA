@@ -27,12 +27,12 @@ class NucPlot:
         self.bottom_plot.grid.visible = False
 
         # the nucleotides
-        self.left_nucs = ColumnDataSource({"x":[], "c":[], "y":[]})
-        self.left_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
+        self.left_nucs = ColumnDataSource({"p":[], "c":[]})
+        self.left_plot.rect(x=0.5, y="p", width=1, height=1, fill_color="c", line_width=0,
                             source=self.left_nucs, name="nucleotides")
 
-        self.bottom_nucs = ColumnDataSource({"x":[], "y":[], "c":[]})
-        self.bottom_plot.rect(x="x", y=0.5, width=1, height=1, fill_color="c", line_width=0,
+        self.bottom_nucs = ColumnDataSource({"p":[], "c":[]})
+        self.bottom_plot.rect(x="p", y=0.5, width=1, height=1, fill_color="c", line_width=0,
                             source=self.bottom_nucs, name="nucleotides")
 
         hover_nucleotides = HoverTool(tooltips="@i", names=['nucleotides'], name="Hover nucleotides")

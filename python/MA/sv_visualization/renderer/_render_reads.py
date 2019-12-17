@@ -66,21 +66,10 @@ def add_seed(self, seed, read_dict, max_seed_size, end_column, all_col_ids, cate
     read_dict["f"].append(seed.on_forward_strand)
     read_dict["category"].append(
         category_counter + curr_column)
-    if self.selected_read_id == read_id:
-        for key in read_dict.keys():
-            read_plot_dict[key].append(read_dict[key][-1])
 
-def add_rectangle(self, seed_sample_size, read_id, rectangle, initial_rect_plot_data, fill, read_plot_rects,
+def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_plot_rects,
                   read_ambiguous_reg_dict, end_column, category_counter):
     color = Plasma256[min(seed_sample_size, 255)]
-    if self.selected_read_id == read_id:
-        initial_rect_plot_data["l"].append(rectangle.x_axis.start)
-        initial_rect_plot_data["b"].append(rectangle.y_axis.start)
-        initial_rect_plot_data["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
-        initial_rect_plot_data["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
-        initial_rect_plot_data["f"].append(fill)
-        initial_rect_plot_data["c"].append(color)
-        initial_rect_plot_data["s"].append(seed_sample_size)
     # if
     read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
     read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
@@ -148,8 +137,6 @@ def render_reads(self):
     category_counter = 0
     l_plot_nucs = {}  # dict of {"y": [], "c": [], "i": []}
     read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
-    initial_l_data = {"y": [0], "c": ["black"], "i": [""]}
-    initial_rect_plot_data = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
     end_column = None
 
     with self.measure("computing seeds"):
@@ -159,15 +146,8 @@ def render_reads(self):
                 l_plot_nucs[read_id] = {"y": [], "c": [], "i": []}
                 read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
                 read = self.sv_db.get_read(read_id)
-                if self.selected_read_id == read_id:
-                    for value in initial_l_data.values():
-                        value.clear()
-                    for value in initial_rect_plot_data.values():
-                        value.clear()
                 for y, nuc in enumerate(str(read)):
                     append_nuc_type(l_plot_nucs[read_id], nuc, y, "y")
-                    if self.selected_read_id == read_id:
-                        append_nuc_type(initial_l_data, nuc, y, "y")
                 with self.measure("seeder.execute"):
                     segments = seeder.execute(self.fm_index, read)
                 # execute_helper is not threadsave 
@@ -179,7 +159,7 @@ def render_reads(self):
                 parlindromes = helper_ret.parlindrome
                 fill_of_rectangles = helper_ret.rectangles_fill
                 seed_sample_sizes = helper_ret.rectangle_ambiguity
-                if self.render_mems == 1 and self.selected_read_id == read_id:
+                if self.render_mems and self.selected_read_id == read_id:
                     hash_map_seeder = HashMapSeeding(self.params)
                     hash_map_seeder.cpp_module.seed_size = 9
                     query_section = NucSeq(str(read)[int(self.seed_plot_y_s):int(self.seed_plot_y_e)])
@@ -217,7 +197,7 @@ def render_reads(self):
                         all_seeds.extend(seeds_n_idx)
 
                     for rectangle, fill, seed_sample_size in zip(rectangles, fill_of_rectangles, seed_sample_sizes):
-                        add_rectangle(self, seed_sample_size, read_id, rectangle, initial_rect_plot_data, fill,
+                        add_rectangle(self, seed_sample_size, read_id, rectangle, fill,
                                     read_plot_rects, read_ambiguous_reg_dict, end_column, category_counter)
 
                     if not self.do_compressed_seeds:
@@ -227,35 +207,29 @@ def render_reads(self):
             if self.do_compressed_seeds:
                 end_column = []
                 max_seed_size = max(seed[1][0].size for seed in all_seeds)
-                sorted_for_main_loop = sorted(all_seeds, key=lambda x: x[1][0].start_ref)
+                sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
                 for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
                     self.add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
                                 parlindrome, layer, read_id, read_plot_dict, idx)
 
     with self.measure("rendering seeds"):
-        if len(read_dict["c"]) < self.max_num_ele or self.render_mems == 1:
-            read_source = ColumnDataSource(read_dict)
+        if len(read_dict["c"]) < self.get_max_num_ele() or self.render_mems:
             # render ambiguous regions on top and left
-            self.d_plot[1].quad(left="l", bottom="b", right="r", top="t", fill_alpha=0.5,
-                                fill_color="red", line_width=0, source=read_ambiguous_reg_dict, name="hover6")
-            self.l_plot[1].quad(left="b", bottom="l", right="t", top="r", fill_alpha=0.5,
-                                fill_color="red", line_width=0, source=read_ambiguous_reg_dict, name="hover6")
+            self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict
+
             # render seeds on top and left
-            self.l_plot[1].rect(x="category", y="center", width=0.75 if self.do_compressed_seeds else 1, height="size",
-                                fill_color="c", line_width=0, source=read_source, name="hover5")
-            self.d_plot[1].rect(y="category", x="center", height=0.75 if self.do_compressed_seeds else 1, width="size",
-                                fill_color="c", line_width=0, source=read_source, name="hover5")
+            self.seed_plot.seeds.data = read_dict
             if not self.do_compressed_seeds:
-                self.l_plot[1].xaxis.ticker = FixedTicker(ticks=col_ids)
-                self.d_plot[1].yaxis.ticker = FixedTicker(ticks=col_ids)
-                self.l_plot[1].xaxis.formatter = FuncTickFormatter(
+                self.seed_plot.left_plot.xaxis.ticker = FixedTicker(ticks=col_ids)
+                self.seed_plot.bottom_plot.yaxis.ticker = FixedTicker(ticks=col_ids)
+                self.seed_plot.left_plot.xaxis.formatter = FuncTickFormatter(
                     args={"read_id_n_cols": read_id_n_cols},
                     code="""
                             if(!tick in read_id_n_cols)
                                 return "";
                             return read_id_n_cols[tick];
                         """)
-                self.d_plot[1].yaxis.formatter = FuncTickFormatter(
+                self.seed_plot.bottom_plot.yaxis.formatter = FuncTickFormatter(
                     args={"read_id_n_cols": read_id_n_cols},
                     code="""
                             if(!tick in read_id_n_cols)
@@ -263,87 +237,48 @@ def render_reads(self):
                             return read_id_n_cols[tick];
                         """)
             else:
-                self.l_plot[1].xaxis.ticker = []
-                self.l_plot[1].xaxis.axis_label = "compressed seeds"
-                self.d_plot[1].yaxis.ticker = []
-                self.d_plot[1].yaxis.axis_label = "compressed seeds"
-            self.l_plot[1].xgrid.ticker = FixedTicker(ticks=all_col_ids)
-            self.d_plot[1].ygrid.ticker = FixedTicker(ticks=all_col_ids)
+                self.seed_plot.left_plot.xaxis.ticker = []
+                self.seed_plot.left_plot.xaxis.axis_label = "compressed seeds"
+                self.seed_plot.bottom_plot.yaxis.ticker = []
+                self.seed_plot.bottom_plot.yaxis.axis_label = "compressed seeds"
+            self.seed_plot.left_plot.xgrid.ticker = FixedTicker(ticks=all_col_ids)
+            self.seed_plot.bottom_plot.ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
-            rect_read_plot_data = self.read_plot.quad(left="l", bottom="b", right="r", top="t", fill_color="c",
-                                                    fill_alpha=0.2, line_width=0, name="hover6",
-                                                    source=ColumnDataSource(initial_rect_plot_data))
-            read_plot_line = self.read_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5,
-                                                    line_alpha=0.5 if self.render_mems == 1 else 1,
-                                                    source=ColumnDataSource(read_plot_dict), name="hover5")
-            l_read_plot_data = self.l_read_plot.rect(x=0.5, y="y", width=1, height=1, fill_color="c", line_width=0,
-                                                    source=ColumnDataSource(initial_l_data), name="hover4")
-            # auto adjust y-range of read plot
-            js_auto_adjust_y_range = js_file("auto_adjust")
-            self.plot.x_range.js_on_change('start', CustomJS(args=dict(radio_group=self.radio_group,
-                                                                    read_plot=self.read_plot, plot=self.plot,
-                                                                    read_plot_line=read_plot_line.data_source),
-                                                            code=js_auto_adjust_y_range+"auto_adjust();"))
+            if False:
+                args_dict = {
+                    "srcs": [x.data_source for x in self.quads],
+                    "radio_group": self.radio_group,
+                    "plot": self.plot,
+                    "read_source": read_source,
+                    "range": self.d_plot[1].y_range,
+                    "read_plot_line": read_plot_line.data_source,
+                    "read_plot": self.read_plot,
+                    "l_plot_nucs": l_plot_nucs,
+                    "l_read_plot_data": l_read_plot_data.data_source,
+                    "rect_read_plot_data": rect_read_plot_data.data_source,
+                    "do_compressed_seeds": self.do_compressed_seeds,
+                    "read_plot_rects": read_plot_rects
+                }
 
-            # the tapping callback on jumps
-            self.plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                            read_source=read_source,
-                                                            l_plot_nucs=l_plot_nucs,
-                                                            read_plot_line=read_plot_line.data_source,
-                                                            l_read_plot_data=l_read_plot_data.data_source,
-                                                            rect_read_plot_data=rect_read_plot_data.data_source,
-                                                            read_plot_rects=read_plot_rects),
-                                                code=js_file("jump_tap")))
-            # the tapping callback on seeds
-            code = js_auto_adjust_y_range+js_file("seed_tap")
-            self.l_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                                radio_group=self.radio_group,
-                                                                plot=self.plot,
-                                                                read_source=read_source,
-                                                                range=self.d_plot[1].y_range,
-                                                                read_plot_line=read_plot_line.data_source,
-                                                                read_plot=self.read_plot,
-                                                                l_plot_nucs=l_plot_nucs,
-                                                                l_read_plot_data=l_read_plot_data.data_source,
-                                                                rect_read_plot_data=rect_read_plot_data.data_source,
-                                                                do_compressed_seeds=self.do_compressed_seeds,
-                                                                read_plot_rects=read_plot_rects),
-                                                    code="""
-                                                    var curr_x = cb_obj.y;
-                                                    var curr_y = cb_obj.x;
-                                                    """ + code))
-            self.d_plot[1].js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                                radio_group=self.radio_group,
-                                                                plot=self.plot,
-                                                                read_source=read_source,
-                                                                range=self.d_plot[1].y_range,
-                                                                read_plot_line=read_plot_line.data_source,
-                                                                read_plot=self.read_plot,
-                                                                l_plot_nucs=l_plot_nucs,
-                                                                l_read_plot_data=l_read_plot_data.data_source,
-                                                                rect_read_plot_data=rect_read_plot_data.data_source,
-                                                                do_compressed_seeds=self.do_compressed_seeds,
-                                                                read_plot_rects=read_plot_rects),
-                                                    code="""
-                                                    var curr_x = cb_obj.x;
-                                                    var curr_y = cb_obj.y;
+                # the tapping callback on jumps
+                self.plot.js_on_event("tap", CustomJS(args=args_dict, code=js_file("jump_tap")))
+                # the tapping callback on seeds
+                code = js_auto_adjust_y_range+js_file("seed_tap")
+                self.l_plot[1].js_on_event("tap", CustomJS(args=args_dict,
+                                                        code="""
+                                                        var curr_x = cb_obj.y;
+                                                        var curr_y = cb_obj.x;
                                                         """ + code))
-            self.read_plot.js_on_event("tap", CustomJS(args=dict(srcs=[x.data_source for x in self.quads],
-                                                                radio_group=self.radio_group,
-                                                                plot=self.plot,
-                                                                read_source=read_source,
-                                                                range=self.d_plot[1].y_range,
-                                                                read_plot_line=read_plot_line.data_source,
-                                                                read_plot=self.read_plot,
-                                                                l_plot_nucs=l_plot_nucs,
-                                                                l_read_plot_data=l_read_plot_data.data_source,
-                                                                rect_read_plot_data=rect_read_plot_data.data_source,
-                                                                do_compressed_seeds=self.do_compressed_seeds,
-                                                                read_plot_rects=read_plot_rects),
-                                                    code=js_file("read_plot_seed_tap")))
+                self.d_plot[1].js_on_event("tap", CustomJS(args=args_dict,
+                                                        code="""
+                                                        var curr_x = cb_obj.x;
+                                                        var curr_y = cb_obj.y;
+                                                            """ + code))
+                self.read_plot.js_on_event("tap", CustomJS(args=args_dict,
+                                                        code=js_file("read_plot_seed_tap")))
 
             num_nt = self.w*3+self.h*3
-            if num_nt < self.max_num_ele:
+            if num_nt < self.get_max_num_ele():
                 # render nucs in read plot
                 # render nucs in sv plot
                 with self.measure("render_nucs"):

@@ -6,8 +6,6 @@ import math
 from .util import *
 
 def render_calls(self):
-    rendered_everything = False
-    self.params = ParameterSetManager()
     accepted_boxes_data = {
         "x": [],
         "w": [],
@@ -45,8 +43,8 @@ def render_calls(self):
         "s": []
     }
     with self.measure("SvCallFromDb(run_id)"):
-        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.run_id, int(self.xs - self.w),
-                                      int(self.ys - self.h), self.w*3, self.h*3, self.min_score)
+        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.get_run_id(), int(self.xs - self.w),
+                                      int(self.ys - self.h), self.w*3, self.h*3, self.get_min_score())
     while calls_from_db.hasNext():
         jump = calls_from_db.next()
         if jump.from_size == 0 and jump.to_size == 0:
@@ -71,8 +69,9 @@ def render_calls(self):
         accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
         accepted_plus_data["s"].append(str(jump.get_score()))
     with self.measure("SvCallFromDb(run_id)"):
-        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.ground_truth_id,
-                                      int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3, self.min_score)
+        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.get_gt_id(),
+                                      int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
+                                      self.get_min_score())
     while calls_from_db.hasNext():
         jump = calls_from_db.next()
         if jump.from_size == 0 and jump.to_size == 0:
@@ -94,21 +93,15 @@ def render_calls(self):
         ground_plus_data["r"].append(len(jump.supporing_jump_ids))
         ground_plus_data["s"].append(str(jump.get_score()))
 
+    # the sv - boxes
+    self.main_plot.call_quad.data = accepted_boxes_data
+    self.main_plot.ground_truth_quad.data = ground_boxes_data
+    self.main_plot.call_x.data = ground_plus_data
+    self.main_plot.ground_truth_x.data = accepted_plus_data
 
     with self.measure("get_num_jumps_in_area"):
-        num_jumps = libMA.get_num_jumps_in_area(self.sv_db, self.pack, self.sv_db.get_run_jump_id(self.run_id),
-                                            int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
-    if num_jumps < self.max_num_ele:
+        num_jumps = libMA.get_num_jumps_in_area(self.sv_db, self.pack, self.sv_db.get_run_jump_id(self.get_run_id()),
+                                                int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
+    if num_jumps < self.get_max_num_ele():
         with self.measure("render_jumps"):
-            rendered_everything = self.render_jumps()
-    # the sv - boxes
-    self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="magenta", line_width=3, fill_alpha=0,
-                   source=ColumnDataSource(accepted_boxes_data), name="hover2")
-    self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="green", line_width=3, fill_alpha=0,
-                   source=ColumnDataSource(ground_boxes_data), name="hover2")
-    self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="green",
-                source=ColumnDataSource(ground_plus_data), name="hover2")
-    self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
-                source=ColumnDataSource(accepted_plus_data), name="hover2")
-
-    return rendered_everything
+            self.render_jumps()

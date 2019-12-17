@@ -5,9 +5,8 @@ from MA import *
 import math
 from .util import *
 
-PATCH = False
-
 def render_jumps(self):
+    self.read_ids = set()
     out_dicts = []
     patch = {
         "x": [],
@@ -31,7 +30,7 @@ def render_jumps(self):
             "i": []
         })
     with self.measure("SortedSvJumpFromSql"):
-        sweeper = SortedSvJumpFromSql(self.params, self.sv_db, self.sv_db.get_run_jump_id(self.run_id),
+        sweeper = SortedSvJumpFromSql(self.params, self.sv_db, self.sv_db.get_run_jump_id(self.get_run_id()),
                                         int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
     with self.measure("render jumps"):
         while sweeper.has_next_start():
@@ -90,41 +89,14 @@ def render_jumps(self):
                 f = t
             if not jump.to_known():
                 t = f
-            if PATCH:
-                if not jump.from_fuzziness_is_rightwards():
-                    if not jump.to_fuzziness_is_downwards():
-                        patch["x"].extend([f - 2.5, f + .5, f + .5, float("NaN")])
-                        patch["y"].extend([t - .5, t + 2.5, t - .5, float("NaN")])
-                    else:
-                        patch["x"].extend([f - 2.5, f + .5, f + .5, float("NaN")])
-                        patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
-                else:
-                    if not jump.to_fuzziness_is_downwards():
-                        patch["x"].extend([f + 2.5, f - .5, f - .5, float("NaN")])
-                        patch["y"].extend([t - .5, t + 2.5, t - .5, float("NaN")])
-                    else:
-                        patch["x"].extend([f + 2.5, f - .5, f - .5, float("NaN")])
-                        patch["y"].extend([t + .5, t - 2.5, t + .5, float("NaN")])
-            else:
-                patch["x"].append([f + 0.25, f + 0.75])
-                patch["x"].append([f + 0.25, f + 0.75])
-                patch["y"].append([t + 0.25, t + 0.75])
-                patch["y"].append([t + 0.75, t + 0.25])
-        self.quads.append(self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
-                                    line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[0]), name="hover3"))
-        self.quads.append(self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
-                                    line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[1]), name="hover3"))
-        self.quads.append(self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
-                                    line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[2]), name="hover3"))
-        self.quads.append(self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c", line_color="c",
-                                    line_width=3, fill_alpha="a", source=ColumnDataSource(out_dicts[3]), name="hover3"))
-        if PATCH:
-            self.plot.patch(x="x", y="y", line_width=1, color="black",
-                            source=ColumnDataSource(patch))
-        else:
-            self.plot.multi_line(xs="x", ys="y", line_width=1.5, line_alpha=0.5, color="black",
-                            source=ColumnDataSource(patch))
-    if len(self.read_ids) < self.max_num_ele:
+            patch["x"].append([f + 0.25, f + 0.75])
+            patch["x"].append([f + 0.25, f + 0.75])
+            patch["y"].append([t + 0.25, t + 0.75])
+            patch["y"].append([t + 0.75, t + 0.25])
+        for idx in range(4):
+            self.main_plot.jump_quads[idx].data = out_dicts[idx]
+        self.main_plot.jump_x.data = patch
+
+    if len(self.read_ids) < self.get_max_num_ele():
         with self.measure("render_reads"):
-            return self.render_reads()
-    return False
+            self.render_reads()
