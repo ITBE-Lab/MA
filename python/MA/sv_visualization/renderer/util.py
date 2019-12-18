@@ -1,3 +1,5 @@
+from bokeh.palettes import Plasma, Plasma256
+
 def light_spec_approximation(x):
     #map input [0, 1] to wavelength [350, 645]
     w = 370 + x * (645-370)
@@ -74,3 +76,48 @@ def append_nuc_type(dict_, nuc, pos, pos_key):
         dict_["c"].append("lightgray")
         dict_["i"].append(nuc)
     dict_[pos_key].append(pos + 0.5)
+
+def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter, parlindrome, layer,
+             read_id, idx):
+    seed_size = seed.size - 1
+    if seed.on_forward_strand:
+        read_dict["center"].append(seed.start_ref + seed.size/2)
+        read_dict["r"].append(seed.start_ref)
+        read_dict["x"].append(
+            [seed.start_ref, seed.start_ref+seed.size])
+        curr_end = seed.start_ref + seed_size + 1
+        curr_start = seed.start_ref
+    else:
+        read_dict["center"].append(seed.start_ref - seed.size/2 + 1)
+        read_dict["r"].append(seed.start_ref - seed.size + 1)
+        read_dict["x"].append(
+            [seed.start_ref + 1, seed.start_ref - seed.size + 1])
+        curr_end = seed.start_ref
+        curr_start = seed.start_ref - seed.size
+    curr_column = 0
+    while curr_column < len(end_column):
+        add_dist = 100
+        if end_column[curr_column][1] == read_id:
+            add_dist = 0
+        if curr_start > end_column[curr_column][0] + add_dist:
+            break
+        else:
+            curr_column += 1
+    if curr_column >= len(end_column):
+        end_column.append( None )
+        all_col_ids.append(curr_column + category_counter)
+    end_column[curr_column] = (curr_end, read_id)
+    read_dict["y"].append([seed.start, seed.start+seed.size])
+    if layer == -1:
+        read_dict["c"].append( Plasma256[ (255 * seed.size) // max_seed_size ] )
+    else:
+        read_dict["c"].append("lightgrey")
+    read_dict["r_id"].append(read_id)
+    read_dict["size"].append(seed.size)
+    read_dict["l"].append(seed.size)
+    read_dict["q"].append(seed.start)
+    read_dict["idx"].append(idx)
+    read_dict["layer"].append(layer)
+    read_dict["parlindrome"].append(parlindrome)
+    read_dict["f"].append(seed.on_forward_strand)
+    read_dict["category"].append(category_counter + curr_column)

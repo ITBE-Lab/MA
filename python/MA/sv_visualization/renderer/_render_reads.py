@@ -6,50 +6,6 @@ from MA import *
 import math
 from .util import *
 
-
-def add_seed(self, seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter, parlindrome, layer,
-             read_id, read_plot_dict, idx):
-    seed_size = seed.size - 1
-    if seed.on_forward_strand:
-        read_dict["center"].append(seed.start_ref + seed.size/2)
-        read_dict["r"].append(seed.start_ref)
-        read_dict["x"].append(
-            [seed.start_ref, seed.start_ref+seed.size])
-        curr_end = seed.start_ref + seed_size + 1
-        curr_start = seed.start_ref
-    else:
-        read_dict["center"].append(seed.start_ref - seed.size/2 + 1)
-        read_dict["r"].append(seed.start_ref - seed.size + 1)
-        read_dict["x"].append(
-            [seed.start_ref + 1, seed.start_ref - seed.size + 1])
-        curr_end = seed.start_ref
-        curr_start = seed.start_ref - seed.size
-    curr_column = 0
-    while curr_column < len(end_column):
-        add_dist = 100
-        if end_column[curr_column][1] == read_id:
-            add_dist = 0
-        if curr_start > end_column[curr_column][0] + add_dist:
-            break
-        else:
-            curr_column += 1
-    if curr_column >= len(end_column):
-        end_column.append( None )
-        all_col_ids.append(curr_column + category_counter)
-    end_column[curr_column] = (curr_end, read_id)
-    read_dict["y"].append([seed.start, seed.start+seed.size])
-    read_dict["c"].append("lightgrey")
-    read_dict["r_id"].append(read_id)
-    read_dict["size"].append(seed.size)
-    read_dict["l"].append(seed.size)
-    read_dict["q"].append(seed.start)
-    read_dict["idx"].append(idx)
-    read_dict["layer"].append(layer)
-    read_dict["parlindrome"].append(parlindrome)
-    read_dict["f"].append(seed.on_forward_strand)
-    read_dict["category"].append(
-        category_counter + curr_column)
-
 def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_plot_rects,
                   read_ambiguous_reg_dict, end_column, category_counter):
     color = Plasma256[min(seed_sample_size, 255)]
@@ -141,22 +97,6 @@ def render_reads(self):
                 parlindromes = helper_ret.parlindrome
                 fill_of_rectangles = helper_ret.rectangles_fill
                 seed_sample_sizes = helper_ret.rectangle_ambiguity
-                if self.render_mems and self.selected_read_id == read_id:
-                    hash_map_seeder = HashMapSeeding(self.params)
-                    hash_map_seeder.cpp_module.seed_size = 9
-                    query_section = NucSeq(str(read)[int(self.seed_plot_y_s):int(self.seed_plot_y_e)])
-                    ref_section = self.pack.extract_from_to(int(self.xs), int(self.xe))
-                    all_k_mers = hash_map_seeder.execute(query_section, ref_section)
-                    all_mems = SeedLumping(self.params).execute(all_k_mers)
-                    filter_module = FilterToUnique(self.params)
-                    filter_module.cpp_module.num_mm = 0
-                    #filtered_mems = filter_module.execute(all_mems, query_section, ref_section)
-                    filtered_mems = all_mems
-                    for idx in range(len(filtered_mems)):
-                        filtered_mems[idx].start += int(self.seed_plot_y_s)
-                        filtered_mems[idx].start_ref += int(self.xs)
-                        layer_of_seeds.append(-1)
-                    seeds.extend(filtered_mems)
                 # for
                 with self.measure("main seed loop"):
                     seeds_n_idx = list(enumerate(sorted([(x, y, z, read_id) for x, y, z in zip(seeds, layer_of_seeds,
@@ -167,8 +107,8 @@ def render_reads(self):
                         max_seed_size = max(seed.size for seed in seeds)
                         sorted_for_main_loop = sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref)
                         for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
-                            self.add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
-                                        parlindrome, layer, read_id, read_plot_dict, idx)
+                            add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
+                                        parlindrome, layer, read_id, idx)
                         if (len(end_column)-1) % 2 == 0:
                             # prevent forming of float if possible (to stay javascript compatible)
                             curr_col_id = category_counter + (len(end_column)-1)//2
@@ -192,12 +132,12 @@ def render_reads(self):
                     max_seed_size = max(seed[1][0].size for seed in all_seeds)
                     sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
                     for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
-                        self.add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
-                                    parlindrome, layer, read_id, read_plot_dict, idx)
+                        add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
+                                    parlindrome, layer, read_id, idx)
                     category_counter += len(end_column)
 
     with self.measure("rendering seeds"):
-        if len(read_dict["c"]) < self.get_max_num_ele() or self.render_mems:
+        if len(read_dict["c"]) < self.get_max_num_ele():
             # render ambiguous regions on top and left
             self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict
 

@@ -11,7 +11,8 @@ class MainPlot:
             height=900,
             tools=[
                 "pan", "box_zoom",
-                "wheel_zoom", "save"
+                "wheel_zoom", "save",
+                "reset"
             ],
             active_scroll="wheel_zoom"
         )
@@ -131,7 +132,10 @@ class MainPlot:
                     seed_r = renderer.seed_plot.seeds.data["r"][idx]
                     seed_size = renderer.seed_plot.seeds.data["size"][idx]
                     break
-            highlight_jump(lambda quad_idx, idx: \
+            if seed_r is None or seed_size is None:
+                highlight_jump(lambda quad_idx, idx: False)
+            else:
+                highlight_jump(lambda quad_idx, idx: \
                               ( self.jump_quads[quad_idx].data["f"][idx] == seed_r or \
                                 self.jump_quads[quad_idx].data["f"][idx] == seed_r + seed_size - 1 or \
                                 self.jump_quads[quad_idx].data["t"][idx] == seed_r or \

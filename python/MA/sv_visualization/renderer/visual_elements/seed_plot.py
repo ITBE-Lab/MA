@@ -78,9 +78,7 @@ class SeedPlot:
                 max_seed_size = max(repl_dict["size"])
                 for idx, _ in enumerate(repl_dict["c"]):
                     if condition(idx):
-                        if repl_dict["layer"][idx] == -1:
-                            repl_dict["c"][idx] = Plasma256[ (255 * repl_dict["size"][idx]) // max_seed_size]
-                        elif repl_dict["parlindrome"][idx]:
+                        if repl_dict["parlindrome"][idx]:
                             repl_dict["c"][idx] = "red"
                         elif repl_dict["f"][idx]: # on forward strand
                             repl_dict["c"][idx] = "green"

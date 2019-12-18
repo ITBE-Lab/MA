@@ -25,7 +25,6 @@ class Renderer():
         self.analyze = AnalyzeRuntimes()
         self.do_render_seeds = True
         self.do_compressed_seeds = 30
-        self.render_mems = False
         self.xs = 0
         self.ys = 0
         self.xe = 0

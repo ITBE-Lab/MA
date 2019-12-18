@@ -22,6 +22,8 @@ def setup(self):
         self.ye = self.pack.unpacked_size_single_strand
 
         menu = []
+        self.widgets.run_id_dropdown.label="select run id here"
+        self.widgets.ground_truth_id_dropdown.label="select ground truth id here"
         if not self.sv_db is None:
             jump_fetcher = libMA.SvCallerRunsFromDb(self.sv_db)
             while not jump_fetcher.eof():
