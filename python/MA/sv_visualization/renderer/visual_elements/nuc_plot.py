@@ -38,3 +38,7 @@ class NucPlot:
         hover_nucleotides = HoverTool(tooltips="@i", names=['nucleotides'], name="Hover nucleotides")
         self.left_plot.add_tools(hover_nucleotides)
         self.bottom_plot.add_tools(hover_nucleotides)
+
+    def reset_cds(self):
+        self.left_nucs.data = {"p":[], "c":[]}
+        self.bottom_nucs.data = {"p":[], "c":[]}

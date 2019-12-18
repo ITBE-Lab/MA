@@ -2,6 +2,7 @@ from MA import *
 
 
 def render(self):
+    self.reset_cds()
     self.main_plot.genome_outline.data = {"x":[0], 
                                           "y":[0],
                                           "w":[self.pack.unpacked_size_single_strand],

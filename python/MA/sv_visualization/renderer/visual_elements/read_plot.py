@@ -50,7 +50,7 @@ class ReadPlotNucs:
         if not renderer.selected_read_id is None:
             self.left_nucs.data = self.nucs_by_r_id[renderer.selected_read_id]
 
-    def reset_nts(self, renderer):
+    def reset_nts(self):
         self.left_nucs.data = {"c":[], "p":[]}
 
 class ReadPlot:
@@ -84,7 +84,7 @@ class ReadPlot:
                                      name="Hover ambiguity rects"))
 
         # the seeds
-        self.seeds = ColumnDataSource({"x":[], "y":[], "c":[]})
+        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]})
         self.plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.seeds, name="seeds")
 
         self.plot.add_tools(HoverTool(tooltips=[("read id", "@r_id"),
@@ -165,4 +165,9 @@ class ReadPlot:
         renderer.seed_plot.update_selection(renderer)
         self.copy_seeds(renderer, lambda idx: renderer.seed_plot.seeds.data["r_id"][idx] == renderer.selected_read_id)
         renderer.main_plot.update_selection(renderer)
+
+    def reset_cds(self):
+        self.ambiguity_rect.data = {"l":[], "b":[], "r":[], "t":[], "c":[]}
+        self.seeds.data = {"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]}
+        #self.nuc_plot.reset_nts()
 

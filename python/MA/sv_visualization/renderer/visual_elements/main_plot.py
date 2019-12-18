@@ -185,7 +185,14 @@ class MainPlot:
 
         if len(renderer.selected_jump_id) == 0:
             renderer.read_plot.reset_seeds(renderer)
-            renderer.read_plot.nuc_plot.reset_nts(renderer)
-        else:
-            renderer.read_plot.copy_seeds(renderer, lambda idx: renderer.seed_plot.seeds.data["r_id"][idx] == \
-                                                                renderer.selected_read_id)
+            renderer.read_plot.nuc_plot.reset_nts()
+    
+    def reset_cds(self):
+        self.diagonal_line.data = {"xs":[], "ys":[]}
+        for jump_quad in self. jump_quads:
+            jump_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[], "a":[]}
+        self.call_quad.data = {"x":[], "y":[], "w":[], "h":[]}
+        self.ground_truth_quad.data = {"x":[], "y":[], "w":[], "h":[]}
+        self.call_x.data = {"x":[], "y":[]}
+        self.ground_truth_x.data = {"x":[], "y":[]}
+        self.overview_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[]}

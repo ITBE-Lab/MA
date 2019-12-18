@@ -92,6 +92,13 @@ def render_jumps(self):
         self.main_plot.jump_x.data = patch
         self.main_plot.update_selection(self)
 
-    if len(self.read_ids) < self.get_max_num_ele():
+    if self.w*3+self.h*3 < self.get_max_num_ele():
+        # render nucs in read plot
+        # render nucs in sv plot
+        with self.measure("render_nucs"):
+            self.render_nucs()
+
+    # render the seeds in the main seed plot
+    if len(self.read_ids)*self.read_penalty_factor < self.get_max_num_ele():
         with self.measure("render_reads"):
             self.render_reads()

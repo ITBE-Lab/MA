@@ -12,7 +12,7 @@ class Renderer():
         self.nuc_plot = NucPlot(self.main_plot)
         self.seed_plot = SeedPlot(self.main_plot, self)
         self.read_plot = ReadPlot(self.nuc_plot, self)
-        self.widgets = Widgets()
+        self.widgets = Widgets(self)
         self.pack = None
         self.fm_index = None
         self.sv_db = None
@@ -32,15 +32,21 @@ class Renderer():
         self.ye = 0
         self.redered_everything = False
         self.render_area_factor = 1 # @todo make this adjustable 
+        # number of reads needs to be smaller than max_num_elements / read_penalty_factor to be rendered
+        self.read_penalty_factor = 10
         self.selected_read_id = None
         self.selected_seed_id = None
         self.selected_call_id = set()
         self.selected_jump_id = set()
 
     def get_run_id(self):
+        if self.widgets.run_id_dropdown.value is None:
+            return -1
         return int(self.widgets.run_id_dropdown.value)
 
     def get_gt_id(self):
+        if self.widgets.ground_truth_id_dropdown.value is None:
+            return -1
         return int(self.widgets.ground_truth_id_dropdown.value)
 
     def get_min_score(self):
@@ -63,6 +69,11 @@ class Renderer():
                 self.analyze.register(name, delta.total_seconds(), lambda x: x)
         return MeasureHelper(name, self.analyze)
 
+    def reset_cds(self):
+        self.main_plot.reset_cds()
+        self.nuc_plot.reset_cds()
+        self.seed_plot.reset_cds()
+        self.read_plot.reset_cds()
 
     # imported methdos
     from ._render import render

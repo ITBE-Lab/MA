@@ -11,6 +11,7 @@ class SeedPlot:
             width=300,
             height=900,
             y_range=main_plot.plot.y_range,
+            x_range=(0,0),
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
             toolbar_location=None
@@ -50,7 +51,7 @@ class SeedPlot:
         self.bottom_plot.add_tools(hover_ambiguous_regions)
 
         # seeds
-        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "c":[]})
+        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "c":[], "x":[], "y":[]})
         self.left_plot.rect(x="category", y="center", width=1, height="size",
                             fill_color="c", line_width=0, source=self.seeds, name="seeds")
         self.bottom_plot.rect(y="category", x="center", height=1, width="size",
@@ -122,6 +123,8 @@ class SeedPlot:
         else:
             highlight_seed(lambda idx: True)
 
+        renderer.read_plot.copy_seeds(renderer, lambda idx: self.seeds.data["r_id"][idx] == renderer.selected_read_id)
+
     def seed_tap(self, renderer, x, y):
         renderer.selected_call_id = set()
         renderer.selected_jump_id = set()
@@ -139,6 +142,9 @@ class SeedPlot:
                     renderer.selected_read_id = self.seeds.data["r_id"][idx]
         self.update_selection(renderer)
         renderer.read_plot.nuc_plot.copy_nts(renderer)
-        renderer.read_plot.copy_seeds(renderer, lambda idx: self.seeds.data["r_id"][idx] == renderer.selected_read_id)
         renderer.main_plot.update_selection(renderer)
         renderer.read_plot.auto_adjust_y_range(renderer)
+
+    def reset_cds(self):
+        self.ambiguous_regions.data = {"l":[], "b":[], "r":[], "t":[]}
+        self.seeds.data = {"category":[], "center":[], "size":[], "c":[], "x":[], "y":[]}
