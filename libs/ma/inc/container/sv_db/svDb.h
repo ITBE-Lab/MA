@@ -66,11 +66,10 @@ class SV_DB : public Container
           pSvCallSupportTable( rOther.pSvCallSupportTable )
     {
         this->setNumThreads( 32 ); // @todo do this via a parameter
-        pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
         // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
-        // pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        // pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
+        pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
+        pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
     } // constructor
 
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode )
@@ -88,9 +87,8 @@ class SV_DB : public Container
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {
         this->setNumThreads( 32 ); // @todo do this via a parameter
-        pDatabase->execDML( "PRAGMA journal_mode=WAL;" ); // use write ahead mode
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
-        if( xMode == eCREATE_DB )
+        //if( xMode == eCREATE_DB )
         {
             // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
             pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance

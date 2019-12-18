@@ -67,7 +67,7 @@ class MainPlot:
                     source=self.ground_truth_x, name="ground_truth_x")
 
         self.plot.add_tools(HoverTool(tooltips=[("supp. nt", "@n"),
-                                                ("coverage", "@c"),
+                                                ("ambiguity", "@c"),
                                                 ("#reads", "@r"),
                                                 ("score", "@s"),
                                                 ("id", "@idx")],

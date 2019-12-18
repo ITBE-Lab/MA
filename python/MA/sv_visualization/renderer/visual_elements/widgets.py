@@ -8,7 +8,7 @@ import copy
 
 class Widgets:
     def __init__(self, renderer):
-        self.file_input = TextInput(value="/MAdata/sv_datasets/minimal", title="Dataset Name:")
+        self.file_input = TextInput(value="/MAdata/sv_datasets2/minimal", title="Dataset Name:")
         self.run_id_dropdown = Dropdown(label="select run id here", menu=[])
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
         self.score_slider = Slider(start=0, end=1, value=0, step=.1, callback_policy='mouseup', title="min score")

@@ -144,7 +144,7 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
  * @details
  * buffers all jumps in a vector and then bulk inserts them once commit is called.
  * The destructor calls commit automatically.
- * If the buffer holds 10.000 elements a bulk insert is triggered as well.
+ * If the buffer holds 1.000.000 elements a bulk insert is triggered as well.
  */
 class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
@@ -168,12 +168,12 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     /// @brief bulk insert all jumps in the buffer; then clear the buffer
     inline void commit( bool bTransactionLess = true, bool bForce = false )
     {
-        if( !bForce && vBuffer.size( ) < 10000 )
+        if( bForce == false && vBuffer.size( ) < 1000000 )
             return;
         if( vBuffer.size( ) == 0 )
             return;
-        SvJumpInserter xInserter( pDb, iSvJumpRunId );
         std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
+        SvJumpInserter xInserter( pDb, iSvJumpRunId, bTransactionLess );
         for( auto xPair : vBuffer )
         {
             SvJumpInserter::ReadContex xReadContext = xInserter.readContext( xPair.second );
