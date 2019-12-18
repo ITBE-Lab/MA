@@ -138,7 +138,7 @@ class SeedPlot:
                     renderer.selected_seed_id = (self.seeds.data["idx"][idx], self.seeds.data["r_id"][idx])
                     renderer.selected_read_id = self.seeds.data["r_id"][idx]
                     break
-                if not renderer.do_compressed_seeds:
+                if len(renderer.read_ids) <= renderer.do_compressed_seeds:
                     renderer.selected_read_id = self.seeds.data["r_id"][idx]
         self.update_selection(renderer)
         renderer.read_plot.nuc_plot.copy_nts(renderer)

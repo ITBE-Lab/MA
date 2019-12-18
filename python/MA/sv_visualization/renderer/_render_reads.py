@@ -61,7 +61,7 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_plot_re
     read_plot_rects[read_id]["f"].append(fill)
     read_plot_rects[read_id]["c"].append(color)
     read_plot_rects[read_id]["s"].append(seed_sample_size)
-    if seed_sample_size > 10 and not self.do_compressed_seeds:
+    if seed_sample_size > 10 and len(self.read_ids) <= self.do_compressed_seeds:
         read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
         read_ambiguous_reg_dict["b"].append(category_counter - 0.5)
         read_ambiguous_reg_dict["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
@@ -162,7 +162,7 @@ def render_reads(self):
                     seeds_n_idx = list(enumerate(sorted([(x, y, z, read_id) for x, y, z in zip(seeds, layer_of_seeds,
                                                                                       parlindromes)],
                                                         key=lambda x: x[0].start)))
-                    if not self.do_compressed_seeds:
+                    if len(self.read_ids) <= self.do_compressed_seeds:
                         end_column = []
                         max_seed_size = max(seed.size for seed in seeds)
                         sorted_for_main_loop = sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref)
@@ -182,11 +182,11 @@ def render_reads(self):
                         add_rectangle(self, seed_sample_size, read_id, rectangle, fill,
                                     read_plot_rects, read_ambiguous_reg_dict, end_column, category_counter)
 
-                    if not self.do_compressed_seeds:
+                    if len(self.read_ids) <= self.do_compressed_seeds:
                         category_counter += len(end_column) + 2
                         read_id_n_cols[curr_col_id] = read_id
 
-            if self.do_compressed_seeds:
+            if len(self.read_ids) > self.do_compressed_seeds:
                 end_column = []
                 if len(all_seeds) > 0:
                     max_seed_size = max(seed[1][0].size for seed in all_seeds)
@@ -207,7 +207,7 @@ def render_reads(self):
                 self.seed_plot.left_plot.x_range.start = -1
                 self.seed_plot.left_plot.x_range.end = category_counter
 
-            if not self.do_compressed_seeds:
+            if len(self.read_ids) <= self.do_compressed_seeds:
                 self.seed_plot.left_plot.xaxis.ticker = FixedTicker(ticks=col_ids)
                 self.seed_plot.bottom_plot.yaxis.ticker = FixedTicker(ticks=col_ids)
                 self.seed_plot.left_plot.xaxis.formatter = FuncTickFormatter(
@@ -224,6 +224,8 @@ def render_reads(self):
                                 return "";
                             return read_id_n_cols[tick];
                         """)
+                self.seed_plot.left_plot.xaxis.axis_label = "Read Id"
+                self.seed_plot.bottom_plot.yaxis.axis_label = "Read Id"
             else:
                 self.seed_plot.left_plot.xaxis.ticker = []
                 self.seed_plot.left_plot.xaxis.axis_label = "compressed seeds"
