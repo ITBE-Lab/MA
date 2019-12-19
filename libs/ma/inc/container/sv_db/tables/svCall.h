@@ -140,6 +140,34 @@ class SvCallTable : private TP_SV_CALL_TABLE
         CppSQLiteExtQueryStatement<int64_t> xNumOverlapsHelper2;
         CppSQLiteExtQueryStatement<uint32_t> xNumOverlapsCache;
         std::shared_ptr<OverlapCacheComputedTable> pHelper;
+        /**
+         * @brief SQL code for computing the center of a call
+         */
+        static std::string getSqlForCenterX( std::string sTableName = "" )
+        {
+            if( !sTableName.empty( ) )
+                sTableName.append( "." );
+            return " ( " + sTableName + "maxX - " + sTableName + " minX ) ";
+        } // method
+        /**
+         * @brief SQL code for computing the center of a call
+         */
+        static std::string getSqlForCenterY( std::string sTableName = "" )
+        {
+            if( !sTableName.empty( ) )
+                sTableName.append( "." );
+            return " ( " + sTableName + "maxY - " + sTableName + " minY ) ";
+        } // method
+        /**
+         * @brief SQL code for computing the distance between two calls
+         * @details
+         * in manhatten distance.
+         */
+        static std::string getSqlForDistance( std::string sTableNameA = "" )
+        {
+            return " ( ABS( " + getSqlForCenterX( sTableNameA ) + " - ? ) + " + "   ABS( " +
+                   getSqlForCenterY( sTableNameA ) + " - ? ) ) ";
+        } // method
 
       public:
         OverlapCacheTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
@@ -149,14 +177,14 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                       std::vector<std::string>{"call_id_a", "call_id_b", "blur"},
                                       false ),
               pDatabase( pDatabase ),
+              // clang-format off
               xNumOverlaps( *pDatabase,
                             // each inner call can overlap an outer call at most once
-                            "SELECT id, " + SvCallTable::getSqlForCallScore( ) +
-                                ", from_pos, from_size, to_pos, to_size, "
-                                "       switch_strand "
-                                "FROM sv_call_table "
-                                "WHERE sv_caller_run_id = ? "
-                                "AND " + SvCallTable::getSqlForCallScore( ) + " >= ? " ),
+                            "SELECT id, " + SvCallTable::getSqlForCallScore( ) + ", from_pos, from_size, "
+                            "       to_pos, to_size, switch_strand "
+                            "FROM sv_call_table "
+                            "WHERE sv_caller_run_id = ? "
+                            "AND " + SvCallTable::getSqlForCallScore( ) + " >= ? " ),
               xNumOverlapsHelper1( *pDatabase,
                                    // make sure that inner overlaps the outer:
                                    "SELECT outer.id "
@@ -168,7 +196,9 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                    "AND idx_outer.minX <= ? " // dim 2
                                    "AND idx_outer.maxY >= ? " // dim 3
                                    "AND idx_outer.minY <= ? " // dim 3
-                                   "AND outer.switch_strand == ? " ),
+                                   "AND outer.switch_strand == ? "
+                                   "ORDER BY " + getSqlForDistance("idx_outer") + " ASC "
+                                   "LIMIT 1 " ),
               xNumOverlapsHelper2( *pDatabase,
                                    // make sure that inner does not overlap with any other call with higher score
                                    "SELECT inner2.id "
@@ -177,33 +207,30 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                    "AND idx_inner2.id != ? "
                                    // tuple comparison here, so that overlapping calls with equal score always have
                                    // one call take priority (in this case always the one inserted after)
-                                   "AND (" +
-                                       SvCallTable::getSqlForCallScore( "inner2" ) +
-                                       ", inner2.id) > (?, ?) "
-                                       "AND idx_inner2.run_id_b >= ? " // dim 1
-                                       "AND idx_inner2.run_id_a <= ? " // dim 1
-                                       "AND idx_inner2.maxX >= ? " // dim 2
-                                       "AND idx_inner2.minX <= ? " // dim 2
-                                       "AND idx_inner2.maxY >= ? " // dim 3
-                                       "AND idx_inner2.minY <= ? " // dim 3
-                                       "AND inner2.switch_strand == ? "
-                                       "LIMIT 1 " ),
+                                   "AND (" + SvCallTable::getSqlForCallScore( "inner2" ) + ", inner2.id) > (?, ?) "
+                                   "AND idx_inner2.run_id_b >= ? " // dim 1
+                                   "AND idx_inner2.run_id_a <= ? " // dim 1
+                                   "AND idx_inner2.maxX >= ? " // dim 2
+                                   "AND idx_inner2.minX <= ? " // dim 2
+                                   "AND idx_inner2.maxY >= ? " // dim 3
+                                   "AND idx_inner2.minY <= ? " // dim 3
+                                   "AND inner2.switch_strand == ? "
+                                   "LIMIT 1 " ),
               xNumOverlapsCache( *pDatabase,
                                  "SELECT COUNT(*) "
                                  "FROM sv_call_table AS outer "
                                  "WHERE outer.sv_caller_run_id == ? "
-                                 "AND " +
-                                     SvCallTable::getSqlForCallScore( "outer" ) +
-                                     " >= ? "
-                                     "AND EXISTS ( "
-                                     "  SELECT * "
-                                     "  FROM sv_call_table AS inner "
-                                     "  JOIN overlap_cache_table ON overlap_cache_table.call_id_b == inner.id "
-                                     "  WHERE overlap_cache_table.call_id_a == outer.id "
-                                     "  AND inner.sv_caller_run_id == ? "
-                                     "  AND overlap_cache_table.blur == ? "
-                                     "  LIMIT 1 "
-                                     ")" ),
+                                 "AND " + SvCallTable::getSqlForCallScore( "outer" ) + " >= ? "
+                                 "AND EXISTS ( "
+                                 "  SELECT * "
+                                 "  FROM sv_call_table AS inner "
+                                 "  JOIN overlap_cache_table ON overlap_cache_table.call_id_b == inner.id "
+                                 "  WHERE overlap_cache_table.call_id_a == outer.id "
+                                 "  AND inner.sv_caller_run_id == ? "
+                                 "  AND overlap_cache_table.blur == ? "
+                                 "  LIMIT 1 "
+                                 ")" ),
+              // clang-format on
               pHelper( std::make_shared<OverlapCacheComputedTable>( pDatabase ) )
         {} // default constructor
 
@@ -226,7 +253,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                 uint32_t uiToSize = std::get<5>( xTup );
                 bool bSwitchStrand = std::get<6>( xTup );
 
-                // if the current call overlaps a coll with higher score of the same run, ignore it
+                // if the current call overlaps a call with higher score of the same run, ignore it
                 if( !xNumOverlapsHelper2
                          .vExecuteAndReturnIterator( iId, dScore, iId, iCallerRunIdB, iCallerRunIdB,
                                                      uiFromStart - iAllowedDist,
@@ -235,10 +262,14 @@ class SvCallTable : private TP_SV_CALL_TABLE
                          .eof( ) )
                     continue;
 
-                // get all overlapping call in iCallerRunIdA
+                // get all overlapping calls in iCallerRunIdA
                 auto vResults = xNumOverlapsHelper1.executeAndStoreAllInVector(
                     iCallerRunIdA, iCallerRunIdA, uiFromStart - iAllowedDist, uiFromStart + uiFromSize + iAllowedDist,
-                    uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist, bSwitchStrand );
+                    uiToStart - iAllowedDist, uiToStart + uiToSize + iAllowedDist, bSwitchStrand,
+                    uiFromStart + uiFromSize / 2, uiToStart + uiToSize / 2 );
+
+                assert(vResults.size() <= 1);
+
 
                 // fill the cache with the connections
                 for( auto xTup : vResults )

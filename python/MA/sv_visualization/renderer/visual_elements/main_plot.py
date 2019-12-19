@@ -38,7 +38,7 @@ class MainPlot:
         self.jump_x = ColumnDataSource({"x":[], "y":[]})
         self.plot.multi_line(xs="x", ys="y", line_width=1.5, line_alpha=0.5, color="black", source=self.jump_x)
 
-        self.plot.add_tools(HoverTool(tooltips=[("supp. nt", "@n"),
+        self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
                                                 ("read id", "@r"),
                                                 ("|query|", "@q"),
                                                 ("from", "@f"),
@@ -66,7 +66,7 @@ class MainPlot:
         self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
                     source=self.ground_truth_x, name="ground_truth_x")
 
-        self.plot.add_tools(HoverTool(tooltips=[("supp. nt", "@n"),
+        self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
                                                 ("ambiguity", "@c"),
                                                 ("#reads", "@r"),
                                                 ("score", "@s"),
