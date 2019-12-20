@@ -134,6 +134,7 @@ class ReadPlot:
                 found_at_least_one = True
         if found_at_least_one:
             self.seeds.data = seed_dict
+            self.ambiguity_rect.data = renderer.read_plot_rects[renderer.selected_read_id]
 
     def reset_seeds(self, renderer):
         seed_dict = dict((key, []) for key in renderer.seed_plot.seeds.data.keys())

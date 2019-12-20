@@ -578,18 +578,18 @@ class SvCall : public Container
         nucSeqIndex uiUp = this->up( );
         this->uiFromStart = this->left( );
         this->uiToStart = this->down( );
-        // make sure we never have a call smaller than 10x10:
-        if( uiRight < 10 + this->uiFromStart )
+        // make sure we never have a call smaller than 3x3:
+        if( uiRight < 3 + this->uiFromStart )
         {
             this->uiFromStart = this->uiFromStart / 2 + uiRight / 2;
-            this->uiFromSize = 10;
+            this->uiFromSize = 3;
         } // if
         else
             this->uiFromSize = uiRight - uiFromStart;
-        if( uiUp < 10 + this->uiToStart )
+        if( uiUp < 3 + this->uiToStart )
         {
             this->uiToStart = this->uiToStart / 2 + uiUp / 2;
-            this->uiToSize = 10;
+            this->uiToSize = 3;
         } // if
         else
             this->uiToSize = uiUp - uiToStart;

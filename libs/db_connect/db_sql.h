@@ -368,10 +368,27 @@ class SQL_DB // deprecated : public CppSQLite3DB
         : SQL_DB( "", sDataBaseName, eDatabaseOpeningMode ) // redirect constructor
     {} // constructor
 
+    /* Simplified constructor that does not require expect the specification of a working directory. */
+    SQL_DB( const std::string& sDataBaseName, // name of the database
+            const enumSQLite3DBOpenMode eDatabaseOpeningMode, // how to open the database
+            const bool bFromMemory )
+        : SQL_DB( "", bFromMemory ? ":memory:" : sDataBaseName, eDatabaseOpeningMode ) // redirect constructor
+    {
+        if( bFromMemory && pDBConnector->loadOrSaveDb( sDataBaseName.c_str( ), 0 /* False */ ) != 0 )
+            throw std::runtime_error( "load to memory operation failed" );
+    } // constructor
+
     /* We need some virtual destructor due to the inheritance
      */
     virtual ~SQL_DB( )
     {} // destructor
+
+    void save_to_file( std::string sFile )
+    {
+        int iErrorCode = pDBConnector->loadOrSaveDb( sFile.c_str( ), 1 /* True */ );
+        if( iErrorCode != 0 )
+            throw std::runtime_error( "save from memory operation failed error code: " + std::to_string( iErrorCode ) );
+    } // method
 
     /* TODO: Insert data-type check */
     void vCreateTableFromTextFile(

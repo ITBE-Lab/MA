@@ -21,9 +21,9 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     res = VectorPledge()
     jump_to_dbs = []
     # graph for single reads
-    for idx in range(parameter_set_manager.get_num_threads()):
-        nuc_seq_getter = AllNucSeqFromSql(parameter_set_manager, sv_db, seq_id, idx,
-                                          parameter_set_manager.get_num_threads())
+    jobs = parameter_set_manager.get_num_threads() * 100
+    for idx in range(jobs):
+        nuc_seq_getter = AllNucSeqFromSql(parameter_set_manager, sv_db, seq_id, idx, jobs)
         jumps_to_db = libMA.BufferedSvDbInserter(parameter_set_manager, sv_db, run_id)
         jump_to_dbs.append(jumps_to_db)
         queries_pledge = promise_me(nuc_seq_getter)

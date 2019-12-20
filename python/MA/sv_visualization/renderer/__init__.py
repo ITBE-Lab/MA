@@ -37,6 +37,7 @@ class Renderer():
         self.selected_seed_id = None
         self.selected_call_id = set()
         self.selected_jump_id = set()
+        self.read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:

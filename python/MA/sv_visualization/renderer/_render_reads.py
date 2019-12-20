@@ -6,17 +6,17 @@ from MA import *
 import math
 from .util import *
 
-def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_plot_rects,
-                  read_ambiguous_reg_dict, end_column, category_counter):
+def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict, end_column,
+                  category_counter):
     color = Plasma256[min(seed_sample_size, 255)]
     # if
-    read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
-    read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
-    read_plot_rects[read_id]["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
-    read_plot_rects[read_id]["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
-    read_plot_rects[read_id]["f"].append(fill)
-    read_plot_rects[read_id]["c"].append(color)
-    read_plot_rects[read_id]["s"].append(seed_sample_size)
+    self.read_plot_rects[read_id]["l"].append(rectangle.x_axis.start)
+    self.read_plot_rects[read_id]["b"].append(rectangle.y_axis.start)
+    self.read_plot_rects[read_id]["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
+    self.read_plot_rects[read_id]["t"].append(rectangle.y_axis.start + rectangle.y_axis.size)
+    self.read_plot_rects[read_id]["f"].append(fill)
+    self.read_plot_rects[read_id]["c"].append(color)
+    self.read_plot_rects[read_id]["s"].append(seed_sample_size)
     if seed_sample_size > 10 and len(self.read_ids) <= self.do_compressed_seeds:
         read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
         read_ambiguous_reg_dict["b"].append(category_counter - 0.5)
@@ -74,7 +74,6 @@ def render_reads(self):
     col_ids = []
     all_col_ids = []
     category_counter = 0
-    read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
     end_column = None
 
     with self.measure("computing seeds"):
@@ -82,7 +81,7 @@ def render_reads(self):
             all_seeds = []
             for read_id in sorted(self.read_ids, reverse=True):
                 self.read_plot.nuc_plot.nucs_by_r_id[read_id] = {"p": [], "c": [], "i": []}
-                read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
+                self.read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
                 read = self.sv_db.get_read(read_id)
                 for y, nuc in enumerate(str(read)):
                     append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
@@ -119,8 +118,8 @@ def render_reads(self):
                         all_seeds.extend(seeds_n_idx)
 
                     for rectangle, fill, seed_sample_size in zip(rectangles, fill_of_rectangles, seed_sample_sizes):
-                        add_rectangle(self, seed_sample_size, read_id, rectangle, fill,
-                                    read_plot_rects, read_ambiguous_reg_dict, end_column, category_counter)
+                        self.add_rectangle(seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict,
+                                           end_column, category_counter)
 
                     if len(self.read_ids) <= self.do_compressed_seeds:
                         category_counter += len(end_column) + 2

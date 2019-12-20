@@ -306,7 +306,7 @@ class CppSQLite3DB
     void interrupt( )
     {
         sqlite3_interrupt( mpDB );
-    }
+    } // method
 
     void setBusyTimeout( int nMillisecs );
 
@@ -316,6 +316,13 @@ class CppSQLite3DB
     }
 
     void set_num_threads(const int uiNumThreads);
+
+    int loadOrSaveDb( const char* zFilename, int isSave );
+
+    const char* getErrorMessage()
+    {
+        return sqlite3_errmsg(mpDB);
+    }
 
   private:
     CppSQLite3DB( const CppSQLite3DB& db );
