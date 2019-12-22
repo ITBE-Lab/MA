@@ -300,7 +300,7 @@ class SvCallTable : private TP_SV_CALL_TABLE
                                      int64_t iAllowedDist )
         {
             createCache( iCallerRunIdA, iCallerRunIdB, iAllowedDist );
-            return xNumOverlapsCache.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB, iAllowedDist );
+            return xNumOverlapsCache.scalar( iCallerRunIdB, dMinScore, iCallerRunIdA, iAllowedDist );
         } // method
 
         /**
