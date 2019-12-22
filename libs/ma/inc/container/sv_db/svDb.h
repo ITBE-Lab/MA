@@ -56,9 +56,10 @@ class SV_DB : public Container
     SV_DB( SV_DB& rOther )
         : sName( rOther.sName ),
           bInMemory( rOther.bInMemory ),
-          bIsCopy(true),
+          bIsCopy( true ),
           pWriteLock( rOther.pWriteLock ),
-          pDatabase( std::make_shared<CppSQLiteDBExtended>( "", rOther.sName, eOPEN_DB ) ),
+          pDatabase( std::make_shared<CppSQLiteDBExtended>( "", bInMemory ? "file::memory:?cache=shared" : rOther.sName,
+                                                            eOPEN_DB ) ),
           pSequencerTable( rOther.pSequencerTable ),
           pReadTable( rOther.pReadTable ),
           pPairedReadTable( rOther.pPairedReadTable ),
@@ -69,7 +70,7 @@ class SV_DB : public Container
           pSvCallTable( rOther.pSvCallTable ),
           pSvCallSupportTable( rOther.pSvCallSupportTable )
     {
-        DEBUG( std::cout << "Copied DB connection" << std::endl; )
+        // DEBUG( std::cout << "Copied DB connection" << std::endl; )
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
         // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
@@ -81,7 +82,7 @@ class SV_DB : public Container
     SV_DB( std::string sName, enumSQLite3DBOpenMode xMode, bool bInMemory )
         : sName( sName ),
           bInMemory( bInMemory ),
-          bIsCopy(false),
+          bIsCopy( false ),
           pWriteLock( std::make_shared<std::mutex>( ) ),
           pDatabase( std::make_shared<CppSQLiteDBExtended>( sName, xMode, bInMemory ) ),
           pSequencerTable( std::make_shared<SequencerTable>( pDatabase ) ),
@@ -94,7 +95,7 @@ class SV_DB : public Container
           pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {
-        DEBUG( std::cout << "Opened DB connection" << std::endl; )
+        // DEBUG( std::cout << "Opened DB connection" << std::endl; )
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
         // if( xMode == eCREATE_DB )
@@ -117,10 +118,10 @@ class SV_DB : public Container
 
     ~SV_DB( )
     {
-        DEBUG( std::cout << "Closing DB connection" << std::endl; )
+        // DEBUG( std::cout << "Closing DB connection" << std::endl; )
         if( !bIsCopy && bInMemory )
             pDatabase->save_to_file( sName );
-        DEBUG( std::cout << "Closed DB connection" << std::endl; )
+        // DEBUG( std::cout << "Closed DB connection" << std::endl; )
     } // desctructor
 
     inline void createJumpIndices( int64_t uiRun )

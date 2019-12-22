@@ -132,6 +132,8 @@ void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::
     {
         if( pOutExtra != nullptr )
             pOutExtra->vRectangleReferenceAmbiguity.push_back( 0 );
+        if( pOutExtra != nullptr )
+            pOutExtra->vRectangleUsedDp.push_back( false );
         return;
     } // if
     auto pRef = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
@@ -139,14 +141,16 @@ void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::
     pRefRevComp->vReverseAll( );
     pRefRevComp->vSwitchAllBasePairsToComplement( );
     /*
-     * In order to kill parlindromes:
+     * In order to kill random seeds:
      * sample the k-mer size of forward and reverse strand together
      */
-    auto uiSampledKMerSize = sampleKMerSize( *pRef, *pRefRevComp, this->dProbabilityForRandomMatch );
+    auto uiSampledAmbiguity = sampleSequenceAmbiguity( *pRef, *pRefRevComp, this->dProbabilityForRandomMatch );
     if( pOutExtra != nullptr )
-        pOutExtra->vRectangleReferenceAmbiguity.push_back( uiSampledKMerSize );
-    if( uiSampledKMerSize <= uiMaxAddSeedSize )
+        pOutExtra->vRectangleReferenceAmbiguity.push_back( uiSampledAmbiguity );
+    if( uiSampledAmbiguity <= xArea.xXAxis.size( ) * ( 1 + dMaxSequenceSimilarity ) )
     {
+        if( pOutExtra != nullptr )
+            pOutExtra->vRectangleUsedDp.push_back( false );
         HashMapSeeding xHashMapSeeder;
         xHashMapSeeder.uiSeedSize = getKMerSizeForRectangle( xArea, this->dProbabilityForRandomMatch );
         if( xHashMapSeeder.uiSeedSize > xArea.xXAxis.size( ) || xHashMapSeeder.uiSeedSize > xArea.xYAxis.size( ) )
@@ -186,6 +190,8 @@ void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::
     }
     else
     {
+        if( pOutExtra != nullptr )
+            pOutExtra->vRectangleUsedDp.push_back( true );
         auto pFAlignment = std::make_shared<Alignment>( xArea.xXAxis.start( ), xArea.xYAxis.start( ) );
         AlignedMemoryManager xMemoryManager; // @todo this causes frequent (de-)&allocations; move this outwards
         xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pFAlignment,
@@ -209,7 +215,7 @@ void SvJumpsFromSeeds::computeSeeds( libMA::Rectangle<nucSeqIndex>& xArea, std::
             rSeed.iStart += xArea.xYAxis.start( );
             assert( rSeed.end( ) <= pQuery->length( ) );
         } // for
-        if( pFAlignment->score() >= pRAlignment->score() )
+        if( pFAlignment->score( ) >= pRAlignment->score( ) )
             rvRet->append( pForwSeeds );
         else
             rvRet->append( pRevSeeds );
@@ -472,13 +478,13 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
         .def_readwrite( "rectangles", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangles )
         .def_readwrite( "parlindrome", &libMA::SvJumpsFromSeeds::HelperRetVal::vParlindromeSeed )
         .def_readwrite( "rectangles_fill", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
-        .def_readwrite( "rectangle_ambiguity", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity );
+        .def_readwrite( "rectangle_ambiguity", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
+        .def_readwrite( "rectangle_used_dp", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
     py::bind_vector<std::vector<libMA::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( rxPyModuleId, "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );
     exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
-        rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
-            x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
-        } );
+        rxPyModuleId, "SvJumpsFromSeeds",
+        []( auto&& x ) { x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py ); } );
 } // function
 #endif

@@ -10,25 +10,25 @@ using namespace libMA;
 using namespace libMA::defaults;
 
 
-std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( std::shared_ptr<NucSeq> pQ2,
+std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2,
                                                                        nucSeqIndex uiSeedSize )
 {
     std::unordered_multimap<std::string, size_t> xIndex;
 
     // insert seeds into index
-    for( size_t uiI = 0; uiI + uiSeedSize <= pQ2->length( ); uiI += 1 )
-        xIndex.emplace( pQ2->fromTo( uiI, uiI + uiSeedSize ), uiI );
+    for( size_t uiI = 0; uiI + uiSeedSize <= rQ2.length( ); uiI += 1 )
+        xIndex.emplace( rQ2.fromTo( uiI, uiI + uiSeedSize ), uiI );
     return xIndex;
 } // method
 
 
 std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex,
-                                                 std::shared_ptr<NucSeq> pQ1, nucSeqIndex uiSeedSize )
+                                                 NucSeq& rQ1, nucSeqIndex uiSeedSize )
 {
     auto pSeeds = std::make_shared<Seeds>( );
-    for( size_t uiI = 0; uiI + uiSeedSize <= pQ1->length( ); uiI += 1 )
+    for( size_t uiI = 0; uiI + uiSeedSize <= rQ1.length( ); uiI += 1 )
     {
-        auto tuiRange = xIndex.equal_range( pQ1->fromTo( uiI, uiI + uiSeedSize ) );
+        auto tuiRange = xIndex.equal_range( rQ1.fromTo( uiI, uiI + uiSeedSize ) );
         for( auto xIt = tuiRange.first; xIt != tuiRange.second; ++xIt )
             pSeeds->emplace_back( uiI, uiSeedSize, xIt->second, true );
     } // for
@@ -36,10 +36,10 @@ std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::st
     return pSeeds;
 } // method
 
-std::shared_ptr<Seeds> HashMapSeeding::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
+std::shared_ptr<Seeds> HashMapSeeding::execute( NucSeq& rQ1, NucSeq& rQ2 )
 {
-    nucSeqIndex uiSeedSize = getSeedSize( pQ1->length( ), pQ2->length( ) );
-    return getSeeds( getIndex( pQ2, uiSeedSize ), pQ1, uiSeedSize );
+    nucSeqIndex uiSeedSize = getSeedSize( rQ1.length( ), rQ2.length( ) );
+    return getSeeds( getIndex( rQ2, uiSeedSize ), rQ1, uiSeedSize );
 } // function
 
 #if 0

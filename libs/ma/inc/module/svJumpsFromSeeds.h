@@ -39,7 +39,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNW;
     ParlindromeFilter xParlindromeFilter;
-    nucSeqIndex uiMaxAddSeedSize = 10;
+    double dMaxSequenceSimilarity = 0.2;
     // @todo there should be a container for the current sequencer run;
     // this way this module would be free from keeping internal data and could be used for multiple instances in the
     // graph...
@@ -134,6 +134,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
         std::vector<Rectangle<nucSeqIndex>> vRectangles;
         std::vector<double> vRectangleFillPercentage;
         std::vector<size_t> vRectangleReferenceAmbiguity;
+        std::vector<bool> vRectangleUsedDp;
 
         HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ){};
     }; // class

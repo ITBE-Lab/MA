@@ -32,4 +32,18 @@ inline nucSeqIndex sampleKMerSize( NucSeq& rSequence, double t )
     return sampleKMerSize( rSequence, xEmpty, t );
 } // function
 
+/**
+ * @brief returns the number of non random nucleotide chains matching among the sequences
+ * @details
+ * Computes and lumps k-mers, so that all chains have lengths that have a likelyhood <= t to occur randomly.
+ * Compares both sequences with themselves and each other, so the minimal returned value should be
+ * the length of both sequences added together.
+ */
+nucSeqIndex sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenceB, double t );
+inline nucSeqIndex sampleSequenceAmbiguity( NucSeq& rSequence, double t )
+{
+    NucSeq xEmpty;
+    return sampleSequenceAmbiguity( rSequence, xEmpty, t );
+} // function
+
 } // namespace libMA

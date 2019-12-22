@@ -252,6 +252,8 @@ class SeedLumping : public Module<Seeds, false, Seeds>
 
     SeedLumping( const ParameterSetManager& rParameters )
     {} // default constructor
+    SeedLumping( )
+    {} // default constructor
 
 #if 1
     // overload

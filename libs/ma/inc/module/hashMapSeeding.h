@@ -27,7 +27,7 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
     HashMapSeeding( const ParameterSetManager& rParameters )
     {} // constructor
 
-    HashMapSeeding(  )
+    HashMapSeeding( )
     {} // constructor
 
     virtual nucSeqIndex minSeedSize( )
@@ -40,19 +40,22 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
         return minSeedSize( );
     } // method
 
-    virtual std::unordered_multimap<std::string, size_t> getIndex( std::shared_ptr<NucSeq> pQ1,
-                                                                   nucSeqIndex uiSeedSize );
-    virtual std::shared_ptr<Seeds> getSeeds( std::unordered_multimap<std::string, size_t> xIndex,
-                                             std::shared_ptr<NucSeq> pQ1, nucSeqIndex uiSeedSize );
+    virtual std::unordered_multimap<std::string, size_t> getIndex( NucSeq& xQ1, nucSeqIndex uiSeedSize );
+    virtual std::shared_ptr<Seeds> getSeeds( std::unordered_multimap<std::string, size_t> xIndex, NucSeq& xQ1,
+                                             nucSeqIndex uiSeedSize );
 
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 );
+    virtual std::shared_ptr<Seeds> EXPORTED execute( NucSeq& xQ1, NucSeq& xQ2 );
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
+    {
+        return execute( *pQ1, *pQ2 );
+    } // method
 
-    virtual std::vector<std::shared_ptr<libMA::Seeds>>
-    getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::vector<std::shared_ptr<NucSeq>> vIn )
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex,
+                                                                    std::vector<std::shared_ptr<NucSeq>> vIn )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         for( auto pNucSeq : vIn )
-            vRet.push_back( getSeeds( xIndex, pNucSeq, xIndex.begin( )->first.size( ) ) );
+            vRet.push_back( getSeeds( xIndex, *pNucSeq, xIndex.begin( )->first.size( ) ) );
         return vRet;
     } // method
 }; // class

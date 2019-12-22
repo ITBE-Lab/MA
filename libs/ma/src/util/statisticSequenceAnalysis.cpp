@@ -1,4 +1,5 @@
 #include "util/statisticSequenceAnalysis.h"
+#include "module/hashMapSeeding.h"
 
 using namespace libMA;
 
@@ -50,4 +51,25 @@ nucSeqIndex libMA::sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, doubl
     } // while
 
     return uiSeedSize - uiStaticsticalSize;
+} // function
+
+nucSeqIndex libMA::sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenceB, double t )
+{
+    HashMapSeeding xSeeder;
+
+    libMA::Rectangle<nucSeqIndex> xRect( 0, 0, rSequenceA.length( ) + rSequenceB.length( ),
+                                         rSequenceA.length( ) + rSequenceB.length( ) );
+    xSeeder.uiSeedSize = getKMerSizeForRectangle( xRect, t );
+
+    auto pSeeds = xSeeder.execute( rSequenceA, rSequenceB );
+    pSeeds->append( xSeeder.execute( rSequenceA, rSequenceA ) );
+    pSeeds->append( xSeeder.execute( rSequenceB, rSequenceB ) );
+
+    auto pLumped = SeedLumping( ).execute( pSeeds );
+
+    nucSeqIndex uiSum = 0;
+    for( auto xSeed : *pLumped )
+        uiSum += xSeed.size( );
+
+    return uiSum;
 } // function

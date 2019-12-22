@@ -79,7 +79,9 @@ class ReadPlot:
                                                 ("right", "@r"),
                                                 ("top", "@t"),
                                                 ("fill percentage", "@f"),
-                                                ("additional seed size", "@s")],
+                                                ("additional seed size", "@s"),
+                                                ("triggered ambiguity filter", "@dp")
+                                                ],
                                      names=['ambiguity_rect'],
                                      name="Hover ambiguity rects"))
 
