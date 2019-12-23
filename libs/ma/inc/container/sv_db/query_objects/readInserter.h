@@ -28,8 +28,7 @@ class ReadInserter
         : pDB( pDB ),
           xTransactionContext( *pDB->pDatabase ),
           uiSequencerId( pDB->pSequencerTable->insertSequencer( sSequencerName ) )
-    {
-    } // constructor
+    {} // constructor
 
     /// @brief cannot be copied
     ReadInserter( const ReadInserter& rOther ) = delete; // delete copy constructor
@@ -37,42 +36,32 @@ class ReadInserter
     /// @brief insert a unpaired read
     inline void insertRead( std::shared_ptr<NucSeq> pRead )
     {
+        std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
         pDB->pReadTable->insertRead( uiSequencerId, pRead );
     } // method
 
     /// @brief insert paired reads
     inline void insertPairedRead( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
+        std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
         pDB->pPairedReadTable->insertRead( uiSequencerId, pReadA, pReadB );
     } // method
 
     /// @brief insert a file of unpaired reads
     inline void insertFastaFiles( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
     {
-        FileListReader xReader( rParameters, vsFileNames );
-        {
-            ThreadPool xPool( 4 );
-            std::mutex xReadLock, xWriteLock;
+        ThreadPool xPool( rParameters.getNumThreads( ) );
 
+        for( size_t uiT = 0; uiT < vsFileNames.size( ); uiT++ )
             xPool.enqueue(
-                []( size_t uiTid, FileListReader* pReader, ReadInserter* pInserter, std::mutex* pReadLock,
-                    std::mutex* pWriteLock ) {
-                    while( !pReader->isFinished( ) )
-                    {
-                        std::shared_ptr<NucSeq> pRead;
-                        {
-                            std::lock_guard<std::mutex> xGuard( *pReadLock );
-                            pRead = pReader->execute( );
-                        } // scope for xGuard
-                        {
-                            std::lock_guard<std::mutex> xGuard( *pWriteLock );
-                            pInserter->insertRead( pRead );
-                        } // scope for xGuard
-                    } // while
+                []( size_t, const std::vector<fs::path>* pvsFileNames, ReadInserter* pInserter, size_t uiT,
+                    const ParameterSetManager* pParameters ) {
+                    FileReader xReader( *pParameters, (*pvsFileNames)[ uiT ] );
+                    while( !xReader.isFinished( ) )
+                        pInserter->insertRead( xReader.execute( ) );
                     return 0;
                 },
-                &xReader, this, &xReadLock, &xWriteLock );
-        } // scope for thread pool
+                &vsFileNames, this, uiT, &rParameters );
     } // method
 
     /// @brief insert files of paired reads
@@ -80,30 +69,22 @@ class ReadInserter
                                         const std::vector<fs::path>& vsFileNames1,
                                         const std::vector<fs::path>& vsFileNames2 )
     {
-        PairedFileReader xReader( rParameters, vsFileNames1, vsFileNames2 );
-        {
-            ThreadPool xPool( 4 );
-            std::mutex xReadLock, xWriteLock;
+        ThreadPool xPool( rParameters.getNumThreads( ) );
 
+        assert( vsFileNames1.size( ) == vsFileNames2.size( ) );
+
+        for( size_t uiT = 0; uiT < vsFileNames1.size( ); uiT++ )
             xPool.enqueue(
-                []( size_t uiTid, PairedFileReader* pReader, ReadInserter* pInserter, std::mutex* pReadLock,
-                    std::mutex* pWriteLock ) {
-                    while( !pReader->isFinished( ) )
-                    {
-                        std::shared_ptr<TP_PAIRED_READS> pvReads;
-                        {
-                            std::lock_guard<std::mutex> xGuard( *pReadLock );
-                            pvReads = pReader->execute( );
-                        } // scope for xGuard
-                        {
-                            std::lock_guard<std::mutex> xGuard( *pWriteLock );
-                            pInserter->insertPairedRead( ( *pvReads )[ 0 ], ( *pvReads )[ 1 ] );
-                        } // scope for xGuard
-                    } // while
+                []( size_t, const std::vector<fs::path>* pvsFileNames1, const std::vector<fs::path>* pvsFileNames2,
+                    ReadInserter* pInserter, size_t uiT, const ParameterSetManager* pParameters ) {
+                    FileReader xReader1( *pParameters, (*pvsFileNames1)[ uiT ] );
+                    FileReader xReader2( *pParameters, (*pvsFileNames2)[ uiT ] );
+                    while( !xReader1.isFinished( ) && !xReader2.isFinished( ) )
+                        pInserter->insertPairedRead( xReader1.execute( ), xReader2.execute( ) );
+                    assert( xReader1.isFinished( ) == xReader2.isFinished( ) );
                     return 0;
                 },
-                &xReader, this, &xReadLock, &xWriteLock );
-        } // scope for thread pool
+                &vsFileNames1, &vsFileNames2, this, uiT, &rParameters );
     } // method
 }; // class
 

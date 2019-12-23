@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("db_connect" VERSION 0.1 DESCRIPTION "Database connection library")
 
-INCLUDE(cmake/FindMySQL.cmake)
+#INCLUDE(cmake/FindMySQL.cmake)
 
 if( MySQL_FOUND )
         message( "Found MySQL includes and libraries")

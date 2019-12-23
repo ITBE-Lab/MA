@@ -376,7 +376,8 @@ class SQL_DB // deprecated : public CppSQLite3DB
                   bFromMemory ? "file::memory:?cache=shared" : sDataBaseName,
                   eDatabaseOpeningMode ) // redirect constructor
     {
-        if( bFromMemory && pDBConnector->loadOrSaveDb( sDataBaseName.c_str( ), 0 /* False */ ) != 0 )
+        if( bFromMemory && eDatabaseOpeningMode != eCREATE_DB &&
+            pDBConnector->loadOrSaveDb( sDataBaseName.c_str( ), 0 /* False */ ) != 0 )
             throw std::runtime_error( "load to memory operation failed" );
     } // constructor
 
