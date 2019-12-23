@@ -113,6 +113,7 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
  * @brief saves all computed clusters in the database
  * @details buffers the calls in a vector before
  * @note in a parallel computational graph: use multiple instances of this module
+ * @todo use same buffer technique as for jumps
  */
 class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
@@ -751,13 +752,19 @@ class ComputeCallAmbiguity
         {
             nucSeqIndex iStartOfContig = pPack->startOfSequenceWithId( uiSeqId );
             nucSeqIndex uiStart = uiPos > iStartOfContig + uiDistance ? uiPos - uiDistance : iStartOfContig;
-            return pPack->vExtract( uiStart, uiPos );
+            nucSeqIndex uiSize = uiPos - uiStart;
+            if(pPack->bridgingSubsection(uiStart, uiSize))
+                pPack->unBridgeSubsection(uiStart, uiSize);
+            return pPack->vExtract( uiStart, uiStart + uiSize );
         } // if
         else
         {
             nucSeqIndex iEndOfContig = pPack->endOfSequenceWithId( uiSeqId );
             nucSeqIndex uiEnd = uiPos + uiDistance < iEndOfContig ? uiPos + uiDistance : iEndOfContig;
-            return pPack->vExtract( uiPos, uiEnd );
+            nucSeqIndex uiSize = uiEnd - uiPos;
+            if(pPack->bridgingSubsection(uiPos, uiSize))
+                pPack->unBridgeSubsection(uiPos, uiSize);
+            return pPack->vExtract( uiPos, uiPos + uiSize );
         } // else
     } // method
 

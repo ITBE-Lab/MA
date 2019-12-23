@@ -483,7 +483,7 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
     py::bind_vector<std::vector<libMA::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( rxPyModuleId, "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );
-    exportModule<SvJumpsFromSeeds, int64_t, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>>(
+    exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>(
         rxPyModuleId, "SvJumpsFromSeeds",
         []( auto&& x ) { x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py ); } );
 } // function

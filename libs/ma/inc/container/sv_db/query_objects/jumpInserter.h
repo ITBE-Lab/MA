@@ -18,6 +18,7 @@ class SvJumpInserter
   public:
     // this is here so that it gets destructed after the transaction context
     std::shared_ptr<SV_DB> pDB;
+
   private:
     // must be after the DB so that it is deconstructed first
     std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
@@ -74,7 +75,7 @@ class SvJumpInserter
      * @param bTransactionLess do not create a transaction
      */
     SvJumpInserter( std::shared_ptr<SV_DB> pDB, int64_t iSvJumpRunId, bool bTransactionLess )
-        : pDB( pDB ),
+        : pDB( std::make_shared<SV_DB>( *pDB ) ), // create a copy of the connection to the db
           pTransactionContext( bTransactionLess
                                    ? nullptr
                                    : std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase ) ),
@@ -108,9 +109,9 @@ class SvJumpInserter
         return ReadContex( pDB->pSvJumpTable, iSvJumpRunId, iReadId );
     } // method
 
-    inline void endTransaction()
+    inline void endTransaction( )
     {
-        pTransactionContext.reset();
+        pTransactionContext.reset( );
     } // method
 
 }; // class
@@ -156,6 +157,7 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
 class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
     std::shared_ptr<SvJumpInserter> pInserter;
+
   public:
     /// @brief the buffer containing all jumps that are not yet commited
     std::vector<std::pair<std::shared_ptr<ContainerVector<SvJump>>, int64_t>> vBuffer;
@@ -185,6 +187,8 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
                 xReadContext.insertJump( rJump ); // also updates the jump ids;
         } // for
         vBuffer.clear( );
+        // @todo commit the transaction and start a new one every one in a while?
+
         // end of scope for lock guard
     } // method
 
@@ -198,7 +202,7 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         vBuffer.emplace_back( pJumps, pRead->iId );
-        commit();
+        commit( );
         return std::make_shared<Container>( );
     } // method
 }; // class

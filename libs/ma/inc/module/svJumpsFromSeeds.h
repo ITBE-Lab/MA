@@ -40,11 +40,6 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     NeedlemanWunsch xNW;
     ParlindromeFilter xParlindromeFilter;
     double dMaxSequenceSimilarity = 0.2;
-    // @todo there should be a container for the current sequencer run;
-    // this way this module would be free from keeping internal data and could be used for multiple instances in the
-    // graph...
-    int64_t iSequencerId;
-    std::shared_ptr<SV_DB> pDb;
 
     std::mutex xLock;
     size_t uiNumSeedsEliminatedAmbiguityFilter = 0;
@@ -62,8 +57,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
     /**
      * @brief Initialize a SvJumpsFromSeeds Module
      */
-    SvJumpsFromSeeds( const ParameterSetManager& rParameters, int64_t iSequencerId, std::shared_ptr<SV_DB> pDb,
-                      std::shared_ptr<Pack> pRefSeq )
+    SvJumpsFromSeeds( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
         : pSelectedSetting( rParameters.getSelected( ) ),
           uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
           uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
@@ -72,9 +66,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
           uiMaxDistDummy( pSelectedSetting->xMaxDistDummy->get( ) ),
           xSeedLumper( rParameters ),
           xNW( rParameters ),
-          xParlindromeFilter( rParameters ),
-          iSequencerId( iSequencerId ),
-          pDb( pDb )
+          xParlindromeFilter( rParameters )
     {} // constructor
 
     ~SvJumpsFromSeeds( )

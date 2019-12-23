@@ -75,7 +75,7 @@ class SV_DB : public Container
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
         // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
         pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        pDatabase->execDML( "PRAGMA journal_mode = OFF;" ); // insert performance -> read while write
+        pDatabase->execDML( "PRAGMA journal_mode = WAL;" ); // insert performance -> read while write
     } // constructor
 
     /// @brief create a new database connection
@@ -100,7 +100,7 @@ class SV_DB : public Container
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
         // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
         pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        pDatabase->execDML( "PRAGMA journal_mode = OFF;" ); // insert performance -> read while write
+        pDatabase->execDML( "PRAGMA journal_mode = WAL;" ); // insert performance -> read while write
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB, false )
