@@ -44,7 +44,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
           // otherwise we do so much extra work with re overlapping part between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 10 ), (int64_t)5000000 ) ),
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 10 ), (int64_t)50000000 ) ),
           iCurrStart( 0 )
     {} // constructor
 
@@ -118,24 +118,24 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
 class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
-    std::shared_ptr<SV_DB> pDB;
-    int64_t iRunId;
+    std::shared_ptr<SvCallInserter> pInserter;
     std::vector<std::shared_ptr<CompleteBipartiteSubgraphClusterVector>> vContent;
     /**
      * @brief
      * @details
      */
-    BufferedSvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDB, int64_t iRunId )
-        : pDB( pDB ), iRunId( iRunId )
+    BufferedSvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SvCallInserter> pInserter )
+        : pInserter( pInserter )
     {} // constructor
 
-    inline void commit( )
+    inline void commit( bool bForce = false )
     {
         if( vContent.size( ) == 0 )
             return;
-        std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
-        // creates transaction
-        auto pInserter = std::make_shared<SvCallInserter>( pDB, iRunId );
+        if( !bForce && vContent.size( ) < 10000 )
+            return;
+
+        std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
         for( auto pVec : vContent )
             for( auto pCall : pVec->vContent )
                 pInserter->insertCall( *pCall );
@@ -144,12 +144,13 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
 
     ~BufferedSvCallSink( )
     {
-        commit( );
+        commit( true );
     } // scope for pInserter (transaction)
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
         vContent.push_back( pVec );
+        commit( );
         return std::make_shared<Container>( );
     } // method & scope for xGuard
 }; // class
@@ -359,8 +360,7 @@ class ExactCompleteBipartiteSubgraphSweep
     ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                                          std::shared_ptr<Pack> pPack, int64_t iSequencerId )
         : pPack( pPack )
-    {
-    } // constructor
+    {} // constructor
 
     inline void exact_sweep( std::vector<std::shared_ptr<SvJump>>& rvEdges, size_t uiStart, size_t uiEnd,
                              std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pRet )
@@ -485,7 +485,7 @@ class ExactCompleteBipartiteSubgraphSweep
 
                     pCurrCluster->reEstimateClusterSize( );
                     // we messed up this counter by removing jumps, fix that
-                    pCurrCluster->uiNumSuppReads = pCurrCluster->vSupportingJumps.size();
+                    pCurrCluster->uiNumSuppReads = pCurrCluster->vSupportingJumps.size( );
                     // save the cluster
                     pRet->vContent.push_back( pCurrCluster );
                 } // if
@@ -753,8 +753,8 @@ class ComputeCallAmbiguity
             nucSeqIndex iStartOfContig = pPack->startOfSequenceWithId( uiSeqId );
             nucSeqIndex uiStart = uiPos > iStartOfContig + uiDistance ? uiPos - uiDistance : iStartOfContig;
             nucSeqIndex uiSize = uiPos - uiStart;
-            if(pPack->bridgingSubsection(uiStart, uiSize))
-                pPack->unBridgeSubsection(uiStart, uiSize);
+            if( pPack->bridgingSubsection( uiStart, uiSize ) )
+                pPack->unBridgeSubsection( uiStart, uiSize );
             return pPack->vExtract( uiStart, uiStart + uiSize );
         } // if
         else
@@ -762,8 +762,8 @@ class ComputeCallAmbiguity
             nucSeqIndex iEndOfContig = pPack->endOfSequenceWithId( uiSeqId );
             nucSeqIndex uiEnd = uiPos + uiDistance < iEndOfContig ? uiPos + uiDistance : iEndOfContig;
             nucSeqIndex uiSize = uiEnd - uiPos;
-            if(pPack->bridgingSubsection(uiPos, uiSize))
-                pPack->unBridgeSubsection(uiPos, uiSize);
+            if( pPack->bridgingSubsection( uiPos, uiSize ) )
+                pPack->unBridgeSubsection( uiPos, uiSize );
             return pPack->vExtract( uiPos, uiPos + uiSize );
         } // else
     } // method
@@ -771,7 +771,7 @@ class ComputeCallAmbiguity
     nucSeqIndex sampleAmbiguity( std::shared_ptr<NucSeq> pSeqA, std::shared_ptr<NucSeq> pSeqB )
     {
         // + 1 to avoind division by zero error
-        return sampleKMerSize( *pSeqA, *pSeqB, 0.001 ) + 1;
+        return sampleSequenceAmbiguity( *pSeqA, *pSeqB, 0.001 ) + 1;
     } // method
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -811,6 +811,41 @@ class ComputeCallAmbiguity
         } // for
         return pCalls;
     } // method
+}; // class
+
+/**
+ * @brief filters out short calls with low support
+ * @details
+ * Due to the high concentration of noise along the diagonal of the adjacency matrix we get a lot of false positives
+ * here. This module filters such calls based on the amount of Nt's that support the individual calls.
+ */
+class FilterLowScoreCalls
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>,
+      public AbstractFilter
+{
+  public:
+    double dMinScore = 2.0;
+
+    FilterLowScoreCalls( const ParameterSetManager& rParameters )
+        : AbstractFilter( "FilterLowScoreCalls" )
+    {} // constructor
+
+    std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    {
+        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+        for( auto pCall : pCalls->vContent )
+            // if the call is supported by enough NT's or large enough we keep it
+            if( pCall->getScore() > dMinScore )
+                pRet->vContent.push_back( pCall );
+#if ANALYZE_FILTERS
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiFilterTotal += pCalls->vContent.size( );
+        uiFilterKept += pRet->vContent.size( );
+#endif
+        return pRet;
+    } // method
+
 }; // class
 
 } // namespace libMA

@@ -21,8 +21,11 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
         filter1 = libMA.FilterLowSupportShortCalls(parameter_set_manager)
         filter2 = libMA.FilterFuzzyCalls(parameter_set_manager)
         filter5 = libMA.FilterDiagonalLineCalls(parameter_set_manager)
+        filter6 = libMA.FilterLowScoreCalls(parameter_set_manager)
         call_ambiguity = libMA.ComputeCallAmbiguity(parameter_set_manager)
         assert len(sequencer_ids) == 1
+
+        call_inserter = libMA.SvCallInserter(sv_db, sv_caller_run_id)
 
         res = VectorPledge()
         sections_pledge = promise_me(section_fac) # @note this cannot be in the loop (synchronization!)
@@ -31,7 +34,7 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
         for _ in range(parameter_set_manager.get_num_threads()):
             # in order to allow multithreading this module needs individual db connections for each thread
             sweep1 = libMA.CompleteBipartiteSubgraphSweep(parameter_set_manager, sv_db, pack, run_id, sequencer_ids[0])
-            sink = libMA.BufferedSvCallSink(parameter_set_manager, sv_db, sv_caller_run_id)
+            sink = libMA.BufferedSvCallSink(parameter_set_manager, call_inserter)
             filter3 = libMA.ConnectorPatternFilter(parameter_set_manager, sv_db)
             sinks.append(sink)
 
@@ -61,7 +64,10 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
             call_ambiguity_pledge = promise_me(call_ambiguity, filter3_pledge, pack_pledge)
             analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge)
 
-            write_to_db_pledge = promise_me(sink, call_ambiguity_pledge)
+            filter6_pledge = promise_me(filter6, call_ambiguity_pledge)
+            analyze.register("FilterLowScoreCalls", filter6_pledge)
+
+            write_to_db_pledge = promise_me(sink, filter6_pledge)
             analyze.register("SvCallSink", write_to_db_pledge)
             unlock_pledge = promise_me(UnLock(parameter_set_manager, section_pledge), write_to_db_pledge)
             res.append(unlock_pledge)
@@ -71,8 +77,10 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
         res.simultaneous_get( parameter_set_manager.get_num_threads() )
         print("\tcommiting calls...")
         for sink in sinks:
-            sink.cpp_module.commit()
+            sink.cpp_module.commit( True )
         print("\tdone")
+
+        call_inserter.end_transaction()
 
         return sv_caller_run_id
 

@@ -27,7 +27,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
     exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
     exportModule<SvCallSink, std::shared_ptr<SV_DB>, std::string, std::string, int64_t>(
         rxPyModuleId, "SvCallSink", []( auto&& x ) { x.def_readwrite( "run_id", &SvCallSink::iRunId ); } );
-    exportModule<BufferedSvCallSink, std::shared_ptr<SV_DB>, int64_t>(
+    exportModule<BufferedSvCallSink, std::shared_ptr<SvCallInserter>>(
         rxPyModuleId, "BufferedSvCallSink", []( auto&& x ) { x.def( "commit", &BufferedSvCallSink::commit ); } );
 
 
@@ -41,6 +41,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
     exportModule<ExactCompleteBipartiteSubgraphSweep, std::shared_ptr<SV_DB>, std::shared_ptr<Pack>, int64_t>(
         rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );
     exportModule<FilterLowSupportShortCalls>( rxPyModuleId, "FilterLowSupportShortCalls" );
+    exportModule<FilterLowScoreCalls>( rxPyModuleId, "FilterLowScoreCalls" );
     exportModule<FilterDiagonalLineCalls>( rxPyModuleId, "FilterDiagonalLineCalls" );
     exportModule<FilterFuzzyCalls>( rxPyModuleId, "FilterFuzzyCalls" );
     exportModule<ComputeCallAmbiguity>( rxPyModuleId, "ComputeCallAmbiguity" );

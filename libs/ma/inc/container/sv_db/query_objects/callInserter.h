@@ -16,8 +16,10 @@ namespace libMA
  */
 class SvCallInserter
 {
+  public:
     // this is here so that it gets destructed after the transaction context
     std::shared_ptr<SV_DB> pDB;
+  private:
     // must be after the DB so that it is deconstructed first
     std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
 
