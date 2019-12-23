@@ -10,6 +10,7 @@ void exportSvJumpInserter( py::module& rxPyModuleId )
     py::class_<SvJumpInserter, std::shared_ptr<SvJumpInserter>>( rxPyModuleId, "SvJumpInserter" )
         .def( py::init<std::shared_ptr<SV_DB>, std::string, std::string>( ) )
         .def( "read_context", &SvJumpInserter::readContext )
+        .def( "end_transaction", &SvJumpInserter::endTransaction )
         .def_readonly( "sv_jump_run_id", &SvJumpInserter::iSvJumpRunId );
 
     // export the ReadContex class
@@ -17,7 +18,7 @@ void exportSvJumpInserter( py::module& rxPyModuleId )
         .def( "insert_jump", &SvJumpInserter::ReadContex::insertJump );
     exportModule<SvDbInserter, std::shared_ptr<SV_DB>, std::string>(
         rxPyModuleId, "SvDbInserter", []( auto&& x ) { x.def_readonly( "jump_inserter", &SvDbInserter::xInserter ); } );
-    exportModule<BufferedSvDbInserter, std::shared_ptr<SV_DB>, int64_t>(
+    exportModule<BufferedSvDbInserter, std::shared_ptr<SvJumpInserter>>(
         rxPyModuleId, "BufferedSvDbInserter", []( auto&& x ) { x.def( "commit", &BufferedSvDbInserter::commit ); } );
 } // function
 

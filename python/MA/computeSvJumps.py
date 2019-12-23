@@ -8,7 +8,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
 
     lock_module = Lock(parameter_set_manager)
     seeding_module = BinarySeeding(parameter_set_manager)
-    run_id = sv_db.insert_sv_jump_run("MS-SV", "python built compt graph")
+    jump_inserter = libMA.SvJumpInserter(sv_db, "MS-SV", "python built compt graph")
     jumps_from_seeds = SvJumpsFromSeeds(parameter_set_manager, seq_id, sv_db, pack)
 
     fm_pledge = Pledge()
@@ -25,7 +25,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     for idx in range(jobs):
         # @todo there should be a set of modules distributing reads...
         nuc_seq_getter = AllNucSeqFromSql(parameter_set_manager, sv_db, seq_id, idx, jobs)
-        jumps_to_db = libMA.BufferedSvDbInserter(parameter_set_manager, sv_db, run_id)
+        jumps_to_db = libMA.BufferedSvDbInserter(parameter_set_manager, jump_inserter)
         jump_to_dbs.append(jumps_to_db)
         queries_pledge = promise_me(nuc_seq_getter)
         analyze.register("AllNucSeqFromSql", queries_pledge)
@@ -45,12 +45,14 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     for jump_to_db in jump_to_dbs:
         jump_to_db.cpp_module.commit(False, True)
 
+    jump_inserter.end_transaction()
+
     analyze.analyze(runtime_file)
     if not runtime_file is None:
-        runtime_file.write("sv_jump_run_id is " + str(run_id) + "\n")
+        runtime_file.write("sv_jump_run_id is " + str(jump_inserter.sv_jump_run_id) + "\n")
 
-    sv_db.create_jump_indices( run_id )
+    sv_db.create_jump_indices( jump_inserter.sv_jump_run_id )
 
     # return the run_id
-    return run_id
+    return jump_inserter.sv_jump_run_id
 

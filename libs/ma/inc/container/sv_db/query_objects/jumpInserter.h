@@ -15,8 +15,10 @@ namespace libMA
  */
 class SvJumpInserter
 {
+  public:
     // this is here so that it gets destructed after the transaction context
     std::shared_ptr<SV_DB> pDB;
+  private:
     // must be after the DB so that it is deconstructed first
     std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
 
@@ -106,6 +108,11 @@ class SvJumpInserter
         return ReadContex( pDB->pSvJumpTable, iSvJumpRunId, iReadId );
     } // method
 
+    inline void endTransaction()
+    {
+        pTransactionContext.reset();
+    } // method
+
 }; // class
 
 
@@ -144,13 +151,11 @@ class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, Nu
  * @details
  * buffers all jumps in a vector and then bulk inserts them once commit is called.
  * The destructor calls commit automatically.
- * If the buffer holds 1.000.000 elements a bulk insert is triggered as well.
+ * If the buffer holds 10.000 elements a bulk insert is triggered as well.
  */
 class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
-    std::shared_ptr<SV_DB> pDb;
-    int64_t iSvJumpRunId;
-
+    std::shared_ptr<SvJumpInserter> pInserter;
   public:
     /// @brief the buffer containing all jumps that are not yet commited
     std::vector<std::pair<std::shared_ptr<ContainerVector<SvJump>>, int64_t>> vBuffer;
@@ -159,24 +164,23 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     /**
      * @brief create the inserter for the run with id iSvJumpRunId
      * @details
-     * the run with id iSvJumpRunId must exist.
      */
-    BufferedSvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb, int64_t iSvJumpRunId )
-        : pDb( pDb ), iSvJumpRunId( iSvJumpRunId )
+    BufferedSvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SvJumpInserter> pInserter )
+        : pInserter( pInserter )
     {} // constructor
 
     /// @brief bulk insert all jumps in the buffer; then clear the buffer
-    inline void commit( bool bTransactionLess = true, bool bForce = false )
+    inline void commit( bool bForce = false )
     {
-        if( bForce == false && vBuffer.size( ) < 1000000 )
+        if( bForce == false && vBuffer.size( ) < 10000 )
             return;
         if( vBuffer.size( ) == 0 )
             return;
-        std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
-        SvJumpInserter xInserter( pDb, iSvJumpRunId, bTransactionLess );
+
+        std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
         for( auto xPair : vBuffer )
         {
-            SvJumpInserter::ReadContex xReadContext = xInserter.readContext( xPair.second );
+            SvJumpInserter::ReadContex xReadContext = pInserter->readContext( xPair.second );
             for( SvJump& rJump : *xPair.first )
                 xReadContext.insertJump( rJump ); // also updates the jump ids;
         } // for
@@ -187,7 +191,7 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
     /// @brief triggers commit
     ~BufferedSvDbInserter( )
     {
-        commit( false, true );
+        commit( true );
     } // destructor
 
     /// @brief buffer all jumps in pJumps for the read pRead

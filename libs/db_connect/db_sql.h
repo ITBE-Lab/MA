@@ -1111,10 +1111,10 @@ class CppSQLiteExtImmediateTransactionContext
      */
     ~CppSQLiteExtImmediateTransactionContext( )
     {
+        xStatementEndTransaction->execDML( );
 #if DEBUG_LEVEL > 0
         std::cout << "End transaction" << std::endl;
 #endif
-        xStatementEndTransaction->execDML( );
     } // destructor
 }; // class CppSQLiteExtImmediateTransactionContext
 

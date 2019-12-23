@@ -70,12 +70,12 @@ class SV_DB : public Container
           pSvCallTable( rOther.pSvCallTable ),
           pSvCallSupportTable( rOther.pSvCallSupportTable )
     {
-        // DEBUG( std::cout << "Copied DB connection" << std::endl; )
+        // DEBUG( std::cout << "Opened DB connection" << std::endl; )
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
         // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
         pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
+        pDatabase->execDML( "PRAGMA journal_mode = OFF;" ); // insert performance -> read while write
     } // constructor
 
     /// @brief create a new database connection
@@ -98,12 +98,9 @@ class SV_DB : public Container
         // DEBUG( std::cout << "Opened DB connection" << std::endl; )
         this->setNumThreads( 32 ); // @todo do this via a parameter
         pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
-        // if( xMode == eCREATE_DB )
-        {
-            // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
-            pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-            pDatabase->execDML( "PRAGMA journal_mode = MEMORY;" ); // insert performance
-        }
+        // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
+        pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
+        pDatabase->execDML( "PRAGMA journal_mode = OFF;" ); // insert performance -> read while write
     } // constructor
 
     SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB, false )
@@ -229,6 +226,7 @@ class SV_DB : public Container
 
     inline int64_t insertSvJumpRun( std::string rsSvCallerName, std::string rsSvCallerDesc )
     {
+        CppSQLiteExtImmediateTransactionContext xTransactionContext( *pDatabase );
         return pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc );
     }
 
