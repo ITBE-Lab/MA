@@ -44,19 +44,27 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     res.simultaneous_get( parameter_set_manager.get_num_threads() )
     print("commiting remaining jumps...")
 
+    start = datetime.datetime.now()
     for jump_to_db in jump_to_dbs:
         jump_to_db.cpp_module.commit(True)
 
     jump_inserter.end_transaction()
+    end = datetime.datetime.now()
+    delta = end - start
+    analyze.register("commit_remaining", delta.total_seconds(), lambda x: x)
     print("committed jumps")
+
+    print("creating index...")
+    start = datetime.datetime.now()
+    sv_db.create_jump_indices( jump_inserter.sv_jump_run_id )
+    end = datetime.datetime.now()
+    delta = end - start
+    analyze.register("created_index", delta.total_seconds(), lambda x: x)
+    print("created index")
 
     analyze.analyze(runtime_file)
     if not runtime_file is None:
         runtime_file.write("sv_jump_run_id is " + str(jump_inserter.sv_jump_run_id) + "\n")
-
-    print("creating index...")
-    sv_db.create_jump_indices( jump_inserter.sv_jump_run_id )
-    print("created index")
 
     # return the run_id
     return jump_inserter.sv_jump_run_id
