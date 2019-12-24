@@ -35,6 +35,7 @@ def render_reads(self):
     read_dict = {
         "center": [],
         "r_id": [],
+        "r_name": [],
         "size": [],
         "q": [],
         "r": [],
@@ -52,6 +53,7 @@ def render_reads(self):
     read_plot_dict = {
         "center": [],
         "r_id": [],
+        "r_name": [],
         "size": [],
         "q": [],
         "r": [],
@@ -102,16 +104,17 @@ def render_reads(self):
                 rectangle_used_dp = helper_ret.rectangle_used_dp
                 # for
                 with self.measure("main seed loop"):
-                    seeds_n_idx = list(enumerate(sorted([(x, y, z, read_id) for x, y, z in zip(seeds, layer_of_seeds,
-                                                                                      parlindromes)],
+                    seeds_n_idx = list(enumerate(sorted([(x, y, z, read_id, read.name) for x, y, z in zip(seeds,
+                                                                                                    layer_of_seeds,
+                                                                                                    parlindromes)],
                                                         key=lambda x: x[0].start)))
                     if len(self.read_ids) <= self.do_compressed_seeds:
                         end_column = []
                         max_seed_size = max(seed.size for seed in seeds)
                         sorted_for_main_loop = sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref)
-                        for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
+                        for idx, (seed, layer, parlindrome, read_id, read_name) in sorted_for_main_loop:
                             add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
-                                        parlindrome, layer, read_id, idx)
+                                        parlindrome, layer, read_id, idx, read_name)
                         if (len(end_column)-1) % 2 == 0:
                             # prevent forming of float if possible (to stay javascript compatible)
                             curr_col_id = category_counter + (len(end_column)-1)//2
@@ -135,9 +138,9 @@ def render_reads(self):
                 if len(all_seeds) > 0:
                     max_seed_size = max(seed[1][0].size for seed in all_seeds)
                     sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
-                    for idx, (seed, layer, parlindrome, read_id) in sorted_for_main_loop:
+                    for idx, (seed, layer, parlindrome, read_id, read_name) in sorted_for_main_loop:
                         add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
-                                    parlindrome, layer, read_id, idx)
+                                    parlindrome, layer, read_id, idx, read_name)
                     category_counter += len(end_column)
 
     with self.measure("rendering seeds"):

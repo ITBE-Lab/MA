@@ -58,6 +58,7 @@ class SeedPlot:
                               fill_color="c", line_width=0, source=self.seeds, name="seeds")
 
         hover_seeds = HoverTool(tooltips=[("read id", "@r_id"),
+                                          ("read name", "@r_name"),
                                           ("q, r, l", "@q, @r, @l"),
                                           ("index", "@idx"),
                                           ("reseeding-layer", "@layer"),

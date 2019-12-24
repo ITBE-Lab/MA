@@ -78,7 +78,7 @@ def append_nuc_type(dict_, nuc, pos, pos_key):
     dict_[pos_key].append(pos + 0.5)
 
 def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter, parlindrome, layer,
-             read_id, idx):
+             read_id, idx, r_name):
     seed_size = seed.size - 1
     if seed.on_forward_strand:
         read_dict["center"].append(seed.start_ref + seed.size/2)
@@ -113,6 +113,7 @@ def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_c
     else:
         read_dict["c"].append("lightgrey")
     read_dict["r_id"].append(read_id)
+    read_dict["r_name"].append(r_name)
     read_dict["size"].append(seed.size)
     read_dict["l"].append(seed.size)
     read_dict["q"].append(seed.start)

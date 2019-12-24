@@ -767,8 +767,8 @@ class Presetting : public ParameterSetBase
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
           xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
-          xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
-          xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
+          xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 5, checkPositiveValue ),
+          xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

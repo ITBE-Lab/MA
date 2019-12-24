@@ -90,6 +90,7 @@ class ReadPlot:
         self.plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.seeds, name="seeds")
 
         self.plot.add_tools(HoverTool(tooltips=[("read id", "@r_id"),
+                                                ("read name", "@r_name"),
                                                 ("q, r, l", "@q, @r, @l"),
                                                 ("index", "@idx"),
                                                 ("reseeding-layer", "@layer"),

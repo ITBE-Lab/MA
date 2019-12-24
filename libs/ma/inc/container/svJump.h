@@ -546,29 +546,30 @@ class SvCall : public Container
     } // method
 
     static const size_t uiT = 5;
+    static const nucSeqIndex uiT2 = 1;
     inline nucSeqIndex right( )
     {
         std::sort( vRight.begin( ), vRight.end( ) );
-        return vRight[ vRight.size( ) / uiT ];
+        return vRight[ vRight.size( ) / uiT ] + uiT2;
     } // method
 
     inline nucSeqIndex left( )
     {
         std::sort( vLeft.begin( ), vLeft.end( ), []( nucSeqIndex uiA, nucSeqIndex uiB ) { return uiA > uiB; } );
         nucSeqIndex uiX = vLeft[ vLeft.size( ) / uiT ];
-        return uiX;
+        return uiX > uiT2 ? uiX - uiT2 : 0;
     } // method
     inline nucSeqIndex up( )
     {
         std::sort( vUp.begin( ), vUp.end( ) );
-        return vUp[ vUp.size( ) / uiT ];
+        return vUp[ vUp.size( ) / uiT ] + uiT2;
     } // method
 
     inline nucSeqIndex down( )
     {
         std::sort( vDown.begin( ), vDown.end( ), []( nucSeqIndex uiA, nucSeqIndex uiB ) { return uiA > uiB; } );
         nucSeqIndex uiX = vDown[ vDown.size( ) / uiT ];
-        return uiX;
+        return uiX > uiT2 ? uiX - uiT2 : 0;
     } // method
 
     inline void reEstimateClusterSize( )

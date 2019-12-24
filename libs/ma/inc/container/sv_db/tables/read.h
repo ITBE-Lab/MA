@@ -26,7 +26,7 @@ class ReadTable : public TP_READ_TABLE
 
   public:
     CppSQLiteExtQueryStatement<int32_t> xGetReadId;
-    CppSQLiteExtQueryStatement<NucSeqSql> xGetRead;
+    CppSQLiteExtQueryStatement<NucSeqSql, std::string> xGetRead;
 
     ReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase )
         : TP_READ_TABLE( *pDatabase, // the database where the table resides
@@ -37,7 +37,7 @@ class ReadTable : public TP_READ_TABLE
                          std::vector<std::string>{"FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id) "} ),
           pDatabase( pDatabase ),
           xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id == ? AND name == ? " ),
-          xGetRead( *pDatabase, "SELECT sequence FROM read_table WHERE id == ? " )
+          xGetRead( *pDatabase, "SELECT sequence, name FROM read_table WHERE id == ? " )
     {} // default constructor
 
     inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
@@ -47,9 +47,10 @@ class ReadTable : public TP_READ_TABLE
 
     inline std::shared_ptr<NucSeq> getRead( int64_t iId )
     {
-        auto xRes = xGetRead.scalar( iId );
-        xRes.pNucSeq->iId = iId;
-        return xRes.pNucSeq;
+        auto xTuple = xGetRead.vExecuteAndReturnIterator( iId ).get( );
+        std::get<0>( xTuple ).pNucSeq->iId = iId;
+        std::get<0>( xTuple ).pNucSeq->sName = std::get<1>( xTuple );
+        return std::get<0>( xTuple ).pNucSeq;
     } // method
 }; // class
 
