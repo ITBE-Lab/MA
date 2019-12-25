@@ -4,7 +4,7 @@
 #include "container/sv_db/query_objects/callInserter.h"
 namespace libMA
 {
-// @todo this can be done in parallel
+// @todo this can be done via a linesweep...
 size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb,
                                 int64_t iSvCallerId )
 {

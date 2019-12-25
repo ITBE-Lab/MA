@@ -2,6 +2,10 @@ from .printColumns import print_columns
 import math
 
 class AnalyzeRuntimes:
+    def reset(self):
+        self.times = {}
+        self.counter = 0
+
     def __init__(self):
         self.times = {}
         self.counter = 0

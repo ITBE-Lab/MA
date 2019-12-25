@@ -607,7 +607,7 @@ class FilterLowSupportShortCalls
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
         for( auto pCall : pCalls->vContent )
             // if the call is supported by enough NT's or large enough we keep it
-            if( pCall->uiNumSuppReads > uiMaxSuppNt || pCall->size( ) > uiMaxSVSize )
+            if( pCall->getScore( ) > uiMaxSuppNt || pCall->size( ) > uiMaxSVSize )
                 pRet->vContent.push_back( pCall );
 #if ANALYZE_FILTERS
         std::lock_guard<std::mutex> xGuard( xLock );
@@ -739,10 +739,11 @@ class FilterDiagonalLineCalls
 class ComputeCallAmbiguity
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
 {
-    nucSeqIndex uiDistance = 20;
+    nucSeqIndex uiDistance;
 
   public:
     ComputeCallAmbiguity( const ParameterSetManager& rParameters )
+        : uiDistance( rParameters.getSelected( )->xMaxCallSizeShortCallFilter->get( ) )
     {} // constructor
 
     std::shared_ptr<NucSeq> getRegion( nucSeqIndex uiPos, bool bLeftDirection, std::shared_ptr<Pack> pPack )
@@ -771,7 +772,8 @@ class ComputeCallAmbiguity
     nucSeqIndex sampleAmbiguity( std::shared_ptr<NucSeq> pSeqA, std::shared_ptr<NucSeq> pSeqB )
     {
         // + 1 to avoind division by zero error
-        return sampleSequenceAmbiguity( *pSeqA, *pSeqB, 0.001 ) + 1;
+        return std::max( 1, (int)sampleSequenceAmbiguity( *pSeqA, *pSeqB, 0.001 ) - (int)pSeqA->length( ) -
+                                (int)pSeqB->length( ) );
     } // method
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -826,8 +828,7 @@ class FilterLowScoreCalls
   public:
     double dMinScore = 2.0;
 
-    FilterLowScoreCalls( const ParameterSetManager& rParameters )
-        : AbstractFilter( "FilterLowScoreCalls" )
+    FilterLowScoreCalls( const ParameterSetManager& rParameters ) : AbstractFilter( "FilterLowScoreCalls" )
     {} // constructor
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
@@ -836,7 +837,7 @@ class FilterLowScoreCalls
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
         for( auto pCall : pCalls->vContent )
             // if the call is supported by enough NT's or large enough we keep it
-            if( pCall->getScore() > dMinScore )
+            if( pCall->getScore( ) > dMinScore )
                 pRet->vContent.push_back( pCall );
 #if ANALYZE_FILTERS
         std::lock_guard<std::mutex> xGuard( xLock );

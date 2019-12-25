@@ -143,8 +143,8 @@ def render_reads(self):
                                     parlindrome, layer, read_id, idx, read_name)
                     category_counter += len(end_column)
 
-    with self.measure("rendering seeds"):
-        if len(read_dict["c"]) < self.get_max_num_ele():
+    if len(read_dict["c"]) < self.get_max_num_ele():
+        with self.measure("rendering seeds"):
             # render ambiguous regions on top and left
             self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict
 
@@ -182,4 +182,3 @@ def render_reads(self):
             self.seed_plot.bottom_plot.ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
             self.seed_plot.update_selection(self)
-    return False

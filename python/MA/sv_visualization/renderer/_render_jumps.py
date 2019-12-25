@@ -5,7 +5,7 @@ from MA import *
 import math
 from .util import *
 
-def render_jumps(self):
+def render_jumps(self, jump_list=[]):
     self.read_ids = set()
     out_dicts = []
     patch = {
@@ -29,12 +29,15 @@ def render_jumps(self):
             "f_dir": [],
             "i": []
         })
-    with self.measure("SortedSvJumpFromSql"):
-        sweeper = SortedSvJumpFromSql(self.params, self.sv_db, self.sv_db.get_run_jump_id(self.get_run_id()),
-                                        int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
+    if not self.do_render_call_jumps_only:
+        with self.measure("SortedSvJumpFromSql"):
+            sweeper = SortedSvJumpFromSql(self.params, self.sv_db, self.sv_db.get_run_jump_id(self.get_run_id()),
+                                            int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
     with self.measure("render jumps"):
-        while sweeper.has_next_start():
-            jump = sweeper.get_next_start()
+        if not self.do_render_call_jumps_only:
+            while sweeper.has_next_start():
+                jump_list.append(sweeper.get_next_start())
+        for jump in jump_list:
             idx = None
             if jump.switch_strand_known():
                 if jump.does_switch_strand():
@@ -102,3 +105,5 @@ def render_jumps(self):
     if len(self.read_ids)*self.read_penalty_factor < self.get_max_num_ele():
         with self.measure("render_reads"):
             self.render_reads()
+
+    self.analyze.analyze()

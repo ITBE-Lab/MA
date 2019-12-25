@@ -42,7 +42,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> 
 } // function
 
 uint32_t getNumJumpsInArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
-                            int64_t iY, uint64_t uiW, uint64_t uiH )
+                            int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
     if( iX > 0 )
@@ -60,9 +60,9 @@ uint32_t getNumJumpsInArea( std::shared_ptr<SV_DB> pDb, std::shared_ptr<Pack> pP
                                                  "WHERE sv_jump_run_id == ? "
                                                  "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
                                                  "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
-                                                 "ORDER BY sort_pos_start" );
+                                                 "LIMIT ? " );
     return xQuery.scalar( iRunId, uiX, uiX + (uint32_t)uiW, std::numeric_limits<uint32_t>::max( ), uiY,
-                          uiY + (uint32_t)uiH, std::numeric_limits<uint32_t>::max( ) );
+                          uiY + (uint32_t)uiH, std::numeric_limits<uint32_t>::max( ), uiLimit );
 } // function
 
 struct rect

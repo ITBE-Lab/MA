@@ -7,12 +7,13 @@ from .util import *
 
 def render_overview(self):
     #self.plot.grid.visible = False
-    div = int(math.sqrt(self.get_max_num_ele()))
-    rect_vec = libMA.get_call_overview(self.sv_db, self.pack, self.get_run_id(), self.get_min_score(),
-                                       int(self.xs - self.w),
-                                       int(self.ys - self.h),
-                                       self.w*3, self.h*3,
-                                       self.w//div, self.h//div, self.give_up_factor)
+    with self.measure("get_call_overview"):
+        div = int(math.sqrt(self.get_max_num_ele()/10))
+        rect_vec = libMA.get_call_overview(self.sv_db, self.pack, self.get_run_id(), self.get_min_score(),
+                                        int(self.xs - self.w),
+                                        int(self.ys - self.h),
+                                        self.w*3, self.h*3,
+                                        self.w//div, self.h//div, self.give_up_factor)
 
     cds = {
         'x': [],
@@ -36,6 +37,8 @@ def render_overview(self):
         cds["t"].append(names[rect.j])
         cds["i"].append(str(rect.c))
     self.main_plot.overview_quad.data = cds
+
+    self.analyze.analyze()
 
     # @todo
     # url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(self.run_id) + \

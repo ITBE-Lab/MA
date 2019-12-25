@@ -30,6 +30,7 @@ class Renderer():
         self.xe = 0
         self.ye = 0
         self.redered_everything = False
+        self.do_render_call_jumps_only = True
         self.render_area_factor = 1 # @todo make this adjustable 
         # number of reads needs to be smaller than max_num_elements / read_penalty_factor to be rendered
         self.read_penalty_factor = 10
@@ -68,6 +69,9 @@ class Renderer():
                 delta = end - self.start
                 self.analyze.register(name, delta.total_seconds(), lambda x: x)
         return MeasureHelper(name, self.analyze)
+
+    def reset_runtimes(self):
+        self.analyze.reset()
 
     def reset_cds(self):
         self.main_plot.reset_cds()

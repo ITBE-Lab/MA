@@ -17,7 +17,6 @@ renderer = Renderer()
 
 with renderer.measure("render"):
     redered_everything = renderer.setup()
-renderer.analyze.analyze()
 
 # render this document
 curdoc().add_root(row(
