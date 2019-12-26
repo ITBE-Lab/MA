@@ -546,7 +546,7 @@ class SvCall : public Container
     } // method
 
     static const size_t uiT = 5;
-    static const nucSeqIndex uiT2 = 1;
+    static const nucSeqIndex uiT2 = 0;
     inline nucSeqIndex right( )
     {
         std::sort( vRight.begin( ), vRight.end( ) );
@@ -578,18 +578,17 @@ class SvCall : public Container
         nucSeqIndex uiUp = this->up( );
         this->uiFromStart = this->left( );
         this->uiToStart = this->down( );
-        // make sure we never have a call smaller than 3x3:
-        if( uiRight < 3 + this->uiFromStart )
+        if( uiRight < this->uiFromStart )
         {
-            this->uiFromStart = this->uiFromStart / 2 + uiRight / 2;
-            this->uiFromSize = 3;
+            this->uiFromStart = ( this->uiFromStart + uiRight ) / 2 - 3;
+            this->uiFromSize = 5;
         } // if
         else
             this->uiFromSize = uiRight - uiFromStart;
-        if( uiUp < 3 + this->uiToStart )
+        if( uiUp < this->uiToStart )
         {
-            this->uiToStart = this->uiToStart / 2 + uiUp / 2;
-            this->uiToSize = 3;
+            this->uiToStart = ( this->uiToStart + uiUp ) / 2 - 3;
+            this->uiToSize = 5;
         } // if
         else
             this->uiToSize = uiUp - uiToStart;
