@@ -1245,13 +1245,14 @@ template <typename... Types> class CppSQLiteExtBasicTable
         const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
         bool bAutomaticPrimaryKeyColumn, // true == we build automatically a column for the primary key
         const std::vector<std::string>& vConstraints = {},
-        const bool bWithoutRowId = false )
+        const bool bWithoutRowId = false,
+        const bool bDoCreate = false )
         : rxDatabase( rxDatabase ),
           bAutomaticPrimaryKeyColumn( bAutomaticPrimaryKeyColumn ),
           bWithoutRowId( bWithoutRowId ),
           sTableName( rsTableName )
     {
-        if( rxDatabase.eDatabaseOpeningMode == eCREATE_DB )
+        if( rxDatabase.eDatabaseOpeningMode == eCREATE_DB || bDoCreate )
         {
             /* If the database is opened in a "creation mode", we create the table within the database.
              */
@@ -1507,13 +1508,15 @@ template <typename... Types> class CppSQLiteExtTable : public CppSQLiteExtBasicT
                        const std::vector<std::string>& rxDatabaseColumns, // column definitions of the table
                        bool bAutomaticPrimaryKeyColumn, // true == we build automatically a column for the primary key
                        const std::vector<std::string>& vConstraints = {},
-                       const bool bWithoutRowId = false )
+                       const bool bWithoutRowId = false,
+                       const bool bDoCreate = false  )
         : CppSQLiteExtBasicTable<Types...>( rxDatabase,
                                             rsTableName,
                                             rxDatabaseColumns,
                                             bAutomaticPrimaryKeyColumn,
                                             vConstraints,
-                                            bWithoutRowId ), // call superclass constructor
+                                            bWithoutRowId,
+                                            bDoCreate ), // call superclass constructor
           xTableAccessMutex( ), // initialize the mutex for synchronizing table access in a concurrent environment
           xTableRowBuffer( ), // initialize the table row buffer
           xInsertRow( rxDatabase,

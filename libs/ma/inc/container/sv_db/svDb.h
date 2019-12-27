@@ -92,7 +92,7 @@ class SV_DB : public Container
           pSvJumpTable( std::make_shared<SvJumpTable>( pDatabase ) ),
           pSvCallerRunTable( std::make_shared<SvCallerRunTable>( pDatabase ) ),
           pSvCallRegExTable( std::make_shared<SvCallRegExTable>( pDatabase ) ),
-          pSvCallTable( std::make_shared<SvCallTable>( pDatabase ) ),
+          pSvCallTable( std::make_shared<SvCallTable>( pDatabase, pWriteLock, sName ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable>( pDatabase ) )
     {
         // DEBUG( std::cout << "Opened DB connection" << std::endl; )
