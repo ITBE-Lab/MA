@@ -748,6 +748,10 @@ class ComputeCallAmbiguity
 
     std::shared_ptr<NucSeq> getRegion( nucSeqIndex uiPos, bool bLeftDirection, std::shared_ptr<Pack> pPack )
     {
+        // due to their fuzziness calls can reach past the end of the genome
+        if(uiPos >= pPack->uiUnpackedSizeForwardStrand)
+            uiPos = pPack->uiUnpackedSizeForwardStrand - 1;
+
         auto uiSeqId = pPack->uiSequenceIdForPosition( uiPos );
         if( bLeftDirection )
         {

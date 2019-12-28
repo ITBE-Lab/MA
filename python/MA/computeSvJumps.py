@@ -1,5 +1,6 @@
 from MA import *
 from .analyzeRuntimes import AnalyzeRuntimes
+import datetime
 
 def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, runtime_file=None):
     #parameter_set_manager.by_name("Number of Threads").set(1)
