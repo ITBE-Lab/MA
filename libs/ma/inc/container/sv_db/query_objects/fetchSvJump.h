@@ -18,6 +18,7 @@ namespace libMA
  * - one for sv jumps sorted by their end position (on the reference)
  * The iterators can be incremented independently.
  * This is necessary for the line sweep over the SV jumps.
+ * @todo this should buffer the results
  */
 class SortedSvJumpFromSql
 {

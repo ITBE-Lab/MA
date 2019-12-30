@@ -109,10 +109,22 @@ class SvJumpInserter
         return ReadContex( pDB->pSvJumpTable, iSvJumpRunId, iReadId );
     } // method
 
+    /**
+     * @brief terminates the current transaction
+     */
     inline void endTransaction( )
     {
         pTransactionContext.reset( );
     } // method
+
+    /**
+     * @brief terminates the current transaction and starts a new one
+     */
+    inline void reOpenTransaction( )
+    {
+        endTransaction();
+        pTransactionContext = std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase );
+    }; // method
 
 }; // class
 
@@ -179,15 +191,17 @@ class BufferedSvDbInserter : public Module<Container, false, ContainerVector<SvJ
         if( vBuffer.size( ) == 0 )
             return;
 
-        std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
-        for( auto xPair : vBuffer )
         {
-            SvJumpInserter::ReadContex xReadContext = pInserter->readContext( xPair.second );
-            for( SvJump& rJump : *xPair.first )
-                xReadContext.insertJump( rJump ); // also updates the jump ids;
-        } // for
+            std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
+            for( auto xPair : vBuffer )
+            {
+                SvJumpInserter::ReadContex xReadContext = pInserter->readContext( xPair.second );
+                for( SvJump& rJump : *xPair.first )
+                    xReadContext.insertJump( rJump ); // also updates the jump ids;
+                pInserter->reOpenTransaction();
+            } // for
+        } // scope for xGuard
         vBuffer.clear( );
-        // @todo commit the transaction and start a new one every one in a while?
 
         // end of scope for lock guard
     } // method

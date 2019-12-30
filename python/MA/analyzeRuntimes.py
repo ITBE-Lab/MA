@@ -10,9 +10,9 @@ class AnalyzeRuntimes:
         self.times = {}
         self.counter = 0
 
-    def register(self, name, pledge, func=lambda x: x.exec_time):
+    def register(self, name, pledge, average=False, func=lambda x: x.exec_time):
         if not name in self.times:
-            self.times[name] = (self.counter, [])
+            self.times[name] = (self.counter, average, [])
             self.counter += 1
         self.times[name][1].append( (pledge, func) )
 
@@ -23,10 +23,10 @@ class AnalyzeRuntimes:
         data = []
         max_before_dot = 0
         total_runtime = 0 
-        for name, (counter, pledges) in self.times.items():
-            total_runtime += sum(func(pledge) for pledge, func in pledges)
-        for name, (counter, pledges) in self.times.items():
-            seconds = round(sum(func(pledge) for pledge, func in pledges), 3)
+        for name, (counter, average, pledges) in self.times.items():
+            total_runtime += sum(func(pledge) for pledge, func in pledges) / (len(pledges) if average else 1)
+        for name, (counter, average, pledges) in self.times.items():
+            seconds = round(sum(func(pledge) for pledge, func in pledges) / (len(pledges) if average else 1), 3)
             percentage = (100*seconds)//total_runtime
             percentage_str = str(percentage) + "%"
             if percentage < 100:
@@ -39,10 +39,11 @@ class AnalyzeRuntimes:
                 counter_str = " " + counter_str
             if counter < 100:
                 counter_str = " " + counter_str
-            data.append(["[" + counter_str + "] " + name, seconds, percentage_str])
+            data.append(["[" + counter_str + "] " + name, seconds, percentage_str, average])
         data = [(x, str(" "*int(max_before_dot-int(math.log10(max(1,y))))) + str(y), z ) for x,y,z in data]
         data.sort()
-        data.insert(0, ["Module name", "runtime [s]", "ratio [%]"])
+        data.insert(0, ["Module name", "runtime [s]", "ratio [%]", "averaged?"])
+        data.append([">>>>> Total", str(round(total_runtime, 3)), ""])
         print_columns(data, out_file)
         if not out_file is None:
             out_file.write("\n")

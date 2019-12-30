@@ -130,11 +130,20 @@ class SvCallInserter
     } // method
 
     /**
-     * @brief terminates the transaction that is started by the constructor
+     * @brief terminates the current transaction
      */
     inline void endTransaction( )
     {
         pTransactionContext.reset( );
+    }; // method
+
+    /**
+     * @brief terminates the current transaction and starts a new one
+     */
+    inline void reOpenTransaction( )
+    {
+        endTransaction();
+        pTransactionContext = std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase );
     }; // method
 
 }; // class

@@ -42,9 +42,9 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
         : iRefSize( (int64_t)pPack->uiStartOfReverseStrand( ) ),
           // compute the number of genome sections so that there are 100 sections for each thread
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
-          // otherwise we do so much extra work with re overlapping part between sections,
+          // otherwise we do so much extra work with re overlapping parts between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 10 ), (int64_t)50000000 ) ),
+          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)500000 ) ),
           iCurrStart( 0 )
     {} // constructor
 
@@ -113,13 +113,13 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
  * @brief saves all computed clusters in the database
  * @details buffers the calls in a vector before
  * @note in a parallel computational graph: use multiple instances of this module
- * @todo use same buffer technique as for jumps
  */
 class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
     std::shared_ptr<SvCallInserter> pInserter;
     std::vector<std::shared_ptr<CompleteBipartiteSubgraphClusterVector>> vContent;
+    size_t uiEleCnt = 0; // element count
     /**
      * @brief
      * @details
@@ -132,14 +132,19 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
     {
         if( vContent.size( ) == 0 )
             return;
-        if( !bForce && vContent.size( ) < 10000 )
+        if( !bForce && uiEleCnt < 10000 )
             return;
 
-        std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
-        for( auto pVec : vContent )
-            for( auto pCall : pVec->vContent )
-                pInserter->insertCall( *pCall );
+        {
+            std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
+            for( auto pVec : vContent )
+                for( auto pCall : pVec->vContent )
+                    pInserter->insertCall( *pCall );
+            pInserter->reOpenTransaction();
+        } // scope for xGuard
+
         vContent.clear( );
+        uiEleCnt = 0;
     } // method
 
     ~BufferedSvCallSink( )
@@ -150,6 +155,7 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
         vContent.push_back( pVec );
+        uiEleCnt += pVec->vContent.size();
         commit( );
         return std::make_shared<Container>( );
     } // method & scope for xGuard

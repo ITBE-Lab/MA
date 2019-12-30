@@ -30,14 +30,14 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
         jumps_to_db = libMA.BufferedSvDbInserter(parameter_set_manager, jump_inserter)
         jump_to_dbs.append(jumps_to_db)
         queries_pledge = promise_me(nuc_seq_getter)
-        analyze.register("AllNucSeqFromSql", queries_pledge)
+        analyze.register("AllNucSeqFromSql", queries_pledge, True)
         query_pledge = promise_me(lock_module, queries_pledge)
         segments_pledge = promise_me(seeding_module, fm_pledge, query_pledge)
-        analyze.register("BinarySeeding", segments_pledge)
+        analyze.register("BinarySeeding", segments_pledge, True)
         jumps_pledge = promise_me(jumps_from_seeds, segments_pledge, pack_pledge, fm_pledge, query_pledge)
-        analyze.register("SvJumpsFromSeeds", jumps_pledge)
+        analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
         write_to_db_pledge = promise_me(jumps_to_db, jumps_pledge, query_pledge)
-        analyze.register("SvDbInserter", write_to_db_pledge)
+        analyze.register("SvDbInserter", write_to_db_pledge, True)
         unlock_pledge = promise_me(UnLock(parameter_set_manager, query_pledge), write_to_db_pledge)
         res.append(unlock_pledge)
 
@@ -52,7 +52,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     jump_inserter.end_transaction()
     end = datetime.datetime.now()
     delta = end - start
-    analyze.register("commit_remaining", delta.total_seconds(), lambda x: x)
+    analyze.register("commit_remaining", delta.total_seconds(), False, lambda x: x)
     print("committed jumps")
 
     print("creating index...")
@@ -60,7 +60,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     sv_db.create_jump_indices( jump_inserter.sv_jump_run_id )
     end = datetime.datetime.now()
     delta = end - start
-    analyze.register("created_index", delta.total_seconds(), lambda x: x)
+    analyze.register("created_index", delta.total_seconds(), False, lambda x: x)
     print("created index")
 
     analyze.analyze(runtime_file)

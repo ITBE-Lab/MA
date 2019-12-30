@@ -67,7 +67,7 @@ class Renderer():
             def __exit__(self, exc_type, exc_val, exc_tb):
                 end = datetime.datetime.now()
                 delta = end - self.start
-                self.analyze.register(name, delta.total_seconds(), lambda x: x)
+                self.analyze.register(name, delta.total_seconds(), False, lambda x: x)
         return MeasureHelper(name, self.analyze)
 
     def reset_runtimes(self):

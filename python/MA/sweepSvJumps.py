@@ -40,35 +40,35 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
 
             section_pledge = promise_me(lock_module, sections_pledge)
             sweep1_pledge = promise_me(sweep1, section_pledge)
-            analyze.register("CompleteBipartiteSubgraphSweep", sweep1_pledge)
-            analyze.register("CompleteBipartiteSubgraphSweep::init", sweep1, lambda x: x.cpp_module.time_init)
-            analyze.register("CompleteBipartiteSubgraphSweep::outer_while", sweep1,
-                             lambda x: x.cpp_module.time_complete_while - x.cpp_module.time_inner_while)
-            analyze.register("CompleteBipartiteSubgraphSweep::inner_while", sweep1,
+            #analyze.register("CompleteBipartiteSubgraphSweep", sweep1_pledge)
+            analyze.register("CompleteBipartiteSubgraphSweep::init", sweep1, True, lambda x: x.cpp_module.time_init)
+            analyze.register("CompleteBipartiteSubgraphSweep::outer_while", sweep1, True,
+                             lambda x: x.cpp_module.time_complete_while - x.cpp_module.time_inner_while,)
+            analyze.register("CompleteBipartiteSubgraphSweep::inner_while", sweep1, True,
                              lambda x: x.cpp_module.time_inner_while)
             sweep2_pledge = promise_me(sweep2, sweep1_pledge)
-            analyze.register("ExactCompleteBipartiteSubgraphSweep", sweep2_pledge)
+            analyze.register("ExactCompleteBipartiteSubgraphSweep", sweep2_pledge, True)
             #filters
 
             filter1_pledge = promise_me(filter1, sweep2_pledge)
-            analyze.register("FilterLowSupportShortCalls", filter1_pledge)
+            analyze.register("FilterLowSupportShortCalls", filter1_pledge, True)
             filter2_pledge = promise_me(filter2, filter1_pledge)
-            analyze.register("FilterFuzzyCalls", filter2_pledge)
+            analyze.register("FilterFuzzyCalls", filter2_pledge, True)
 
             #filter3_pledge = promise_me(filter3, filter2_pledge, pack_pledge) # this filter was off already
             #analyze.register("[4] ConnectorPatternFilter", filter3_pledge)
 
             filter3_pledge = promise_me(filter5, filter2_pledge)
-            analyze.register("FilterDiagonalLineCalls", filter3_pledge)
+            analyze.register("FilterDiagonalLineCalls", filter3_pledge, True)
 
             call_ambiguity_pledge = promise_me(call_ambiguity, filter3_pledge, pack_pledge)
-            analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge)
+            analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge, True)
 
             filter6_pledge = promise_me(filter6, call_ambiguity_pledge)
-            analyze.register("FilterLowScoreCalls", filter6_pledge)
+            analyze.register("FilterLowScoreCalls", filter6_pledge, True)
 
             write_to_db_pledge = promise_me(sink, filter6_pledge)
-            analyze.register("SvCallSink", write_to_db_pledge)
+            analyze.register("SvCallSink", write_to_db_pledge, True)
             unlock_pledge = promise_me(UnLock(parameter_set_manager, section_pledge), write_to_db_pledge)
             res.append(unlock_pledge)
 
@@ -93,7 +93,7 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
     num_combined = libMA.combine_overlapping_calls(parameter_set_manager, sv_db, sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
-    analyze.register("combine_overlapping_calls", delta.total_seconds(), lambda x: x)
+    analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
     print("done overlapping; combined", num_combined, "calls")
 
     print("computing score index...")
@@ -101,7 +101,7 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
     sv_db.add_score_index(sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
-    analyze.register("compute_score_index", delta.total_seconds(), lambda x: x)
+    analyze.register("compute_score_index", delta.total_seconds(), False, lambda x: x)
     print("done computing score index")
 
     analyze.analyze(out_file)
