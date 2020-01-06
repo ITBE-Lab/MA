@@ -764,6 +764,9 @@ class ComputeCallAmbiguity
             nucSeqIndex iStartOfContig = pPack->startOfSequenceWithId( uiSeqId );
             nucSeqIndex uiStart = uiPos > iStartOfContig + uiDistance ? uiPos - uiDistance : iStartOfContig;
             nucSeqIndex uiSize = uiPos - uiStart;
+            // return empty sequence for size = 0 cause pack throws exception otherwise
+            if(uiSize == 0)
+                return std::make_shared<NucSeq>();
             if( pPack->bridgingSubsection( uiStart, uiSize ) )
                 pPack->unBridgeSubsection( uiStart, uiSize );
             return pPack->vExtract( uiStart, uiStart + uiSize );
@@ -773,6 +776,9 @@ class ComputeCallAmbiguity
             nucSeqIndex iEndOfContig = pPack->endOfSequenceWithId( uiSeqId );
             nucSeqIndex uiEnd = uiPos + uiDistance < iEndOfContig ? uiPos + uiDistance : iEndOfContig;
             nucSeqIndex uiSize = uiEnd - uiPos;
+            // return empty sequence for size = 0 cause pack throws exception otherwise
+            if(uiSize == 0)
+                return std::make_shared<NucSeq>();
             if( pPack->bridgingSubsection( uiPos, uiSize ) )
                 pPack->unBridgeSubsection( uiPos, uiSize );
             return pPack->vExtract( uiPos, uiPos + uiSize );
