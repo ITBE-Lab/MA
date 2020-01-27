@@ -89,6 +89,8 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 
     if( pQuerySeq == nullptr )
         return pSegmentVector;
+    if( pQuerySeq->length() == 0 )
+        return pSegmentVector;
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
 

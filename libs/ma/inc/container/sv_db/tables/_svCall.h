@@ -244,7 +244,6 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                 for( size_t uiJobId = 0; uiJobId < 32; uiJobId++ )
                     xPool.enqueue(
                         [ & ]( size_t, size_t uiJobId_ ) {
-                            // CONTINUE HERE
                             SQLDB<DBCon> xNewConn( sDBName );
                             SQLQuery<DBCon, int64_t> xNumOverlapsHelper1(
                                 xNewConn,

@@ -65,7 +65,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             if( bStateCommitted )
                 throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit after committing already." );
             if( *pHostTombStone )
-                throw std::runtime_error( "SSQL-DB Transaction:\nYou tried to commit although the database connection "
+                throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit although the database connection "
                                           "has been gone already." );
             rHost.commitTrxn( );
             this->bStateCommitted = true;

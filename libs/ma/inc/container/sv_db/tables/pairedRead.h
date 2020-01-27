@@ -56,12 +56,11 @@ using PairedReadTableType = SQLTable<DBCon, // DB connector type
                                      int64_t // second read (foreign key)
                                      >;
 
-const json jPairedReadTableDef = {
-    { TABLE_NAME, "paired_read_table" },
-    { TABLE_COLUMNS,
-      { { { COLUMN_NAME, "first_read" }, { CONSTRAINTS, "REFERENCES read_table(id)" } },
-        { { COLUMN_NAME, "second_read" }, { CONSTRAINTS, "REFERENCES read_table(id)" } } } },
-    { PRIMARY_KEY, "first_read, second_read" } };
+const json jPairedReadTableDef = {{TABLE_NAME, "paired_read_table"},
+                                  {TABLE_COLUMNS,
+                                   {{{COLUMN_NAME, "first_read"}, {CONSTRAINTS, "REFERENCES read_table(id)"}},
+                                    {{COLUMN_NAME, "second_read"}, {CONSTRAINTS, "REFERENCES read_table(id)"}}}},
+                                  {PRIMARY_KEY, "first_read, second_read"}};
 
 /**
  * @brief contains the name of a sequencer run
@@ -79,7 +78,8 @@ template <typename DBCon> class PairedReadTable : public PairedReadTableType<DBC
     /* Constructor prototype */
     PairedReadTable( std::shared_ptr<SQLDB<DBCon>> pDB, std::shared_ptr<_ReadTable<DBCon>> pReadTable )
         : PairedReadTableType<DBCon>( pDB, // the database where the table resides
-                                      jPairedReadTableDef )
+                                      jPairedReadTableDef ),
+          pReadTable( pReadTable )
     {} // constructor
 
     ~PairedReadTable( )

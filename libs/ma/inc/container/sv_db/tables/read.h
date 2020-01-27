@@ -33,9 +33,9 @@ class ReadTable : public TP_READ_TABLE
         : TP_READ_TABLE( *pDatabase, // the database where the table resides
                          "read_table", // name of the table in the database
                          // column definitions of the table
-                         std::vector<std::string>{ "sequencer_id", "name", "sequence" },
+                         std::vector<std::string>{"sequencer_id", "name", "sequence"},
                          // constraints for table
-                         std::vector<std::string>{ "FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id) " } ),
+                         std::vector<std::string>{"FOREIGN KEY (sequencer_id) REFERENCES sequencer_table(id) "} ),
           pDatabase( pDatabase ),
           xGetReadId( *pDatabase, "SELECT id FROM read_table WHERE sequencer_id == ? AND name == ? " ),
           xGetRead( *pDatabase, "SELECT sequence, name FROM read_table WHERE id == ? " )
@@ -64,10 +64,9 @@ using ReadTableType = SQLTableWithAutoPriKey<DBCon,
                                              NucSeqSql // read sequence
                                              >;
 const json jReadTableDef = {
-    { TABLE_NAME, "read_table" },
-    { TABLE_COLUMNS,
-      { { { COLUMN_NAME, "sequencer_id" } }, { { COLUMN_NAME, "name" } }, { { COLUMN_NAME, "sequence" } } } },
-    { FOREIGN_KEY, { { COLUMN_NAME, "sequencer_id" }, { REFERENCES, "sequencer_table(id)" } } } };
+    {TABLE_NAME, "read_table"},
+    {TABLE_COLUMNS, {{{COLUMN_NAME, "sequencer_id"}}, {{COLUMN_NAME, "name"}}, {{COLUMN_NAME, "sequence"}}}},
+    {FOREIGN_KEY, {{COLUMN_NAME, "sequencer_id"}, {REFERENCES, "sequencer_table(id)"}}}};
 /**
  * @brief this table saves reads
  */
@@ -93,13 +92,14 @@ template <typename DBCon> class _ReadTable : public ReadTableType<DBCon>
 
     inline std::shared_ptr<NucSeq> getRead( int64_t iId )
     {
-#if 0 // FIXME (CONTINUE HERE)
-        auto xTuple = xGetRead.vExecuteAndReturnIterator( iId ).get( );
+        if( !xGetRead.execAndFetch( iId ) )
+            throw std::runtime_error( "Read with id " + std::to_string( iId ) +
+                                      " could not be found in the database." );
+        auto xTuple = xGetRead.get( );
         std::get<0>( xTuple ).pNucSeq->iId = iId;
         std::get<0>( xTuple ).pNucSeq->sName = std::get<1>( xTuple );
+        assert( !xGetRead.next( ) );
         return std::get<0>( xTuple ).pNucSeq;
-#endif // FIXME
-        return ( std::make_shared<NucSeq>( ) );
     } // method
 }; // class
 
