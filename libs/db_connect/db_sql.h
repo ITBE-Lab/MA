@@ -43,43 +43,51 @@ struct GetTupleElement
     GetTupleElement( CppSQLite3Query& rxQuery ) : rxQuery( rxQuery )
     {}
 
-    // int CppSQLite3Query::getIntField(int nField, int nNullValue
-    // const char* CppSQLite3Query::fieldValue(int nField) [delivers the field value generally as string]
-    // long long CppSQLite3Query::getInt64Field(int nField, long long nNullValue=0)
-    // double CppSQLite3Query::getFloatField(int nField, double fNullValue=0.0)
-    // const char* CppSQLite3Query::getStringField(int nField, const char* szNullValue="")
-    // const unsigned char* CppSQLite3Query::getBlobField(int nField, int& nLen)
-
-    void getColumnElement( int& rValue, const int iFieldIndex )
+	/* We extract the first character of the string delivered by SQLite. */
+    void getColumnElement( char& rValue, const int iFieldIndex )
+    {
+        rValue = *rxQuery.getStringField( iFieldIndex );
+    } // method
+    
+	static_assert( sizeof( int ) == 4, "size of int is not 4 bytes for this compiler" );
+	// 32 bit integer
+	void getColumnElement( int& rValue, const int iFieldIndex )
     {
         rValue = rxQuery.getIntField( iFieldIndex );
     } // method
 
-    // The long datatype has different sizes depending on different platforms.
-    // So, we have to carefully distinguish over here.
-#ifdef __LP64__
-    static_assert( sizeof( long ) == 8, "size of long is not 8 bytes for this compiler" ); // GCC 64 Bit
-#else
-    static_assert( sizeof( long ) == 4, "size of long is not 4 bytes for this compiler" ); // MS VC++ 32 Bit
-#endif
-    void getColumnElement( long& rValue, const int iFieldIndex )
+	// 32 bit unsigned integer
+	void getColumnElement( unsigned int& rValue, const int iFieldIndex )
     {
-#ifdef __LP64__
-        rValue = rxQuery.getInt64Field( iFieldIndex ); // GCC 64 Bit
-#else
-        rValue = rxQuery.getIntField( iFieldIndex ); // MS VC++ 32 Bit
-#endif
+        rValue = (unsigned int)rxQuery.getInt64Field( iFieldIndex );
     } // method
 
-    void getColumnElement( long long& rValue, const int iFieldIndex )
+	static_assert( sizeof( size_t ) == 8, "size of size_t is not 8 bytes for this compiler" );
+	void getColumnElement( int64_t& rValue, const int iFieldIndex )
     {
         rValue = rxQuery.getInt64Field( iFieldIndex );
     } // method
 
-    void getColumnElement( unsigned int& rValue, const int iFieldIndex )
+    void getColumnElement( size_t& rValue, const int iFieldIndex )
     {
-        rValue = (unsigned int)rxQuery.getInt64Field( iFieldIndex );
+        rValue = rxQuery.getInt64Field( iFieldIndex );
     } // method
+
+//     // The long datatype has different sizes depending on different platforms.
+//     // So, we have to carefully distinguish over here.
+// #ifdef __LP64__
+//     static_assert( sizeof( long ) == 8, "size of long is not 8 bytes for this compiler" ); // GCC 64 Bit
+// #else
+//     static_assert( sizeof( long ) == 4, "size of long is not 4 bytes for this compiler" ); // MS VC++ 32 Bit
+// #endif
+//     void getColumnElement( long& rValue, const int iFieldIndex )
+//     {
+// #ifdef __LP64__
+//         rValue = rxQuery.getInt64Field( iFieldIndex ); // GCC 64 Bit
+// #else
+//         rValue = rxQuery.getIntField( iFieldIndex ); // MS VC++ 32 Bit
+// #endif
+//     } // method
 
     void getColumnElement( double& rValue, const int iFieldIndex )
     {
@@ -98,12 +106,6 @@ struct GetTupleElement
     void getColumnElement( const char*& rValue, const int iFieldIndex )
     {
         rValue = rxQuery.getStringField( iFieldIndex );
-    } // method
-
-    /* We extract the first character of the string delivered by SQLite. */
-    void getColumnElement( char& rValue, const int iFieldIndex )
-    {
-        rValue = *rxQuery.getStringField( iFieldIndex );
     } // method
 
     /* We extract the boolean delivered by SQLite. */
@@ -128,27 +130,6 @@ struct GetTupleElement
         getColumnElement( rElement, I );
     } // operator
 }; // struct
-
-#if 0 // deleted because deprecated 
-/** @brief: Creates text for a SQL request.
- * Idea: We compile the statement with its first execution.
- *       We use parameter binding in order to get the values into the query(request).
- */
-struct SQLRequest
-{
-    /* The basic request with place holders for arguments */
-    const char* pcText;
-
-    /* Internal text-buffer used for the storage of compiles statements. */
-    CppSQLite3Buffer textBuffer;
-	
-	/* Creates request and returns it */
-    template <class... ArgTypes> const char* insertArguments( ArgTypes... args )
-    {
-        return textBuffer.format( pcText, args... );
-    } // generic method
-}; // struct
-#endif
 
 /**
  * @brief Table that keeps the result of a SQL query.

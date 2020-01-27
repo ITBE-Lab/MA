@@ -546,7 +546,7 @@ void Pack::vAppendFastaFile( const char* pcFileName )
 void exportPack( py::module& rxPyModuleId )
 {
     py::class_<Pack, Container, std::shared_ptr<Pack>>( rxPyModuleId, "Pack" )
-        .def( py::init<>() )
+        .def( py::init<>( ) )
         .def( "unpacked_size", &Pack::uiUnpackedSizeForwardPlusReverse )
         .def( "append", &Pack::vAppendSequence_boost )
 #if 1

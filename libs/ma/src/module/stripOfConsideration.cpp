@@ -3,7 +3,6 @@
  * @brief Implements a Strip of Consideration.
  * @author Markus Schmidt
  */
-
 #include "module/stripOfConsideration.h"
 #include "system.h"
 using namespace libMA;

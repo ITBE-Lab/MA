@@ -127,3 +127,20 @@ void iterateOverTupleCurry2( Functor&& functor, std::tuple<TupleTypes...>& tuple
         std::bind( std::forward<Functor>( functor ), std::placeholders::_1, std::placeholders::_2 ),
         tuple ); // function call
 }; // struct
+
+/* Delivers the n-th type in a type-list
+ */
+template <class... Args> struct type_list
+{
+	template <std::size_t N> using typex = typename std::tuple_element<N, std::tuple<Args...>>::type;
+};
+
+// Generic version of next power 2
+// template <typename Type> Type next_power2( Type value )
+// {
+//     --value;
+//     for( size_t uiCount = 1; uiCount < sizeof( Type ) * CHAR_BIT; uiCount *= 2 )
+//         value |= value >> uiCount;
+//     return value + 1;
+// } // method
+// Type uiMaxAlloc = static_cast<size_t>( std::numeric_limits<Type>::max( ) );

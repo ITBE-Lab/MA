@@ -2,8 +2,6 @@
  * @file smallInversions.cpp
  * @author Markus Schmidt
  */
-
-
 #include "module/smallInversions.h"
 
 

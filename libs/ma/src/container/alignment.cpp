@@ -2,7 +2,6 @@
  * @file alignment.cpp
  * @author Markus Schmidt
  */
-
 #include "container/alignment.h"
 #include "util/default_parameters.h"
 #include "util/pybind11.h"

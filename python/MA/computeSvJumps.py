@@ -22,7 +22,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
     res = VectorPledge()
     jump_to_dbs = []
     # graph for single reads
-    jobs = parameter_set_manager.get_num_threads() * 2
+    jobs = 1 # Arne: multiple threads result in trouble with MySQL - parameter_set_manager.get_num_threads() * 2
     for idx in range(jobs):
         # @todo there should be a set of modules distributing reads
         # (only a problem if threads finish at different times)...
@@ -42,7 +42,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
         res.append(unlock_pledge)
 
     # drain all sources
-    res.simultaneous_get( parameter_set_manager.get_num_threads() )
+    res.simultaneous_get(1) # Arne reduced to 1 job - parameter_set_manager.get_num_threads()
     print("commiting remaining jumps...")
 
     start = datetime.datetime.now()

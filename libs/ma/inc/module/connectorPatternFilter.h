@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include "db_config.h"
 #include "module/needlemanWunsch.h"
 #include "module/sweepSvJumps.h"
 
@@ -21,7 +22,9 @@ class ConnectorPatternFilter
     nucSeqIndex uiMaxExtensionSize = 100;
     const KswCppParam<5> xKswParameters;
     const size_t uiZDrop;
+#ifndef USE_NEW_DB_API
     std::shared_ptr<SV_DB> pDb;
+
     CppSQLiteExtQueryStatement<NucSeqSql> xGetRead;
 
     ConnectorPatternFilter( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDb )
@@ -29,7 +32,14 @@ class ConnectorPatternFilter
           pDb( std::make_shared<SV_DB>( *pDb ) ),
           xGetRead( *this->pDb->pDatabase, "SELECT sequence FROM read_table WHERE id == ? " )
     {} // constructor
+#else
+    SQLQuery<DBCon, NucSeqSql> xGetRead;
 
+    ConnectorPatternFilter( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDBEnv )
+        : uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
+          xGetRead( pDBEnv->pDatabase, "SELECT sequence FROM read_table WHERE id = ? " )
+    {} // constructor
+#endif
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
     execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pRef )
     {

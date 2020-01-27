@@ -162,7 +162,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/connectorPatternFilter.h"
 #include "module/sweepSvJumps.h"
 #include "util/default_parameters.h"
+
+#include "db_config.h"
+#ifndef USE_NEW_DB_API
 #include "container/sv_db/svDb.h"
+#else
+#include "container/sv_db/_svDb.h" // NEW DATABASE INTERFACE
+#endif
+
 #include "container/svJump.h"
 #include "container/minimizer_index.h"
 

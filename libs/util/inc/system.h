@@ -6,27 +6,9 @@
 #pragma once
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include <chrono> // required for getting the high resulotion clock
+#include <chrono> // required for getting the high resolution clock
 #include <iostream>
 #include <string>
-
-//-- #if _MSC_VER
-//-- 
-//-- /* Avoids problems with the nasty min-max define-macros of windows.
-//--  */
-//-- #ifndef NOMINMAX
-//-- #define NOMINMAX
-//-- #endif
-//-- 
-//-- /* By defining WIN32_LEAN_AND_MEAN we avoid the inclusion of Winsock.h by windows.h.
-//--  */
-//-- #define WIN32_LEAN_AND_MEAN
-//-- #include <psapi.h>
-//-- #include <windows.h>
-//-- 
-//-- #pragma comment( lib, "psapi.lib" )
-//-- #endif
-
 
 #if __GNUC__
 #include <time.h>
