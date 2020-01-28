@@ -41,13 +41,13 @@ template <typename... ArgTypes> std::string dumpArgPack( ArgTypes&&... args )
 
 /** @brief An instance represents a connection to DB-system like MySQL etc.
  *   DBImpl must be a class that implements a database API.
- *  @detail A single connection is not threadsafe.
+ *  @details A single connection is not threadsafe.
  */
 template <typename DBImpl> class SQLDB : public DBImpl
 {
     /** brief The guard guarantees that the transaction commits of the object runs out of scope.
-	 */
-	class GuardedTransaction
+     */
+    class GuardedTransaction
     {
         SQLDB<DBImpl>& rHost; // host DB connection
         std::shared_ptr<bool> pHostTombStone; // for checking the aliveness of the host
@@ -420,7 +420,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
         {
-            return cat_arr_of_tpl_impl( a, Indices{ } );
+            return cat_arr_of_tpl_impl( a, Indices{} );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -435,7 +435,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // std::apply transforms the concatenated tuple to a argument pack and passes this to the lambda.
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
             // This statement creates trouble for older GCC compilers (template instantiation depth exceeds maximum) ...
-            STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
+            STD_APPLY( [&]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 
       public:
@@ -470,7 +470,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             for( size_t uiCount = 0; uiCount < uiInsPos; uiCount++ )
                 // Write the current tuple in the array to the DB
-                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
+                STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
             uiInsPos = 0; // reset insert position counter
         } // method
 
@@ -592,7 +592,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
   public:
     /** @brief Creates the text for a prepared SQL INSERT statement.
      *  uiNumberVals determines the number of values (rows) in the case of multiple row inserts.
-     *  @detail Syntax should work with most SQL dialects.
+     *  @details Syntax should work with most SQL dialects.
      */
     std::string makeInsertStmt( const size_t uiNumVals = 1 )
     {
@@ -673,7 +673,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     typedef ColTypeTranslator<typename DBCon::TypeTranslator, ColTypes...> CollTypeTranslation;
 
     /** @brief Initializes the table for use.
-     *  @detail If the table does not exist in the DB, the table is created first.
+     *  @details If the table does not exist in the DB, the table is created first.
      */
     void init( )
     {
@@ -723,7 +723,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
 
     /** @brief Insert the argument pack as fresh row into the table without guaranteeing type correctness.
-     *  @detail This form of the insert does not guarantees that there are no problems with column types at runtime.
+     *  @details This form of the insert does not guarantees that there are no problems with column types at runtime.
      *  It allows the injection of NULL values into an insertion by passing (void *)NULL at th column position, where
      *  the NULL value shall occurs.
      *  Don't use insertNonSafe, if you do not need explicit NULL values in the database.
@@ -743,18 +743,17 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         return *this;
     } // method
 
-   // Alias for bulk inserter type
-	template <size_t BUF_SIZE>
-	using SQLBulkInserterType = SQLBulkInserter<BUF_SIZE, ColTypes...>;
+    // Alias for bulk inserter type
+    template <size_t BUF_SIZE> using SQLBulkInserterType = SQLBulkInserter<BUF_SIZE, ColTypes...>;
 
-	/** @brief Delivers a shared pointer to a bulk inserter for inserting table rows type-safely.
-	 *   TIP: Definition of a bulk inserter (don't forget the keyword template with GCC!):
-	 *        auto xBulkInserter = table.template getBulkInserter< size >();
-	 */
-	template <size_t BUF_SIZE> std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter()
-	{
-		return std::make_shared<SQLBulkInserterType<BUF_SIZE>>(*this);
-	} // method
+    /** @brief Delivers a shared pointer to a bulk inserter for inserting table rows type-safely.
+     *   TIP: Definition of a bulk inserter (don't forget the keyword template with GCC!):
+     *        auto xBulkInserter = table.template getBulkInserter< size >();
+     */
+    template <size_t BUF_SIZE> std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( )
+    {
+        return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this );
+    } // method
 
     /** @brief: Delete all rows in the table. */
     SQLTable& deleteAllRows( )
@@ -798,7 +797,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Destructor */
     ~SQLTable( )
     {
-        do_exception_safe( [ & ]( ) {
+        do_exception_safe( [&]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
@@ -816,30 +815,29 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, ColTypes..., int64_t>
 class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
 #endif
 {
-    /* Inject primary key column definition into table definition */
+    /** Inject primary key column definition into table definition */
     json inject( const json& rjTableDef )
     {
         // Create deep copy of the table definition
         json jTableDef( rjTableDef );
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         if( jTableDef.count( TABLE_COLUMNS ) )
-            jTableDef[ TABLE_COLUMNS ].push_back( json::object( { { COLUMN_NAME, "ID" },
-                                                                  { CONSTRAINTS,
-                                                                    "NOT NULL AUTO_INCREMENT PRIMARY KEY" } } ) );
+            jTableDef[ TABLE_COLUMNS ].push_back( json::object( {{COLUMN_NAME, "ID"},
+                                                                 { CONSTRAINTS,
+                                                                   "NOT NULL AUTO_INCREMENT PRIMARY KEY" }} ) );
 #else
         // Primary key on first row:
         if( jTableDef.count( TABLE_COLUMNS ) )
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
-                json::object(
-                    { { COLUMN_NAME, "id" }, { CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY" } } ) );
+                json::object( {{COLUMN_NAME, "id"}, {CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY"}} ) );
 #endif
         return jTableDef;
     } // method
 
     /** @brief Insert the argument pack as fresh row into the table in a thread-safe way.
      *	Delivers the primary key of the inserted row as return value.
-     *  @detail We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee that
+     *  @details We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee that
      *   all AUTO_INCREMENT inserts occur serialized for getting the correct AUTO_INCREMENT value.
      */
     template <typename... ArgTypes> inline int64_t insertThreadSafe( const ArgTypes&... args )
@@ -857,7 +855,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     SQLTableWithAutoPriKey( std::shared_ptr<SQLDB<DBCon>> pDB, const json& rjTableDef )
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         : SQLTable<DBCon, ColTypes..., int64_t>( pDB, inject( rjTableDef ),
-                                                 std::set<size_t>( { rjTableDef[ TABLE_COLUMNS ].size( ) } )
+                                                 std::set<size_t>( {rjTableDef[ TABLE_COLUMNS ].size( )} )
 #else
         : SQLTable<DBCon, int64_t, ColTypes...>( pDB, inject( rjTableDef ) /* , std::set<size_t>( { 0 } ) */
 #endif
@@ -865,10 +863,10 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     {} // constructor
 
     /** @brief Inserts the argument pack as fresh row into the table without guaranteeing type correctness.
-     *	Delivers the primary key of the inserted row as return value.
-     *  @detail It allows the injection of NULL values into an insertion by passing nullptr at the column position,
-     *   where the NULL value shall occurs.
-     *   Don't use insertNonSafe, if you do not need explicit NULL values in the database.
+     *  Delivers the primary key of the inserted row as return value.
+     *  @details It allows the injection of NULL values into an insertion by passing nullptr at the column position,
+     *  where the NULL value shall occurs.
+     *  Don't use insertNonSafe, if you do not need explicit NULL values in the database.
      */
     template <typename... ArgTypes> inline int64_t insertNonSafe( const ArgTypes&... args )
     {
