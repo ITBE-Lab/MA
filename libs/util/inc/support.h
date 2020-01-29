@@ -176,4 +176,12 @@ bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
 
 std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex );
 
+/**
+ * @brief are we on a big endian system?
+ * @details
+ * Taken from here: https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program.
+ * Once we move to C++20 we can use https://en.cppreference.com/w/cpp/types/endian instead.
+ */
+bool EXPORTED is_big_endian();
+
 #endif

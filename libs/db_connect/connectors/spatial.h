@@ -7,13 +7,41 @@
 
 #pragma once
 
-namespace spatial
+#include "geom.h"
+
+typedef geomUtil::WKBPolygon<geomUtil::Rectangle::uiSizeWKB> MyRectangle;
+
+/* Integration of geomUtil::Rectangle as data-type in the MySQL interface.
+ */
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<MyRectangle>( )
 {
+    return "POLYGON";
+} // specialized method
 
-class Rectangle
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void MySQLConDB::StmtArg::set( const MyRectangle& rRectangle )
 {
-    
-}; // class
+    this->uiLength = static_cast<unsigned long>( geomUtil::Rectangle::uiSizeWKB );
+    pMySQLBind->buffer_length = static_cast<unsigned long>( geomUtil::Rectangle::uiSizeWKB );
+    pMySQLBind->buffer_type = MYSQL_TYPE_GEOMETRY; // this type must be equal to the type in Part 3.
+    pMySQLBind->buffer = rRectangle.getData( );
+} // specialized method
 
-} // namespace spatial
+// Part 3: Code for supporting query output:
+//         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
+//         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
+template <> struct /* MySQLConDB:: */ RowCell<MyRectangle> : public /* MySQLConDB::*/ RowCellBase<MyRectangle>
+{
+    inline void init( MYSQL_BIND* pMySQLBind, MyRectangle* pCellValue, size_t uiColNum )
+    {
+        RowCellBase<MyRectangle>::init( pMySQLBind, pCellValue, MYSQL_TYPE_GEOMETRY, uiColNum );
+    } // method
 
+    // Fetch the blob from the buffer.
+    inline void storeVarSizeCell( )
+    {
+        assert( this->uiLength == geomUtil::Rectangle::uiSizeWKB );
+        pCellValue->setData( this->pVarLenBuf.get( ) );
+    } // method
+}; // specialized class

@@ -8,6 +8,7 @@
 #endif
 
 
+#include <cctype>
 #include <cerrno>
 #include <cstring>
 #include <fstream>
@@ -16,7 +17,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
-#include <cctype>
 
 #include "exception.h"
 #include "support.h"
@@ -78,6 +78,17 @@ void makeDir( const std::string& rsFile )
         } // if
     } // if
 } // function
+
+bool EXPORTED is_big_endian( )
+{
+    union
+    {
+        uint32_t i;
+        uint8_t c[ 4 ];
+    } b = {0x01020304};
+
+    return b.c[ 0 ] == 1;
+}
 
 // taken from: https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
 #ifdef __GNUG__
