@@ -7,7 +7,7 @@
 #define SEED_H
 
 #include "container/container.h"
-#include "interval.h"
+#include "geom.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>

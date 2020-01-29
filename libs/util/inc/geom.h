@@ -1,5 +1,5 @@
 /**
- * @file interval.h
+ * @file geom.h
  * @brief Implements a generic Interval class.
  * @author Markus Schmidt
  */

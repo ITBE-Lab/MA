@@ -3,7 +3,7 @@
  * @brief Implements statistical ways to analyze repetitiveness in sequences.
  * @author Markus Schmidt
  */
-#include "interval.h"
+#include "geom.h"
 #include "container/nucSeq.h"
 
 #pragma once
