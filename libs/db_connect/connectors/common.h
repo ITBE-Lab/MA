@@ -42,7 +42,7 @@ template <typename... ArgTypes> std::string dumpArgPack( ArgTypes&&... args )
 
 /** @brief An instance represents a connection to DB-system like MySQL etc.
  *   DBImpl must be a class that implements a database API.
- *  @detail A single connection is not threadsafe.
+ *  @details A single connection is not threadsafe.
  */
 template <typename DBImpl> class SQLDB : public DBImpl
 {
@@ -816,7 +816,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
   public:
     /** @brief Creates the text for a prepared SQL INSERT statement.
      *  uiNumberVals determines the number of values (rows) in the case of multiple row inserts.
-     *  @detail Syntax should work with most SQL dialects.
+     *  @details Syntax should work with most SQL dialects.
      */
     std::string makeInsertStmt( const size_t uiNumVals = 1 )
     {
@@ -897,7 +897,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     typedef ColTypeTranslator<typename DBCon::TypeTranslator, ColTypes...> CollTypeTranslation;
 
     /** @brief Initializes the table for use.
-     *  @detail If the table does not exist in the DB, the table is created first.
+     *  @details If the table does not exist in the DB, the table is created first.
      */
     void init( )
     {
@@ -947,7 +947,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
 
     /** @brief Insert the argument pack as fresh row into the table without guaranteeing type correctness.
-     *  @detail This form of the insert does not guarantees that there are no problems with column types at runtime.
+     *  @details This form of the insert does not guarantees that there are no problems with column types at runtime.
      *  It allows the injection of NULL values into an insertion by passing (void *)NULL at th column position, where
      *  the NULL value shall occurs.
      *  Don't use insertNonSafe, if you do not need explicit NULL values in the database.
@@ -1062,7 +1062,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
 
     /** @brief Insert the argument pack as fresh row into the table in a thread-safe way.
      *	Delivers the primary key of the inserted row as return value.
-     *  @detail We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee that
+     *  @details We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee that
      *   all AUTO_INCREMENT inserts occur serialized for getting the correct AUTO_INCREMENT value.
      */
     template <typename... ArgTypes> inline int64_t insertThreadSafe( const ArgTypes&... args )
@@ -1089,7 +1089,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
 
     /** @brief Inserts the argument pack as fresh row into the table without guaranteeing type correctness.
      *	Delivers the primary key of the inserted row as return value.
-     *  @detail It allows the injection of NULL values into an insertion by passing nullptr at the column position,
+     *  @details It allows the injection of NULL values into an insertion by passing nullptr at the column position,
      *   where the NULL value shall occurs.
      *   Don't use insertNonSafe, if you do not need explicit NULL values in the database.
      */

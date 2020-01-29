@@ -10,6 +10,7 @@
 // #define SQL_VERBOSE
 
 #include <db_con_pool.h>
+#include <common.h>
 #include <threadPool.h>
 
 using SQLStatement_ = SQLStatement<MySQLConDB>;
@@ -106,7 +107,7 @@ void tupleCatination( const std::array<std::tuple<TupleTypes...>, SIZE>& aArr )
     std::cout << typeid( tCatenated ).name( ) << std::endl;
     std::cout << "START *********" << std::endl;
     STD_APPLY(
-        [ & ]( auto&... args ) { // We forward the elements by reference for avoiding copies.
+        [&]( auto&... args ) { // We forward the elements by reference for avoiding copies.
             printArgPack( args... ); // Here should occur the binding call
             // std::cout << "CONT" << std::endl;
         },
@@ -181,19 +182,20 @@ template <typename DBConnector> void checkDB( std::shared_ptr<SQLDB<DBConnector>
 
     {
         // json::array( { "WITHOUT ROWID" } )
-        json xTestTableDef = { { TABLE_NAME, "TEST_TABLE" }, // + std::to_string( jobnr ) },
-                               { TABLE_COLUMNS,
-                                 { { { COLUMN_NAME, "Column_1" } /*, { CONSTRAINTS, "UNIQUE" } */ },
-                                   { { COLUMN_NAME, "Column_2" } },
-                                   { { COLUMN_NAME, "BlobColum" } },
-                                   { { COLUMN_NAME, "TextColumn" } },
-                                   { { COLUMN_NAME, "Col_uint32_t" } } } },
-                               { SQLITE_EXTRA, { "WITHOUT ROWID" } } /*,
-                               { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
-                               /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
+        json xTestTableDef = {{TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr )},
+                              {TABLE_COLUMNS,
+                               {{{COLUMN_NAME, "Column_1"} /*, { CONSTRAINTS, "UNIQUE" } */},
+                                {{COLUMN_NAME, "Column_2"}},
+                                {{COLUMN_NAME, "BlobColum"}},
+                                {{COLUMN_NAME, "TextColumn"}},
+                                {{COLUMN_NAME, "Col_uint32_t"}}}},
+                              {SQLITE_EXTRA, {"WITHOUT ROWID"}} /*,
+                          { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
+                              /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
         // {CPP_EXTRA, "DROP ON DESTRUCTION"}};
         // std::cout << std::setw( 2 ) << xTestTableDef << std::endl;
-        SQLTableWithAutoPriKey<DBConnector, int, int, int, std::string, uint32_t> xTestTable( pMySQLDB, xTestTableDef );
+        SQLTableWithAutoPriKey<DBConnector, int, double, SomeBlobType, std::string, uint32_t> xTestTable(
+            pMySQLDB, xTestTableDef );
         // xTestTable.deleteAllRows( );
 
         // std::array<std::tuple<std::nullptr_t, int, double, SomeBlobType, std::string, uint32_t>, 15> aArr;

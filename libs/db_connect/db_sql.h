@@ -250,7 +250,7 @@ template <class... Types> class QueryResultTable
 
 /**
  * @brief SQL database.
- * @detail For transparent SQL database connections and management
+ * @details For transparent SQL database connections and management
  */
 class SQL_DB // deprecated : public CppSQLite3DB
 {

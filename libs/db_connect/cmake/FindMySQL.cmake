@@ -28,7 +28,7 @@
 # "$ENV{PROGRAMFILES(x86)}/MySQL/*/lib"
 if( WIN32 )
 	set(_MySQL_mariadb_versions 10.2 10.3)
-	  set(_MySQL_versions 5.0 5.7)
+	  set(_MySQL_versions 5.0 5.7 8.0)
 	  set(_MySQL_paths)
 	  foreach (_MySQL_version IN LISTS _MySQL_mariadb_versions)
 	    list(APPEND _MySQL_paths

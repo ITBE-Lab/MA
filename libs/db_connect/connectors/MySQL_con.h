@@ -165,7 +165,7 @@ class MySQLConException : public std::runtime_error
 
 
 /** @brief Executes the functor so that exceptions are swallowed.
- *  @detail For destructors so that they do not throw.
+ *  @details For destructors so that they do not throw.
  */
 template <typename FUNCTOR> inline void do_exception_safe( FUNCTOR&& functor )
 {
@@ -531,7 +531,7 @@ class MySQLConDB
 
       private:
         /** @brief Binder for arguments in the context of statement execution:
-         *  @detail See: https://dev.mysql.com/doc/refman/5.7/en/c-api-prepared-statement-type-codes.html
+         *  @details See: https://dev.mysql.com/doc/refman/5.7/en/c-api-prepared-statement-type-codes.html
          *  Remainder: You have to guarantee the lifetime of the data bound!
          */
         void inline setOverloaded( void* const& p ) = delete; // pointers are not allowed yet
@@ -917,7 +917,7 @@ class MySQLConDB
 
         /** @brief End Of File. Delivers true if there are no more rows to fetch.
          *  This kind of eof works in a "look ahead" fashion; it tells if the next fetch will fail or not.
-         *  @detail Important:Works only if the complete result is stored on client via mysql_stmt_store_result.
+         *  @details Important:Works only if the complete result is stored on client via mysql_stmt_store_result.
          */
         inline bool eofLookAhead( )
         {

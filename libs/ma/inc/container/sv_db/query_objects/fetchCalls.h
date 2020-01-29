@@ -362,8 +362,8 @@ template <typename DBCon> class SvCallsFromDb
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id == ? " )
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id = ? " )
     // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, dMinScore ) )
     {
         xQuery.execAndFetch( iSvCallerId, dMinScore );
@@ -390,8 +390,8 @@ template <typename DBCon> class SvCallsFromDb
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id == ? " )
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id = ? " )
     // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH ) )
     {
         xQuery.execAndFetch( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH );
@@ -419,8 +419,8 @@ template <typename DBCon> class SvCallsFromDb
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id == sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id == ? " )
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id = ? " )
     // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, iX, iY, iX + iW, iY + iH, dMinScore ) )
     {
         xQuery.execAndFetch( iSvCallerId, iX, iY, iX + iW, iY + iH, dMinScore );
