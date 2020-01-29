@@ -7,7 +7,7 @@
 #define SEED_H
 
 #include "container/container.h"
-#include "container/interval.h"
+#include "interval.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
@@ -31,7 +31,7 @@ class NucSeq;
  * @note the overloaded functions of Interval refer to the Interval on the query.
  * @ingroup container
  */
-class Seed : public Container, public Interval<nucSeqIndex>
+class Seed : public Container, public geomUtil::Interval<nucSeqIndex>
 {
   public:
     ///@brief the beginning of the match on the reference

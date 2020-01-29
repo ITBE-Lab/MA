@@ -28,7 +28,7 @@ using namespace libMA;
  *        queue the prev and post intervals into the thread pool
  *        save the perfect match for later clustering
  */
-void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
+void BinarySeeding::procesInterval( geomUtil::Interval<nucSeqIndex> xAreaToCover,
                                     std::shared_ptr<SegmentVector>
                                         pSegmentVector,
                                     std::shared_ptr<SuffixArrayInterface>
@@ -41,7 +41,7 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     {
         DEBUG_2( std::cout << "interval (" << xAreaToCover.start( ) << "," << xAreaToCover.end( ) << ")" << std::endl; )
 
-        Interval<nucSeqIndex> xAreaCovered;
+        geomUtil::Interval<nucSeqIndex> xAreaCovered;
         // performs extension and records any found seeds
         // here we use bLrExtension to choose the extension scheme
         if( bLrExtension )
@@ -59,7 +59,7 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
             // enqueue procesInterval() for a new interval that spans from uiStart to
             // where the extension stopped
             procesInterval(
-                Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) ),
+                geomUtil::Interval<nucSeqIndex>( xAreaToCover.start( ), xAreaCovered.start( ) - xAreaToCover.start( ) ),
                 pSegmentVector, pFM_index, pQuerySeq, uiCnt + 1 );
         } // if
         // if the extension did not fully cover until uiEnd:
@@ -94,7 +94,7 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
 
-    procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq, 0 );
+    procesInterval( geomUtil::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq, 0 );
 
     /*
      * If we have extremeley few seeds we may not be able to compute more than one alignment.
@@ -114,7 +114,7 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
             size_t uiSubSegEnd = (i+1) * uiActualQuerySize / uiNumSubsegments;
             pQuerySeq->uiSize = uiSubSegEnd - uiSubSegStart;
             pQuerySeq->pxSequenceRef = puiActualQueryStartPointer + uiSubSegStart;
-            procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq );
+            procesInterval( geomUtil::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq );
             // move the query start positions of the computet segments forward
             while(uiSegVecSize < pSegmentVector->size())
             {
@@ -134,7 +134,7 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
             size_t uiSubSegEnd = i + uiSizeSubsegments;
             pQuerySeq->uiSize = uiSubSegEnd - uiSubSegStart;
             pQuerySeq->pxSequenceRef = puiActualQueryStartPointer + uiSubSegStart;
-            procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq );
+            procesInterval( geomUtil::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq );
             // move the query start positions of the computet segments forward
             while(uiSegVecSize < pSegmentVector->size())
             {

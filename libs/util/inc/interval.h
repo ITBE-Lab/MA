@@ -12,7 +12,7 @@
 #include <iostream>
 /// @endcond DOXYGEN_SHOW_SYSTEM_INCLUDES
 
-namespace libMA{
+namespace geomUtil{
 /**
  * @brief A generic multipurpose Interval.
  */
@@ -66,7 +66,7 @@ template <typename T> class Interval
 
     /**
      * @brief Allows chaning the end of the interval.
-     * @note end = start = size
+     * @note end = start + size
      */
     inline void end( const T iVal )
     {

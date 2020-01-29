@@ -51,7 +51,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      * Returns an interval spanning the entire covered area.
      * Segments are saved in pSegmentVector.
      */
-    inline Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center,
+    inline geomUtil::Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center,
                                                              std::shared_ptr<SuffixArrayInterface>
                                                                  pFM_index,
                                                              std::shared_ptr<NucSeq>
@@ -68,7 +68,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
         // make sure we do not have any Ns
         if( q[ center ] >= 4 )
             // return that we covered the interval with the N
-            return Interval<nucSeqIndex>( center, 1 );
+            return geomUtil::Interval<nucSeqIndex>( center, 1 );
         /* Initialize ik on the foundation of the single base q[x].
          * In order to understand this initialization you should have a look
          * to the corresponding PowerPoint slide.
@@ -81,7 +81,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
         // if the symbol in the query does not exist on the reference we get an empty sa interval here.
         if( ik.size( ) == 0 )
             // return that we covered the interval
-            return Interval<nucSeqIndex>( center, 1 );
+            return geomUtil::Interval<nucSeqIndex>( center, 1 );
 
         /*
          * extend ik right, until there are no more matches
@@ -229,14 +229,14 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
         if( pSegmentVector->back( ).start( ) == start && pSegmentVector->back( ).end( ) == end )
             // if we would record the same interval twice do not record the second one and return the
             // covered area based on the first interval
-            return Interval<nucSeqIndex>( pSegmentVector->back( ).start( ), pSegmentVector->back( ).size( ) );
+            return geomUtil::Interval<nucSeqIndex>( pSegmentVector->back( ).start( ), pSegmentVector->back( ).size( ) );
 
         pSegmentVector->emplace_back( start, end - start, ik.revComp( ) );
         assert( pSegmentVector->back( ).end( ) < pQuerySeq->length( ) );
 
         const auto& rPrevBack = ( *pSegmentVector )[ pSegmentVector->size( ) - 2 ];
         // to return the covered area
-        Interval<nucSeqIndex> ret( center, 0 );
+        geomUtil::Interval<nucSeqIndex> ret( center, 0 );
         if( pSegmentVector->back( ).start( ) < rPrevBack.start( ) )
             ret.start( pSegmentVector->back( ).start( ) );
         else
@@ -257,12 +257,12 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      * Returns an interval spanning the entire covered area.
      * Segments are saved in pSegmentVector.
      */
-    Interval<nucSeqIndex> smemExtension( nucSeqIndex center, std::shared_ptr<SuffixArrayInterface> pFM_index,
+    geomUtil::Interval<nucSeqIndex> smemExtension( nucSeqIndex center, std::shared_ptr<SuffixArrayInterface> pFM_index,
                                          std::shared_ptr<NucSeq> pQuerySeq,
                                          std::shared_ptr<SegmentVector> pSegmentVector )
     {
         // to remember the covered area
-        Interval<nucSeqIndex> ret( center, 0 );
+        geomUtil::Interval<nucSeqIndex> ret( center, 0 );
 
         // query sequence itself
         const uint8_t* q = pQuerySeq->pGetSequenceRef( );
@@ -272,7 +272,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
         // make sure we do not have any Ns
         if( q[ center ] >= 4 )
             // return that we covered the interval with the N
-            return Interval<nucSeqIndex>( center, 1 );
+            return geomUtil::Interval<nucSeqIndex>( center, 1 );
 
         /* Initialize ik on the foundation of the single base q[x].
          * In order to understand this initialization you should have a look
@@ -455,7 +455,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      *    if the interval cannot be found this method splits the interval in half and repeats the
      * step with the first half, while queuing the second half as a task in the thread pool.
      */
-    void procesInterval( Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
+    void procesInterval( geomUtil::Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
                          std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
                          size_t uiCnt );
 

@@ -27,7 +27,7 @@ using DBCon = MySQLConDB; // For the moment we set this module fix to MySQL.
 namespace libMA
 {
 
-class GenomeSection : public Container, public Interval<int64_t>
+class GenomeSection : public Container, public geomUtil::Interval<int64_t>
 {
     using Interval<int64_t>::Interval;
 }; // class

@@ -99,10 +99,9 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * If the rectangle's width is more than xMaxSizeReseed (see settings) this will return
      * two rectangles using case 2; one for each seed.
      */
-    std::pair<Rectangle<nucSeqIndex>, Rectangle<nucSeqIndex>> getPositionsForSeeds( Seed& rLast, Seed& rNext,
-                                                                                    nucSeqIndex uiQStart,
-                                                                                    nucSeqIndex uiQEnd,
-                                                                                    std::shared_ptr<Pack> pRefSeq );
+    std::pair<geomUtil::Rectangle<nucSeqIndex>, geomUtil::Rectangle<nucSeqIndex>>
+    getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
+                          std::shared_ptr<Pack> pRefSeq );
 
     /**
      * @brief computes how much percent of the rectangles xRects is filled by seeds in pvSeeds.
@@ -110,7 +109,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * Assumes that the seeds are completeley within the rectangles.
      */
     float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>> xRects )
+                              std::pair<geomUtil::Rectangle<nucSeqIndex>, geomUtil::Rectangle<nucSeqIndex>>
+                                  xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -130,7 +130,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
         std::shared_ptr<Seeds> pSeeds;
         std::vector<size_t> vLayerOfSeeds;
         std::vector<bool> vParlindromeSeed;
-        std::vector<Rectangle<nucSeqIndex>> vRectangles;
+        std::vector<geomUtil::Rectangle<nucSeqIndex>> vRectangles;
         std::vector<double> vRectangleFillPercentage;
         std::vector<size_t> vRectangleReferenceAmbiguity;
         std::vector<bool> vRectangleUsedDp;
@@ -145,8 +145,8 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * them to rvRet.
      * @note This is a helper function. Use the other computeSeeds.
      */
-    void computeSeeds( Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
-                       std::shared_ptr<Seeds> rvRet, HelperRetVal* pOutExtra );
+    void computeSeeds( geomUtil::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
+                       std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet, HelperRetVal* pOutExtra );
     /**
      * @brief computes all seeds within the given areas.
      * @details
@@ -154,7 +154,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * xAreas.second seperately.
      */
     std::shared_ptr<Seeds>
-    computeSeeds( std::pair<libMA::Rectangle<nucSeqIndex>, libMA::Rectangle<nucSeqIndex>>& xAreas,
+    computeSeeds( std::pair<geomUtil::Rectangle<nucSeqIndex>, geomUtil::Rectangle<nucSeqIndex>>& xAreas,
                   std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq, HelperRetVal* pOutExtra );
 
     /**

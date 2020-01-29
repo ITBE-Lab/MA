@@ -28,7 +28,7 @@ namespace libMA
  * @li @c a Interval representing the position of the sequence on the query.
  * @ingroup container
  */
-class Segment : public Container, public Interval<nucSeqIndex>
+class Segment : public Container, public geomUtil::Interval<nucSeqIndex>
 {
   public:
     SAInterval xSaInterval;

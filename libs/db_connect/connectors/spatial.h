@@ -10,21 +10,10 @@
 namespace spatial
 {
 
-class Geometry
-{};
-
-class Point
-{};
-
-class Plane
+class Rectangle
 {
-	
-};
-
-class Cube
-{
-	
-};
+    
+}; // class
 
 } // namespace spatial
 

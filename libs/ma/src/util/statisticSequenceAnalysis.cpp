@@ -3,7 +3,7 @@
 
 using namespace libMA;
 
-nucSeqIndex libMA::getKMerSizeForRectangle( libMA::Rectangle<nucSeqIndex>& rRect, double t )
+nucSeqIndex libMA::getKMerSizeForRectangle( geomUtil::Rectangle<nucSeqIndex>& rRect, double t )
 {
     auto w = rRect.xXAxis.size( ); // width of rectangle
     auto h = rRect.xYAxis.size( ); // height of rectangle
@@ -27,7 +27,7 @@ nucSeqIndex libMA::getKMerSizeForRectangle( libMA::Rectangle<nucSeqIndex>& rRect
 
 nucSeqIndex libMA::sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, double t )
 {
-    libMA::Rectangle<nucSeqIndex> xRect( 0, 0, rSequenceA.length( ) + rSequenceB.length( ),
+    geomUtil::Rectangle<nucSeqIndex> xRect( 0, 0, rSequenceA.length( ) + rSequenceB.length( ),
                                          rSequenceA.length( ) + rSequenceB.length( ) );
     nucSeqIndex uiStaticsticalSize = getKMerSizeForRectangle( xRect, t );
     nucSeqIndex uiSeedSize = uiStaticsticalSize;
@@ -57,7 +57,7 @@ nucSeqIndex libMA::sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenc
 {
     HashMapSeeding xSeeder;
 
-    libMA::Rectangle<nucSeqIndex> xRect( 0, 0, rSequenceA.length( ) + rSequenceB.length( ),
+    geomUtil::Rectangle<nucSeqIndex> xRect( 0, 0, rSequenceA.length( ) + rSequenceB.length( ),
                                          rSequenceA.length( ) + rSequenceB.length( ) );
     xSeeder.uiSeedSize = getKMerSizeForRectangle( xRect, t );
 
