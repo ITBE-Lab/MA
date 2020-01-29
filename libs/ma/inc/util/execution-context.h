@@ -8,7 +8,8 @@
 #include "json.hpp" // FIXME: Move to different location
 
 using namespace libMA;
-namespace json = nlohmann;
+
+using nlohmann::json; // might be better: namespace json = nlohmann; 
 
 /* Manages Pack and FMD-Index of genomes */
 class GenomeManager
@@ -62,7 +63,7 @@ class GenomeManager
         {
             // Read JSON with genome info
             std::ifstream xInputStream( rsJsonFilePath );
-            json::json xJSON;
+            json xJSON;
             xInputStream >> xJSON;
 
             // Check JSON for correctness
@@ -91,7 +92,7 @@ class GenomeManager
     } // method
 
     /* Create JSON that informs about genome */
-    json::json createGenomeJSON( const std::string& rsGenomeTitle, const std::string& rsGenomePrefix )
+    json createGenomeJSON( const std::string& rsGenomeTitle, const std::string& rsGenomePrefix )
     {
         return {{"type", "MA Genome"},
                 {"version", {{"major", 1}, {"minor", 0}}},

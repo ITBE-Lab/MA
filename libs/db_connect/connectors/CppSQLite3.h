@@ -16,7 +16,6 @@
 
 #define CPPSQLITE_ERROR 1000
 
-
 class SQL_BLOB
 {
   public:
@@ -249,17 +248,18 @@ class CppSQLite3Statement
 
     void bind( int nParam, const char* szValue );
     void bind( int nParam, const std::string& szValue ); // inserted Arne 19/03/2016
-    void bind( int nParam, const int nValue );
-    void bind( int nParam, const long nValue );
-    void bind( int nParam, const unsigned int nValue )
+    void bind( int nParam, const int32_t nValue );
+    void bind( int nParam, const int64_t nValue );
+    void bind( int nParam, const uint32_t nValue )
     {
-        bind( nParam, (const long)nValue );
+        bind( nParam, (const int64_t)nValue );
     } // method
-    void bind( int nParam, const long long nValue );
-    void bind( int nParam, const unsigned long nValue )
+    // Newly inserted Jan 8 2020 (AK)
+    void bind( int nParam, const uint64_t nValue )
     {
-        bind( nParam, (const long long)nValue );
+        bind( nParam, (const int64_t)nValue );
     } // method
+
     void bind( int nParam, const double dwValue );
     // void bind( int nParam, const unsigned char* blobValue, int nLen );
     void bind( int nParam, const SQL_BLOB& rBlob );
@@ -315,13 +315,13 @@ class CppSQLite3DB
         return SQLITE_VERSION;
     }
 
-    void set_num_threads(const int uiNumThreads);
+    void set_num_threads( const int uiNumThreads );
 
     int loadOrSaveDb( const char* zFilename, int isSave );
 
-    const char* getErrorMessage()
+    const char* getErrorMessage( )
     {
-        return sqlite3_errmsg(mpDB);
+        return sqlite3_errmsg( mpDB );
     }
 
   private:

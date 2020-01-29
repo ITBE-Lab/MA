@@ -6,6 +6,10 @@
 #pragma once
 
 #include "container/seed.h"
+
+#include "db_config.h"
+
+#include "MySQL_con.h" // NEW DATABASE INTERFACE
 #include "db_sql.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -774,6 +778,7 @@ class NucSeq : public Container
     } // method
 }; // class NucSeq
 
+
 class NucSeqSql : public SQL_BLOB
 {
   public:
@@ -807,16 +812,54 @@ class NucSeqSql : public SQL_BLOB
         pNucSeq->vClear( );
         pNucSeq->vAppend( (const uint8_t*)ucBlob, uiSize );
     } // method
-
 }; // class
 
-
 } // namespace libMA
+
 
 template <> inline std::string getSQLTypeName<libMA::NucSeqSql>( )
 {
     return "BLOB";
 } // specialized function
+
+
+/* NEW DATABASE INTERFACE */
+
+/* Integration of NucSeqSql as data-type in the MySQL interface.
+ */
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<libMA::NucSeqSql>( )
+{
+    return "LONGBLOB";
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void MySQLConDB::StmtArg::set( const libMA::NucSeqSql& rxBlob )
+{
+    this->uiLength = static_cast<unsigned long>( rxBlob.blobSize( ) );
+    pMySQLBind->buffer_length = static_cast<unsigned long>( rxBlob.blobSize( ) );
+    pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
+    pMySQLBind->buffer = (void*)( rxBlob.toBlob( ) );
+} // specialized method
+
+// Part 3: Code for supporting query output:
+//         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
+//         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
+template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQLConDB::*/ RowCellBase<libMA::NucSeqSql>
+{
+    inline void init( MYSQL_BIND* pMySQLBind, libMA::NucSeqSql* pCellValue, size_t uiColNum )
+    {
+        RowCellBase<libMA::NucSeqSql>::init( pMySQLBind, pCellValue, MYSQL_TYPE_LONG_BLOB, uiColNum );
+    } // method
+
+    // Fetch the blob from the buffer.
+    inline void storeVarSizeCell( )
+    {
+        pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
+    } // method
+}; // specialized class
+
+
 
 #ifdef WITH_PYTHON
 void exportNucSeq( py::module& rxPyModuleId );

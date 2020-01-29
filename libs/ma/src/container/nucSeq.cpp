@@ -2,6 +2,10 @@
  * @file nucSeq.cpp
  * @author Arne Kutzner
  */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include "container/nucSeq.h"
 #include "util/pybind11.h"
 using namespace libMA;
@@ -52,7 +56,7 @@ void exportNucSeq( py::module& rxPyModuleId )
     // export the NucSeqSql class
     py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( rxPyModuleId, "NucSeqSql" )
         .def( py::init<>( ) ) // default constructor
-        .def( "fromBlob", &NucSeqSql::fromPyBytesBlob )
+        .def( "fromBlob", &NucSeqSql::fromBlob )
         .def_readwrite( "seq", &NucSeqSql::pNucSeq );
 } // function
 #endif

@@ -7,7 +7,14 @@
 
 #include "container/segment.h"
 #include "container/svJump.h"
+
+#include "db_config.h"
+#ifndef USE_NEW_DB_API
 #include "container/sv_db/svDb.h"
+#else
+#include "container/sv_db/_svDb.h" // NEW DATABASE INTERFACE
+#endif
+
 #include "module/binarySeeding.h"
 #include "module/harmonization.h"
 #include "module/hashMapSeeding.h"

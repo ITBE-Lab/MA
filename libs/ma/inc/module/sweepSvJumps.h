@@ -5,9 +5,18 @@
 #pragma once
 
 #include "container/squeezedVector.h"
-#include "container/sv_db/query_objects/callInserter.h"
+#include "container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
+
+#include "db_config.h"
+#ifndef USE_NEW_DB_API
 #include "container/sv_db/query_objects/fetchSvJump.h"
 #include "container/sv_db/svDb.h"
+#else
+#include "container/sv_db/_svDb.h" // NEW DATABASE INTERFACE
+#include "container/sv_db/query_objects/_fetchSvJump.h"
+using DBCon = MySQLConDB; // For the moment we set this module fix to MySQL.
+#endif
+
 #include "module/module.h"
 #include "util/statisticSequenceAnalysis.h"
 #include <cmath>
@@ -86,22 +95,36 @@ class CompleteBipartiteSubgraphClusterVector : public Container
 class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
+#ifndef USE_NEW_DB_API
     std::shared_ptr<SV_DB> pDB;
+#else
+    std::shared_ptr<_SV_DB<DBCon>> pDB;
+#endif
     int64_t iRunId;
     /**
      * @brief
      * @details
      */
+#ifndef USE_NEW_DB_API
     SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pDB, std::string rsSvCallerName,
                 std::string rsSvCallerDesc, int64_t uiJumpRunId )
         : pDB( pDB ), iRunId( pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+#else
+    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDB, std::string rsSvCallerName,
+                std::string rsSvCallerDesc, int64_t uiJumpRunId )
+        : pDB( pDB ), iRunId( pDB->pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+#endif
     {} // constructor
 
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
         {
             std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
+#ifndef USE_NEW_DB_API
             auto pInserter = std::make_shared<SvCallInserter>( pDB, iRunId );
+#else
+            auto pInserter = std::make_shared<SvCallInserter<DBCon>>( pDB, iRunId );
+#endif
             for( auto pCall : pVec->vContent )
                 pInserter->insertCall( *pCall );
         } // scope for pInserter (transaction)
@@ -114,17 +137,28 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
  * @details buffers the calls in a vector before
  * @note in a parallel computational graph: use multiple instances of this module
  */
+#ifdef USE_NEW_DB_API
+template <typename DBCon>
+#endif
 class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
+#ifndef USE_NEW_DB_API
     std::shared_ptr<SvCallInserter> pInserter;
+#else
+    std::shared_ptr<SvCallInserter<DBCon>> pInserter;
+#endif
     std::vector<std::shared_ptr<CompleteBipartiteSubgraphClusterVector>> vContent;
     size_t uiEleCnt = 0; // element count
     /**
      * @brief
      * @details
      */
+#ifndef USE_NEW_DB_API
     BufferedSvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SvCallInserter> pInserter )
+#else
+    BufferedSvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SvCallInserter<DBCon>> pInserter )
+#endif
         : pInserter( pInserter )
     {} // constructor
 
@@ -140,7 +174,7 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
             for( auto pVec : vContent )
                 for( auto pCall : pVec->vContent )
                     pInserter->insertCall( *pCall );
-            pInserter->reOpenTransaction();
+            pInserter->reOpenTransaction( );
         } // scope for xGuard
 
         vContent.clear( );
@@ -155,7 +189,7 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
     {
         vContent.push_back( pVec );
-        uiEleCnt += pVec->vContent.size();
+        uiEleCnt += pVec->vContent.size( );
         commit( );
         return std::make_shared<Container>( );
     } // method & scope for xGuard
@@ -169,7 +203,11 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 {
   public:
     const ParameterSetManager& rParameters;
+#ifndef USE_NEW_DB_API
     std::shared_ptr<SV_DB> pSvDb;
+#else
+    std::shared_ptr<_SV_DB<DBCon>> pSvDb;
+#endif
     std::shared_ptr<Pack> pPack;
     int64_t iSvCallerRunId;
     int64_t iMaxFuzziness;
@@ -187,10 +225,17 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
      * @brief
      * @details
      */
+#ifndef USE_NEW_DB_API
     CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                                     std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId, int64_t iSequencerId )
         : rParameters( rParameters ),
           pSvDb( std::make_shared<SV_DB>( *pSvDb ) ),
+#else
+    CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pSvDb,
+                                    std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId, int64_t iSequencerId )
+        : rParameters( rParameters ),
+          pSvDb( std::make_shared<_SV_DB<DBCon>>( *pSvDb ) ),
+#endif
           pPack( pPack ),
           iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
@@ -208,7 +253,11 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
     {
         auto xInitStart = std::chrono::high_resolution_clock::now( );
         // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
+#ifndef USE_NEW_DB_API
         SortedSvJumpFromSql xEdges(
+#else
+        SortedSvJumpFromSql<DBCon> xEdges(
+#endif
             rParameters, pSvDb, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
@@ -273,7 +322,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                         assert( pLastJoined->uiOpenEdges > 0 );
                         xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                               [&]( auto pX ) { return pX == pLastJoined; } ),
+                                                               [ & ]( auto pX ) { return pX == pLastJoined; } ),
                                                xActiveClusters.end( ) );
 #endif
                         pNewCluster->join( *pLastJoined );
@@ -323,7 +372,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                     xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                           [&]( auto pX ) { return pX == pCluster; } ),
+                                                           [ & ]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
 #endif
                     if( pCluster->uiFromStart < uiForwStrandEnd && pCluster->uiFromStart >= uiForwStrandStart )
@@ -363,8 +412,13 @@ class ExactCompleteBipartiteSubgraphSweep
      * @brief
      * @details
      */
+#ifndef USE_NEW_DB_API
     ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_DB> pSvDb,
                                          std::shared_ptr<Pack> pPack, int64_t iSequencerId )
+#else
+    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pSvDb,
+                                         std::shared_ptr<Pack> pPack, int64_t iSequencerId )
+#endif
         : pPack( pPack )
     {} // constructor
 
@@ -755,7 +809,7 @@ class ComputeCallAmbiguity
     std::shared_ptr<NucSeq> getRegion( nucSeqIndex uiPos, bool bLeftDirection, std::shared_ptr<Pack> pPack )
     {
         // due to their fuzziness calls can reach past the end of the genome
-        if(uiPos >= pPack->uiUnpackedSizeForwardStrand)
+        if( uiPos >= pPack->uiUnpackedSizeForwardStrand )
             uiPos = pPack->uiUnpackedSizeForwardStrand - 1;
 
         auto uiSeqId = pPack->uiSequenceIdForPosition( uiPos );
@@ -765,8 +819,8 @@ class ComputeCallAmbiguity
             nucSeqIndex uiStart = uiPos > iStartOfContig + uiDistance ? uiPos - uiDistance : iStartOfContig;
             nucSeqIndex uiSize = uiPos - uiStart;
             // return empty sequence for size = 0 cause pack throws exception otherwise
-            if(uiSize == 0)
-                return std::make_shared<NucSeq>();
+            if( uiSize == 0 )
+                return std::make_shared<NucSeq>( );
             if( pPack->bridgingSubsection( uiStart, uiSize ) )
                 pPack->unBridgeSubsection( uiStart, uiSize );
             return pPack->vExtract( uiStart, uiStart + uiSize );
@@ -777,8 +831,8 @@ class ComputeCallAmbiguity
             nucSeqIndex uiEnd = uiPos + uiDistance < iEndOfContig ? uiPos + uiDistance : iEndOfContig;
             nucSeqIndex uiSize = uiEnd - uiPos;
             // return empty sequence for size = 0 cause pack throws exception otherwise
-            if(uiSize == 0)
-                return std::make_shared<NucSeq>();
+            if( uiSize == 0 )
+                return std::make_shared<NucSeq>( );
             if( pPack->bridgingSubsection( uiPos, uiSize ) )
                 pPack->unBridgeSubsection( uiPos, uiSize );
             return pPack->vExtract( uiPos, uiPos + uiSize );

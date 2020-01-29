@@ -14,16 +14,21 @@
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
 #ifdef WITH_PYTHON
+// Bug in Python 3.7 and 3.8 that breaks nlohmann::json
+// See:(https://bugs.python.org/issue36020)
+#if defined( WIN32 ) && !defined( HAVE_SNPRINTF ) && defined( _MSC_VER ) && _MSC_VER >= 1900
+#define HAVE_SNPRINTF
+#endif
 
-    #include <pybind11/stl_bind.h>
-    namespace py = pybind11;
+#include <pybind11/stl_bind.h> // Question AK: Isn't it better to include our pybind11.h here.
+namespace py = pybind11;
 #endif
 
 /// @endcond
 
 #if DEBUG_LEVEL >= 1
-    #define TOMBSTONE_VAL_ALIVE 1010101010101
-    #define TOMBSTONE_VAL_DEAD 2020202020202
+#define TOMBSTONE_VAL_ALIVE 1010101010101
+#define TOMBSTONE_VAL_DEAD 2020202020202
 #endif
 
 namespace libMA

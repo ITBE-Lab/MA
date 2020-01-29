@@ -10,7 +10,13 @@
 #include <string>
 
 #ifdef WITH_PYTHON
-#include <pybind11/stl_bind.h>
+// Bug in Python 3.7 and 3.8 that breaks nlohmann::json
+// See:(https://bugs.python.org/issue36020)
+#if defined( WIN32 ) && !defined( HAVE_SNPRINTF ) && defined( _MSC_VER ) && _MSC_VER >= 1900
+#define HAVE_SNPRINTF
+#endif
+
+#include <pybind11/stl_bind.h> // Question AK: Isn't it better to include our pybind11.h here.
 namespace py = pybind11;
 #endif
 

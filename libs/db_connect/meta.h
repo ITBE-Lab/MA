@@ -3,8 +3,14 @@
  * @author Arne Kutzner, Markus Schmidt
  * @date Nov 2019
  */
-#include <tuple>
 #include <functional>
+#include <tuple>
+
+/* Tips for variadic templates:
+ * https://arne-mertz.de/2016/11/more-variadic-templates/
+ * C++ 17 and fold expressions:
+ * https://stackoverflow.com/questions/34569455/syntax-issue-when-populating-an-array-with-a-fold-expression
+ */
 
 /* METAPROGRAMMING
  * Unpack a tuple to call a matching function.
@@ -127,3 +133,35 @@ void iterateOverTupleCurry2( Functor&& functor, std::tuple<TupleTypes...>& tuple
         std::bind( std::forward<Functor>( functor ), std::placeholders::_1, std::placeholders::_2 ),
         tuple ); // function call
 }; // struct
+
+/* Delivers the n-th type in a type-list
+ */
+template <class... Args> struct type_list
+{
+    template <std::size_t N> using typex = typename std::tuple_element<N, std::tuple<Args...>>::type;
+};
+
+// Generic version of next power 2
+// template <typename Type> Type next_power2( Type value )
+// {
+//     --value;
+//     for( size_t uiCount = 1; uiCount < sizeof( Type ) * CHAR_BIT; uiCount *= 2 )
+//         value |= value >> uiCount;
+//     return value + 1;
+// } // method
+// Type uiMaxAlloc = static_cast<size_t>( std::numeric_limits<Type>::max( ) );
+
+/* Stuff for arrays */
+
+// See:
+// https://stackoverflow.com/questions/34569455/syntax-issue-when-populating-an-array-with-a-fold-expression
+template <typename F, typename T, std::size_t N, std::size_t... Idx>
+void apply_impl( F f, const std::array<T, N>& a, std::index_sequence<Idx...> )
+{
+    /* auto drop = { */ ( f( a[ Idx ], Idx ), ... ) /* } */;
+} // meta
+
+template <typename F, typename T, std::size_t N> void apply_( F f, const std::array<T, N>& a )
+{
+    apply_impl( f, a, std::make_index_sequence<N>{ } );
+} // meta

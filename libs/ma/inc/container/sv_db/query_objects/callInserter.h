@@ -3,7 +3,12 @@
  * @brief Implements libMA::SvCallInserter; a transaction based structural variant call inserter
  * @author Markus Schmidt
  */
+#include "db_config.h"
+#ifndef USE_NEW_DB_API
 #include "container/sv_db/svDb.h"
+#else
+#include "container/sv_db/_svDb.h" // NEW DATABASE INTERFACE
+#endif
 
 #pragma once
 
@@ -14,14 +19,25 @@ namespace libMA
  * @details
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
  */
+#ifdef USE_NEW_DB_API
+template <typename DBCon>
+#endif
 class SvCallInserter
 {
   public:
     // this is here so that it gets destructed after the transaction context
+#ifndef USE_NEW_DB_API
     std::shared_ptr<SV_DB> pDB;
+#else
+    std::shared_ptr<_SV_DB<DBCon>> pDB;
+#endif
   private:
     // must be after the DB so that it is deconstructed first
+#ifndef USE_NEW_DB_API
     std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
+#else
+// FIXME: Insert transaction-contexts in the MySQL interface
+#endif
 
   public:
     /// @brief id of the caller run this inserter is bound to.
@@ -36,15 +52,24 @@ class SvCallInserter
     class CallContex
     {
       private:
+#ifndef USE_NEW_DB_API
         std::shared_ptr<SvCallSupportTable> pSvCallSupportTable;
+#else
+        std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable;
+#endif
         const int64_t iCallId;
 
       public:
         /**
          * @brief Create a context for the call with id iCallId.
          */
+#ifndef USE_NEW_DB_API
         CallContex( std::shared_ptr<SvCallSupportTable> pSvCallSupportTable, const int64_t iCallId )
             : pSvCallSupportTable( pSvCallSupportTable ), iCallId( iCallId )
+#else
+        CallContex( std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable, const int64_t iCallId )
+            : pSvCallSupportTable( pSvCallSupportTable ), iCallId( iCallId )
+#endif
         {} // constructor
 
         /**
@@ -54,7 +79,11 @@ class SvCallInserter
          */
         inline void addSupport( SvJump& rJump )
         {
-            pSvCallSupportTable->xInsertRow( iCallId, rJump.iId );
+#ifndef USE_NEW_DB_API
+            pSvCallSupportTable->xInsertRow( iCallId, rJump.iId ); 
+#else
+			pSvCallSupportTable->insert(iCallId, rJump.iId); // xInsertRow -> insert
+#endif
         } // method
 
         /**
@@ -62,7 +91,11 @@ class SvCallInserter
          */
         inline void addSupport( int64_t iId )
         {
-            pSvCallSupportTable->xInsertRow( iCallId, iId );
+#ifndef USE_NEW_DB_API
+            pSvCallSupportTable->xInsertRow( iCallId, iId ); 
+#else
+			pSvCallSupportTable->insert(iCallId, iId); // xInsertRow -> insert
+#endif
         } // method
 
         /**
@@ -79,24 +112,40 @@ class SvCallInserter
      * @details
      * Expects the run to exists in the DB.
      */
+#ifndef USE_NEW_DB_API
     SvCallInserter( std::shared_ptr<SV_DB> pDB, const int64_t iSvCallerRunId )
         : pDB( pDB ),
           pTransactionContext( std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase ) ),
           iSvCallerRunId( iSvCallerRunId )
     {} // constructor
+#else
+    SvCallInserter( std::shared_ptr<_SV_DB<DBCon>> pDB, const int64_t iSvCallerRunId )
+        : pDB( pDB ),
+          // FIXME: pTransactionContext( std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase ) ),
+          iSvCallerRunId( iSvCallerRunId )
+    {} // constructor
+#endif
 
     /**
      * @brief create a SvCallInserter object for a new run.
      * @details
      * This creates a new caller run with the given name and description.
      */
+#ifndef USE_NEW_DB_API
     SvCallInserter( std::shared_ptr<SV_DB> pDB,
                     const std::string& rsSvCallerName,
                     const std::string& rsSvCallerDesc,
                     const int64_t uiJumpRunId )
         : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
     {} // constructor
-
+#else
+    SvCallInserter( std::shared_ptr<_SV_DB<DBCon>> pDB,
+                    const std::string& rsSvCallerName,
+                    const std::string& rsSvCallerDesc,
+                    const int64_t uiJumpRunId )
+        : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+    {} // constructor
+#endif
     /// @brief Object cannot be copied.
     SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
 
@@ -134,7 +183,9 @@ class SvCallInserter
      */
     inline void endTransaction( )
     {
+#ifndef USE_NEW_DB_API // FIXME: NEW DATABASE API
         pTransactionContext.reset( );
+#endif
     }; // method
 
     /**
@@ -142,8 +193,10 @@ class SvCallInserter
      */
     inline void reOpenTransaction( )
     {
-        endTransaction();
+#ifndef USE_NEW_DB_API // FIXME: NEW DATABASE API
+        endTransaction( );
         pTransactionContext = std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase );
+#endif
     }; // method
 
 }; // class
