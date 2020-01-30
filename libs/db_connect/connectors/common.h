@@ -331,6 +331,7 @@ const std::string TABLE_COLUMNS = "TABLE_COLUMNS";
 const std::string SQLITE_EXTRA = "SQLITE_EXTRA";
 const std::string COLUMN_NAME = "COLUMN_NAME";
 const std::string CONSTRAINTS = "CONSTRAINTS";
+const std::string INSERT_FUNCTION = "INSERT_FUNCTION";
 const std::string CPP_EXTRA = "CPP_EXTRA";
 const std::string SQL_EXTRA = "SQL_EXTRA";
 const std::string PRIMARY_KEY = "PRIMARY_KEY";
@@ -432,7 +433,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
         {
-            return cat_arr_of_tpl_impl( a, Indices{ } );
+            return cat_arr_of_tpl_impl( a, Indices{} );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -447,7 +448,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // std::apply transforms the concatenated tuple to a argument pack and passes this to the lambda.
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
             // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum) ...
-            STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
+            STD_APPLY( [&]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 #else // Iterating approach for parameter binding with bulk inserts. (Lacks beauty, but better manageable for compilers)
 
@@ -456,7 +457,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         template <int OFFSET, typename... Args> void doSingleBind( const std::tuple<Args...>& rTpl )
         {
-            STD_APPLY( [ & ]( auto&... args ) //
+            STD_APPLY( [&]( auto&... args ) //
                        { pBulkInsertStmt->template bind<OFFSET>( args... ); },
                        rTpl );
         } // method
@@ -472,7 +473,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row) */
         template <typename T, std::size_t N> void forAllDoBind( const std::array<T, N>& a )
         {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
+            forAllDoBindImpl( a, std::make_index_sequence<N>{} );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -531,7 +532,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
             for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
                 // Write the current tuple in the array to the DB
-                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
+                STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
         } // method
 
         /** @brief Destructor flushes the buffer.
@@ -581,7 +582,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <class Ch, class Tr, class... Args>
         void prtTpltoStream( std::basic_ostream<Ch, Tr>& os, const std::tuple<Args...>& t )
         {
-            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{ } );
+            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{} );
             os << "\n";
         } // meta
 
@@ -595,24 +596,24 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // FIXME: Move to library with meta programming
         template <typename F, typename T, std::size_t N> void for_all_do( F f, const std::array<T, N>& a )
         {
-            for_all_do_impl( f, a, std::make_index_sequence<N>{ } );
+            for_all_do_impl( f, a, std::make_index_sequence<N>{} );
         } // meta
 
         /** @brief Writes the content of the buffer aBuf to the output-stream using CSV.
          */
         inline void writeBufToStream( )
         {
-            for_all_do( [ & ]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
+            for_all_do( [&]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
         } // method
 
         fs::path uploadFileName( const std::string& rsExtension )
         {
             std::string sSecureFilePrivPath = pHostTblDB->getVarSecureFilePriv( );
-			if (sSecureFilePrivPath.empty())
-				// sSecureFilePrivPath = "/MAdata/tmp";
+            if( sSecureFilePrivPath.empty( ) )
+                // sSecureFilePrivPath = "/MAdata/tmp";
                 sSecureFilePrivPath = "/tmp";
 
-            return fs::path(sSecureFilePrivPath) /
+            return fs::path( sSecureFilePrivPath ) /
                    fs::path( std::string( "upload_" ) + sHostTblName + rsExtension + ".csv" );
         } // method
 
@@ -829,11 +830,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // Comma separated list
             for( size_t uiItr = 0; uiItr < this->rjTableCols.size( ); )
             {
-#if 0
-            sStmt.append( this->xAutoNullCols.find( uiItr ) != this->xAutoNullCols.end( ) ? "NULL" : "?" );
-#else
-                sStmt.append( "?" );
-#endif
+                if( this->rjTableCols[ uiItr ].count( INSERT_FUNCTION ) == 0 )
+                    sStmt.append( "?" ); // default insert statement
+                else // custom insert statement
+                {
+                    // max one insert statement per column
+                    assert( this->rjTableCols[ uiItr ].count( INSERT_FUNCTION ) == 1 );
+                    sStmt.append( this->rjTableCols[ uiItr ][ INSERT_FUNCTION ] ); // default insert statement
+                } // else
+
                 // insert separating comma
                 if( ++uiItr < this->rjTableCols.size( ) )
                     sStmt.append( ", " );
@@ -1021,7 +1026,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Destructor */
     ~SQLTable( )
     {
-        do_exception_safe( [ & ]( ) {
+        do_exception_safe( [&]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
@@ -1046,16 +1051,15 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
         json jTableDef( rjTableDef );
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         if( jTableDef.count( TABLE_COLUMNS ) )
-            jTableDef[ TABLE_COLUMNS ].push_back( json::object( { { COLUMN_NAME, "ID" },
-                                                                  { CONSTRAINTS,
-                                                                    "NOT NULL AUTO_INCREMENT PRIMARY KEY" } } ) );
+            jTableDef[ TABLE_COLUMNS ].push_back( json::object( {{COLUMN_NAME, "ID"},
+                                                                 { CONSTRAINTS,
+                                                                   "NOT NULL AUTO_INCREMENT PRIMARY KEY" }} ) );
 #else
         // Primary key on first row:
         if( jTableDef.count( TABLE_COLUMNS ) )
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
-                json::object(
-                    { { COLUMN_NAME, "id" }, { CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY" } } ) );
+                json::object( {{COLUMN_NAME, "id"}, {CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY"}} ) );
 #endif
         return jTableDef;
     } // method
@@ -1080,7 +1084,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     SQLTableWithAutoPriKey( std::shared_ptr<SQLDB<DBCon>> pDB, const json& rjTableDef )
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         : SQLTable<DBCon, ColTypes..., int64_t>( pDB, inject( rjTableDef ),
-                                                 std::set<size_t>( { rjTableDef[ TABLE_COLUMNS ].size( ) } )
+                                                 std::set<size_t>( {rjTableDef[ TABLE_COLUMNS ].size( )} )
 #else
         : SQLTable<DBCon, int64_t, ColTypes...>( pDB, inject( rjTableDef ) /* , std::set<size_t>( { 0 } ) */
 #endif

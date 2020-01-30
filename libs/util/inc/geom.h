@@ -9,9 +9,9 @@
 #include "support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
+#include <algorithm>
 #include <functional>
 #include <iostream>
-#include <algorithm>
 /// @endcond DOXYGEN_SHOW_SYSTEM_INCLUDES
 
 namespace geomUtil
@@ -197,9 +197,9 @@ template <typename T> class Interval
 
 template <size_t SIZE> class WKBPolygon
 {
+  public:
     std::array<uint8_t, SIZE> aData;
 
-  public:
     WKBPolygon( )
     {} // constructor
 
@@ -214,7 +214,7 @@ template <size_t SIZE> class WKBPolygon
 
         uint8_t* puiData = (uint8_t*)&fData;
         for( size_t uiI = 0; uiI < 8; uiI++ )
-            set( uiPos + uiI, puiData[ uiI ] );
+            set( uiPos + uiI, puiData[ is_big_endian( ) ? uiI : 7 - uiI ] );
     } // method
 
     inline size_t get( size_t uiI ) const
@@ -224,14 +224,14 @@ template <size_t SIZE> class WKBPolygon
 
     inline double getDouble( size_t uiI ) const
     {
-        assert( sizeof( double ) == 8 ); // assert that float has the correct size
-        assert( SIZE >= uiI + 8 );
+        assert( SIZE >= uiI + sizeof( double ) );
 
-        double* pfData = (double*)&aData[ uiI ];
-        return pfData[ 0 ];
+        double fRes;
+        memcpy( &fRes, &aData[ uiI ], sizeof( double ) );
+        return fRes;
     } // method
 
-    inline void* getData( )
+    inline void* getData( ) const
     {
         return (void*)&aData[ 0 ];
     } // method
@@ -244,10 +244,14 @@ template <size_t SIZE> class WKBPolygon
 
 template <typename T> class Rectangle
 {
+  public:
     const static size_t uiSizeWKBHeader = 1 + // big/little endian a 1 byte
-                                          4; // geom type a 4 bytes
+                                          4 + // geom type a 4 bytes
+                                          4 + // number of rings
+                                          4; // number of points in ring
     const static size_t uiSizeWKB = uiSizeWKBHeader + 5 * 2 * sizeof( double );
 
+  private:
     static size_t posOfPointX( size_t uiIdx )
     {
         assert( sizeof( double ) == 8 ); // assert that float has the correct size
@@ -267,52 +271,82 @@ template <typename T> class Rectangle
     Rectangle( T iStartX, T iStartY, T iSizeX, T iSizeY ) : xXAxis( iStartX, iSizeX ), xYAxis( iStartY, iSizeY )
     {} // constructor
 
+    Rectangle( ) : Rectangle( 0, 0, 0, 0 )
+    {} // default constructor
+
     inline WKBPolygon<uiSizeWKB> getWKB( )
     {
         WKBPolygon<uiSizeWKB> xData;
         xData.set( 0, is_big_endian( ) ? 0x00 : 0x01 ); // big/little endian a 1 byte
 
-        xData.set( 1, 0 ); // geom type a 4 bytes
+        xData.set( 1, is_big_endian( ) ? 0x00 : 0x03 ); // geom type a 4 bytes
         xData.set( 2, 0 ); // geom type a 4 bytes
         xData.set( 3, 0 ); // geom type a 4 bytes
-        xData.set( 4, 0x03 ); // geom type a 4 bytes
+        xData.set( 4, is_big_endian( ) ? 0x03 : 0x00 ); // geom type a 4 bytes
+
+        xData.set( 5, is_big_endian( ) ? 0x00 : 0x01 ); // number of rings a 4 bytes
+        xData.set( 6, 0 ); // number of rings a 4 bytes
+        xData.set( 7, 0 ); // number of rings a 4 bytes
+        xData.set( 8, is_big_endian( ) ? 0x01 : 0x00 ); // number of rings a 4 bytes
+
+        xData.set( 9, is_big_endian( ) ? 0x00 : 0x05 ); // number of points a 4 bytes
+        xData.set( 10, 0 ); // number of points a 4 bytes
+        xData.set( 11, 0 ); // number of points a 4 bytes
+        xData.set( 12, is_big_endian( ) ? 0x05 : 0x00 ); // number of points a 4 bytes
 
         // counterclockwise:
         // bottom left
-        xData.set_double( posOfPointX( 0 ), xXAxis.start( ) );
-        xData.set_double( posOfPointY( 0 ), xYAxis.start( ) );
+        xData.set_double( posOfPointX( 0 ), (double)xXAxis.start( ) );
+        xData.set_double( posOfPointY( 0 ), (double)xYAxis.start( ) );
 
         // bottom right
-        xData.set_double( posOfPointX( 1 ), xXAxis.end( ) );
-        xData.set_double( posOfPointY( 1 ), xYAxis.start( ) );
+        xData.set_double( posOfPointX( 1 ), (double)xXAxis.end( ) );
+        xData.set_double( posOfPointY( 1 ), (double)xYAxis.start( ) );
 
         // top right
-        xData.set_double( posOfPointX( 2 ), xXAxis.end( ) );
-        xData.set_double( posOfPointY( 2 ), xYAxis.end( ) );
+        xData.set_double( posOfPointX( 2 ), (double)xXAxis.end( ) );
+        xData.set_double( posOfPointY( 2 ), (double)xYAxis.end( ) );
 
         // top left
-        xData.set_double( posOfPointX( 3 ), xXAxis.start( ) );
-        xData.set_double( posOfPointY( 3 ), xYAxis.end( ) );
+        xData.set_double( posOfPointX( 3 ), (double)xXAxis.start( ) );
+        xData.set_double( posOfPointY( 3 ), (double)xYAxis.end( ) );
 
         // bottom left (again)
-        xData.set_double( posOfPointX( 4 ), xXAxis.start( ) );
-        xData.set_double( posOfPointY( 4 ), xYAxis.start( ) );
+        xData.set_double( posOfPointX( 4 ), (double)xXAxis.start( ) );
+        xData.set_double( posOfPointY( 4 ), (double)xYAxis.start( ) );
 
         return xData;
     } // method
 
     inline void fromWKB( WKBPolygon<uiSizeWKB>& xData )
     {
+        std::cout << "WKBPolygon: ";
+        for( auto uiI : xData.aData )
+            std::cout << std::hex << (int)uiI << " ";
+        std::cout << std::endl;
+
         if( xData.get( 0 ) != ( is_big_endian( ) ? 0x00 : 0x01 ) ) // check endian
             throw std::runtime_error( "WKB endian of DB does not match endian of system" );
-        if( xData.get( 4 ) != 0x03 ) // check
+        if( is_big_endian( ) && xData.get( 4 ) != 0x03 )
             throw std::runtime_error( "WKB is no polygon" );
+        else if( !is_big_endian( ) && xData.get( 1 ) != 0x03 )
+            throw std::runtime_error( "WKB is no polygon" );
+
+        if( is_big_endian( ) && xData.get( 8 ) != 0x01 )
+            throw std::runtime_error( "WKB polygon has more than one ring" );
+        else if( !is_big_endian( ) && xData.get( 5 ) != 0x01 )
+            throw std::runtime_error( "WKB polygon has more than one ring" );
+
+        if( is_big_endian( ) && xData.get( 12 ) != 0x05 )
+            throw std::runtime_error( "WKB polygon does not have 4 points in ring" );
+        else if( !is_big_endian( ) && xData.get( 9 ) != 0x05 )
+            throw std::runtime_error( "WKB polygon does not have 4 points in ring" );
 
         if( xData.getDouble( posOfPointX( 0 ) ) != xData.getDouble( posOfPointX( 4 ) ) )
             throw std::runtime_error(
                 "WKB polygon is no (closed) rectangle (i.e. first points x does not match last points x)" );
 
-        if( xData.getDouble( posOfPointY( 0 ) ) != xData.getDouble( posOfPointY( 5 ) ) )
+        if( xData.getDouble( posOfPointY( 0 ) ) != xData.getDouble( posOfPointY( 4 ) ) )
             throw std::runtime_error(
                 "WKB polygon is no (closed) rectangle (i.e. first points y does not match last points y)" );
 
@@ -323,7 +357,7 @@ template <typename T> class Rectangle
         T uiXEnd = (T)xData.getDouble( posOfPointX( 1 ) );
         if( (T)xData.getDouble( posOfPointX( 2 ) ) != uiXEnd )
             throw std::runtime_error( "WKB polygon is no rectangle (i.e. angles are not rectangular uiXEnd)" );
-        if( uiXStart >= uiXEnd )
+        if( uiXStart > uiXEnd )
             throw std::runtime_error( "WKB rectangle is in wrong order (i.e. uiXStart >= uiXEnd)" );
 
         T uiYStart = (T)xData.getDouble( posOfPointY( 0 ) );
@@ -333,8 +367,8 @@ template <typename T> class Rectangle
         T uiYEnd = (T)xData.getDouble( posOfPointY( 2 ) );
         if( (T)xData.getDouble( posOfPointY( 3 ) ) != uiYEnd )
             throw std::runtime_error( "WKB polygon is no rectangle (i.e. angles are not rectangular uiYEnd)" );
-        if( uiYStart >= uiYEnd )
-            throw std::runtime_error( "WKB rectangle is in wrong order (i.e. uiXStart >= uiXEnd)" );
+        if( uiYStart > uiYEnd )
+            throw std::runtime_error( "WKB rectangle is in wrong order (i.e. uiYStart >= uiYEnd)" );
 
         xXAxis.iStart = uiXStart;
         xYAxis.iStart = uiYStart;
