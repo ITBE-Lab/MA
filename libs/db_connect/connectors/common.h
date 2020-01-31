@@ -331,7 +331,7 @@ const std::string TABLE_COLUMNS = "TABLE_COLUMNS";
 const std::string SQLITE_EXTRA = "SQLITE_EXTRA";
 const std::string COLUMN_NAME = "COLUMN_NAME";
 const std::string CONSTRAINTS = "CONSTRAINTS";
-const std::string INSERT_FUNCTION = "INSERT_FUNCTION";
+const std::string PLACEHOLDER = "PLACEHOLDER";
 const std::string CPP_EXTRA = "CPP_EXTRA";
 const std::string SQL_EXTRA = "SQL_EXTRA";
 const std::string PRIMARY_KEY = "PRIMARY_KEY";
@@ -830,13 +830,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // Comma separated list
             for( size_t uiItr = 0; uiItr < this->rjTableCols.size( ); )
             {
-                if( this->rjTableCols[ uiItr ].count( INSERT_FUNCTION ) == 0 )
+                if( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 0 )
                     sStmt.append( "?" ); // default insert statement
                 else // custom insert statement
                 {
                     // max one insert statement per column
-                    assert( this->rjTableCols[ uiItr ].count( INSERT_FUNCTION ) == 1 );
-                    sStmt.append( this->rjTableCols[ uiItr ][ INSERT_FUNCTION ] ); // default insert statement
+                    assert( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 1 );
+                    sStmt.append( this->rjTableCols[ uiItr ][ PLACEHOLDER ] ); // custom insert statement
                 } // else
 
                 // insert separating comma

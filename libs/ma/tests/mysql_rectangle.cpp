@@ -11,7 +11,7 @@
 
 std::ostream& operator<<( std::ostream& xOS, const geomUtil::Interval<uint64_t>& xInterval )
 {
-    xOS << "(" << xInterval.start( ) << ", " << xInterval.end( ) << "]" << std::endl;
+    xOS << "(" << xInterval.start( ) << ", " << xInterval.end( ) << "] ";
     return xOS;
 }
 
@@ -21,7 +21,7 @@ std::ostream& operator<<( std::ostream& xOS, const geomUtil::Rectangle<uint64_t>
     return xOS;
 }
 
-typedef geomUtil::WKBPolygon<geomUtil::Rectangle<uint64_t>::uiSizeWKB> MyRectangle;
+typedef geomUtil::WKBPolygon<geomUtil::Rectangle<uint64_t>::uiSizeWKB> WKBRectangle;
 std::ostream& operator<<( std::ostream& xOS, const MyRectangle& xRect )
 {
     xOS << "WKBPolygon: ";
@@ -34,16 +34,16 @@ std::ostream& operator<<( std::ostream& xOS, const MyRectangle& xRect )
 int main( void )
 {
     std::vector<int64_t> vuiIds;
-    std::vector<MyRectangle> vxRectangles;
+    std::vector<WKBRectangle> vxRectangles;
     {
         auto pDatabase = std::make_shared<SQLDB<MySQLConDB>>( );
 
-        SQLTableWithAutoPriKey<MySQLConDB, MyRectangle> xTestTable(
+        SQLTableWithAutoPriKey<MySQLConDB, WKBRectangle> xTestTable(
             pDatabase,
             {{TABLE_NAME, "rectangle_test"},
              {TABLE_COLUMNS,
               {
-                  {{COLUMN_NAME, "rectangle"}, {INSERT_FUNCTION, "ST_PolyFromWKB(?, 4326)"}},
+                  {{COLUMN_NAME, "rectangle"}, {PLACEHOLDER, "ST_PolyFromWKB(?, 0)"}},
               }}} );
 
         vxRectangles.emplace_back( geomUtil::Rectangle<uint64_t>( 1, 1, 1, 1 ).getWKB( ) );
@@ -60,7 +60,7 @@ int main( void )
 
     {
         auto pDatabase = std::make_shared<SQLDB<MySQLConDB>>( );
-        SQLQuery<MySQLConDB, MyRectangle> xQuery( pDatabase,
+        SQLQuery<MySQLConDB, WKBRectangle> xQuery( pDatabase,
                                                   "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = ?" );
 
         for( size_t uiI = 0; uiI < vxRectangles.size( ); uiI++ )
@@ -68,7 +68,7 @@ int main( void )
             auto xWKB = xQuery.execAndGetNthCell<0>( vuiIds[ uiI ] );
             geomUtil::Rectangle<uint64_t> xRect;
             xRect.fromWKB( xWKB );
-            std::cout << xRect << std::endl;
+            std::cout << std::dec << xRect << std::endl;
         }
     }
 

@@ -208,13 +208,10 @@ template <size_t SIZE> class WKBPolygon
         aData[ uiPos ] = uiData;
     } // method
 
-    inline void set_double( size_t uiPos, double fData )
+    inline void setDouble( size_t uiPos, double fData )
     {
-        assert( sizeof( double ) == 8 ); // assert that float has the correct size
-
-        uint8_t* puiData = (uint8_t*)&fData;
-        for( size_t uiI = 0; uiI < 8; uiI++ )
-            set( uiPos + uiI, puiData[ is_big_endian( ) ? uiI : 7 - uiI ] );
+        assert( SIZE >= uiPos + sizeof( double ) );
+        memcpy( &aData[ uiPos ], &fData, sizeof( double ) );
     } // method
 
     inline size_t get( size_t uiI ) const
@@ -296,24 +293,24 @@ template <typename T> class Rectangle
 
         // counterclockwise:
         // bottom left
-        xData.set_double( posOfPointX( 0 ), (double)xXAxis.start( ) );
-        xData.set_double( posOfPointY( 0 ), (double)xYAxis.start( ) );
+        xData.setDouble( posOfPointX( 0 ), (double)xXAxis.start( ) );
+        xData.setDouble( posOfPointY( 0 ), (double)xYAxis.start( ) );
 
         // bottom right
-        xData.set_double( posOfPointX( 1 ), (double)xXAxis.end( ) );
-        xData.set_double( posOfPointY( 1 ), (double)xYAxis.start( ) );
+        xData.setDouble( posOfPointX( 1 ), (double)xXAxis.end( ) );
+        xData.setDouble( posOfPointY( 1 ), (double)xYAxis.start( ) );
 
         // top right
-        xData.set_double( posOfPointX( 2 ), (double)xXAxis.end( ) );
-        xData.set_double( posOfPointY( 2 ), (double)xYAxis.end( ) );
+        xData.setDouble( posOfPointX( 2 ), (double)xXAxis.end( ) );
+        xData.setDouble( posOfPointY( 2 ), (double)xYAxis.end( ) );
 
         // top left
-        xData.set_double( posOfPointX( 3 ), (double)xXAxis.start( ) );
-        xData.set_double( posOfPointY( 3 ), (double)xYAxis.end( ) );
+        xData.setDouble( posOfPointX( 3 ), (double)xXAxis.start( ) );
+        xData.setDouble( posOfPointY( 3 ), (double)xYAxis.end( ) );
 
         // bottom left (again)
-        xData.set_double( posOfPointX( 4 ), (double)xXAxis.start( ) );
-        xData.set_double( posOfPointY( 4 ), (double)xYAxis.start( ) );
+        xData.setDouble( posOfPointX( 4 ), (double)xXAxis.start( ) );
+        xData.setDouble( posOfPointY( 4 ), (double)xYAxis.start( ) );
 
         return xData;
     } // method
@@ -325,6 +322,8 @@ template <typename T> class Rectangle
             std::cout << std::hex << (int)uiI << " ";
         std::cout << std::endl;
 
+        // @todo might cause trouble if data from systems with different endian is inserted into the DB
+        // in this case code needs to be written to change the endian of xData.
         if( xData.get( 0 ) != ( is_big_endian( ) ? 0x00 : 0x01 ) ) // check endian
             throw std::runtime_error( "WKB endian of DB does not match endian of system" );
         if( is_big_endian( ) && xData.get( 4 ) != 0x03 )
