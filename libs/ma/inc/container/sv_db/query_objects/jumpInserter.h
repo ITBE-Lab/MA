@@ -347,8 +347,7 @@ template <typename DBCon> class SvJumpInserter
      */
     inline void endTransaction( )
     {
-        // REPLACED: pTransactionContext.reset();
-        pGuardedTrxn->commit( );
+        pGuardedTrxn.reset();
     } // method
 
     /**
@@ -357,8 +356,7 @@ template <typename DBCon> class SvJumpInserter
     inline void reOpenTransaction( )
     {
         endTransaction( );
-        // REPLACE: pTransactionContext = std::make_shared<CppSQLiteExtImmediateTransactionContext>(*pDB->pDatabase);
-		pGuardedTrxn->start();
+        pGuardedTrxn = pDB->pDatabase->sharedGuardedTrxn( );
 	}; // method
 }; // class
 

@@ -43,7 +43,8 @@ template <typename... ArgTypes> std::string dumpArgPack( ArgTypes&&... args )
 } // helper function
 
 /** @brief Delivers hex string for integer value.
- *  See: https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c */
+ *  See: https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c
+ */
 template <typename T> inline std::string intToHex( T val, size_t width = sizeof( T ) * 2 )
 {
     std::stringstream ss;

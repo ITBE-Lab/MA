@@ -10,6 +10,7 @@
 // #define SQL_VERBOSE
 
 #include <db_con_pool.h>
+#include <common.h>
 #include <threadPool.h>
 
 using SQLStatement_ = SQLStatement<MySQLConDB>;
