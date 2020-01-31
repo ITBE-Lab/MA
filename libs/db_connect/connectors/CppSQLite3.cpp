@@ -976,7 +976,7 @@ void CppSQLite3Statement::bind( int nParam, const std::string& szValue )
 } // method
 
 static_assert( sizeof( int ) == 4, "size of int is not 4 bytes for this compiler" );
-void CppSQLite3Statement::bind( int nParam, const int nValue )
+void CppSQLite3Statement::bind( int nParam, const int32_t nValue )
 {
     checkVM( );
     int nRes = sqlite3_bind_int( mpVM, nParam, nValue );
@@ -987,32 +987,32 @@ void CppSQLite3Statement::bind( int nParam, const int nValue )
     }
 }
 
-/* The long datatype has different sizes depending on different platforms.
- * So, we have to carefully distinguish over here.
- */
-#ifdef __LP64__
-static_assert( sizeof( long ) == 8, "size of long is not 8 bytes for this compiler" ); // GCC 64 Bit
-#else
-static_assert( sizeof( long ) == 4, "size of long is not 4 bytes for this compiler" ); // MS VC++ 64 Bit
-#endif
-void CppSQLite3Statement::bind( int nParam, const long nValue )
-{
-    checkVM( );
-
-#ifdef __LP64__
-    int nRes = sqlite3_bind_int64( mpVM, nParam, nValue ); // GCC 64 Bit
-#else
-    int nRes = sqlite3_bind_int( mpVM, nParam, nValue ); // MS VC++ 64 Bit
-#endif
-
-    if( nRes != SQLITE_OK )
-    {
-        throw CppSQLite3Exception( nRes, "Error binding int64 param", DONT_DELETE_MSG );
-    }
-} // function
+// /* The long datatype has different sizes depending on different platforms.
+//  * So, we have to carefully distinguish over here.
+//  */
+// #ifdef __LP64__
+// static_assert( sizeof( long ) == 8, "size of long is not 8 bytes for this compiler" ); // GCC 64 Bit
+// #else
+// static_assert( sizeof( long ) == 4, "size of long is not 4 bytes for this compiler" ); // MS VC++ 64 Bit
+// #endif
+// void CppSQLite3Statement::bind( int nParam, const long nValue )
+// {
+//     checkVM( );
+// 
+// #ifdef __LP64__
+//     int nRes = sqlite3_bind_int64( mpVM, nParam, nValue ); // GCC 64 Bit
+// #else
+//     int nRes = sqlite3_bind_int( mpVM, nParam, nValue ); // MS VC++ 64 Bit
+// #endif
+// 
+//     if( nRes != SQLITE_OK )
+//     {
+//         throw CppSQLite3Exception( nRes, "Error binding int64 param", DONT_DELETE_MSG );
+//     }
+// } // function
 
 static_assert( sizeof( long long ) == 8, "size of long long is not 8 bytes for this compiler" );
-void CppSQLite3Statement::bind( int nParam, const long long nValue )
+void CppSQLite3Statement::bind( int nParam, const int64_t nValue )
 {
     checkVM( );
     int nRes = sqlite3_bind_int64( mpVM, nParam, nValue );

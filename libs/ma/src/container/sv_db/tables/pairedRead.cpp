@@ -1,4 +1,8 @@
+#include "db_config.h"
+#ifndef USE_NEW_DB_API
 #include "container/sv_db/svDb.h"
+
+
 #include "container/sv_db/tables/pairedRead.h"
 
 using namespace libMA;
@@ -18,3 +22,7 @@ PairedReadTable::PairedReadTable( std::shared_ptr<CppSQLiteDBExtended> pDatabase
       pDatabase( pDatabase ),
       pReadTable( pReadTable )
 {} // default constructor
+
+#else
+#include "container/sv_db/_svDb.h" // NEW DATABASE INTERFACE
+#endif

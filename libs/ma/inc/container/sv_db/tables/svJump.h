@@ -5,7 +5,9 @@
  * One table of the database.
  */
 #pragma once
+#include "db_config.h"
 
+#ifndef USE_NEW_DB_API
 #include "db_sql.h"
 
 namespace libMA
@@ -36,14 +38,14 @@ class SvJumpTable : public TP_SV_JUMP_TABLE
         : TP_SV_JUMP_TABLE( *pDatabase, // the database where the table resides
                             "sv_jump_table", // name of the table in the database
                             // column definitions of the table
-                            std::vector<std::string>{"sv_jump_run_id", "read_id", "sort_pos_start", "sort_pos_end",
-                                                     "from_pos", "to_pos", "query_from", "query_to",
-                                                     "num_supporting_nt", "from_forward", "to_forward",
-                                                     "from_seed_start"},
+                            std::vector<std::string>{ "sv_jump_run_id", "read_id", "sort_pos_start", "sort_pos_end",
+                                                      "from_pos", "to_pos", "query_from", "query_to",
+                                                      "num_supporting_nt", "from_forward", "to_forward",
+                                                      "from_seed_start" },
                             // constraints for table
                             std::vector<std::string>{
                                 "FOREIGN KEY (sv_jump_run_id) REFERENCES sv_jump_run_table(id) ON DELETE CASCADE",
-                                "FOREIGN KEY (read_id) REFERENCES read_table(id)"} ),
+                                "FOREIGN KEY (read_id) REFERENCES read_table(id)" } ),
           pDatabase( pDatabase ),
           xQuerySize( *pDatabase, "SELECT COUNT(*) FROM sv_jump_table" ),
           xDeleteRun( *pDatabase, "DELETE FROM sv_jump_table WHERE sv_jump_run_id IN ( SELECT id FROM "
@@ -83,4 +85,117 @@ class SvJumpTable : public TP_SV_JUMP_TABLE
     } // method
 }; // class
 
+
 } // namespace libMA
+#else
+#include "common.h"
+
+namespace libMA
+{
+
+template <typename DBCon>
+using SvJumpTableType = SQLTableWithAutoPriKey<DBCon,
+                                               int64_t, // sv_jump_run_id (foreign key)
+                                               int64_t, // read_id (foreign key)
+                                               int64_t, // sort_pos_start
+                                               int64_t, // sort_pos_end
+                                               uint32_t, // from_pos
+                                               uint32_t, // to_pos
+                                               uint32_t, // query_from
+                                               uint32_t, // query_to
+                                               uint32_t, // num_supporting_nt
+                                               bool, // from_forward
+                                               bool, // to_forward
+                                               bool // from_seed_start
+                                               >;
+
+const json jSvJumpTableDef = {
+    { TABLE_NAME, "sv_jump_table" },
+    { TABLE_COLUMNS,
+      { { { COLUMN_NAME, "sv_jump_run_id" } },
+        { { COLUMN_NAME, "read_id" } },
+        { { COLUMN_NAME, "sort_pos_start" } },
+        { { COLUMN_NAME, "sort_pos_end" } },
+        { { COLUMN_NAME, "from_pos" } },
+        { { COLUMN_NAME, "to_pos" } },
+        { { COLUMN_NAME, "query_from" } },
+        { { COLUMN_NAME, "query_to" } },
+        { { COLUMN_NAME, "num_supporting_nt" } },
+        { { COLUMN_NAME, "from_forward" } },
+        { { COLUMN_NAME, "to_forward" } },
+        { { COLUMN_NAME, "from_seed_start" } } } },
+    { FOREIGN_KEY, { { COLUMN_NAME, "sv_jump_run_id" }, { REFERENCES, "sv_jump_run_table(id) ON DELETE CASCADE" } } },
+    { FOREIGN_KEY, { { COLUMN_NAME, "read_id" }, { REFERENCES, "read_table(id)" } } } };
+
+
+template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
+{
+    std::shared_ptr<SQLDB<DBCon>> pDatabase;
+    SQLQuery<DBCon, uint32_t> xQuerySize;
+    // SQLQuery<DBCon, int64_t> xDeleteRun; // FIXME: Why is this a query and not a statement?
+    SQLStatement<DBCon> xDeleteRun;
+
+  public:
+    SvJumpTable( std::shared_ptr<SQLDB<DBCon>> pDatabase )
+        : SvJumpTableType<DBCon>( pDatabase, // the database where the table resides
+                                  jSvJumpTableDef ),
+          pDatabase( pDatabase ),
+          xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_jump_table" ),
+          xDeleteRun( pDatabase, "DELETE FROM sv_jump_table WHERE sv_jump_run_id IN ( SELECT id FROM "
+                                 "sv_jump_run_table WHERE name = ?)" )
+    {} // default constructor
+
+    inline void createIndices( int64_t uiRun )
+    {
+        // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
+        
+		// index intended for the sweep over the start of all sv-rectangles
+        // interestingly sv_jump_run_id needs to be part of the index even if it's in the condition...
+        // DEL: pDatabase->execStmt( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" //
+        // DEL:                        + std::to_string( uiRun ) +
+        // DEL:                        " ON sv_jump_table"
+        // DEL:                        "(sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+        // DEL:                        " to_forward, from_seed_start, num_supporting_nt,"
+        // DEL:                        " id, read_id, sv_jump_run_id) "
+        // DEL:                        "WHERE sv_jump_run_id = " +
+        // DEL:                        std::to_string( uiRun ) )
+        // DEL:                          .c_str( ) );
+        this->addIndex(
+            json{ { INDEX_NAME, "sv_jump_table_sort_index_start_" + std::to_string( uiRun ) },
+                  { INDEX_COLUMNS, "sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
+                                   " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id" },
+                  { WHERE, "sv_jump_run_id = " + std::to_string( uiRun ) } } );
+
+        // index intended for the sweep over the end of all sv-rectangles
+        // DEL: pDatabase->execStmt( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" //
+        // DEL:                        + std::to_string( uiRun ) +
+        // DEL:                        " ON sv_jump_table"
+        // DEL:                        "(sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+        // DEL:                        " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id) "
+        // DEL:                        "WHERE sv_jump_run_id = " +
+        // DEL:                        std::to_string( uiRun ) )
+        // DEL:                          .c_str( ) );
+        this->addIndex(
+            json{ { INDEX_NAME, "sv_jump_table_sort_index_end_" + std::to_string( uiRun ) },
+                  { INDEX_COLUMNS, "sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
+                                   " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id" },
+                  { WHERE, "sv_jump_run_id = " + std::to_string( uiRun ) } } );
+    } // method
+
+    inline uint32_t numJumps( )
+    {
+        return xQuerySize.scalar( );
+    } // method
+
+    inline void deleteRun( std::string& rS )
+    {
+        // xDeleteRun.bindAndExecQuery<>( rS );
+        xDeleteRun.execAndBind( rS );
+    } // method
+}; // class
+
+
+} // namespace libMA
+
+
+#endif // USE_NEW_DB_API

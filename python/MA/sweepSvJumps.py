@@ -31,7 +31,7 @@ def sweep_sv_jumps(parameter_set_manager, sv_db, run_id, name, desc, sequencer_i
         sections_pledge = promise_me(section_fac) # @note this cannot be in the loop (synchronization!)
         sinks = []
         # graph for single reads
-        for _ in range(parameter_set_manager.get_num_threads()):
+        for _ in range(1) : # Arne reduced to 1 from parameter_set_manager.get_num_threads()
             # in order to allow multithreading this module needs individual db connections for each thread
             sweep1 = libMA.CompleteBipartiteSubgraphSweep(parameter_set_manager, sv_db, pack, run_id, sequencer_ids[0])
             sink = libMA.BufferedSvCallSink(parameter_set_manager, call_inserter)

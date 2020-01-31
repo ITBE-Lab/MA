@@ -5,7 +5,7 @@
  */
 #ifdef _MSC_VER
 #define NOMINMAX
-#include <windows.h>
+// #include <windows.h>
 #endif
 
 #ifndef SUPPORT_H
