@@ -195,7 +195,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 } // function
 #endif // WITH PYTHON
 #else // NEW DB INTERFACE
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 
 uint32_t getCallOverviewArea( std::shared_ptr<_SV_DB<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
                               double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH )

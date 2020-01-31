@@ -246,7 +246,7 @@ template <typename DBCon> class SvJumpInserter
 
 
     // REPLACED: std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
-    typename SQLDB<DBCon>::sharedGuardedTrxnType pGuardedTrxn; // technically a shared pointer
+    typename DBCon::sharedGuardedTrxnType pGuardedTrxn; // technically a shared pointer
 
   public:
     /// @brief the id of the run this inserter is attached to.

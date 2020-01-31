@@ -8,6 +8,8 @@
 #pragma once
 
 // #define SQL_VERBOSE // define me if required
+#include <cerrno> // error management for file I/O
+#include <cstring> // error management for file I/O
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -38,11 +40,42 @@ template <typename... ArgTypes> std::string dumpArgPack( ArgTypes&&... args )
     std::stringstream xInfStream;
     ( ( xInfStream << typeid( args ).name( ) << ":" << args << "  " ), ... );
     return xInfStream.str( );
-}
+} // helper function
+
+/** @brief Delivers hex string for integer value.
+ *  See: https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c
+ */
+template <typename T> inline std::string intToHex( T val, size_t width = sizeof( T ) * 2 )
+{
+    std::stringstream ss;
+    ss << std::setfill( '0' ) << std::setw( width ) << std::hex << ( val | 0 );
+    return ss.str( );
+} // helper function
+
+/** @brief Executes the func so that exceptions are swallowed.
+ *  @detail For destructors and threads so that they do not throw.
+ */
+template <typename F> inline void doNoExcept( F&& func, std::string sInfo = "" )
+{
+    try
+    {
+        func( );
+    } // try
+    catch( std::exception& rxExcept )
+    {
+        std::cerr << sInfo << ( sInfo.empty( ) ? "" : " - " )
+                  << std::string( "The following exceptions is dropped:\n" ) + rxExcept.what( ) << std::endl;
+    } // catch
+    catch( ... )
+    {
+        std::cerr << sInfo << ( sInfo.empty( ) ? "" : "\n" ) << "Drop unknown exception." << std::endl;
+    } // catch
+} // method
+
 
 /** @brief An instance represents a connection to DB-system like MySQL etc.
  *   DBImpl must be a class that implements a database API.
- *  @details A single connection is not threadsafe.
+ *  @detail A single connection is supposed not to be thread-safe. For multiple threads use a connection pool.
  */
 template <typename DBImpl> class SQLDB : public DBImpl
 {
@@ -63,6 +96,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             this->start( );
         } // constructor
 
+        /** brief Commit the transaction */
         void commit( )
         {
             if( bStateCommitted )
@@ -74,6 +108,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             this->bStateCommitted = true;
         } // method
 
+        /** brief Start the transaction */
         void start( )
         {
             if( !bStateCommitted )
@@ -91,7 +126,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
         {
             this->commit( );
         } // destructor
-    }; // class
+    }; // class (GuardedTransaction)
 
     std::shared_ptr<bool> pTombStone; // So long the database connection is alive the stone says false.
                                       // As soon as the DB is gone, the stone says true.
@@ -99,20 +134,22 @@ template <typename DBImpl> class SQLDB : public DBImpl
   public:
     typedef std::unique_ptr<GuardedTransaction> uniqueGuardedTrxnType;
     typedef std::shared_ptr<GuardedTransaction> sharedGuardedTrxnType;
+    typedef DBImpl DBImplForward; // Forwarding of the template parameter type
+    const std::string sConId; // unique connection ID with respect to the current machine
 
-    SQLDB( const SQLDB& ) = delete; // no DB Connection copies
+    SQLDB( const SQLDB& ) = delete; // no DB connection copies
 
     // For serializing all table insertions with respect to the current DB-connection.
     // Necessary for getting the correct last insertion ID in case of an auto-increment column. (e.g. with MySQL)
+    // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( ) : DBImpl( ), pTombStone( std::make_shared<bool>( false ) )
-    {}
+    SQLDB( const std::string& rsDBName = "" )
+        : DBImpl( rsDBName ),
+          pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
+          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ) // use the address for id creation
+    {} // constructor
 
-    SQLDB( const std::string& rsDBName )
-    {
-        throw std::runtime_error( "DB-Construction with name not implemented jet." );
-    } // constructor
 
     ~SQLDB( )
     {
@@ -126,8 +163,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
         throw std::runtime_error( "lastRowId of SQLDB is not implemented yet." );
     } // method
 
-    /** @brief Directly execute the statement in DB.
-     */
+    /** @brief Directly execute the statement in DB. */
     void execStmt( const std::string& rsStmtTxt )
     {
         DBImpl::execSQL( rsStmtTxt );
@@ -146,10 +182,18 @@ template <typename DBImpl> class SQLDB : public DBImpl
         return std::make_unique<GuardedTransaction>( *this, pTombStone );
     } // method
 
-    // FIXME: Not safe now in the case of several connections.
+    // WARNING: If indexExists is coupled with an index creation, it should be executed "pool safe".
     bool indexExists( const std::string& rsTblName, const std::string& rsIdxName )
     {
         return DBImpl::indexExistsInDB( rsTblName, rsIdxName );
+    } // method
+
+    /** @brief This function should be redefined in pooled SQL connections so that the function is executed in mutex
+     * protected environment. In a single connection we simply execute the function.
+     */
+    template <typename F> void doPoolSafe( F&& func )
+    {
+        func( );
     } // method
 }; // SQLDB
 
@@ -157,13 +201,13 @@ template <typename DBImpl> class SQLDB : public DBImpl
 template <typename DBCon> class SQLStatement
 {
   protected:
-    std::shared_ptr<SQLDB<DBCon>> pDB; // Database connection
+    std::shared_ptr<DBCon> pDB; // Database connection //--
     std::unique_ptr<typename DBCon::PreparedStmt> pStmt; // pointer to insert statement
 
   public:
     SQLStatement( const SQLStatement& ) = delete; // no statement copies
 
-    SQLStatement( std::shared_ptr<SQLDB<DBCon>> pDB, const std::string& rsStmtText )
+    SQLStatement( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText ) //--
         : pDB( pDB ), pStmt( std::make_unique<typename DBCon::PreparedStmt>( this->pDB, rsStmtText ) )
     {} // constructor
 
@@ -178,7 +222,7 @@ template <typename DBCon> class SQLStatement
 template <typename DBCon, typename... ColTypes> class SQLQuery
 {
   private:
-    std::shared_ptr<SQLDB<DBCon>> pDB; // Database connection
+    std::shared_ptr<DBCon> pDB; // Database connection //--
     std::unique_ptr<typename DBCon::template PreparedQuery<ColTypes...>> pQuery; // pointer to insert statement
     const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
     /* Deprecated. Execute and bind the query args., but do not fetch the first row. */
@@ -200,7 +244,7 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
     } // method
 
   public:
-    SQLQuery( std::shared_ptr<SQLDB<DBCon>> pDB, const std::string& rsStmtText )
+    SQLQuery( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText ) //--
         : pDB( pDB ),
           pQuery( std::make_unique<typename DBCon::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText ) ),
           sStmtText( rsStmtText )
@@ -389,18 +433,21 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             std::string sIdxName = jIndexDef.count( INDEX_NAME ) ? std::string( jIndexDef[ INDEX_NAME ] )
                                                                  : pTable->getTableName( ) + "_idx";
 
-            // When we check the existence of the index as well as during creation,
-            // we require an exclusive lock on the database connection.
-            if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
-            {
-                pTable->pDB->execSQL( makeIndexCreateStmt( pTable->getTableName( ), sIdxName ) );
-            } // if
-            else
-            {
+            // In a pooled environment the creation of indexes should be serialzed.
+            pTable->pDB->doPoolSafe( [ & ] {
+                // When we check the existence of the index as well as during creation,
+                // we require an exclusive lock on the database connection.
+                if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
+                {
+                    pTable->pDB->execSQL( makeIndexCreateStmt( pTable->getTableName( ), sIdxName ) );
+                } // if
+                else
+                {
 #ifdef SQL_VERBOSE
-                std::cout << "Index exists already, skip creation." << std::endl;
+                    std::cout << "Index exists already, skip creation." << std::endl;
 #endif
-            }
+                }
+            } ); // doPoolSafe
         } // constructor
     }; // inner class SQL Index
 
@@ -433,7 +480,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
         {
-            return cat_arr_of_tpl_impl( a, Indices{} );
+            return cat_arr_of_tpl_impl( a, Indices{ } );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -448,7 +495,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // std::apply transforms the concatenated tuple to a argument pack and passes this to the lambda.
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
             // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum) ...
-            STD_APPLY( [&]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
+            STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 #else // Iterating approach for parameter binding with bulk inserts. (Lacks beauty, but better manageable for compilers)
 
@@ -457,7 +504,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         template <int OFFSET, typename... Args> void doSingleBind( const std::tuple<Args...>& rTpl )
         {
-            STD_APPLY( [&]( auto&... args ) //
+            STD_APPLY( [ & ]( auto&... args ) //
                        { pBulkInsertStmt->template bind<OFFSET>( args... ); },
                        rTpl );
         } // method
@@ -473,7 +520,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row) */
         template <typename T, std::size_t N> void forAllDoBind( const std::array<T, N>& a )
         {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{} );
+            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -532,17 +579,25 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
             for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
                 // Write the current tuple in the array to the DB
-                STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
+                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
         } // method
 
         /** @brief Destructor flushes the buffer.
          */
         ~SQLBulkInserter( )
         {
-            this->flush( ); // Due to the design, we do not need to swallow exceptions here (see flush).
+            // Throwing an exception in a destructor results in undefined behavior.
+            // Therefore, we swallow these exceptions and report them via std:cerr.
+            doNoExcept( [ this ] { this->flush( ); } );
         } // destructor
     }; // class
 
+    /** @brief Like a standard SQLBulkInserter, but for the streaming a CSV-file is used in between. This approach is
+     *  sometimes faster than the standard SQLBulkInserter.
+     *  IMPORTANT NOTICE: Call release() before a SQLFileBulkInserter runs out of scope. In this case you get an
+     *  exception, if something goes wrong. If you let do the release-job automatically by the destructor all exception
+     *  are swallowed and you won't get any feedback about problems.
+     */
     template <size_t BUF_SIZE,
               typename... InsTypes> // InsTypes - either equal to corresponding type in ColTypes or std::nullptr_t
     class SQLFileBulkInserter
@@ -582,7 +637,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <class Ch, class Tr, class... Args>
         void prtTpltoStream( std::basic_ostream<Ch, Tr>& os, const std::tuple<Args...>& t )
         {
-            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{} );
+            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{ } );
             os << "\n";
         } // meta
 
@@ -596,42 +651,47 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // FIXME: Move to library with meta programming
         template <typename F, typename T, std::size_t N> void for_all_do( F f, const std::array<T, N>& a )
         {
-            for_all_do_impl( f, a, std::make_index_sequence<N>{} );
+            for_all_do_impl( f, a, std::make_index_sequence<N>{ } );
         } // meta
 
         /** @brief Writes the content of the buffer aBuf to the output-stream using CSV.
          */
         inline void writeBufToStream( )
         {
-            for_all_do( [&]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
+            for_all_do( [ & ]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
         } // method
 
-        fs::path uploadFileName( const std::string& rsExtension )
+        /** @brief Creates a filename for the CSV-file to be uploaded using the directory given by the backend.
+         */
+        fs::path uploadFileName( const std::string& rsConId, // id of the SQL connection
+                                 const std::string& rsExtension ) // possible additive extension
         {
-            std::string sSecureFilePrivPath = pHostTblDB->getVarSecureFilePriv( );
-            if( sSecureFilePrivPath.empty( ) )
-                // sSecureFilePrivPath = "/MAdata/tmp";
-                sSecureFilePrivPath = "/tmp";
+            auto pUploadDir = pHostTblDB->getDataUploadDir( );
 
-            return fs::path( sSecureFilePrivPath ) /
-                   fs::path( std::string( "upload_" ) + sHostTblName + rsExtension + ".csv" );
+            return pUploadDir /
+                   fs::path( std::string( "upload_" ) + sHostTblName + "_con_" + rsConId + rsExtension + ".csv" );
         } // method
 
+        // Private attributes
         std::string sHostTblName; // name of host table
-        std::shared_ptr<SQLDB<DBCon>> pHostTblDB; // database connection of the host table
+        std::shared_ptr<DBCon> pHostTblDB; // database connection of the host table /--
         fs::path sCSVFileName; // name of the file for CSV output
         std::ofstream ofStream; // pointer to output stream
-        bool bStreamIsVoid; // boolean state. If stream is void, it has to be opened first
+        bool bStreamIsVoid; // boolean state; if the stream is void, it has to be opened first
+        int64_t uiReleaseThreshold; // if the file comprises uiReleaseThreshold rows, automatically release it
 
       public:
-        SQLFileBulkInserter( SQLTable& rxHost, const std::string& sCSVFileName )
-            : sHostTblName( rxHost.getTableName( ) ),
+        SQLFileBulkInserter( SQLTable& rxHost, int64_t uiReleaseThreshold,
+                             const std::string& rsExtension )
+            : uiInsPos( 0 ), // initialize buffer position counter
+              uiInsCnt( 0 ), // initialize counter for total number of insertions
+              sHostTblName( rxHost.getTableName( ) ),
               pHostTblDB( rxHost.pDB ),
-              sCSVFileName( uploadFileName( sCSVFileName ) ), // must become a JSON-parameter
-              bStreamIsVoid( true ) // Boolean state that
+              sCSVFileName( uploadFileName( rxHost.pDB->sConId, rsExtension ) ), // filename used for CSV upload
+              bStreamIsVoid( true ), // Boolean state that
+              uiReleaseThreshold( uiReleaseThreshold )
         {
-            // Quick hack:
-            std::cout << "FILE NAME:" << this->sCSVFileName.generic_string( ) << std::endl;
+            // DEBUG: std::cout << "SQLFileBulkInserter filename:" << this->sCSVFileName.generic_string( ) << std::endl;
         } // constructor
 
         /** @brief Inserts a row into the table belonging to the bulk inserter.
@@ -642,6 +702,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             {
                 // Open the stream and get any existing content purged.
                 ofStream.open( sCSVFileName, std::ofstream::out | std::ofstream::trunc );
+                // Check whether something went wrong
+                if( !ofStream )
+                    throw std::runtime_error( "SQLFileBulkInserter - Opening file: " + sCSVFileName.string( ) +
+                                              " failed due to reason:\n" + strerror( errno ) );
                 bStreamIsVoid = false;
             } // if
             aBuf[ uiInsPos ] = std::tuple<InsTypes...>( args... ); // TO DO: Check for std::move( args )...
@@ -652,40 +716,30 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             } // if
 
             // Release if file limit reached
-            if( ++uiInsCnt % 100000 == 0 )
+            if( ++uiInsCnt % ( static_cast<const size_t>( uiReleaseThreshold ) ) == 0 )
                 this->release( );
         } // method
 
         /** @brief: Actually insert the values in the file to the table.
          *  With MySQL this results in a LOAD statement.
          */
-        inline void release( bool bRelDoToDestruct = false )
+        inline void release( bool bRelDueToDestruct = false )
         {
             if( !bStreamIsVoid )
             {
-                this->flush( ); // flush before release
+                this->flush( ); // flush remaining buffer rows
                 // IMPORTANT: Status setting must come first, because fillTableByFile can throw an exception
-                // (in this case, the release() call of the destructor must not go to the true branch!)
+                // (in this case, the release() call of the destructor should not go to the true branch!)
                 bStreamIsVoid = true;
-                // Close the stream so that it can be opened by the reader
+                // Close the stream so that it can be opened by the reader ...
                 ofStream.close( );
-
-                try
-                {
-                    pHostTblDB->fillTableByFile( sCSVFileName, this->sHostTblName ); // blocks until finished
-                }
-                catch( std::exception& e )
-                {
-                    std::cout << "EX:" << e.what( ) << std::endl;
-                }
-                // Close the stream so that it can be reopened ...
-
+                pHostTblDB->fillTableByFile( sCSVFileName, this->sHostTblName ); // blocks until finished
             } // if
-            else if( !bRelDoToDestruct )
+            else if( !bRelDueToDestruct )
                 throw std::runtime_error( "FileBulkInserter: Your tried to release a void stream." );
         } // method
 
-        /** @brief Flush a non-full buffer to the database.
+        /** @brief Flush a non-full buffer to the file.
          */
         inline void flush( )
         {
@@ -696,14 +750,20 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
         } // method
 
-        /** @brief Destructor flushes the buffer
+        /** @brief Destructor flushes the buffer while dropping exceptions.
          */
         ~SQLFileBulkInserter( )
         {
-            this->release( true ); // true indicates that the release call is done by the destructor
-            // Delete the CSV-file if it exists.
-            // REINSERT: if( fs::exists( this->sCSVFileName ) )
-            // REINSERT:     fs::remove( this->sCSVFileName );
+            // Throwing an exception in a destructor results in undefined behavior. Therefore, we swallow these
+            // exceptions and report them via std:cerr.
+            doNoExcept(
+                [ this ] {
+                    this->release( true ); // true indicates that the release call is done by the destructor
+                    // Delete the CSV-file if it exists.
+                    if( fs::exists( this->sCSVFileName ) )
+                        fs::remove( this->sCSVFileName );
+                },
+                "Destructor of SQLFileBulkInserter threw exception." );
         } // destructor
     }; // class (SQLFileBulkInserter)
 
@@ -756,12 +816,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // outer struct
 
     // Protected attributes
-    std::shared_ptr<SQLDB<DBCon>> pDB; // database connection (templated)
+    // typedef std::remove_pointer<DBCon>::type DBConBaseType;
+    std::shared_ptr<DBCon> pDB; // database connection (templated) //--
     const json jTableDef; // json table definition (jTableDef must stay due to references)
     const json& rjTableCols; // reference into jTableDef
     const std::vector<std::string> vSQLColumnTypes; // SQL types of the table columns as text
     bool bDropOnDestr; // if true, table gets dropped at object destruction
-    std::unique_ptr<typename DBCon::PreparedStmt> pInsertStmt; // pointer to prepared insert statement
+    std::unique_ptr<typename DBCon::DBImplForward::PreparedStmt> pInsertStmt; // pointer to prepared insert statement
 
 #if 0
     const std::set<size_t> xAutoNullCols; // positions of all columns receiving auto NULL insertion
@@ -902,17 +963,19 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     typedef ColTypeTranslator<typename DBCon::TypeTranslator, ColTypes...> CollTypeTranslation;
 
     /** @brief Initializes the table for use.
-     *  @details If the table does not exist in the DB, the table is created first.
+     *  @detail If the table does not exist in the DB, the table is created first.
      */
     void init( )
     {
-        // Create table if not existing in DB
-        if( !pDB->tableExistsInDB( getTableName( ) ) )
-            pDB->execSQL( makeTableCreateStmt( ) );
-        else
-        {
-            // Verify the table for correctness
-        }
+        // Create table if not existing in DB guarantee
+        pDB->doPoolSafe( [ & ] {
+            if( !pDB->tableExistsInDB( getTableName( ) ) )
+                pDB->execSQL( makeTableCreateStmt( ) );
+            else
+            {
+                // Verify the table for correctness
+            } // else
+        } );
 
         // Create prepared insert statement, now where the existence of the table is guaranteed
         // Improvement: Could be done on demand ...
@@ -952,10 +1015,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
 
     /** @brief Insert the argument pack as fresh row into the table without guaranteeing type correctness.
-     *  @details This form of the insert does not guarantees that there are no problems with column types at runtime.
-     *  It allows the injection of NULL values into an insertion by passing (void *)NULL at th column position, where
-     *  the NULL value shall occurs.
-     *  Don't use insertNonSafe, if you do not need explicit NULL values in the database.
+     *  @detail This form of the insert does not guarantees that there are no problems with column types at runtime.
+     *  It allows the injection of NULL values into an insertion by passing (void *)NULL at th column position,
+     * where the NULL value shall occurs. Don't use insertNonSafe, if you do not need explicit NULL values in the
+     * database.
      */
     template <typename... ArgTypes> inline void insertNonSafe( const ArgTypes&... args )
     {
@@ -984,6 +1047,18 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this );
     } // method
 
+    /** @brief Alias for file bulk inserter type */
+    template <size_t BUF_SIZE>
+    using SQLFileBulkInserterType =
+        typename SQLTable<DBCon, ColTypes...>::template SQLFileBulkInserter<BUF_SIZE, ColTypes...>;
+
+    /** @brief Bulk inserter that uses a file for data steaming. */
+    template <size_t BUF_SIZE>
+    std::shared_ptr<SQLFileBulkInserterType<BUF_SIZE>> getFileBulkInserter( const std::string& pCSVFileName )
+    {
+        return std::make_shared<SQLFileBulkInserterType<BUF_SIZE>>( *this, pCSVFileName );
+    } // method
+
     /** @brief: Delete all rows in the table. */
     SQLTable& deleteAllRows( )
     {
@@ -1002,7 +1077,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Constructor
      * Design improvement: The positions of the NULL insertions could be coded via the JSON table definition
      */
-    SQLTable( std::shared_ptr<SQLDB<DBCon>> pDB, // DB connector
+    SQLTable( std::shared_ptr<DBCon> pDB, // DB connector //--
               const json& rjTableDef // table definition in JSON
 #if 0
               , const std::set<size_t>& xAutoNullCols = { } // positions of columns with NULL insertions
@@ -1026,7 +1101,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Destructor */
     ~SQLTable( )
     {
-        do_exception_safe( [&]( ) {
+        do_exception_safe( [ & ]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
@@ -1051,23 +1126,24 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
         json jTableDef( rjTableDef );
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         if( jTableDef.count( TABLE_COLUMNS ) )
-            jTableDef[ TABLE_COLUMNS ].push_back( json::object( {{COLUMN_NAME, "ID"},
-                                                                 { CONSTRAINTS,
-                                                                   "NOT NULL AUTO_INCREMENT PRIMARY KEY" }} ) );
+            jTableDef[ TABLE_COLUMNS ].push_back( json::object( { { COLUMN_NAME, "ID" },
+                                                                  { CONSTRAINTS,
+                                                                    "NOT NULL AUTO_INCREMENT PRIMARY KEY" } } ) );
 #else
         // Primary key on first row:
         if( jTableDef.count( TABLE_COLUMNS ) )
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
-                json::object( {{COLUMN_NAME, "id"}, {CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY"}} ) );
+                json::object(
+                    { { COLUMN_NAME, "id" }, { CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY" } } ) );
 #endif
         return jTableDef;
     } // method
 
     /** @brief Insert the argument pack as fresh row into the table in a thread-safe way.
      *	Delivers the primary key of the inserted row as return value.
-     *  @details We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee that
-     *   all AUTO_INCREMENT inserts occur serialized for getting the correct AUTO_INCREMENT value.
+     *  @detail We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee
+     *that all AUTO_INCREMENT inserts occur serialized for getting the correct AUTO_INCREMENT value.
      */
     template <typename... ArgTypes> inline int64_t insertThreadSafe( const ArgTypes&... args )
     {
@@ -1081,10 +1157,10 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     SQLTableWithAutoPriKey( const SQLTableWithAutoPriKey& ) = delete; // no table copies
 
     /* Constructor */
-    SQLTableWithAutoPriKey( std::shared_ptr<SQLDB<DBCon>> pDB, const json& rjTableDef )
+    SQLTableWithAutoPriKey( std::shared_ptr<DBCon> pDB, const json& rjTableDef ) //--
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         : SQLTable<DBCon, ColTypes..., int64_t>( pDB, inject( rjTableDef ),
-                                                 std::set<size_t>( {rjTableDef[ TABLE_COLUMNS ].size( )} )
+                                                 std::set<size_t>( { rjTableDef[ TABLE_COLUMNS ].size( ) } )
 #else
         : SQLTable<DBCon, int64_t, ColTypes...>( pDB, inject( rjTableDef ) /* , std::set<size_t>( { 0 } ) */
 #endif
@@ -1093,7 +1169,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
 
     /** @brief Inserts the argument pack as fresh row into the table without guaranteeing type correctness.
      *	Delivers the primary key of the inserted row as return value.
-     *  @details It allows the injection of NULL values into an insertion by passing nullptr at the column position,
+     *  @detail It allows the injection of NULL values into an insertion by passing nullptr at the column position,
      *   where the NULL value shall occurs.
      *   Don't use insertNonSafe, if you do not need explicit NULL values in the database.
      */
@@ -1111,7 +1187,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
         return this->insertThreadSafe( args... );
     } // method
 
-    // Alias for bulk inserter type
+    /** @brief Alias for bulk inserter type for tables with primary key */
     template <size_t BUF_SIZE>
     using SQLBulkInserterType =
         typename SQLTable<DBCon, int64_t, ColTypes...>::template SQLBulkInserter<BUF_SIZE, std::nullptr_t, ColTypes...>;
@@ -1125,15 +1201,17 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
         return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this );
     } // method
 
-    // Alias for bulk inserter type
+    /** @brief Alias for file bulk inserter type for tables with primary key */
     template <size_t BUF_SIZE>
     using SQLFileBulkInserterType =
         typename SQLTable<DBCon, int64_t, ColTypes...>::template SQLFileBulkInserter<BUF_SIZE, std::nullptr_t,
                                                                                      ColTypes...>;
 
+    /** @brief Bulk inserter that uses a file for data steaming. */
     template <size_t BUF_SIZE>
-    std::shared_ptr<SQLFileBulkInserterType<BUF_SIZE>> getFileBulkInserter( const std::string& pCSVFileName )
+    std::shared_ptr<SQLFileBulkInserterType<BUF_SIZE>> getFileBulkInserter( int64_t uiReleaseThreshold = 1000000,
+                                                                            const std::string& srExtension = "" )
     {
-        return std::make_shared<SQLFileBulkInserterType<BUF_SIZE>>( *this, pCSVFileName );
+        return std::make_shared<SQLFileBulkInserterType<BUF_SIZE>>( *this, uiReleaseThreshold, srExtension );
     } // method
 }; // class

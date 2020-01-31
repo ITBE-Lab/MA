@@ -107,7 +107,7 @@ void tupleCatination( const std::array<std::tuple<TupleTypes...>, SIZE>& aArr )
     std::cout << typeid( tCatenated ).name( ) << std::endl;
     std::cout << "START *********" << std::endl;
     STD_APPLY(
-        [&]( auto&... args ) { // We forward the elements by reference for avoiding copies.
+        [ & ]( auto&... args ) { // We forward the elements by reference for avoiding copies.
             printArgPack( args... ); // Here should occur the binding call
             // std::cout << "CONT" << std::endl;
         },
@@ -175,27 +175,25 @@ template <> struct /* MySQLConDB:: */ RowCell<SomeBlobType> : public /* MySQLCon
  * See: https://stackoverflow.com/questions/5134891/how-do-i-use-valgrind-to-find-memory-leaks
  * valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind-out.txt
  */
-template <typename DBConnector> void checkDB( std::shared_ptr<SQLDB<DBConnector>> pMySQLDB, int jobnr )
+template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQLDB, size_t jobnr )
 {
     // std::cout << "Open Database" << std::endl;
     // std::shared_ptr<SQLDB<DBConnector>> pMySQLDB = std::make_shared<SQLDB<DBConnector>>( );
 
     {
         // json::array( { "WITHOUT ROWID" } )
-        json xTestTableDef = {{TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr )},
-                              {TABLE_COLUMNS,
-                               {{{COLUMN_NAME, "Column_1"} /*, { CONSTRAINTS, "UNIQUE" } */},
-                                {{COLUMN_NAME, "Column_2"}},
-                                {{COLUMN_NAME, "BlobColum"}},
-                                {{COLUMN_NAME, "TextColumn"}},
-                                {{COLUMN_NAME, "Col_uint32_t"}}}},
-                              {SQLITE_EXTRA, {"WITHOUT ROWID"}} /*,
-                          { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
-                              /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+        json xTestTableDef = { { TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr ) },
+                               { TABLE_COLUMNS,
+                                 { { { COLUMN_NAME, "Column_1" } /*, { CONSTRAINTS, "UNIQUE" } */ },
+                                   { { COLUMN_NAME, "Column_2" } },
+                                   { { COLUMN_NAME, "BlobColum" } },
+                                   { { COLUMN_NAME, "TextColumn" } },
+                                   { { COLUMN_NAME, "Col_uint32_t" } } } },
+                               { SQLITE_EXTRA, { "WITHOUT ROWID" } } /*,
+                               { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
+                               /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
         // {CPP_EXTRA, "DROP ON DESTRUCTION"}};
         // std::cout << std::setw( 2 ) << xTestTableDef << std::endl;
-        // SQLTableWithAutoPriKey<DBConnector, int, double, SomeBlobType, std::string, uint32_t> xTestTable(
-        //    pMySQLDB, xTestTableDef );
         SQLTableWithAutoPriKey<DBConnector, int, int, int, std::string, uint32_t> xTestTable( pMySQLDB, xTestTableDef );
         // xTestTable.deleteAllRows( );
 
@@ -203,29 +201,31 @@ template <typename DBConnector> void checkDB( std::shared_ptr<SQLDB<DBConnector>
         // for( int i = 0; i < 10; i++ )
         //     std::get<4>( aArr[ i ] ) = "This is a bit longer text that has to be written with every row";
 
-		// LOAD DATA INFILE "C:\ProgramData\MySQL\MySQL Server 5.7\Uploads\0.csv" INTO TABLE test_table0;
-        int numValues = 10000000 / 32;
+        // LOAD DATA INFILE "C:\ProgramData\MySQL\MySQL Server 5.7\Uploads\0.csv" INTO TABLE test_table0;
+        int numValues = 1000000;
         {
             auto pTrxnGuard = pMySQLDB->uniqueGuardedTrxn( );
             std::cout << "Make xBulkInserter" << std::endl;
-			std::string text = "This"; // is a string of some size for insertion ...";
+            std::string text = "This"; // is a string of some size for insertion ...";
+            // text.resize( 20000 );
 #if 1
             SomeBlobType blob;
             {
-                metaMeasureAndLogDuration( "File Inserter required time:", [ & ]( ) {
-                    auto xBulkInserter = xTestTable.template getFileBulkInserter<500>( std::to_string( jobnr ) );
+                metaMeasureAndLogDuration( "FileBulkInserter required time:", [ & ]( ) {
+                    auto xBulkInserter = xTestTable.template getFileBulkInserter<500>( );
                     for( int i = 0; i < numValues; i++ )
                         xBulkInserter->insert( nullptr, i, 4, i, text, std::numeric_limits<uint32_t>::max( ) );
                     std::cout << "Finished inserting .... " << std::endl;
                 } );
             } // release of the bulk inserter
 #endif
-
-            //metaMeasureAndLogDuration( "Standard Bulk Inserter:", [ & ]( ) {
-            //	auto xBulkNrmInserter = xTestTable.template getBulkInserter<500>();
-            //    for( int i = 0; i < numValues; i++ )
-            //        xBulkNrmInserter->insert( nullptr, i, 4, i, text, std::numeric_limits<uint32_t>::max( ) );
-            //} );
+			//-- SQLQuery<DBConnector, int> xQueryScalar(pMySQLDB, "SELECT COUNT(*) FROM TEST_TABLE");
+			//-- std::cout << "Count:" << xQueryScalar.scalar() << std::endl;
+            // metaMeasureAndLogDuration( "Standard Bulk Inserter:", [ & ]( ) {
+            //     auto xBulkNrmInserter = xTestTable.template getBulkInserter<300>( );
+            //     for( int i = 0; i < numValues; i++ )
+            //         xBulkNrmInserter->insert( nullptr, i, 4, i, text, std::numeric_limits<uint32_t>::max( ) );
+            // } );
         } // scope transaction
 
 #if 0 
@@ -343,22 +343,76 @@ template <typename DBConnector> void checkDB( std::shared_ptr<SQLDB<DBConnector>
     }
 } // function
 
+/** @brief Executes the func so that exceptions are swallowed.
+ *  @detail For destructors and threads so that they do not throw.
+ */
+template <typename F> inline void doSwallowingExcpt( F&& func )
+{
+    try
+    {
+        std::cout << "Do swallowing start..." << std::endl;
+        func( );
+        std::cout << "Do swallowing end..." << std::endl;
+    } // try
+    catch( std::exception& rxExcpt )
+    {
+        // Swallow the exception
+        std::cout << std::string( "SQLDBConPool: Task/thread execution terminated abnormally. Details:\n" ) +
+                         rxExcpt.what( )
+                  << std::endl;
+    } // catch
+    catch( ... )
+    {
+        std::cout << "SQLDBConPool: Task/thread execution terminated abnormally for unknown reasons." << std::endl;
+    } // catch
+    std::cout << "Do swallowing terminated..." << std::endl;
+} // method
+
+void excptTest( )
+{
+#if 0
+	std::cout << "Before do..." << std::endl;
+	doSwallowingExcpt( [] {
+        std::cout << "Before throw..." << std::endl;
+        throw std::runtime_error( "A problem ..." );
+		std::cout << "After throw..." << std::endl;
+    } );
+	std::cout << "Afer do..." << std::endl;
+#endif
+    SQLDBConPool<MySQLConDB> xDBPool( 1 );
+
+    // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
+    auto xFuture = xDBPool.enqueue( []( auto pConMng ) { throw std::runtime_error( "Throw ..." ); } );
+
+    doSwallowingExcpt( [ & ]( ) { xFuture.get( ); } ); // catch via future
+} // method
+
 
 int main( int argc, char** argv )
 {
     try
     {
-        metaMeasureAndLogDuration( "Overall insertion time:", [ & ]( ) {
-            
-            SQLDBConPool<MySQLConDB> xDBPool( 32);
-            for( int i = 0; i < 32; i++ )
-                // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::ConnectionManager>
-                xDBPool.enqueue( []( auto pConMng ) {
-                    std::cout << "In task: " << pConMng->getTaskId( ) << std::endl;
-                    checkDB<MySQLConDB>( pConMng->pDBCon, (int)pConMng->getTaskId( ) );
-                } );
-        } );
+        std::vector<std::future<void>> vFutures;
+        {
+            SQLDBConPool<MySQLConDB> xDBPool( 10, "Pooled_DB" /* 10 */ );
+            for( int i = 0; i < 10 /* 20 */; i++ )
+                // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
+                vFutures.push_back( xDBPool.enqueue( []( auto pDBCon) {
+                    doNoExcept(
+                        [ & ] {
+                            std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;
+                            checkDB(pDBCon, pDBCon->getTaskId( ) );
+							pDBCon->doPoolSafe( [] { std::cout << "This print is pool safe ..." << std::endl; } );
+                        },
+                        "Problem during thread execution" );
+                } ) );
+        } // close the pool
 
+		// Get all future exception safe
+        for( auto& rFurture : vFutures )
+            doNoExcept( [ & ] { rFurture.get( ); } );
+
+        std::cout << "ALL WORK DONE ..." << std::endl;
 #ifdef _MSC_VER
         int i;
         std::cin >> i;
@@ -381,7 +435,7 @@ int main( int argc, char** argv )
                         std::cout << "Start job Nr.: " << uiJobId_ << std::endl;
                         try
                         {
-                            checkDB<MySQLConDB>( vec[ uiJobId_ ], (int)uiJobId_ );
+                            // checkDB( vec[ uiJobId_ ], uiJobId_ );
                             // Hmmm ...
                             // The concurrent construction of DBConnections seems to make trouble.
                             // std::shared_ptr<SQLDB<MySQLConDB>> pMySQLDB = std::make_shared<SQLDB<MySQLConDB>>();
@@ -397,12 +451,12 @@ int main( int argc, char** argv )
     } // try
     catch( MySQLConException& rxMySQLConExce )
     {
-        std::cout << "Database test failed. Reason:" << rxMySQLConExce.what( ) << std::endl;
+        std::cout << "Database test failed. Reason:\n" << rxMySQLConExce.what( ) << std::endl;
         // return 1;
     } // catch
     catch( std::exception& rxException )
     {
-        std::cout << "Database test failed. Reason: Runtime exception" << rxException.what( ) << std::endl;
+        std::cout << "Database test failed. Reason: Runtime exception:\n" << rxException.what( ) << std::endl;
         // return 1;
     }
     catch( ... )

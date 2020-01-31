@@ -70,7 +70,7 @@ typedef bool my_bool;
 #define DEFAULT_HOSTNAME "localhost"
 #define DEFAULT_USER "root"
 #define DEFAULT_PASSWD "admin"
-#define DEFAULT_DBNAME "test"
+#define DEFAULT_DBNAME "defaultDB"
 #define DEFAULT_PORT 0
 
 #define LAMBDA_WITH_PARAMETER_PACK_SUPPORTED
@@ -102,7 +102,7 @@ typedef bool my_bool;
 template <class F, class... Ts, std::size_t... Is>
 void for_each_in_tuple( std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ) ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ) ), 0 )...};
 } // meta
 
 template <class F, class... Ts> void for_each_in_tuple( std::tuple<Ts...>& tuple, F&& func )
@@ -117,7 +117,7 @@ template <class F, class... Ts, std::size_t... Is, class... Tss>
 void for_each_in_tuple_pairwise( std::tuple<Ts...>& tuple, F func, std::tuple<Tss...>& tuple1,
                                  std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )...};
 } // meta
 
 template <class F, class... Ts, class... Tss>
@@ -693,8 +693,8 @@ class MySQLConDB
          */
         template <int OFFSET, typename... ArgTypes> inline void bind( ArgTypes&&... args )
         {
-            assert( ( iStmtParamCount % (int)( sizeof...( args ) ) == 0 ) &&
-                    ( OFFSET * (int)( sizeof...( args ) ) < iStmtParamCount ) );
+            assert( ( sizeof...( args ) == 0 ) || ( ( iStmtParamCount % (int)( sizeof...( args ) ) == 0 ) &&
+                                                    ( OFFSET * (int)( sizeof...( args ) ) < iStmtParamCount ) ) );
             bindArgumentsForwarding<OFFSET * sizeof...( args ), ArgTypes&&...>( std::forward<ArgTypes>( args )... );
         } // method
 
@@ -706,9 +706,9 @@ class MySQLConDB
         template <typename... ArgTypes> inline my_ulonglong bindAndExec( ArgTypes&&... args )
         {
             if( sizeof...( ArgTypes ) != iStmtParamCount )
-                throw std::runtime_error( "MySQL - bindAndExec: Mismatch of number of arguments. Expected number:\n" +
-                                          std::to_string( sizeof...( ArgTypes ) ) +
-                                          " Actual number: " + std::to_string( iStmtParamCount ) );
+                throw std::runtime_error( "MySQL - bindAndExec: Mismatch of number of arguments. For statement:\n" +
+                                          sStmtText + "\n Actual number: " + std::to_string( sizeof...( ArgTypes ) ) +
+                                          " Expected number: " + std::to_string( iStmtParamCount ) );
             this->bind<0, ArgTypes&&...>( std::forward<ArgTypes>( args )... );
             return this->exec( );
             // DEPR // Bind all argument
@@ -755,13 +755,21 @@ class MySQLConDB
         bool doStoreResult; // Use mysql_stmt_store_result() to store the outcome of the query in the client
         int iStatus; // informs about the outcome of the last fetch; initially -1 representing unknown
 
-        /** @brief Performs: Query execution, binding of results, fetching of first row.
+        /** @brief Performs: 1. Query execution, 2. binding of results.
+         */
+        template <typename... ArgTypes> inline void execBind( ArgTypes... args )
+        {
+            this->bindAndExec( std::forward<ArgTypes>( args )... );
+            this->bindResult( );
+        } // method
+        friend MySQLConDB; // give MySQLConDB access to execBindFetch( )
+
+        /** @brief Performs: 1. Query execution, 2. binding of results, 3. fetching of first row.
          *  Returns true if a first row exists, false otherwise.
          */
         template <typename... ArgTypes> inline bool execBindFetch( ArgTypes... args )
         {
-            this->bindAndExec( std::forward<ArgTypes>( args )... );
-            this->bindResult( );
+            this->execBind( std::forward<ArgTypes>( args )... );
             return this->fetchNextRow( );
         } // method
         friend MySQLConDB; // give MySQLConDB access to execBindFetch( )
@@ -795,13 +803,12 @@ class MySQLConDB
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
-            for_each_in_tuple_pairwise(
-                tCellWrappers,
-                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
-                    // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
-                    rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
-                },
-                tCellValues );
+            for_each_in_tuple_pairwise( tCellWrappers,
+                                        [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                                            // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
+                                            rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
+                                        },
+                                        tCellValues );
         } // constructor
 
         /** @brief Performs argument binding before fetching. Has to called after statement execution and
@@ -843,7 +850,7 @@ class MySQLConDB
 #ifdef REPORT_ROWS_WITH_NULL_VALUES
             // Check for possible NULL values
             // Currently, there is no solution for these cases.
-            for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+            for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                 if( rCell.is_null )
                     throw std::runtime_error( "fetchNextRow reports a cell with NULL value." );
             } ); // for each tuple
@@ -852,7 +859,7 @@ class MySQLConDB
             if( this->iStatus == MYSQL_DATA_TRUNCATED )
             {
                 // Find the column(s) responsible and resize the buffer appropriately.
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.error ) // error identifies the cell(s), where we have truncation
                     {
                         // Truncation can occur for variable size data only.
@@ -881,7 +888,7 @@ class MySQLConDB
             // Pick variable size data (Text or Blob) from cell buffers.
             if( this->iStatus == 0 )
             {
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.bIsVarSizeCell )
                         rCell.storeVarSizeCell( );
                 } ); // for each tuple
@@ -944,7 +951,7 @@ class MySQLConDB
     template <typename... ColTypes> using PreparedQuery = PreparedQueryTmpl<std::shared_ptr<MySQLConDB>, ColTypes...>;
 
   private:
-    MYSQL* pMySQLHandler;
+    MYSQL* pMySQLHandler; // MySQL handler belonging to the current connection.
 
     /** @brief Generate a detailed MySQL error message
      */
@@ -970,21 +977,79 @@ class MySQLConDB
             throw MySQLConException( pMySQLHandler );
     } // method
 
-    /* Creates the DB if not existing */
+    /** @brief Tells the connection about the schema that has to used. */
     void setupDB( const std::string& rsDBName )
     {
         checkDBCon( );
         if( mysql_select_db( pMySQLHandler, rsDBName.c_str( ) ) )
+            // Create the database if not existing.
             execSQL( "CREATE DATABASE " + rsDBName );
 
         // Tell MySQL to USE this database
         execSQL( "USE " + rsDBName );
     } // method
 
+    /** @brief Mirrors all MySQL variables locally be executing the "SHOW VARIABLES" statement and storing the outcome
+     *  in the std::map mMySQLVars.
+     */
+    void mirrorMySQLVars( )
+    {
+        auto pShowVariablesStmt =
+            std::make_unique<PreparedQueryTmpl<MySQLConDB*, std::string, std::string>>( this, "SHOW VARIABLES" );
+        pShowVariablesStmt->execBind( );
+        while( pShowVariablesStmt->fetchNextRow( ) )
+            mMySQLVars.emplace( std::get<0>( pShowVariablesStmt->getCellValues( ) ),
+                                std::get<1>( pShowVariablesStmt->getCellValues( ) ) );
+    } // method
+
+    /** @brief Casts a MySQL (in rsMySQLVal) string to a C++ string (in rCPPVal) */
+    void MySQLVarCast( const std::string& rsMySQLVal, std::string& rCPPVal )
+    {
+        rCPPVal = rsMySQLVal;
+    } // method
+
+    /** @brief Dumps all key-value for mirrored MYSQL vars. */
+    void dumpMirroredMySQLVars( )
+    {
+        for( auto& rtKeyValuePair : mMySQLVars )
+            std::cout << rtKeyValuePair.first << "=" << rtKeyValuePair.second << std::endl;
+    } // method
+
+    /** @brief Sets the directories for CSV file upload during connection startup.
+     *  variable tmpdir informs about a temporary directory.
+     */
+    void setUploadDirs( )
+    {
+        // TO DO: First check, if there is something in the JSON configuration for the DB.
+        // The variable secure_file_priv manages the server side file upload policy:
+        //   - NULL           : No server side upload at all.
+        //   - "" (empty)	  : Each directory on server side is OK.
+        //   - path to folder : The given directory must be used for file upload.
+        std::string sSecFilePriv, sTmpDir;
+        if( getMySQLVar( "secure_file_priv", sSecFilePriv ) )
+        {
+            std::cout << "sSecFilePriv: " << sSecFilePriv << std::endl;
+            if( sSecFilePriv != "NULL" )
+            {
+                if( !sSecFilePriv.empty( ) )
+                    pServerDataUploadDir = std::make_unique<fs::path>( sSecFilePriv );
+                else
+                {
+                    if( getMySQLVar( "tmpdir", sTmpDir ) )
+                        // ZEUS EXPERIMENT pServerDataUploadDir = std::make_unique<fs::path>( "/mnt/ssd1/tmp" );
+                        pServerDataUploadDir = std::make_unique<fs::path>( sTmpDir );
+                } // else
+            } // if (not NULL)
+        } // if (secure_file_priv defined)
+    } // method
+
     // MySQL is missing the "CREATE INDEX IF NOT EXISTS" construct.
     // Therefore, we define a predefined statement for checking the existence of an index.
     std::unique_ptr<PreparedQueryTmpl<MySQLConDB*, int64_t>> pIndexExistStmt;
+
+    std::map<std::string, std::string> mMySQLVars; // local mirror of all MySQL client variables
     unsigned long uiCLientVersion; // version of current client
+    std::unique_ptr<fs::path> pServerDataUploadDir; // If null, server upload is not allowed.
 
   public:
     MySQLConDB( const MySQLConDB& db ) = delete; // no object copies
@@ -993,38 +1058,49 @@ class MySQLConDB
     /* Parameterized constructor */
     MySQLConDB( const std::string& rsHostName, const std::string& rsUser, const std::string& rsPasswd,
                 const std::string& rsDBName, unsigned int uiPortNr )
-        : pMySQLHandler( NULL )
+        : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
         if( !( pMySQLHandler = mysql_init( NULL ) ) )
             throw MySQLConException( "Initialization of MySQL connection failed" );
+
         // Establish connection to database
         this->open( rsHostName, rsUser, rsPasswd, rsDBName, uiPortNr );
-        // Guarantee the existence of a DB with name rsDBName
-        setupDB( rsDBName );
+
+        // Use the database with name rsDBName. If it does not exists, create it.
+        this->setupDB( rsDBName );
+
         // Compile the statement that checks for the existence of an index.
         // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
-        pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, int64_t>>(
+        this->pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, int64_t>>(
             this, "SELECT COUNT( 1 ) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS "
                   "WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?" );
-        // Collect Info
-        uiCLientVersion = mysql_get_client_version( );
+
+        // Mirror all client side MySQL variables locally.
+        this->mirrorMySQLVars( );
+
+        // Collect client info in numeric form.
+        this->uiCLientVersion = mysql_get_client_version( );
         std::cout << "MySQL client version: " << uiCLientVersion << std::endl;
+
+        // Find out the appropriate directory for CSV data uploads.
+        this->setUploadDirs( );
     } // constructor
 
-    /* Default constructor */
-    MySQLConDB( ) : MySQLConDB( DEFAULT_HOSTNAME, DEFAULT_USER, DEFAULT_PASSWD, DEFAULT_DBNAME, DEFAULT_PORT )
-    {} // constructor
+    // /* Default constructor */
+    // MySQLConDB( ) : MySQLConDB( DEFAULT_HOSTNAME, DEFAULT_USER, DEFAULT_PASSWD, DEFAULT_DBNAME, DEFAULT_PORT )
+    // {} // constructor
 
     /* Constructor that allows specifying a database name. */
-    MySQLConDB( const std::string& rsDBName )
-        : MySQLConDB( DEFAULT_HOSTNAME, DEFAULT_USER, DEFAULT_PASSWD, rsDBName, DEFAULT_PORT )
+    MySQLConDB( const std::string& rsDBName = "" )
+        : MySQLConDB( DEFAULT_HOSTNAME, DEFAULT_USER, DEFAULT_PASSWD, rsDBName.empty( ) ? DEFAULT_DBNAME : rsDBName,
+                      DEFAULT_PORT )
     {} // constructor
 
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [ & ]( ) { this->close( ); } );
+        do_exception_safe( [&]( ) { this->close( ); } );
 
         // For really freeing all memory allocated by MySQL ...
         // See: https://stackoverflow.com/questions/8554585/mysql-c-api-memory-leak
@@ -1053,6 +1129,30 @@ class MySQLConDB
             pMySQLHandler = NULL;
         } // if
     } // method
+      // Quick hack
+    // https://stackoverflow.com/questions/32737478/how-should-i-tackle-secure-file-priv-in-mysql
+    // AND: https://forums.mysql.com/read.php?152,674208,674208
+    /** @brief Reads a MySQL variable and returns it value in rVal.
+     *  Returns true if the reading succeeded, false otherwise.
+     */
+    template <typename TypeOfVar> bool getMySQLVar( const std::string rsVarName, TypeOfVar& rVal )
+    {
+        auto pSearch = this->mMySQLVars.find( rsVarName );
+        if( pSearch != this->mMySQLVars.end( ) )
+        {
+            MySQLVarCast( pSearch->second, rVal );
+            return true; // search succeeded
+        } // if
+        else
+            return false; // search failed
+    } // method
+
+    fs::path getDataUploadDir( )
+    {
+        if( pServerDataUploadDir == nullptr )
+            throw MySQLConException( "Server side upload not possible." );
+        return *pServerDataUploadDir;
+    } // path
 
     /** @brief Checks for table existence in current database */
     bool tableExistsInDB( const std::string& sTableName )
@@ -1118,32 +1218,6 @@ class MySQLConDB
         // Important: Use the generic filename here, because MySQL does not like backslashes in Windows.
         this->execSQL( std::string( "LOAD DATA " + std::string( bUseKeywordLocal ? "LOCAL " : "" ) + "INFILE \"" +
                                     sCSVFileName.generic_string( ) + "\" INTO TABLE " + sTblName ) );
-    } // method
-
-    // Quick hack
-    // https://stackoverflow.com/questions/32737478/how-should-i-tackle-secure-file-priv-in-mysql
-    // AND: https://forums.mysql.com/read.php?152,674208,674208
-    std::string getVarSecureFilePriv( )
-    {
-        // TO DO: Check why the thread looses the execption
-        try
-        {
-            auto pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, std::string, std::string>>(
-                this, "SHOW VARIABLES LIKE 'secure_file_priv'" );
-            if( !( pIndexExistStmt->execBindFetch( ) ) )
-                throw std::runtime_error( "Path request failed:\n" + pIndexExistStmt->stmtErrMsg( ) );
-            // First element in first row indicates the number of indexes.
-            // DEBUG: std::cout << std::get<0>(pIndexExistStmt->tCellValues) << " |" <<
-            //        std::get<1>(pIndexExistStmt->tCellValues) << "|" << std::endl;
-            return std::get<1>( pIndexExistStmt->tCellValues );
-        }
-        catch( std::exception& e )
-        {
-            std::cout << "Catched Exception: " << e.what( ) << std::endl;
-        }
-
-        return ""; // std::get<0>( pIndexExistStmt->tCellValues );
-
     } // method
 
   protected:

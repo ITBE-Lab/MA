@@ -49,7 +49,7 @@ template <typename DBCon> class _SV_DB : public Container
     const bool bInMemory;
     const bool bIsCopy;
     std::shared_ptr<std::mutex> pWriteLock; // For synchronization among different connections
-    std::shared_ptr<SQLDB<DBCon>> pDatabase; // Pointer to Database itself
+    std::shared_ptr<DBCon> pDatabase; // Pointer to Database itself
     std::shared_ptr<_SequencerTable<DBCon>> pSequencerTable;
     std::shared_ptr<_ReadTable<DBCon>> pReadTable;
     std::shared_ptr<PairedReadTable<DBCon>> pPairedReadTable;
@@ -89,12 +89,21 @@ template <typename DBCon> class _SV_DB : public Container
     } // copy constructor
 #endif
     /// @brief create a new database connection
+#ifdef CREATE_DB_CONNECTION
     _SV_DB( std::string sName, bool bInMemory = false )
         : sName( sName ),
+#else
+    _SV_DB( std::shared_ptr<DBCon> pDBPoolCon, bool bInMemory = false )
+        :
+#endif
           bInMemory( bInMemory ),
           bIsCopy( false ),
           pWriteLock( std::make_shared<std::mutex>( ) ),
-          pDatabase( std::make_shared<SQLDB<DBCon>>( /* sName */ ) ),
+#ifdef CREATE_DB_CONNECTION
+          pDatabase( std::make_shared<DBCon>( /* sName */ ) ),
+#else
+          pDatabase( pDBPoolCon ),
+#endif
           pSequencerTable( std::make_shared<_SequencerTable<DBCon>>( pDatabase ) ),
           pReadTable( std::make_shared<_ReadTable<DBCon>>( pDatabase ) ),
           pPairedReadTable( std::make_shared<PairedReadTable<DBCon>>( pDatabase, pReadTable ) ),
@@ -148,13 +157,13 @@ template <typename DBCon> class _SV_DB : public Container
 
     inline void setNumThreads( size_t uiN )
     {
-		//FIXME: Unimplemented yet.
+        // FIXME: Unimplemented yet.
         // pDatabase->set_num_threads( (int)uiN );
     } // method
 
     inline int64_t getRunId( std::string& rS )
     {
-		return pSvCallerRunTable->getId( rS );
+        return pSvCallerRunTable->getId( rS );
     } // method
 
     inline int64_t getCallArea( int64_t iCallerRunId, double dMinScore )
@@ -236,12 +245,12 @@ template <typename DBCon> class _SV_DB : public Container
 
     inline int64_t insertSvCallerRun( std::string rsSvCallerName, std::string rsSvCallerDesc, int64_t uiJumpRunId )
     {
-		return pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId );
+        return pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId );
     }
 
     inline int64_t insertSvJumpRun( std::string rsSvCallerName, std::string rsSvCallerDesc )
     {
-        //FIXME: CppSQLiteExtImmediateTransactionContext xTransactionContext( *pDatabase );
+        // FIXME: CppSQLiteExtImmediateTransactionContext xTransactionContext( *pDatabase );
         return pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc );
     }
 

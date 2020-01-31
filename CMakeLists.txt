@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 3.8)
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
 # optional features
-option(WITH_PYTHON "Build python integration of libMA." ON)
+option(WITH_PYTHON "Build python integration of libMA." OFF)
 option(WITH_ZLIB "Build gz file readers using zlib." ON)
 option(WITH_DOCS "Build doxygen documentation." ON)
 option(WITH_GUI "Build maGUI" ON)

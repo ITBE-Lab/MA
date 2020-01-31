@@ -151,7 +151,7 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
         };
     } // method
 
-    std::shared_ptr<SQLDB<DBCon>> pDatabase;
+    std::shared_ptr<DBCon> pDatabase;
     const std::string sTableName;
     // SQLQuery<DBCon, int64_t> xDelete; // FIXME: Query->Statement
     SQLStatement<DBCon> xDelete;
@@ -163,7 +163,7 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
     SQLQuery<DBCon, int64_t> xNewestUnique;
 
   public:
-    NameDescTable( std::shared_ptr<SQLDB<DBCon>> pDatabase, const std::string sTableName )
+    NameDescTable( std::shared_ptr<DBCon> pDatabase, const std::string sTableName )
         : NameDescTableType<DBCon>( pDatabase, // the database where the table resides
                                     jNameDescTableDef( sTableName ) ),
           pDatabase( pDatabase ),

@@ -79,7 +79,7 @@ template <typename DBCon> class _ReadTable : public ReadTableType<DBCon>
     SQLQuery<DBCon, int32_t> xGetReadId;
     SQLQuery<DBCon, NucSeqSql, std::string> xGetRead;
 
-    _ReadTable( std::shared_ptr<SQLDB<DBCon>> pDB )
+    _ReadTable( std::shared_ptr<DBCon> pDB )
         : ReadTableType<DBCon>( pDB, jReadTableDef ),
           xGetReadId( pDB, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ? " ),
           xGetRead( pDB, "SELECT sequence, name FROM read_table WHERE id = ? " )

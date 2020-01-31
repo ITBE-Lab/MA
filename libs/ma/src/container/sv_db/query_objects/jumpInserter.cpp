@@ -23,7 +23,7 @@ void exportSvJumpInserter( py::module& rxPyModuleId )
 } // function
 #else
 
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 
 void exportSvJumpInserter( py::module& rxPyModuleId )
 {

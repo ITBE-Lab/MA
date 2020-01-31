@@ -15,7 +15,7 @@ void exportConnectorPatternFilter( py::module& rxPyModuleId )
 #ifndef USE_NEW_DB_API
     exportModule<ConnectorPatternFilter, std::shared_ptr<SV_DB>>( rxPyModuleId, "ConnectorPatternFilter" );
 #else
-	using DBCon = MySQLConDB;
+    using DBCon = SQLDB<MySQLConDB>;
 	exportModule<ConnectorPatternFilter, std::shared_ptr<_SV_DB<DBCon>>>(rxPyModuleId, "ConnectorPatternFilter");
 #endif
 

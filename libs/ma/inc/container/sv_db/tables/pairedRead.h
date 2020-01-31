@@ -77,7 +77,7 @@ template <typename DBCon> class PairedReadTable : public PairedReadTableType<DBC
 
   public:
     /* Constructor prototype */
-    PairedReadTable( std::shared_ptr<SQLDB<DBCon>> pDB, std::shared_ptr<_ReadTable<DBCon>> pReadTable )
+    PairedReadTable( std::shared_ptr<DBCon> pDB, std::shared_ptr<_ReadTable<DBCon>> pReadTable )
         : PairedReadTableType<DBCon>( pDB, // the database where the table resides
                                       jPairedReadTableDef ),
           pReadTable( pReadTable )

@@ -31,7 +31,7 @@ using namespace libMA;
 
 #ifdef WITH_PYTHON
 
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 
 void exportSvJump(py::module& rxPyModuleId)
 {

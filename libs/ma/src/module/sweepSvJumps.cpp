@@ -47,7 +47,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
     exportModule<FilterFuzzyCalls>( rxPyModuleId, "FilterFuzzyCalls" );
     exportModule<ComputeCallAmbiguity>( rxPyModuleId, "ComputeCallAmbiguity" );
 #else
-	using DBCon = MySQLConDB;
+    using DBCon = SQLDB<MySQLConDB>;
 	py::class_<GenomeSection, Container, std::shared_ptr<GenomeSection>>(rxPyModuleId, "GenomeSection")
 		.def_readwrite("start", &GenomeSection::iStart)
 		.def_readwrite("size", &GenomeSection::iSize);

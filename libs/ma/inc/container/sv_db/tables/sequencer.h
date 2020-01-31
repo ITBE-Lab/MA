@@ -70,7 +70,7 @@ const json jSequencerTableDef = { { TABLE_NAME, "sequencer_table" },
 template <typename DBCon> class _SequencerTable : public _SequencerTableType<DBCon>
 {
   public:
-    _SequencerTable( std::shared_ptr<SQLDB<DBCon>> pDB ) : _SequencerTableType<DBCon>( pDB, jSequencerTableDef )
+    _SequencerTable( std::shared_ptr<DBCon> pDB ) : _SequencerTableType<DBCon>( pDB, jSequencerTableDef )
     {} // default constructor
 
     // int64_t is the type of the primary key

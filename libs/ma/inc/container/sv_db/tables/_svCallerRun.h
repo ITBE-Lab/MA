@@ -31,7 +31,7 @@ const json jSvCallerRunTableDef = {
 template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<DBCon>
 {
 
-    std::shared_ptr<SQLDB<DBCon>> pDatabase;
+    std::shared_ptr<DBCon> pDatabase;
     SQLStatement<DBCon> xDelete; // Discuss Markus: Shouldn't this be a statement?
     SQLQuery<DBCon, int64_t> xGetId;
     SQLQuery<DBCon, std::string, std::string, int64_t, int64_t> xGetName;
@@ -42,7 +42,7 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
     // SQLStatement<DBCon> xInsertRow2; // FIXME: This explicit insert statement is not nice ...
 
   public:
-    SvCallerRunTable( std::shared_ptr<SQLDB<DBCon>> pDB )
+    SvCallerRunTable( std::shared_ptr<DBCon> pDB )
         : SvCallerRunTableType<DBCon>( pDB, // the database where the table resides
                                        jSvCallerRunTableDef ),
           pDatabase( pDB ),

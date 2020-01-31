@@ -89,12 +89,12 @@ const json jSvCallSupportTableDef = {
 
 template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableType<DBCon>
 {
-    std::shared_ptr<SQLDB<DBCon>> pDatabase;
+    std::shared_ptr<DBCon> pDatabase;
     SQLStatement<DBCon> xDeleteRun;
     SQLStatement<DBCon> xDeleteCall;
 
   public:
-    SvCallSupportTable( std::shared_ptr<SQLDB<DBCon>> pDatabase )
+    SvCallSupportTable( std::shared_ptr<DBCon> pDatabase )
         : SvCallSupportTableType<DBCon>( pDatabase, // the database where the table resides
                                          jSvCallSupportTableDef ), // table definition
           pDatabase( pDatabase ),

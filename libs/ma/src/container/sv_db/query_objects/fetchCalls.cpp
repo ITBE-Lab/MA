@@ -20,7 +20,7 @@ void exportCallsFromDb( py::module& rxPyModuleId )
 } // function
 #else
 
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 void exportCallsFromDb( py::module& rxPyModuleId )
 {
     // export the SvCallsFromDb class

@@ -38,7 +38,7 @@ int main( void )
     {
         auto pDatabase = std::make_shared<SQLDB<MySQLConDB>>( );
 
-        SQLTableWithAutoPriKey<MySQLConDB, WKBRectangle> xTestTable(
+        SQLTableWithAutoPriKey<SQLDB<MySQLConDB>, WKBRectangle> xTestTable(
             pDatabase,
             {{TABLE_NAME, "rectangle_test"},
              {TABLE_COLUMNS,
@@ -60,7 +60,7 @@ int main( void )
 
     {
         auto pDatabase = std::make_shared<SQLDB<MySQLConDB>>( );
-        SQLQuery<MySQLConDB, WKBRectangle> xQuery( pDatabase,
+        SQLQuery<SQLDB<MySQLConDB>, WKBRectangle> xQuery( pDatabase,
                                                   "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = ?" );
 
         for( size_t uiI = 0; uiI < vxRectangles.size( ); uiI++ )

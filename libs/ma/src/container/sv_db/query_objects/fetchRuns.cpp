@@ -19,7 +19,7 @@ void exportRunsFromDb( py::module& rxPyModuleId )
 } // function
 #else
 
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 
 void exportRunsFromDb( py::module& rxPyModuleId )
 {

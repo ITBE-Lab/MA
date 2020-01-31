@@ -130,13 +130,13 @@ const json jSvJumpTableDef = {
 
 template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 {
-    std::shared_ptr<SQLDB<DBCon>> pDatabase;
+    std::shared_ptr<DBCon> pDatabase;
     SQLQuery<DBCon, uint32_t> xQuerySize;
     // SQLQuery<DBCon, int64_t> xDeleteRun; // FIXME: Why is this a query and not a statement?
     SQLStatement<DBCon> xDeleteRun;
 
   public:
-    SvJumpTable( std::shared_ptr<SQLDB<DBCon>> pDatabase )
+    SvJumpTable( std::shared_ptr<DBCon> pDatabase )
         : SvJumpTableType<DBCon>( pDatabase, // the database where the table resides
                                   jSvJumpTableDef ),
           pDatabase( pDatabase ),

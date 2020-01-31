@@ -14,7 +14,7 @@
 #else
 #include "container/sv_db/_svDb.h" // NEW DATABASE INTERFACE
 #include "container/sv_db/query_objects/_fetchSvJump.h"
-using DBCon = MySQLConDB; // For the moment we set this module fix to MySQL.
+using DBCon = SQLDB<MySQLConDB>; // For the moment we set this module fix to MySQL.
 #endif
 
 #include "module/module.h"

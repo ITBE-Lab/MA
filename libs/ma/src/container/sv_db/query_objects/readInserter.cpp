@@ -34,7 +34,7 @@ void exportReadInserter( py::module& rxPyModuleId )
 #else
 /* NEW DATABASE INTERFACE */
 
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 
 int64_t insertReads( std::vector<std::shared_ptr<NucSeq>> vReads, std::shared_ptr<_SV_DB<DBCon>> pDb,
                       std::string sName, std::shared_ptr<Pack> pRef )

@@ -18,7 +18,7 @@ void exportSvCallInserter( py::module& rxPyModuleId )
 
 /* NEW DATABASE INTERFACE */
 
-using DBCon = MySQLConDB;
+using DBCon = SQLDB<MySQLConDB>;
 
 void exportSvCallInserter( py::module& rxPyModuleId )
 {

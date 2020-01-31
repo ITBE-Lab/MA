@@ -54,13 +54,13 @@ const json jSvCallRTreeDef = { { TABLE_NAME, "sv_call_r_tree" },
 
 template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 {
-    std::shared_ptr<SQLDB<DBCon>> pDatabase;
+    std::shared_ptr<DBCon> pDatabase;
 
 #ifndef WITHOUT_R_TREE
     class RTreeIndex
     {
       public:
-        RTreeIndex( std::shared_ptr<SQLDB<DBCon>> pDatabase )
+        RTreeIndex( std::shared_ptr<DBCon> pDatabase )
         {
             // create a R*tree index
             if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
@@ -82,7 +82,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
     {
       public:
         /** @brief Construct the R-tree table in given database. */
-        RTreeIndex( std::shared_ptr<SQLDB<DBCon>> pDB ) : SvCallRTreeType<DBCon>( pDB, jSvCallRTreeDef )
+        RTreeIndex( std::shared_ptr<DBCon> pDB ) : SvCallRTreeType<DBCon>( pDB, jSvCallRTreeDef )
         {} // constructor
     }; // class
 #endif // WITHOUT_R_TREE
@@ -134,7 +134,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
             SQLQuery<DBCon, uint32_t> xNumOverlapsCache;
             // DEL: SQLStatement<DBCon> xCreateIndex;
 
-            OverlapCacheTable( std::shared_ptr<SQLDB<DBCon>> pDatabase, int64_t iCallerRunIdA, int64_t iCallerRunIdB,
+            OverlapCacheTable( std::shared_ptr<DBCon> pDatabase, int64_t iCallerRunIdA, int64_t iCallerRunIdB,
                                bool bDoCreate = false )
                 : OverlapCacheTableType( pDatabase, // the database where the table resides
                                                     // name of the table in the database
@@ -190,7 +190,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
             SQLQuery<DBCon, int64_t> xIsComputed;
             SQLStatement<DBCon> xDeleteFromTable;
 
-            OverlapCacheComputedTable( std::shared_ptr<SQLDB<DBCon>> pDatabase )
+            OverlapCacheComputedTable( std::shared_ptr<DBCon> pDatabase )
                 : OverlapCacheComputedTableType( pDatabase, // the database where the table resides
                                                  jOverlapCacheComputedTableDef( ) ), // table definition
                   xIsComputed( pDatabase,
@@ -207,13 +207,13 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 
         }; // class
 
-        std::shared_ptr<SQLDB<DBCon>> pDatabase;
+        std::shared_ptr<DBCon> pDatabase;
         std::shared_ptr<std::mutex> pWriteLock;
         std::string sDBName;
         std::shared_ptr<OverlapCacheComputedTable> pHelper;
 
       public:
-        OverlapCache( std::shared_ptr<SQLDB<DBCon>> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
+        OverlapCache( std::shared_ptr<DBCon> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
                       std::string sDBName )
             : pDatabase( pDatabase ),
               pWriteLock( pWriteLock ),
@@ -564,7 +564,7 @@ exit()
               { { COLUMN_NAME, "regex_id" }, { REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL" } } } };
     }; // method
 
-    SvCallTable( std::shared_ptr<SQLDB<DBCon>> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
+    SvCallTable( std::shared_ptr<DBCon> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
                  std::string sDBName )
         : SvCallTableType<DBCon>( pDatabase, // the database where the table resides
                                   jSvCallTableDef( ) ), // table definition
