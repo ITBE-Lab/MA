@@ -195,6 +195,13 @@ template <typename T> class Interval
     } // operator
 }; // class
 
+/**
+ * @brief well known binary (WKB) of a polygon
+ * @details
+ * Object that holds a WKB of a polygon.
+ * Can be encoded or decoded from a rectangle.
+ * Main purpose of this is to hold the WKB data while an insert is performed into a database.
+ */
 template <size_t SIZE> class WKBPolygon
 {
   public:
@@ -239,22 +246,39 @@ template <size_t SIZE> class WKBPolygon
     } // method
 }; // class
 
+/**
+ * @brief a rectangle represented by two intervals.
+ */
 template <typename T> class Rectangle
 {
   public:
+    /// @brief number of bytes in a WKB header of a polygon with 1 ring (add one extra byte for each extra ring)
     const static size_t uiSizeWKBHeader = 1 + // big/little endian a 1 byte
                                           4 + // geom type a 4 bytes
                                           4 + // number of rings
                                           4; // number of points in ring
+
+    /// @brief number of bytes in a WKB representation of a rectangle
+    /// @details header + 5 points (first and last point are equal) a two coordinates of type double.
     const static size_t uiSizeWKB = uiSizeWKBHeader + 5 * 2 * sizeof( double );
 
   private:
+    /**
+     * @brief index of the X coordinate of point with index uiIdx in a WKB representation of a rectangle
+     * @details
+     * the coordinate of each point is several bytes long, this returns the index of the first byte
+     */
     static size_t posOfPointX( size_t uiIdx )
     {
         assert( sizeof( double ) == 8 ); // assert that float has the correct size
         return uiSizeWKBHeader + uiIdx * 2 * sizeof( double ); // each point is expressed by two doubles (x and y);
     } // method
 
+    /**
+     * @brief index of the Y coordinate of point with index uiIdx in a WKB representation of a rectangle
+     * @details
+     * the coordinate of each point is several bytes long, this returns the index of the first byte
+     */
     static size_t posOfPointY( size_t uiIdx )
     {
         return posOfPointX( uiIdx ) + sizeof( double );
@@ -271,6 +295,17 @@ template <typename T> class Rectangle
     Rectangle( ) : Rectangle( 0, 0, 0, 0 )
     {} // default constructor
 
+    /**
+     * @brief encode rectangle as WKB polygon
+     * @details
+     * WKB representation is a follows:
+     * - data is given as big (0) / little (1) endian          a 1 byte
+     * - geometry type (3 == polygon)                          a 4 byte
+     * - number of rings in the polygon (1 for a rectangle)    a 4 byte
+     * - number of points in the polygon (5 for a rectangle)   a 80 byte (=8*5*2)
+     * The first point must be repeated at the end to show that the polygon is "closed".
+     * Each point has two coordinates (x and y) a 8 byte.
+     */
     inline WKBPolygon<uiSizeWKB> getWKB( )
     {
         WKBPolygon<uiSizeWKB> xData;
@@ -315,13 +350,14 @@ template <typename T> class Rectangle
         return xData;
     } // method
 
+    /**
+     * @brief decode rectangle from WKB polygon
+     * @details
+     * See getWKB.
+     * Throws exception if WKB polygon is not a rectangle.
+     */
     inline void fromWKB( WKBPolygon<uiSizeWKB>& xData )
     {
-        std::cout << "WKBPolygon: ";
-        for( auto uiI : xData.aData )
-            std::cout << std::hex << (int)uiI << " ";
-        std::cout << std::endl;
-
         // @todo might cause trouble if data from systems with different endian is inserted into the DB
         // in this case code needs to be written to change the endian of xData.
         if( xData.get( 0 ) != ( is_big_endian( ) ? 0x00 : 0x01 ) ) // check endian

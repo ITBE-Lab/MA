@@ -27,9 +27,6 @@ template <> inline void MySQLConDB::StmtArg::set( const MyRectangle& rRectangle 
     pMySQLBind->buffer_length = static_cast<unsigned long>( geomUtil::Rectangle<uint64_t>::uiSizeWKB );
     pMySQLBind->buffer_type = MYSQL_TYPE_BLOB; // this type must be equal to the type in Part 3.
     pMySQLBind->buffer = rRectangle.getData( );
-    std::cout << (int)( (uint8_t*)pMySQLBind->buffer )[ 0 ] << " " << (int)( (uint8_t*)pMySQLBind->buffer )[ 1 ] << " "
-              << (int)( (uint8_t*)pMySQLBind->buffer )[ 2 ] << " " << (int)( (uint8_t*)pMySQLBind->buffer )[ 3 ] << " "
-              << (int)( (uint8_t*)pMySQLBind->buffer )[ 4 ] << " len= " << pMySQLBind->buffer_length << std::endl;
 } // specialized method
 
 // Part 3: Code for supporting query output:
