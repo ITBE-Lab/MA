@@ -3,22 +3,6 @@
 using namespace libMA;
 
 #ifdef WITH_PYTHON
-#ifndef USE_NEW_DB_API
-void exportCallsFromDb( py::module& rxPyModuleId )
-{
-    // export the SvCallsFromDb class
-    py::class_<SvCallsFromDb>( rxPyModuleId, "SvCallsFromDb" )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, double>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, int64_t, bool, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, uint32_t, uint32_t, uint32_t,
-                       uint32_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<SV_DB>, int64_t, int64_t, int64_t, int64_t, int64_t,
-                       double>( ) )
-        .def( "next", &SvCallsFromDb::next )
-        .def( "hasNext", &SvCallsFromDb::hasNext );
-} // function
-#else
 
 using DBCon = SQLDB<MySQLConDB>;
 void exportCallsFromDb( py::module& rxPyModuleId )
@@ -36,6 +20,4 @@ void exportCallsFromDb( py::module& rxPyModuleId )
         .def( "hasNext", &SvCallsFromDb<DBCon>::hasNext );
 } // function
 
-
-#endif // USE_NEW_DB_API
 #endif

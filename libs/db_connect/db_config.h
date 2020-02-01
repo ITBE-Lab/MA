@@ -7,5 +7,4 @@
 
 #pragma once
 
-#define USE_NEW_DB_API // decides whether to use the new API
 #define WITHOUT_R_TREE // With the new API, build tables without relying on the R-tree 
