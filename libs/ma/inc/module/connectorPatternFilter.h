@@ -24,7 +24,7 @@ class ConnectorPatternFilter
     const size_t uiZDrop;
     SQLQuery<DBCon, NucSeqSql> xGetRead;
 
-    ConnectorPatternFilter( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDBEnv )
+    ConnectorPatternFilter( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDBEnv )
         : uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
           xGetRead( pDBEnv->pDatabase, "SELECT sequence FROM read_table WHERE id = ? " )
     {} // constructor

@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 
 namespace libMA
@@ -17,7 +17,7 @@ template <typename DBCon> class SvJumpInserter
 {
   public:
     // this is here so that it gets destructed after the transaction context
-    std::shared_ptr<_SV_DB<DBCon>> pDB;
+    std::shared_ptr<SV_Schema<DBCon>> pDB;
 
   private:
     // must be after the DB so that it is deconstructed first
@@ -79,8 +79,8 @@ template <typename DBCon> class SvJumpInserter
      * @param iSvJumpRunId caller run id
      * @param bTransactionLess do not create a transaction
      */
-    SvJumpInserter( std::shared_ptr<_SV_DB<DBCon>> pDB, int64_t iSvJumpRunId, bool bTransactionLess )
-        : pDB( std::make_shared<_SV_DB<DBCon>>(
+    SvJumpInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, int64_t iSvJumpRunId, bool bTransactionLess )
+        : pDB( std::make_shared<SV_Schema<DBCon>>(
               *pDB ) ), // create a copy of the connection to the db
                         // REPLACED: pTransactionContext(bTransactionLess
                         // REPLACED: 	? nullptr
@@ -95,7 +95,7 @@ template <typename DBCon> class SvJumpInserter
      * @param pDB the sv database
      * @param iSvJumpRunId caller run id
      */
-    SvJumpInserter( std::shared_ptr<_SV_DB<DBCon>> pDB, int64_t iSvJumpRunId )
+    SvJumpInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, int64_t iSvJumpRunId )
         : SvJumpInserter( pDB, iSvJumpRunId, false )
     {} // constructor
 
@@ -104,7 +104,7 @@ template <typename DBCon> class SvJumpInserter
      * @details
      * The new run gets a name and description
      */
-    SvJumpInserter( std::shared_ptr<_SV_DB<DBCon>> pDB, const std::string& rsSvCallerName,
+    SvJumpInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, const std::string& rsSvCallerName,
                     const std::string& rsSvCallerDesc )
         : pDB( pDB ),
           // REPLACED: pTransactionContext(std::make_shared<CppSQLiteExtImmediateTransactionContext>(*pDB->pDatabase)),
@@ -144,14 +144,14 @@ template <typename DBCon> class SvJumpInserter
  */
 template <typename DBCon> class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
-    std::shared_ptr<_SV_DB<DBCon>> pDb;
+    std::shared_ptr<SV_Schema<DBCon>> pDb;
 
   public:
     /// @brief the jump inserter; This creates a transaction
     SvJumpInserter<DBCon> xInserter;
 
     ///@brief creates a new jump-run with the name MA-SV.
-    SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, std::string sRunDesc )
+    SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, std::string sRunDesc )
         : pDb( pDb ), xInserter( this->pDb, "MA-SV", sRunDesc )
     {} // constructor
 

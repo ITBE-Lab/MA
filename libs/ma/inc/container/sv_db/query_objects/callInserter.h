@@ -3,7 +3,7 @@
  * @brief Implements libMA::SvCallInserter; a transaction based structural variant call inserter
  * @author Markus Schmidt
  */
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 
 #pragma once
@@ -19,7 +19,7 @@ template <typename DBCon> class SvCallInserter
 {
   public:
     // this is here so that it gets destructed after the transaction context
-    std::shared_ptr<_SV_DB<DBCon>> pDB;
+    std::shared_ptr<SV_Schema<DBCon>> pDB;
 
   private:
     // must be after the DB so that it is deconstructed first
@@ -80,7 +80,7 @@ template <typename DBCon> class SvCallInserter
      * @details
      * Expects the run to exists in the DB.
      */
-    SvCallInserter( std::shared_ptr<_SV_DB<DBCon>> pDB, const int64_t iSvCallerRunId )
+    SvCallInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, const int64_t iSvCallerRunId )
         : pDB( pDB ),
           // @fixme: pTransactionContext( std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase )
           // ),
@@ -92,7 +92,7 @@ template <typename DBCon> class SvCallInserter
      * @details
      * This creates a new caller run with the given name and description.
      */
-    SvCallInserter( std::shared_ptr<_SV_DB<DBCon>> pDB,
+    SvCallInserter( std::shared_ptr<SV_Schema<DBCon>> pDB,
                     const std::string& rsSvCallerName,
                     const std::string& rsSvCallerDesc,
                     const int64_t uiJumpRunId )

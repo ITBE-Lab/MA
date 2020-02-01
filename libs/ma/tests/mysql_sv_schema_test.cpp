@@ -3,7 +3,7 @@
 
 #include "MySQL_con.h" // MySQL connector
 #include "common.h"
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_con_pool.h"
 #include <cstdlib>
 #include <iostream>
@@ -22,10 +22,10 @@ int main( void )
                     doNoExcept(
                         [&] {
 #ifdef _MSC_VER
-                            libMA::_SV_DB xSB_DB_SchemaView( pDBCon );
+                            libMA::SV_Schema xSB_DB_SchemaView( pDBCon );
 #else
                             using Type = typename decltype( pDBCon )::element_type;
-                            libMA::_SV_DB<Type> xSB_DB_SchemaView( pDBCon );
+                            libMA::SV_Schema<Type> xSB_DB_SchemaView( pDBCon );
 #endif
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;
                             // checkDB( pDBCon, pDBCon->getTaskId( ) );

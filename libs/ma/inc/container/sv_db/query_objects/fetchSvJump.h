@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 
 namespace libMA
@@ -36,7 +36,7 @@ template <typename DBCon> class SortedSvJumpFromSql
 
   public:
     /// @brief fetches libMA::SvJump objects from the run with id = iSvCallerRunId sorted by their start/end positions.
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb,
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb,
                          int64_t iSvCallerRunId )
         : pSelectedSetting( rParameters.getSelected( ) ),
           xQueryStart( pDb->pDatabase,
@@ -66,7 +66,7 @@ template <typename DBCon> class SortedSvJumpFromSql
      * - are sorted by their start/end position
      * - are within the rectangle iX,iY,uiW,uiH
      */
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb,
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb,
                          int64_t iSvCallerRunId, int64_t iX, int64_t iY, uint32_t uiW, uint32_t uiH )
         : pSelectedSetting( rParameters.getSelected( ) ),
           xQueryStart( pDb->pDatabase,
@@ -106,7 +106,7 @@ template <typename DBCon> class SortedSvJumpFromSql
      * - start after iS (on ref)
      * - end after iE (on ref)
      */
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb,
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb,
                          int64_t iSvCallerRunId, int64_t iS, int64_t iE )
         : pSelectedSetting( rParameters.getSelected( ) ),
           xQueryStart( pDb->pDatabase,

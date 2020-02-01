@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 
 namespace libMA
@@ -19,7 +19,7 @@ namespace libMA
  */
 template <typename DBCon> class SvCallerRunsFromDb
 {
-    std::shared_ptr<_SV_DB<DBCon>> pDb;
+    std::shared_ptr<SV_Schema<DBCon>> pDb;
     SQLQuery<DBCon, int64_t, std::string, std::string> xQuery;
     // DELETED: SQLQuery<DBCon, int64_t, std::string, std::string>::Iterator xTableIterator;
 
@@ -27,7 +27,7 @@ template <typename DBCon> class SvCallerRunsFromDb
     /**
      * @brief queries information about all sv caller runs.
      */
-    SvCallerRunsFromDb( std::shared_ptr<_SV_DB<DBCon>> pDb )
+    SvCallerRunsFromDb( std::shared_ptr<SV_Schema<DBCon>> pDb )
         : pDb( pDb ),
           xQuery( pDb->pDatabase,
                   "SELECT id, name, _desc_ "

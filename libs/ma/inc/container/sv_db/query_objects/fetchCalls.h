@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 
 namespace libMA
@@ -18,7 +18,7 @@ namespace libMA
 template <typename DBCon> class SvCallsFromDb
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
-    std::shared_ptr<_SV_DB<DBCon>> pDb;
+    std::shared_ptr<SV_Schema<DBCon>> pDb;
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t> xQuery;
     SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t> xQuerySupport;
     // DELETED: SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t,
@@ -28,7 +28,7 @@ template <typename DBCon> class SvCallsFromDb
     /**
      * @brief fetches all calls of a specific caller id.
      */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSvCallerId )
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSvCallerId )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xQuery(
@@ -57,7 +57,7 @@ template <typename DBCon> class SvCallsFromDb
      *  - do not overlap with a call form iSvCallerIdA with higher score
      * calls that are no further than iAllowedDist from each other are considered overlapping
      */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSvCallerIdA,
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSvCallerIdA,
                    int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
@@ -118,7 +118,7 @@ template <typename DBCon> class SvCallsFromDb
     /**
      * @brief fetches all calls of a specific caller id with a minimum score of dMinScore.
      */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSvCallerId,
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSvCallerId,
                    double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
@@ -144,7 +144,7 @@ template <typename DBCon> class SvCallsFromDb
     /**
      * @brief fetches all calls of a specific caller id in the rectangle described by uiX,uiY,uiW,uiH.
      */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSvCallerId,
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSvCallerId,
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
@@ -172,7 +172,7 @@ template <typename DBCon> class SvCallsFromDb
     /**
      * @brief fetches all calls of a specific caller id in the rectangle uiX,uiY,uiW,uiH with a score >= dMinScore.
      */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSvCallerId,
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSvCallerId,
                    int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),

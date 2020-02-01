@@ -4,7 +4,7 @@
  * @author Markus Schmidt
  */
 #pragma once
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 
 namespace libMA
@@ -12,7 +12,7 @@ namespace libMA
 /// @brief fetches all reads from the DB.
 template <typename DBCon> class AllNucSeqFromSql : public Module<NucSeq, true>
 {
-    std::shared_ptr<_SV_DB<DBCon>> pDb;
+    std::shared_ptr<SV_Schema<DBCon>> pDb;
     SQLQuery<DBCon, NucSeqSql, int64_t> xQuery;
     // std::shared_ptr<InteratorHolder> pTableIterator;
     bool bExecuted = false; // replacement for pTableIterator
@@ -22,8 +22,8 @@ template <typename DBCon> class AllNucSeqFromSql : public Module<NucSeq, true>
 
   public:
     /// @brief fetch all reads from the database.
-    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb )
-        : // pDb( std::make_shared<_SV_DB<DBCon>>( *pDb ) ), // original code
+    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb )
+        : // pDb( std::make_shared<SV_Schema<DBCon>>( *pDb ) ), // original code
           pDb( pDb ),
           xQuery( this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
@@ -34,9 +34,9 @@ template <typename DBCon> class AllNucSeqFromSql : public Module<NucSeq, true>
     {} // constructor
 
     /// @brief fetch all reads with the given iSequencerId from the database.
-    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSequencerId,
+    AllNucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSequencerId,
                       size_t uiRes, size_t uiModulo )
-        : // pDb( std::make_shared<_SV_DB<DBCon>>( *pDb ) ), // original code
+        : // pDb( std::make_shared<SV_Schema<DBCon>>( *pDb ) ), // original code
           pDb( pDb ),
           xQuery( this->pDb->pDatabase,
                   ( uiModulo != 1 ? "SELECT read_table.sequence, read_table.id "
@@ -98,14 +98,14 @@ template <typename DBCon> class AllNucSeqFromSql : public Module<NucSeq, true>
 /// @brief fetches all unpaired-reads from the DB.
 template <typename DBCon> class NucSeqFromSql : public Module<NucSeq, true>
 {
-    std::shared_ptr<_SV_DB<DBCon>> pDb;
+    std::shared_ptr<SV_Schema<DBCon>> pDb;
     SQLQuery<DBCon, NucSeqSql, uint32_t> xQuery;
     // CppSQLiteExtQueryStatement<NucSeqSql, uint32_t>::Iterator xTableIterator;
 
   public:
     /// @brief fetch all unpaired-reads with the given iSequencerId from the database.
-    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb, int64_t iSequencerId )
-        : // pDb( std::make_shared<_SV_DB<DBCon>>( *pDb ) ), // original code
+    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, int64_t iSequencerId )
+        : // pDb( std::make_shared<SV_Schema<DBCon>>( *pDb ) ), // original code
           pDb( pDb ),
           xQuery( this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
@@ -125,8 +125,8 @@ template <typename DBCon> class NucSeqFromSql : public Module<NucSeq, true>
     } // constructor
 
     /// @brief fetch all unpaired-reads from the database.
-    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb )
-        : // pDb( std::make_shared<_SV_DB<DBCon>>( *pDb ) ), // original code
+    NucSeqFromSql( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb )
+        : // pDb( std::make_shared<SV_Schema<DBCon>>( *pDb ) ), // original code
           pDb( pDb ),
           xQuery( this->pDb->pDatabase,
                   "SELECT read_table.sequence, read_table.id "
@@ -174,16 +174,16 @@ template <typename DBCon> class NucSeqFromSql : public Module<NucSeq, true>
 /// @brief fetches all paired-reads from the DB.
 template <typename DBCon> class PairedNucSeqFromSql : public Module<ContainerVector<std::shared_ptr<NucSeq>>, true>
 {
-    std::shared_ptr<_SV_DB<DBCon>> pDb;
+    std::shared_ptr<SV_Schema<DBCon>> pDb;
     SQLQuery<DBCon, NucSeqSql, NucSeqSql, uint32_t, uint32_t> xQuery;
     // CppSQLiteExtQueryStatement<NucSeqSql, NucSeqSql, uint32_t, uint32_t>::Iterator xTableIterator;
     const bool bRevCompMate;
 
   public:
     /// @brief fetch all paired-reads with the given iSequencerId from the database.
-    PairedNucSeqFromSql<DBCon>( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb,
+    PairedNucSeqFromSql<DBCon>( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb,
                                 int64_t iSequencerId )
-        : // pDb( std::make_shared<_SV_DB<DBCon>>( *pDb ) ), // original code
+        : // pDb( std::make_shared<SV_Schema<DBCon>>( *pDb ) ), // original code
           pDb( pDb ),
           xQuery( this->pDb->pDatabase,
                   "SELECT A.sequence, B.sequence, A.id, B.id "
@@ -202,8 +202,8 @@ template <typename DBCon> class PairedNucSeqFromSql : public Module<ContainerVec
     } // constructor
 
     /// @brief fetch all paired-reads from the database.
-    PairedNucSeqFromSql<DBCon>( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb )
-        : // pDb( std::make_shared<_SV_DB<DBCon>>( *pDb ) ), // original code
+    PairedNucSeqFromSql<DBCon>( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb )
+        : // pDb( std::make_shared<SV_Schema<DBCon>>( *pDb ) ), // original code
           pDb( pDb ),
           xQuery( this->pDb->pDatabase,
                   "SELECT A.sequence, B.sequence, A.id, B.id "

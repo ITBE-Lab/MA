@@ -10,7 +10,7 @@
 
 #include "db_config.h"
 
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "module/binarySeeding.h"
 #include "module/harmonization.h"
 #include "module/hashMapSeeding.h"

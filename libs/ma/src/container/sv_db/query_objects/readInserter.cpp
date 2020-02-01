@@ -7,7 +7,7 @@ using namespace libMA;
 
 using DBCon = SQLDB<MySQLConDB>;
 
-int64_t insertReads( std::vector<std::shared_ptr<NucSeq>> vReads, std::shared_ptr<_SV_DB<DBCon>> pDb,
+int64_t insertReads( std::vector<std::shared_ptr<NucSeq>> vReads, std::shared_ptr<SV_Schema<DBCon>> pDb,
                       std::string sName, std::shared_ptr<Pack> pRef )
 {
     _ReadInserter<DBCon> xInserter( pDb, sName, pRef );
@@ -22,7 +22,7 @@ void exportReadInserter( py::module& rxPyModuleId )
 {
     // export the ReadInserter class
     py::class_<_ReadInserter<DBCon>, std::shared_ptr<_ReadInserter<DBCon>>>( rxPyModuleId, "ReadInserter" )
-        .def( py::init<std::shared_ptr<_SV_DB<DBCon>>, std::string, std::shared_ptr<Pack>>( ) )
+        .def( py::init<std::shared_ptr<SV_Schema<DBCon>>, std::string, std::shared_ptr<Pack>>( ) )
         .def( "insert_read", &_ReadInserter<DBCon>::insertRead )
         .def_readonly( "sequencer_id", &_ReadInserter<DBCon>::uiSequencerId )
         .def( "insert_fasta_files", &_ReadInserter<DBCon>::insertFastaFiles )

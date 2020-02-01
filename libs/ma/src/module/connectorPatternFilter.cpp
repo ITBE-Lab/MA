@@ -13,7 +13,7 @@ void exportConnectorPatternFilter( py::module& rxPyModuleId )
 {
     // export the ConnectorPatternFilter class
     using DBCon = SQLDB<MySQLConDB>;
-    exportModule<ConnectorPatternFilter, std::shared_ptr<_SV_DB<DBCon>>>( rxPyModuleId, "ConnectorPatternFilter" );
+    exportModule<ConnectorPatternFilter, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId, "ConnectorPatternFilter" );
 
 } // function
 #endif

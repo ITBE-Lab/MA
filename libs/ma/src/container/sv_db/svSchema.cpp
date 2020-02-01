@@ -1,7 +1,7 @@
 #include "db_config.h"
 
 #include "container/container.h"
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "module/combineOverlappingCalls.h"
 
 // include classes that implement sql queries
@@ -17,7 +17,7 @@ using namespace libMA;
 
 using DBCon = SQLDB<MySQLConDB>;
 
-uint32_t getCallOverviewArea( std::shared_ptr<_SV_DB<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
                               double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH )
 {
     uint32_t uiX = 0;
@@ -62,7 +62,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<_SV_DB<DBCon>> pDb, std::shared_pt
     return xQuery.scalar( iRunId, iRunId, uiX, uiX + (uint32_t)uiW, uiY, uiY + (uint32_t)uiH, dMinScore );
 } // function
 
-uint32_t getNumJumpsInArea( std::shared_ptr<_SV_DB<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
+uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
                             int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
@@ -106,7 +106,7 @@ struct rect
     {} // constructor
 }; // struct
 
-std::vector<rect> getCallOverview( std::shared_ptr<_SV_DB<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+std::vector<rect> getCallOverview( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
                                    double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH,
                                    uint64_t uiMaxW, uint64_t uiMaxH, uint32_t uiGiveUpFactor )
 {
@@ -164,35 +164,35 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 {
 
     // export the SV_DB class
-    py::class_<_SV_DB<DBCon>, std::shared_ptr<_SV_DB<DBCon>>>( rxPyModuleId, "SV_DB" )
+    py::class_<SV_Schema<DBCon>, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId, "SV_DB" )
         .def( py::init<std::string, std::string>( ) ) // checked
         .def( py::init<std::string, std::string, bool>( ) ) // checked
-        .def( "delete_run", &_SV_DB<DBCon>::deleteRun ) // checked
-        .def( "get_run_id", &_SV_DB<DBCon>::getRunId )
-        .def( "get_call_area", &_SV_DB<DBCon>::getCallArea )
-        .def( "get_num_overlaps_between_calls", &_SV_DB<DBCon>::getNumOverlapsBetweenCalls )
-        .def( "get_blur_on_overlaps_between_calls", &_SV_DB<DBCon>::getBlurOnOverlapsBetweenCalls )
-        .def( "get_num_invalid_calls", &_SV_DB<DBCon>::getNumInvalidCalls )
-        .def( "add_score_index", &_SV_DB<DBCon>::addScoreIndex )
-        .def( "get_num_calls", &_SV_DB<DBCon>::getNumCalls )
-        .def( "get_run_name", &_SV_DB<DBCon>::getRunName )
-        .def( "get_run_desc", &_SV_DB<DBCon>::getRunDesc )
-        .def( "get_run_date", &_SV_DB<DBCon>::getRunDate )
-        .def( "get_run_jump_id", &_SV_DB<DBCon>::getRunJumpId )
-        .def( "get_num_runs", &_SV_DB<DBCon>::getNumRuns )
-        .def( "get_max_score", &_SV_DB<DBCon>::getMaxScore )
-        .def( "get_min_score", &_SV_DB<DBCon>::getMinScore )
-        .def( "run_exists", &_SV_DB<DBCon>::runExists )
-        .def( "name_exists", &_SV_DB<DBCon>::nameExists )
-        .def( "set_num_threads", &_SV_DB<DBCon>::setNumThreads )
-        .def( "create_jump_indices", &_SV_DB<DBCon>::createJumpIndices )
-        .def( "reconstruct_sequenced_genome", &_SV_DB<DBCon>::reconstructSequencedGenome )
-        .def( "newest_unique_runs", &_SV_DB<DBCon>::getNewestUniqueRuns )
-        .def( "update_coverage", &_SV_DB<DBCon>::updateCoverage )
-        .def( "insert_sv_caller_run", &_SV_DB<DBCon>::insertSvCallerRun )
-        .def( "insert_sv_jump_run", &_SV_DB<DBCon>::insertSvJumpRun )
-        .def( "get_read", &_SV_DB<DBCon>::getRead ) // checked
-        .def( "num_jumps", &_SV_DB<DBCon>::numJumps );
+        .def( "delete_run", &SV_Schema<DBCon>::deleteRun ) // checked
+        .def( "get_run_id", &SV_Schema<DBCon>::getRunId )
+        .def( "get_call_area", &SV_Schema<DBCon>::getCallArea )
+        .def( "get_num_overlaps_between_calls", &SV_Schema<DBCon>::getNumOverlapsBetweenCalls )
+        .def( "get_blur_on_overlaps_between_calls", &SV_Schema<DBCon>::getBlurOnOverlapsBetweenCalls )
+        .def( "get_num_invalid_calls", &SV_Schema<DBCon>::getNumInvalidCalls )
+        .def( "add_score_index", &SV_Schema<DBCon>::addScoreIndex )
+        .def( "get_num_calls", &SV_Schema<DBCon>::getNumCalls )
+        .def( "get_run_name", &SV_Schema<DBCon>::getRunName )
+        .def( "get_run_desc", &SV_Schema<DBCon>::getRunDesc )
+        .def( "get_run_date", &SV_Schema<DBCon>::getRunDate )
+        .def( "get_run_jump_id", &SV_Schema<DBCon>::getRunJumpId )
+        .def( "get_num_runs", &SV_Schema<DBCon>::getNumRuns )
+        .def( "get_max_score", &SV_Schema<DBCon>::getMaxScore )
+        .def( "get_min_score", &SV_Schema<DBCon>::getMinScore )
+        .def( "run_exists", &SV_Schema<DBCon>::runExists )
+        .def( "name_exists", &SV_Schema<DBCon>::nameExists )
+        .def( "set_num_threads", &SV_Schema<DBCon>::setNumThreads )
+        .def( "create_jump_indices", &SV_Schema<DBCon>::createJumpIndices )
+        .def( "reconstruct_sequenced_genome", &SV_Schema<DBCon>::reconstructSequencedGenome )
+        .def( "newest_unique_runs", &SV_Schema<DBCon>::getNewestUniqueRuns )
+        .def( "update_coverage", &SV_Schema<DBCon>::updateCoverage )
+        .def( "insert_sv_caller_run", &SV_Schema<DBCon>::insertSvCallerRun )
+        .def( "insert_sv_jump_run", &SV_Schema<DBCon>::insertSvJumpRun )
+        .def( "get_read", &SV_Schema<DBCon>::getRead ) // checked
+        .def( "num_jumps", &SV_Schema<DBCon>::numJumps );
 
     py::class_<rect>( rxPyModuleId, "rect" ) //
         .def_readonly( "x", &rect::x )

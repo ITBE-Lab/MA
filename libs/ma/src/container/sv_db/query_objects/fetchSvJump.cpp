@@ -11,8 +11,8 @@ void exportSvJump(py::module& rxPyModuleId)
 {
 	// export the SortedSvJumpFromSql class
 	py::class_<SortedSvJumpFromSql<DBCon>>(rxPyModuleId, "SortedSvJumpFromSql")
-		.def(py::init<const ParameterSetManager&, std::shared_ptr<_SV_DB<DBCon>>, int64_t>())
-		.def(py::init<const ParameterSetManager&, std::shared_ptr<_SV_DB<DBCon>>, int64_t, int64_t, int64_t, uint32_t,
+		.def(py::init<const ParameterSetManager&, std::shared_ptr<SV_Schema<DBCon>>, int64_t>())
+		.def(py::init<const ParameterSetManager&, std::shared_ptr<SV_Schema<DBCon>>, int64_t, int64_t, int64_t, uint32_t,
 			uint32_t>())
 		.def("has_next_start", &SortedSvJumpFromSql<DBCon>::hasNextStart)
 		.def("has_next_end", &SortedSvJumpFromSql<DBCon>::hasNextEnd)

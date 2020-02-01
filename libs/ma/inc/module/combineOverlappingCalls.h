@@ -5,7 +5,7 @@ namespace libMA
 {
 // @todo this can be done via a linesweep...
 template <typename DBCon>
-size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDb,
+size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb,
                                 int64_t iSvCallerId )
 {
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(

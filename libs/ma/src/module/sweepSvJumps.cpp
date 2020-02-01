@@ -26,14 +26,14 @@ void exportSweepSvJump( py::module& rxPyModuleId )
         .def_readwrite( "content", &CompleteBipartiteSubgraphClusterVector::vContent );
 
     exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
-    exportModule<SvCallSink, std::shared_ptr<_SV_DB<DBCon>>, std::string, std::string, int64_t>(
+    exportModule<SvCallSink, std::shared_ptr<SV_Schema<DBCon>>, std::string, std::string, int64_t>(
         rxPyModuleId, "SvCallSink", []( auto&& x ) { x.def_readwrite( "run_id", &SvCallSink::iRunId ); } );
     exportModule<BufferedSvCallSink<DBCon>, std::shared_ptr<SvCallInserter<DBCon>>>(
         rxPyModuleId, "BufferedSvCallSink", []( auto&& x ) { x.def( "commit", &BufferedSvCallSink<DBCon>::commit ); } );
 
 
     exportModule<CompleteBipartiteSubgraphSweep,
-                 std::shared_ptr<_SV_DB<DBCon>>,
+                 std::shared_ptr<SV_Schema<DBCon>>,
                  std::shared_ptr<Pack>,
                  int64_t,
                  int64_t>( rxPyModuleId, "CompleteBipartiteSubgraphSweep", []( auto&& x ) {
@@ -42,7 +42,7 @@ void exportSweepSvJump( py::module& rxPyModuleId )
             .def_readonly( "time_inner_while", &CompleteBipartiteSubgraphSweep::dInnerWhile );
     } );
 
-    exportModule<ExactCompleteBipartiteSubgraphSweep, std::shared_ptr<_SV_DB<DBCon>>, std::shared_ptr<Pack>, int64_t>(
+    exportModule<ExactCompleteBipartiteSubgraphSweep, std::shared_ptr<SV_Schema<DBCon>>, std::shared_ptr<Pack>, int64_t>(
         rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );
     exportModule<FilterLowSupportShortCalls>( rxPyModuleId, "FilterLowSupportShortCalls" );
     exportModule<FilterLowScoreCalls>( rxPyModuleId, "FilterLowScoreCalls" );

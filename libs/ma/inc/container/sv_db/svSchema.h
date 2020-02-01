@@ -39,9 +39,9 @@ namespace libMA
 
 /** @brief: An instance of this object models a connection to a database object.
  */
-template <typename DBCon> class _SV_DB : public Container
+template <typename DBCon> class SV_Schema : public Container
 {
-    using DBType = _SV_DB<DBCon>;
+    using DBType = SV_Schema<DBCon>;
 
   public:
     const std::string sName; // Improvement: DB-Definition via Json
@@ -60,7 +60,7 @@ template <typename DBCon> class _SV_DB : public Container
     std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable;
 
     /// @brief create a new database connection
-    _SV_DB( std::shared_ptr<DBCon> pDBPoolCon )
+    SV_Schema( std::shared_ptr<DBCon> pDBPoolCon )
         : sName( "unknown" ),
           bInMemory( false ),
           bIsCopy( false ),
@@ -89,13 +89,13 @@ template <typename DBCon> class _SV_DB : public Container
     // Delete: SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB, false )
     // Delete: {} // constructor
 
-    _SV_DB( std::string sName, std::string sMode, bool bInMemory ) : _SV_DB( std::make_shared<DBCon>( sName ) )
+    SV_Schema( std::string sName, std::string sMode, bool bInMemory ) : SV_Schema( std::make_shared<DBCon>( sName ) )
     {} // constructor
 
-    _SV_DB( std::string sName, std::string sMode ) : _SV_DB( sName, sMode, false )
+    SV_Schema( std::string sName, std::string sMode ) : SV_Schema( sName, sMode, false )
     {} // constructor
 
-    _SV_DB( std::string sName ) : _SV_DB( sName, "open" )
+    SV_Schema( std::string sName ) : SV_Schema( sName, "open" )
     {} // constructor
 
     inline void createJumpIndices( int64_t uiRun )

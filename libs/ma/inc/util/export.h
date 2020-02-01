@@ -165,7 +165,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "db_config.h"
 
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "container/svJump.h"
 #include "container/minimizer_index.h"
 

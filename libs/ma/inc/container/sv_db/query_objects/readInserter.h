@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 #include "db_config.h"
 namespace libMA
 {
@@ -18,7 +18,7 @@ template <typename DBCon> class _ReadInserter
 {
   private:
     // this is here so that it gets destructed after the transaction context
-    std::shared_ptr<_SV_DB<DBCon>> pDB;
+    std::shared_ptr<SV_Schema<DBCon>> pDB;
 // must be after the DB so that it is deconstructed first
 #ifdef WITH_TRANSACTION_CONTEXT
     // One transaction throughout the existence of the object.
@@ -30,7 +30,7 @@ template <typename DBCon> class _ReadInserter
     int64_t uiSequencerId;
 
     /// @brief creates a new sequencer entry with the name sSequencerName and transaction
-    _ReadInserter( std::shared_ptr<_SV_DB<DBCon>> pDB, std::string sSequencerName, std::shared_ptr<Pack> pPack )
+    _ReadInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, std::string sSequencerName, std::shared_ptr<Pack> pPack )
         : pDB( pDB ),
 #ifdef WITH_TRANSACTION_CONTEXT
           xTransactionContext( *pDB->pDatabase ),

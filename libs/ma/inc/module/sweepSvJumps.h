@@ -10,7 +10,7 @@
 #include "db_config.h"
 
 #include "container/sv_db/query_objects/fetchSvJump.h"
-#include "container/sv_db/svDb.h"
+#include "container/sv_db/svSchema.h"
 using DBCon = SQLDB<MySQLConDB>; // For the moment we set this module fix to MySQL.
 
 #include "module/module.h"
@@ -91,13 +91,13 @@ class CompleteBipartiteSubgraphClusterVector : public Container
 class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
-    std::shared_ptr<_SV_DB<DBCon>> pDB;
+    std::shared_ptr<SV_Schema<DBCon>> pDB;
     int64_t iRunId;
     /**
      * @brief
      * @details
      */
-    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pDB, std::string rsSvCallerName,
+    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDB, std::string rsSvCallerName,
                 std::string rsSvCallerDesc, int64_t uiJumpRunId )
         : pDB( pDB ), iRunId( pDB->pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
     {} // constructor
@@ -175,7 +175,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 {
   public:
     const ParameterSetManager& rParameters;
-    std::shared_ptr<_SV_DB<DBCon>> pSvDb;
+    std::shared_ptr<SV_Schema<DBCon>> pSvDb;
     std::shared_ptr<Pack> pPack;
     int64_t iSvCallerRunId;
     int64_t iMaxFuzziness;
@@ -193,10 +193,10 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
      * @brief
      * @details
      */
-    CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pSvDb,
+    CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pSvDb,
                                     std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId, int64_t iSequencerId )
         : rParameters( rParameters ),
-          pSvDb( std::make_shared<_SV_DB<DBCon>>( *pSvDb ) ),
+          pSvDb( std::make_shared<SV_Schema<DBCon>>( *pSvDb ) ),
           pPack( pPack ),
           iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
@@ -369,7 +369,7 @@ class ExactCompleteBipartiteSubgraphSweep
      * @brief
      * @details
      */
-    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<_SV_DB<DBCon>> pSvDb,
+    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pSvDb,
                                          std::shared_ptr<Pack> pPack, int64_t iSequencerId )
         : pPack( pPack )
     {} // constructor
