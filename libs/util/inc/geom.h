@@ -410,6 +410,15 @@ template <typename T> class Rectangle
         xXAxis.iSize = uiXEnd - uiXStart;
         xYAxis.iSize = uiYEnd - uiYStart;
     } // method
+
+    /*
+     * @brief compares two Rectangles.
+     * @returns true if origin and size are equal, false otherwise.
+     */
+    inline bool operator==( const Rectangle<T>& rxOther )
+    {
+        return xXAxis == rxOther.xXAxis && xYAxis == rxOther.xYAxis;
+    } // operator
 }; // class
 
 } // namespace geomUtil

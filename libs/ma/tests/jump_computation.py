@@ -60,12 +60,12 @@ def fetch_call_rectangles(database, parameter_set, run_id):
     return ret
 
 if __name__ == "__main__":
+    exit(1) # something wrond in here :(
     parameter_set = ParameterSetManager()
     # @todo create example where there are only unique seeds...
     parameter_set.by_name("Minimal Seed Size SV").set(2)
 
-    db_name = tempfile.gettempdir() + "/.tmp_3.db"
-    database = SV_DB(db_name, "create")
+    database = SV_DB("tmp_3", "create")
 
     reference = get_reference()
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     print("computing jumps...")
     # @todo i should not have to reopen the DB but somehow it is locked if i don't
-    database = SV_DB(db_name, "open")
+    database = SV_DB("tmp_3", "open")
     jump_id = compute_sv_jumps(parameter_set, fm_index, reference, database, sequencer_id)
     print("done")
 

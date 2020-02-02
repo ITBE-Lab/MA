@@ -675,7 +675,7 @@ class MySQLConDB
          */
         inline my_ulonglong exec( void )
         {
-            if( mysql_stmt_bind_param( pStmt, &vMySQLInpArgBind[ 0 ] ) )
+            if( !vMySQLInpArgBind.empty() && mysql_stmt_bind_param( pStmt, &vMySQLInpArgBind[ 0 ] ) )
                 throw std::runtime_error( "mysql_stmt_bind_param() failed.\n" + stmtErrMsg( ) );
             // Execute statement
             if( mysql_stmt_execute( pStmt ) )

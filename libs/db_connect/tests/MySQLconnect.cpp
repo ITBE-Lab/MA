@@ -202,7 +202,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         //     std::get<4>( aArr[ i ] ) = "This is a bit longer text that has to be written with every row";
 
         // LOAD DATA INFILE "C:\ProgramData\MySQL\MySQL Server 5.7\Uploads\0.csv" INTO TABLE test_table0;
-        int numValues = 1000000;
+        int numValues = 10000;
         {
             auto pTrxnGuard = pMySQLDB->uniqueGuardedTrxn( );
             std::cout << "Make xBulkInserter" << std::endl;

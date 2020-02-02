@@ -34,7 +34,13 @@ std::ostream& operator<<( std::ostream& xOS, const MyRectangle& xRect )
 int main( void )
 {
     std::vector<int64_t> vuiIds;
-    std::vector<WKBRectangle> vxRectangles;
+    std::vector<WKBRectangle> vxRectanglesWKB;
+    std::vector<geomUtil::Rectangle<uint64_t>> vxRectangles;
+
+    vxRectangles.emplace_back( 1, 1, 1, 1 );
+    vxRectangles.emplace_back( 1, 0, 9, 10 );
+    vxRectangles.emplace_back( 2, 0, 8, 10 );
+
     {
         auto pDatabase = std::make_shared<SQLDB<MySQLConDB>>( );
 
@@ -46,22 +52,18 @@ int main( void )
                   {{COLUMN_NAME, "rectangle"}, {PLACEHOLDER, "ST_PolyFromWKB(?, 0)"}},
               }}} );
 
-        vxRectangles.emplace_back( geomUtil::Rectangle<uint64_t>( 1, 1, 1, 1 ).getWKB( ) );
-        vxRectangles.emplace_back( geomUtil::Rectangle<uint64_t>( 1, 0, 9, 10 ).getWKB( ) );
-        vxRectangles.emplace_back( geomUtil::Rectangle<uint64_t>( 2, 0, 8, 10 ).getWKB( ) );
-
 
         for( auto& xRect : vxRectangles )
         {
-            std::cout << xRect << std::endl;
-            vuiIds.push_back( xTestTable.insert( xRect ) );
+            vxRectanglesWKB.push_back( xRect.getWKB( ) );
+            vuiIds.push_back( xTestTable.insert( vxRectanglesWKB.back( ) ) );
         }
     }
 
     {
         auto pDatabase = std::make_shared<SQLDB<MySQLConDB>>( );
-        SQLQuery<SQLDB<MySQLConDB>, WKBRectangle> xQuery( pDatabase,
-                                                  "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = ?" );
+        SQLQuery<SQLDB<MySQLConDB>, WKBRectangle> xQuery(
+            pDatabase, "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = ?" );
 
         for( size_t uiI = 0; uiI < vxRectangles.size( ); uiI++ )
         {
@@ -69,6 +71,7 @@ int main( void )
             geomUtil::Rectangle<uint64_t> xRect;
             xRect.fromWKB( xWKB );
             std::cout << std::dec << xRect << std::endl;
+            assert( xRect == vxRectangles[ uiI ] );
         }
     }
 

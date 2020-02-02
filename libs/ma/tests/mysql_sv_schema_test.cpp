@@ -14,7 +14,7 @@ int main( void )
     std::vector<std::future<void>> vFutures;
     {
         doNoExcept( [&] {
-            SQLDBConPool<MySQLConDB> xDBPool( 300, "Pooled_DB" );
+            SQLDBConPool<MySQLConDB> xDBPool( 32, "Pooled_DB" );
 
             for( int i = 0; i < 32; i++ )
                 // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
@@ -35,10 +35,6 @@ int main( void )
                 } ) );
         } );
 
-#ifdef _MSC_VER
-        int i;
-        std::cin >> i;
-#endif
     } // close the pool
 
     // Get all future exception safe
@@ -47,10 +43,6 @@ int main( void )
 
     std::cout << "ALL WORK DONE ..." << std::endl;
 
-#ifdef _MSC_VER
-    int i;
-    std::cin >> i;
-#endif
 
     return EXIT_SUCCESS;
 } /// main function

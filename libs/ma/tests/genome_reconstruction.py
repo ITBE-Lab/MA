@@ -35,11 +35,8 @@ def get_reference():
     return reference
 
 if __name__ == "__main__":
-    db_name = tempfile.gettempdir() + "/.tmp_2.db"
-
-    print(db_name)
-
-    database = SV_DB(db_name, "create")
+    exit(1) # endless loop here :(
+    database = SV_DB("tmp_2", "create")
 
     run_id = insert_calls(database)
     reference = get_reference()
