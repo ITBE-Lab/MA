@@ -17,17 +17,12 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
 
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
         pDb->pDatabase,
-        "SELECT sv_call_r_tree.id, from_pos, to_pos, from_size, to_size, switch_strand, "
+        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
         "       inserted_sequence, supporting_reads "
-        "FROM sv_call_table, sv_call_r_tree "
-        "WHERE sv_call_table.id = sv_call_r_tree.id "
-        "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-        "AND sv_call_r_tree.run_id_b <= ? " // dim 1
-        "AND sv_call_r_tree.maxX >= ? " // dim 2
-        "AND sv_call_r_tree.minX <= ? " // dim 2
-        "AND sv_call_r_tree.maxY >= ? " // dim 3
-        "AND sv_call_r_tree.minY <= ? " // dim 3
-        "AND sv_call_r_tree.id > ? "
+        "FROM sv_call_table "
+        "AND sv_caller_run_id = ? " // dim 1
+        "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+        "AND id > ? "
         "AND switch_strand = ? " );
 
     SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
@@ -61,36 +56,23 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         std::vector<int64_t> vToDel;
         {
             // get all overlapping calls
-            // DEL: auto xIt2 = xQuery2.vExecuteAndReturnIterator( iSvCallerId, iSvCallerId,
-            // DEL:                                                std::get<1>( xTup ), // from_pos
-            // DEL:                                                // from_pos + from_size
-            // DEL:                                                std::get<1>( xTup ) + std::get<3>( xTup ),
-            // DEL:                                                std::get<2>( xTup ), // to_pos
-            // DEL:                                                // to_pos + to_size
-            // DEL:                                                std::get<2>( xTup ) + std::get<4>( xTup ),
-            // DEL:                                                std::get<0>( xTup ), // id
-            // DEL:                                                std::get<5>( xTup ) // bSwitchStrand
-            // DEL: );
-            xQuery2.execAndFetch( iSvCallerId, iSvCallerId,
-                                  std::get<1>( xTup ), // from_pos
-                                  std::get<1>( xTup ) + std::get<3>( xTup ), // from_pos + from_size
-                                  std::get<2>( xTup ), // to_pos
-                                  std::get<2>( xTup ) + std::get<4>( xTup ), // to_pos + to_size
+
+            auto xWkb = geomUtil::Rectangle<nucSeqIndex>( std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                                                          std::get<4>( xTup ) )
+                            .getWKB( );
+            xQuery2.execAndFetch( iSvCallerId,
+                                  xWkb, // rectangle
                                   std::get<0>( xTup ), // id
                                   std::get<5>( xTup ) ); // bSwitchStrand)
-            // DEL: if( !xIt2.eof( ) )
             if( !xQuery2.eof( ) ) // FIXME: avoid using eof - work with next() and get() merely
             {
 
                 xPrim.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
                 xPrim.iId = std::get<0>( xTup );
-                // DEL: auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );
                 xQuerySupport.execAndFetch( std::get<0>( xTup ) );
                 nucSeqIndex uiPrimInsertSizeAvg = 0;
-                // DEL: while( !xSupportIterator.eof( ) )
                 while( !xQuerySupport.eof( ) )
                 {
-                    // DEL: auto xTup = xSupportIterator.get( );
                     auto xTup = xQuerySupport.get( );
                     xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
                     auto pNewJump =
@@ -126,13 +108,10 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                     );
                     xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
                     xSec.iId = std::get<0>( xTup2 );
-                    // DEL: auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup2 ) ) );
                     xQuerySupport.execAndFetch( std::get<0>( xTup2 ) );
                     nucSeqIndex uiSecInsertSizeAvg = 0;
-                    // DEL: while( !xSupportIterator.eof( ) )
                     while( !xQuerySupport.eof( ) )
                     {
-                        // DEL: auto xTup = xSupportIterator.get( );
                         auto xTup = xQuerySupport.get( );
                         xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
                         auto pNewJump = std::make_shared<SvJump>(
@@ -142,7 +121,6 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                         xSec.vSupportingJumps.push_back( pNewJump );
                         xSec.addJumpToEstimateClusterSize( pNewJump );
                         uiSecInsertSizeAvg += xSec.vSupportingJumps.back( )->query_distance( );
-                        // DEL:xSupportIterator.next( );
                         xQuerySupport.next( );
                     } // while
                     uiSecInsertSizeAvg /= xSec.vSupportingJumps.size( );

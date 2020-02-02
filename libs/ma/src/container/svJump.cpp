@@ -34,8 +34,7 @@ void exportSVJump( py::module& rxPyModuleId )
         .def_readonly( "from_pos", &SvJump::uiFrom )
         .def_readonly( "to_pos", &SvJump::uiTo )
         .def_readonly( "id", &SvJump::iId )
-        .def_readonly( "read_id", &SvJump::iReadId )
-        ;
+        .def_readonly( "read_id", &SvJump::iReadId );
 
     // export the SvCall class
     py::bind_vector<std::vector<int64_t>>( rxPyModuleId, "int64_tVector", "docstr" );
@@ -50,10 +49,8 @@ void exportSVJump( py::module& rxPyModuleId )
         .def( "get_score", &SvCall::getScore )
         .def_readwrite( "num_supp_reads", &SvCall::uiNumSuppReads )
         .def_readwrite( "reference_ambiguity", &SvCall::uiReferenceAmbiguity )
-        .def_readwrite( "from_start", &SvCall::uiFromStart )
-        .def_readwrite( "from_size", &SvCall::uiFromSize )
-        .def_readwrite( "to_start", &SvCall::uiToStart )
-        .def_readwrite( "to_size", &SvCall::uiToSize )
+        .def_readwrite( "from", &SvCall::xXAxis )
+        .def_readwrite( "to", &SvCall::xYAxis )
         .def_readwrite( "switch_strand", &SvCall::bSwitchStrand )
         .def_readwrite( "supporing_jump_ids", &SvCall::vSupportingJumpIds )
         .def_readwrite( "inserted_sequence", &SvCall::pInsertedSequence )

@@ -7,6 +7,8 @@
 #pragma once
 
 #include "common.h"
+#include "geom.h"
+#include "spatial.h"
 #include "system.h"
 #include <csignal>
 #include <string>
@@ -15,6 +17,7 @@
 
 namespace libMA
 {
+typedef geomUtil::WKBPolygon<geomUtil::Rectangle<uint64_t>::uiSizeWKB> WKBRectangle;
 template <typename DBCon>
 using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
                                                int64_t, // sv_caller_run_id (foreign key)
@@ -26,42 +29,13 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
                                                NucSeqSql, // inserted_sequence
                                                uint32_t, // supporting_reads
                                                uint32_t, // reference_ambiguity
-                                               int64_t // regex_id
+                                               int64_t, // regex_id
+                                               WKBRectangle // rectangle (geometry)
                                                >;
-
-// Emergency definition of the R-tree table for structural variations.
-template <typename DBCon>
-using SvCallRTreeType = SQLTable<DBCon, // DB connector type
-                                 uint32_t, // id (geometry)
-                                 uint32_t, // run_id_a (geometry)
-                                 uint32_t, // run_id_b (geometry)
-                                 uint32_t, // minX (geometry)
-                                 uint32_t, // maxX (geometry)
-                                 uint32_t, // minY (geometry)
-                                 uint32_t // maxY (geometry)
-                                 >;
-
-const json jSvCallRTreeDef = { { TABLE_NAME, "sv_call_r_tree" },
-                               { TABLE_COLUMNS,
-                                 { { { COLUMN_NAME, "id" } },
-                                   { { COLUMN_NAME, "run_id_a" } },
-                                   { { COLUMN_NAME, "run_id_b" } },
-                                   { { COLUMN_NAME, "minX" } },
-                                   { { COLUMN_NAME, "maxX" } },
-                                   { { COLUMN_NAME, "minY" } },
-                                   { { COLUMN_NAME, "maxY" } } } } };
 
 template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 {
     std::shared_ptr<DBCon> pDatabase;
-
-    class RTreeIndex : public SvCallRTreeType<DBCon>
-    {
-      public:
-        /** @brief Construct the R-tree table in given database. */
-        RTreeIndex( std::shared_ptr<DBCon> pDB ) : SvCallRTreeType<DBCon>( pDB, jSvCallRTreeDef )
-        {} // constructor
-    }; // class
 
   public:
     /**
@@ -98,11 +72,9 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
           public:
             json jOverlapCacheTableDef( std::string sTableName )
             {
-                return json{ { TABLE_NAME, sTableName },
-                             { TABLE_COLUMNS,
-                               { { { COLUMN_NAME, "score_a" } },
-                                 { { COLUMN_NAME, "blur_min" } },
-                                 { { COLUMN_NAME, "blur_max" } } } } };
+                return json{{TABLE_NAME, sTableName},
+                            {TABLE_COLUMNS,
+                             {{{COLUMN_NAME, "score_a"}}, {{COLUMN_NAME, "blur_min"}}, {{COLUMN_NAME, "blur_max"}}}}};
             } // method
 
             std::string sTableName;
@@ -154,13 +126,13 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
           public:
             json jOverlapCacheComputedTableDef( )
             {
-                return json{ { TABLE_NAME, "overlap_cache_computed_table" },
-                             { TABLE_COLUMNS,
-                               {
-                                   { { COLUMN_NAME, "sv_caller_run_id_a" } },
-                                   { { COLUMN_NAME, "sv_caller_run_id_b" } },
-                                   { { COLUMN_NAME, "blur" } },
-                               } } };
+                return json{{TABLE_NAME, "overlap_cache_computed_table"},
+                            {TABLE_COLUMNS,
+                             {
+                                 {{COLUMN_NAME, "sv_caller_run_id_a"}},
+                                 {{COLUMN_NAME, "sv_caller_run_id_b"}},
+                                 {{COLUMN_NAME, "blur"}},
+                             }}};
             } // method
 
             SQLQuery<DBCon, int64_t> xIsComputed;
@@ -189,8 +161,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
         std::shared_ptr<OverlapCacheComputedTable> pHelper;
 
       public:
-        OverlapCache( std::shared_ptr<DBCon> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
-                      std::string sDBName )
+        OverlapCache( std::shared_ptr<DBCon> pDatabase, std::shared_ptr<std::mutex> pWriteLock, std::string sDBName )
             : pDatabase( pDatabase ),
               pWriteLock( pWriteLock ),
               sDBName( sDBName ),
@@ -213,148 +184,37 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
             // simply get all calls in iCallerRunIdB
             auto vResults = xCacheTable.xNumOverlaps.executeAndStoreAllInVector( iCallerRunIdB, 0 );
 
-#if 0 // Code replacement is in #else branch.
-            {
-                ThreadPool xPool( 32 ); // FIXME: Read this from parameters
-
-                for( size_t uiJobId = 0; uiJobId < 32; uiJobId++ )
-                    xPool.enqueue(
-                        [ & ]( size_t, size_t uiJobId_ ) {
-                            SQLDB<DBCon> xNewConn( sDBName );
-                            SQLQuery<DBCon, int64_t> xNumOverlapsHelper1(
-                                xNewConn,
-                                // make sure that inner overlaps the outer:
-                                "SELECT outer.id "
-                                "FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
-                                "WHERE outer.id == idx_outer.id "
-                                "AND idx_outer.run_id_b >= ? " // dim 1
-                                "AND idx_outer.run_id_a <= ? " // dim 1
-                                "AND idx_outer.maxX >= ? " // dim 2
-                                "AND idx_outer.minX <= ? " // dim 2
-                                "AND idx_outer.maxY >= ? " // dim 3
-                                "AND idx_outer.minY <= ? " // dim 3
-                                "AND outer.switch_strand = ? "
-                                "LIMIT 1 " );
-                            SQLQuery<DBCon, int64_t> xNumOverlapsHelper2(
-                                xNewConn,
-                                // make sure that inner does not overlap with any other call with higher score
-                                "SELECT inner2.id "
-                                "FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
-                                "WHERE inner2.id == idx_inner2.id "
-                                "AND idx_inner2.id != ? "
-                                // tuple comparison here, so that overlapping calls with equal score always have
-                                // one call take priority (in this case always the one inserted after)
-                                "AND (" +
-                                    SvCallTable::getSqlForCallScore( "inner2" ) +
-                                    ", inner2.id) > (?, ?) "
-                                    "AND idx_inner2.run_id_b >= ? " // dim 1
-                                    "AND idx_inner2.run_id_a <= ? " // dim 1
-                                    "AND idx_inner2.maxX >= ? " // dim 2
-                                    "AND idx_inner2.minX <= ? " // dim 2
-                                    "AND idx_inner2.maxY >= ? " // dim 3
-                                    "AND idx_inner2.minY <= ? " // dim 3
-                                    "AND inner2.switch_strand == ? "
-                                    "LIMIT 1 " );
-                            for( size_t uiTupId = uiJobId_; uiTupId < vResults.size( ); uiTupId += 32 )
-                            {
-                                auto& rTup = vResults[ uiTupId ];
-                                int64_t iId = std::get<0>( rTup );
-                                double dScore = std::get<1>( rTup );
-                                uint32_t uiFromStart = std::get<2>( rTup );
-                                uint32_t uiFromSize = std::get<3>( rTup );
-                                uint32_t uiToStart = std::get<4>( rTup );
-                                uint32_t uiToSize = std::get<5>( rTup );
-                                bool bSwitchStrand = std::get<6>( rTup );
-
-                                // get the maximal blur for which the current call does not overlap with another one
-                                int64_t iBlurMax = 0;
-                                while( true )
-                                {
-                                    // check if current call overlaps a call with higher score of the same run
-                                    auto xIt2 = xNumOverlapsHelper2.vExecuteAndReturnIterator(
-                                        iId, dScore, iId, iCallerRunIdB, iCallerRunIdB, uiFromStart - iBlurMax,
-                                        uiFromStart + uiFromSize + iBlurMax, uiToStart - iBlurMax,
-                                        uiToStart + uiToSize + iBlurMax, bSwitchStrand );
-                                    if( !xIt2.eof( ) )
-                                        break;
-                                    iBlurMax++;
-                                    if( iBlurMax >= iAllowedDist )
-                                        break;
-                                } // while
-
-                                // call immediately overlaps with call with higher score
-                                if( iBlurMax == 0 )
-                                    continue;
-
-                                // get the minimal blur for which the current call does overlap a ground truth
-                                int64_t iBlurMin = iAllowedDist;
-                                while( true )
-                                {
-                                    auto xIt1 = xNumOverlapsHelper1.vExecuteAndReturnIterator(
-                                        iCallerRunIdA, iCallerRunIdA, uiFromStart - iBlurMin,
-                                        uiFromStart + uiFromSize + iBlurMin, uiToStart - iBlurMin,
-                                        uiToStart + uiToSize + iBlurMin, bSwitchStrand );
-                                    if( xIt1.eof( ) )
-                                        break;
-                                    iBlurMin--;
-                                    if( iBlurMin < 0 )
-                                        break;
-                                } // while
-                                iBlurMin++;
-
-                                // call does not overlap with ground truth at all
-                                if( iBlurMin > iAllowedDist )
-                                    continue;
-
-                                // fill the cache with the connections
-                                std::lock_guard<std::mutex> xGuard( *pWriteLock );
-                                xCacheTable.xInsertRow( dScore, iBlurMin, iBlurMax );
-                            } // for
-                        },
-                        uiJobId );
-            } // scope of xPool
-#else // code replacement or new SQL API:
             {
                 const size_t uiNumThreads = 1; // In MySQL, one thread allowed only.
                 ThreadPool xPool( uiNumThreads ); // DESIGN: We require a database connection pool ...
 
                 for( size_t uiJobId = 0; uiJobId < uiNumThreads; uiJobId++ )
                     xPool.enqueue(
-                        [ & ]( size_t, size_t uiJobId_ ) {
+                        [&]( size_t, size_t uiJobId_ ) {
                             // SQLDB<DBCon> xNewConn(sDBName);
                             SQLQuery<DBCon, int64_t> xNumOverlapsHelper1(
                                 pDatabase,
                                 // make sure that inner overlaps the outer:
-                                "SELECT outer.id "
-                                "FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
-                                "WHERE outer.id == idx_outer.id "
-                                "AND idx_outer.run_id_b >= ? " // dim 1
-                                "AND idx_outer.run_id_a <= ? " // dim 1
-                                "AND idx_outer.maxX >= ? " // dim 2 -> spatial geometry dim 1
-                                "AND idx_outer.minX <= ? " // dim 2 -> spatial geometry dim 1
-                                "AND idx_outer.maxY >= ? " // dim 3 -> spatial geometry dim 2
-                                "AND idx_outer.minY <= ? " // dim 3 -> spatial geometry dim 2
-                                "AND outer.switch_strand = ? "
+                                "SELECT id "
+                                "FROM sv_call_table "
+                                "AND sv_caller_run_id = ? " // dim 1
+                                "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                                "AND switch_strand = ? "
                                 "LIMIT 1 " );
                             SQLQuery<DBCon, int64_t> xNumOverlapsHelper2(
                                 pDatabase,
                                 // make sure that inner does not overlap with any other call with higher score
-                                "SELECT inner2.id "
-                                "FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
-                                "WHERE inner2.id == idx_inner2.id "
-                                "AND idx_inner2.id != ? "
+                                "SELECT id "
+                                "FROM sv_call_table"
+                                "AND id != ? "
                                 // tuple comparison here, so that overlapping calls with equal score always have
                                 // one call take priority (in this case always the one inserted after)
                                 "AND (" +
-                                    SvCallTable::getSqlForCallScore( "inner2" ) +
-                                    ", inner2.id) > (?, ?) "
-                                    "AND idx_inner2.run_id_b >= ? " // dim 1
-                                    "AND idx_inner2.run_id_a <= ? " // dim 1
-                                    "AND idx_inner2.maxX >= ? " // dim 2 -> spatial geometry dim 1
-                                    "AND idx_inner2.minX <= ? " // dim 2 -> spatial geometry dim 1
-                                    "AND idx_inner2.maxY >= ? " // dim 3 -> spatial geometry dim 2
-                                    "AND idx_inner2.minY <= ? " // dim 3 -> spatial geometry dim 2
-                                    "AND inner2.switch_strand = ? "
+                                    SvCallTable::getSqlForCallScore( ) +
+                                    ", id) > (?, ?) "
+                                    "AND run_id_b = ? " // dim 1
+                                    "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                                    "AND switch_strand = ? "
                                     "LIMIT 1 " );
                             for( size_t uiTupId = uiJobId_; uiTupId < vResults.size( ); uiTupId += uiNumThreads )
                             {
@@ -373,16 +233,13 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 while( true )
                                 {
                                     // check if current call overlaps a call with higher score of the same run
-                                    // DEL:auto xIt2 = xNumOverlapsHelper2.vExecuteAndReturnIterator(
-                                    // DEL:    iId, dScore, iId, iCallerRunIdB, iCallerRunIdB, uiFromStart - iBlurMax,
-                                    // DEL:    uiFromStart + uiFromSize + iBlurMax, uiToStart - iBlurMax,
-                                    // DEL:    uiToStart + uiToSize + iBlurMax, bSwitchStrand );
-                                    xNumOverlapsHelper2.execAndFetch(
-                                        iId, dScore, iId, iCallerRunIdB, iCallerRunIdB, uiFromStart - iBlurMax,
-                                        uiFromStart + uiFromSize + iBlurMax, uiToStart - iBlurMax,
-                                        uiToStart + uiToSize + iBlurMax, bSwitchStrand );
+                                    auto xWkb = geomUtil::Rectangle<nucSeqIndex>(
+                                                    uiFromStart - iBlurMax, uiToStart - iBlurMax,
+                                                    uiFromSize + iBlurMax * 2, uiToSize + iBlurMax * 2 )
+                                                    .getWKB( );
+                                    xNumOverlapsHelper2.execAndFetch( iId, dScore, iId, iCallerRunIdB, xWkb,
+                                                                      bSwitchStrand );
 
-                                    // DEL: if( !xIt2.eof( ) )
                                     if( !xNumOverlapsHelper2.eof( ) )
                                         break;
                                     iBlurMax++;
@@ -398,16 +255,12 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 int64_t iBlurMin = iAllowedDist;
                                 while( true )
                                 {
-                                    // DEL:auto xIt1 = xNumOverlapsHelper1.vExecuteAndReturnIterator(
-                                    // DEL:    iCallerRunIdA, iCallerRunIdA, uiFromStart - iBlurMin,
-                                    // DEL:    uiFromStart + uiFromSize + iBlurMin, uiToStart - iBlurMin,
-                                    // DEL:    uiToStart + uiToSize + iBlurMin, bSwitchStrand );
-                                    xNumOverlapsHelper1.execAndFetch(
-                                        iCallerRunIdA, iCallerRunIdA, uiFromStart - iBlurMin,
-                                        uiFromStart + uiFromSize + iBlurMin, uiToStart - iBlurMin,
-                                        uiToStart + uiToSize + iBlurMin, bSwitchStrand );
+                                    auto xWkb = geomUtil::Rectangle<nucSeqIndex>(
+                                                    uiFromStart - iBlurMin, uiToStart - iBlurMin,
+                                                    uiFromSize + iBlurMin * 2, uiToSize + iBlurMin * 2 )
+                                                    .getWKB( );
+                                    xNumOverlapsHelper1.execAndFetch( iCallerRunIdA, xWkb, bSwitchStrand );
 
-                                    // DEL: if( xIt1.eof( ) )
                                     if( xNumOverlapsHelper1.eof( ) )
                                         break;
                                     iBlurMin--;
@@ -422,32 +275,15 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 
                                 // fill the cache with the connections
                                 std::lock_guard<std::mutex> xGuard( *pWriteLock );
-                                // DEL: xCacheTable.xInsertRow( dScore, iBlurMin, iBlurMax );
-								xCacheTable.insert(dScore, iBlurMin, iBlurMax);
+                                xCacheTable.insert( dScore, iBlurMin, iBlurMax );
                             } // for
                         },
                         uiJobId );
             } // scope of xPool
-#endif
-#if 0
-// py code
-
-import sqlite3
-conn = sqlite3.connect("/mnt/ssd1/sv_datasets2/del_human/svs.db")
-c = conn.cursor()
-c.execute("DELETE FROM overlap_cache_computed_table")
-c.execute("DROP TABLE overlap_cache_table_9_1")
-c.execute("DELETE FROM overlap_cache_table")
-conn.commit()
-conn.close()
-exit()
-
-#endif
             // remember that we have computed the cache
-            pHelper->insert( iCallerRunIdA, iCallerRunIdB, iAllowedDist ); // xInsertRow->insert
-            // DEL: xCacheTable.xCreateIndex.exec( );
-            xCacheTable.addIndex(
-                json{ { INDEX_NAME, xCacheTable.sTableName + "_index" }, { INDEX_COLUMNS, "score_a" } } );
+            pHelper->insert( iCallerRunIdA, iCallerRunIdB, iAllowedDist );
+
+            xCacheTable.addIndex( json{{INDEX_NAME, xCacheTable.sTableName + "_index"}, {INDEX_COLUMNS, "score_a"}} );
         } // method
         /**
          * @brief helper function; see libMA::SvCallTable::numOverlaps
@@ -457,11 +293,11 @@ exit()
         inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore,
                                      int64_t iAllowedDist )
         {
-            metaMeasureAndLogDuration<false>( "createCache", [ & ]( ) { //
+            metaMeasureAndLogDuration<false>( "createCache", [&]( ) { //
                 createCache( iCallerRunIdA, iCallerRunIdB, iAllowedDist ); //
             } );
             uint32_t uiRet;
-            metaMeasureAndLogDuration<false>( "xNumOverlapsCache.scalar", [ & ]( ) { //
+            metaMeasureAndLogDuration<false>( "xNumOverlapsCache.scalar", [&]( ) { //
                 OverlapCacheTable xCacheTable( pDatabase, iCallerRunIdA, iCallerRunIdB );
                 // xNumOverlapsCache.bindAndExplain(iCallerRunIdB, iCallerRunIdA, dMinScore, iAllowedDist);
                 uiRet = xCacheTable.xNumOverlapsCache.scalar( dMinScore, iAllowedDist, iAllowedDist );
@@ -495,7 +331,7 @@ exit()
         } // method
     }; // class
 
-    std::shared_ptr<RTreeIndex> xIndex;
+    std::shared_ptr<RTreeIndex<DBCon>> pIndex;
     // Was originally CppSQLiteExtInsertStatement statement.
     // FIXME: Add insert statement SQLStatement<DBCon, int64_t, int64_t, int64_t, uint32_t, uint32_t, uint32_t,
     // uint32_t> xInsertRTree;
@@ -516,24 +352,22 @@ exit()
     json jSvCallTableDef( )
     {
         return json{
-            { TABLE_NAME, "sv_call_table" },
-            { TABLE_COLUMNS,
-              {
-                  { { COLUMN_NAME, "sv_caller_run_id" } },
-                  { { COLUMN_NAME, "from_pos" } },
-                  { { COLUMN_NAME, "to_pos" } },
-                  { { COLUMN_NAME, "from_size" } },
-                  { { COLUMN_NAME, "to_size" } },
-                  { { COLUMN_NAME, "switch_strand" } },
-                  { { COLUMN_NAME, "inserted_sequence" } },
-                  { { COLUMN_NAME, "supporting_reads" } },
-                  { { COLUMN_NAME, "reference_ambiguity" } },
-                  { { COLUMN_NAME, "regex_id" } },
-              } }, //
-            { FOREIGN_KEY,
-              { { COLUMN_NAME, "sv_caller_run_id" }, { REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE" } } },
-            { FOREIGN_KEY,
-              { { COLUMN_NAME, "regex_id" }, { REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL" } } } };
+            {TABLE_NAME, "sv_call_table"},
+            {TABLE_COLUMNS,
+             {{{COLUMN_NAME, "sv_caller_run_id"}},
+              {{COLUMN_NAME, "from_pos"}},
+              {{COLUMN_NAME, "to_pos"}},
+              {{COLUMN_NAME, "from_size"}},
+              {{COLUMN_NAME, "to_size"}},
+              {{COLUMN_NAME, "switch_strand"}},
+              {{COLUMN_NAME, "inserted_sequence"}},
+              {{COLUMN_NAME, "supporting_reads"}},
+              {{COLUMN_NAME, "reference_ambiguity"}},
+              {{COLUMN_NAME, "regex_id"}},
+              {{COLUMN_NAME, "rectangle"}, {PLACEHOLDER, "ST_PolyFromWKB(?, 0)"}}}}, //
+            {FOREIGN_KEY,
+             {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},
+            {FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}};
     }; // method
 
     SvCallTable( std::shared_ptr<DBCon> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
@@ -542,38 +376,28 @@ exit()
                                   jSvCallTableDef( ) ), // table definition
 
           pDatabase( pDatabase ),
-          xIndex( std::make_shared<RTreeIndex>( pDatabase ) ),
-
-          // FIXME: Add insert statement xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
+          pIndex( std::make_shared<RTreeIndex<DBCon>>( pDatabase ) ),
           xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
 
-          xQuerySizeSpecific( pDatabase, "SELECT COUNT(*) FROM sv_call_table, sv_call_r_tree "
-                                         "WHERE sv_call_table.id = sv_call_r_tree.id "
-                                         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                                         "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+          xQuerySizeSpecific( pDatabase, "SELECT COUNT(*) FROM sv_call_table "
+                                         "AND sv_caller_run_id = ? "
                                          "AND " +
                                              getSqlForCallScore( ) + " >= ? " ),
           xCallArea( pDatabase,
-                     "SELECT SUM( from_size * to_size ) FROM sv_call_table, sv_call_r_tree "
-                     "WHERE sv_call_table.id = sv_call_r_tree.id "
-                     "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                     "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                     "SELECT SUM( from_size * to_size ) FROM sv_call_table "
+                     "AND sv_caller_run_id = ? "
                      "AND " +
                          getSqlForCallScore( ) + " >= ? " ),
           xMaxScore( pDatabase,
                      "SELECT " + getSqlForCallScore( ) +
-                         " FROM sv_call_table, sv_call_r_tree "
-                         "WHERE sv_call_table.id = sv_call_r_tree.id "
-                         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                         "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                         " FROM sv_call_table "
+                         "AND sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " DESC LIMIT 1 " ),
           xMinScore( pDatabase,
                      "SELECT " + getSqlForCallScore( ) +
-                         " FROM sv_call_table, sv_call_r_tree "
-                         "WHERE sv_call_table.id = sv_call_r_tree.id "
-                         "AND sv_call_r_tree.run_id_a >= ? " // dim 1
-                         "AND sv_call_r_tree.run_id_b <= ? " // dim 1
+                         " FROM sv_call_table "
+                         "AND sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " ASC LIMIT 1 " ),
 
@@ -583,7 +407,7 @@ exit()
               "FROM sv_call_table "
               "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
               "AND sv_call_table.from_pos >= ? " // dim 2
-#if 0
+#if 0 // @todo ask arne about this...
                   "AND NOT EXISTS ( "
                   "  SELECT * "
                   "  FROM reconstruction_table "
@@ -611,9 +435,6 @@ exit()
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
                                "WHERE id = ?" ),
-          xDeleteCall1( pDatabase,
-                        "DELETE FROM sv_call_r_tree "
-                        "WHERE id = ? " ),
           xDeleteCall2( pDatabase,
                         "DELETE FROM sv_call_table "
                         "WHERE id = ? " ),
@@ -626,17 +447,9 @@ exit()
                        "    switch_strand = ?, "
                        "    inserted_sequence = ?, "
                        "    supporting_reads = ?, "
-                       "    reference_ambiguity = ? "
+                       "    reference_ambiguity = ?, "
+                       "    rectangle = ST_PolyFromWKB(?, 0) "
                        "WHERE id = ? " ),
-          xUpdateRTree( pDatabase,
-                        "UPDATE sv_call_r_tree "
-                        "SET run_id_a = ?, "
-                        "    run_id_b = ?, "
-                        "    minX = ?, "
-                        "    maxX = ?, "
-                        "    minY = ?, "
-                        "    maxY = ? "
-                        "WHERE id = ? " ),
           pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) )
     {} // default constructor
 
@@ -664,7 +477,7 @@ exit()
 
     inline uint32_t numCalls( int64_t iCallerRunId, double dMinScore )
     {
-        return xQuerySizeSpecific.scalar( iCallerRunId, iCallerRunId, dMinScore );
+        return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
     } // method
 
     inline void updateCoverage( SvCall& rCall )
@@ -685,60 +498,44 @@ exit()
 
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
-        // DEL: int64_t iCallId = //
-        // DEL:     this->xInsertRow( iSvCallerRunId, (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart,
-        // DEL:                       (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize,
-        // DEL:                       rCall.bSwitchStrand, // NucSeqSql can deal
-        // DEL:                       with nullpointers NucSeqSql( rCall.pInsertedSequence ), //
-        // DEL:                       (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, -1 );
+        auto xRectangle = rCall.getWKB( );
         int64_t iCallId = this->insert( iSvCallerRunId, //
-                                        (uint32_t)rCall.uiFromStart, //
-                                        (uint32_t)rCall.uiToStart, //
-                                        (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
+                                        (uint32_t)rCall.xXAxis.start( ), //
+                                        (uint32_t)rCall.xYAxis.start( ), //
+                                        (uint32_t)rCall.xXAxis.size( ), //
+                                        (uint32_t)rCall.xYAxis.size( ), rCall.bSwitchStrand,
                                         // NucSeqSql can deal with nullpointers
                                         NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppReads,
-                                        (uint32_t)rCall.uiReferenceAmbiguity, -1 );
-
+                                        (uint32_t)rCall.uiReferenceAmbiguity, -1, xRectangle );
         rCall.iId = iCallId;
 
-        // DEL: xInsertRTree( iCallId, iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
-        // DEL:               (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
-        // DEL:               (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize );
-        // DEBUG: std::cout << "R-Tree insert:" << std::endl;
-        xIndex->insert( static_cast<int32_t>( iCallId ), //
-                        static_cast<int32_t>( iSvCallerRunId ), //
-                        (uint32_t)iSvCallerRunId, (uint32_t)rCall.uiFromStart,
-                        (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
-                        (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize );
         return iCallId;
     } // method
 
     inline int64_t updateCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
-        xUpdateCall.exec( (uint32_t)rCall.uiFromStart, (uint32_t)rCall.uiToStart, (uint32_t)rCall.uiFromSize,
-                          (uint32_t)rCall.uiToSize, rCall.bSwitchStrand,
+        auto xRectangle = rCall.getWKB( );
+        xUpdateCall.exec( (uint32_t)rCall.xXAxis.start( ), (uint32_t)rCall.xYAxis.start( ),
+                          (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bSwitchStrand,
                           // NucSeqSql can deal with nullpointers
                           NucSeqSql( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppReads,
-                          (uint32_t)rCall.uiReferenceAmbiguity, rCall.iId );
-        xUpdateRTree.exec( iSvCallerRunId, iSvCallerRunId, (uint32_t)rCall.uiFromStart,
-                           (uint32_t)rCall.uiFromStart + (uint32_t)rCall.uiFromSize, (uint32_t)rCall.uiToStart,
-                           (uint32_t)rCall.uiToStart + (uint32_t)rCall.uiToSize, rCall.iId );
+                          (uint32_t)rCall.uiReferenceAmbiguity, xRectangle, rCall.iId );
         return rCall.iId;
     } // method
 
     inline int64_t callArea( int64_t iCallerRunId, double dMinScore )
     {
-        return xCallArea.scalar( iCallerRunId, iCallerRunId, dMinScore );
+        return xCallArea.scalar( iCallerRunId, dMinScore );
     } // method
 
     inline double maxScore( int64_t iCallerRunId )
     {
-        return xMaxScore.scalar( iCallerRunId, iCallerRunId );
+        return xMaxScore.scalar( iCallerRunId );
     } // method
 
     inline double minScore( int64_t iCallerRunId )
     {
-        return xMinScore.scalar( iCallerRunId, iCallerRunId );
+        return xMinScore.scalar( iCallerRunId );
     } // method
 
     /**
@@ -832,10 +629,10 @@ exit()
             // Discuss Markus: inserted_sequence is of type NucSeqSql and so a LONGBLOB. This kind of unlimited
             // BLOB's or text can not be used as part of an index in MySQL. See:
             // https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
-            this->addIndex( json{ { INDEX_NAME, "tmp_reconstruct_seq_index_1_" + std::to_string( iCallerRun ) },
-                                  { INDEX_COLUMNS, "from_pos, id, switch_strand, to_pos, to_size, "
-                                                   "from_size" },
-                                  { WHERE, "sv_caller_run_id = " + std::to_string( iCallerRun ) } } );
+            this->addIndex( json{{INDEX_NAME, "tmp_reconstruct_seq_index_1_" + std::to_string( iCallerRun )},
+                                 {INDEX_COLUMNS, "from_pos, id, switch_strand, to_pos, to_size, "
+                                                 "from_size"},
+                                 {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRun )}} );
 
             // DEL:SQLStatement<DBCon>( pDatabase,
             // DEL:                     ( "CREATE INDEX IF NOT EXISTS tmp_reconstruct_seq_index_2_" +
@@ -846,9 +643,9 @@ exit()
             // DEL:                       std::to_string( iCallerRun ) )
             // DEL:                         .c_str( ) )
             // DEL:    .exec( );
-            this->addIndex( json{ { INDEX_NAME, "tmp_reconstruct_seq_index_2_" + std::to_string( iCallerRun ) },
-                                  { INDEX_COLUMNS, "to_pos, id, switch_strand, from_pos, from_size" },
-                                  { WHERE, "sv_caller_run_id = " + std::to_string( iCallerRun ) } } );
+            this->addIndex( json{{INDEX_NAME, "tmp_reconstruct_seq_index_2_" + std::to_string( iCallerRun )},
+                                 {INDEX_COLUMNS, "to_pos, id, switch_strand, from_pos, from_size"},
+                                 {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRun )}} );
         } // scope for CppSQLiteExtStatement
 
         // @todo at the moment this does not deal with jumped over sequences
@@ -870,7 +667,7 @@ exit()
             {
                 // search for the next call that we have not visited yet...
                 metaMeasureAndLogDuration<false>(
-                    "SQL", [ & ]( ) { tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext ); } );
+                    "SQL", [&]( ) { tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext ); } );
                 if( std::get<0>( tNextCall ) == -1 || // there is no next call
                                                       // we have not visited the next call
                     xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
@@ -887,7 +684,7 @@ exit()
 #endif
             if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
             {
-                metaMeasureAndLogDuration<false>( "seq copy final", [ & ]( ) {
+                metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
                     // for jumps to the end of the genome we do not want to extract the last contig...
                     // this check becomes necessary since the with the current index system,
                     // we would either extract the last nucleotide of the genome twice or extract the
@@ -922,7 +719,7 @@ exit()
             } // if
 
             // we reach this point if there are more calls, so tNextCall is set properly here
-            metaMeasureAndLogDuration<false>( "seq copy", [ & ]( ) {
+            metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
                 // if the next call is in a different chromosome
                 while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                 {
@@ -948,7 +745,7 @@ exit()
                     xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
                                         std::get<3>( tNextCall ).pNucSeq->length( ) );
 
-                metaMeasureAndLogDuration<false>( "xInsertRow", [ & ]( ) {
+                metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
                     // remember that we used this call
                     // pReconstructionTable->xInsertRow( std::get<0>( tNextCall ) );
                     xVisitedCalls.insert( std::get<0>( tNextCall ) );

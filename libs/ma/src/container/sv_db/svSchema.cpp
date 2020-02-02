@@ -29,35 +29,18 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
     if( uiY + uiH > pPack->uiUnpackedSizeForwardStrand )
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
-    // DEL:CppSQLiteExtQueryStatement<uint32_t> xQuery( *pDb->pDatabase,
-    // DEL:                                             "SELECT COUNT(*) "
-    // DEL:                                             "FROM sv_call_table, sv_call_r_tree "
-    // DEL:                                             "WHERE sv_call_table.id == sv_call_r_tree.id "
-    // DEL:                                             "AND sv_call_r_tree.run_id_b >= ? " // dim 1
-    // DEL:                                             "AND sv_call_r_tree.run_id_a <= ? " // dim 1
-    // DEL:                                             "AND sv_call_r_tree.maxX >= ? " // dim 2
-    // DEL:                                             "AND sv_call_r_tree.minX <= ? " // dim 2
-    // DEL:                                             "AND sv_call_r_tree.maxY >= ? " // dim 3
-    // DEL:                                             "AND sv_call_r_tree.minY <= ? " // dim 3
-    // DEL:                                             "AND " +
-    // DEL:                                                 SvCallTable::getSqlForCallScore( ) + " >= ? " );
-    // DEL:
-    // DEL:return xQuery.scalar( iRunId, iRunId, uiX, uiX + (uint32_t)uiW, uiY, uiY + (uint32_t)uiH, dMinScore );
 
     SQLQuery<DBCon, uint32_t> xQuery( pDb->pDatabase,
                                       "SELECT COUNT(*) "
-                                      "FROM sv_call_table, sv_call_r_tree "
-                                      "WHERE sv_call_table.id = sv_call_r_tree.id "
-                                      "AND sv_call_r_tree.run_id_b >= ? " // dim 1
-                                      "AND sv_call_r_tree.run_id_a <= ? " // dim 1
-                                      "AND sv_call_r_tree.maxX >= ? " // dim 2
-                                      "AND sv_call_r_tree.minX <= ? " // dim 2
-                                      "AND sv_call_r_tree.maxY >= ? " // dim 3
-                                      "AND sv_call_r_tree.minY <= ? " // dim 3
+                                      "FROM sv_call_table "
+                                      "AND ssv_caller_run_id = ? " // dim 1
+                                      "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
                                       "AND " +
                                           SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " );
 
-    return xQuery.scalar( iRunId, iRunId, uiX, uiX + (uint32_t)uiW, uiY, uiY + (uint32_t)uiH, dMinScore );
+
+        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
+    return xQuery.scalar( iRunId, xWkb, dMinScore );
 } // function
 
 uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,

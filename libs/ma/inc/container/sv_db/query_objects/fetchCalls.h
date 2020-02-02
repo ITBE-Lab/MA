@@ -71,31 +71,22 @@ template <typename DBCon> class SvCallsFromDb
                     // make sure that inner overlaps the outer:
                     "EXISTS( "
                     "     SELECT outer.id "
-                    "     FROM sv_call_table AS outer, sv_call_r_tree AS idx_outer "
-                    "     WHERE outer.id = idx_outer.id "
-                    "     AND idx_outer.run_id_b >= ? " // dim 1
-                    "     AND idx_outer.run_id_a <= ? " // dim 1
-                    "     AND idx_outer.maxX >= inner.from_pos - ? " // dim 2
-                    "     AND idx_outer.minX <= inner.from_pos + inner.from_size + ? " // dim 2
-                    "     AND idx_outer.maxY >= inner.to_pos - ? " // dim 3
-                    "     AND idx_outer.minY <= inner.to_pos + inner.to_size + ? " // dim 3
+                    "     FROM sv_call_table AS outer "
+                    "     WHERE idx_outer.sv_caller_run_id = ? "
+                    "     AND ST_Distance(outer.rectangle, inner.rectangle) <= ? "
                     "     AND outer.switch_strand = inner.switch_strand "
                     ") "
                     // make sure that inner does not overlap with any other call with higher score
                     "AND NOT EXISTS( "
                     "     SELECT inner2.id "
-                    "     FROM sv_call_table AS inner2, sv_call_r_tree AS idx_inner2 "
-                    "     WHERE inner2.id = idx_inner2.id "
-                    "     AND idx_inner2.id != inner.id "
+                    "     FROM sv_call_table AS inner2 "
+                    "     WHERE idx_inner2.id != inner.id "
                     "     AND " +
                     SvCallTable<DBCon>::getSqlForCallScore( "inner2" ) +
                     " >= " + SvCallTable<DBCon>::getSqlForCallScore( "inner" ) +
                     "     AND idx_inner2.run_id_b >= inner.id " // dim 1
                     "     AND idx_inner2.run_id_a <= inner.id " // dim 1
-                    "     AND idx_inner2.maxX >= inner.from_pos - ? " // dim 2
-                    "     AND idx_inner2.minX <= inner.from_pos + inner.from_size + ? " // dim 2
-                    "     AND idx_inner2.maxY >= inner.to_pos - ? " // dim 3
-                    "     AND idx_inner2.minY <= inner.to_pos + inner.to_size + ? " // dim 3
+                    "     AND ST_Distance(inner2.rectangle, inner.rectangle) <= ? "
                     "     AND inner2.switch_strand = inner.switch_strand "
                     ") " )
                       .c_str( ) ),
@@ -105,13 +96,8 @@ template <typename DBCon> class SvCallsFromDb
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id = ? " )
-    // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerIdA, iSvCallerIdB, iSvCallerIdB,
-    // iAllowedDist, iAllowedDist, iAllowedDist,
-    // iAllowedDist, iAllowedDist, iAllowedDist,
-    // iAllowedDist, iAllowedDist ) )
     {
-        xQuery.execAndFetch( iSvCallerIdA, iSvCallerIdB, iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
-                             iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist );
+        xQuery.execAndFetch( iSvCallerIdA, iSvCallerIdB, iAllowedDist );
     } // constructor
 
     /**
@@ -135,7 +121,6 @@ template <typename DBCon> class SvCallsFromDb
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id = ? " )
-    // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, dMinScore ) )
     {
         xQuery.execAndFetch( iSvCallerId, dMinScore );
     } // constructor
@@ -153,19 +138,16 @@ template <typename DBCon> class SvCallsFromDb
               "       reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
-              "AND from_pos + from_size >= ? "
-              "AND to_pos + to_size >= ? "
-              "AND from_pos <= ? "
-              "AND to_pos <= ? " ),
+              "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) " ),
           xQuerySupport( pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id = ? " )
-    // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH ) )
     {
-        xQuery.execAndFetch( iSvCallerId, uiX, uiY, uiX + uiW, uiY + uiH );
+        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
+        xQuery.execAndFetch( iSvCallerId, xWkb );
     } // constructor
 
     /**
@@ -180,10 +162,7 @@ template <typename DBCon> class SvCallsFromDb
                   "       supporting_reads, reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id = ? "
-                  "AND from_pos + from_size >= ? "
-                  "AND to_pos + to_size >= ? "
-                  "AND from_pos <= ? "
-                  "AND to_pos <= ? "
+                  "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
                   "AND " +
                       SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " ),
           xQuerySupport( pDb->pDatabase,
@@ -192,9 +171,9 @@ template <typename DBCon> class SvCallsFromDb
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id = ? " )
-    // DELETED: xTableIterator( xQuery.vExecuteAndReturnIterator( iSvCallerId, iX, iY, iX + iW, iY + iH, dMinScore ) )
     {
-        xQuery.execAndFetch( iSvCallerId, iX, iY, iX + iW, iY + iH, dMinScore );
+        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
+        xQuery.execAndFetch( iSvCallerId, xWkb, dMinScore );
     } // constructor
 
     /**
@@ -216,22 +195,18 @@ template <typename DBCon> class SvCallsFromDb
         xRet.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
         xRet.iId = std::get<0>( xTup );
 
-        // auto xSupportIterator( xQuerySupport.vExecuteAndReturnIterator( std::get<0>( xTup ) ) );
         xQuerySupport.execAndFetch( std::get<0>( xTup ) );
-        // while( !xSupportIterator.eof( ) )
         while( !xQuerySupport.eof( ) )
         {
-            // auto xTup = xSupportIterator.get( );
             auto xTup = xQuerySupport.get( );
             xRet.vSupportingJumpIds.push_back( std::get<8>( xTup ) );
             xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
                 pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
                 std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
                 std::get<9>( xTup ) ) );
-            // xSupportIterator.next( );
             xQuerySupport.next( );
         } // while
-        // xTableIterator.next( );
+
         xQuery.next( );
         return xRet;
     } // method

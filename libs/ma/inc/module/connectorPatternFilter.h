@@ -40,27 +40,28 @@ class ConnectorPatternFilter
             int64_t iReadScore = 0;
 
             // compute the reference score before the jump
-            uint64_t iBegin = pCall->uiFromStart > uiMaxExtensionSize ? pCall->uiFromStart - uiMaxExtensionSize : 0;
-            uint64_t iSize = pCall->uiFromStart > uiMaxExtensionSize ? uiMaxExtensionSize : pCall->uiFromStart;
+            uint64_t iBegin =
+                pCall->xXAxis.start( ) > uiMaxExtensionSize ? pCall->xXAxis.start( ) - uiMaxExtensionSize : 0;
+            uint64_t iSize = pCall->xXAxis.start( ) > uiMaxExtensionSize ? uiMaxExtensionSize : pCall->xXAxis.start( );
             if( pRef->bridgingSubsection( iBegin, iSize ) )
                 pRef->unBridgeSubsection( iBegin, iSize );
             auto pNucSeqLeft = pRef->vExtract( iBegin, iBegin + iSize );
             pNucSeqLeft->vReverse( );
 
-            iBegin = pCall->uiFromStart + pCall->uiFromSize;
+            iBegin = pCall->xXAxis.end();
             iSize = uiMaxExtensionSize;
             if( pRef->bridgingSubsection( iBegin, iSize ) )
                 pRef->unBridgeSubsection( iBegin, iSize );
             auto pNucSeqRight = pRef->vExtract( iBegin, iBegin + iSize );
 
-            iBegin = pCall->uiToStart > uiMaxExtensionSize ? pCall->uiToStart - uiMaxExtensionSize : 0;
-            iSize = pCall->uiToStart > uiMaxExtensionSize ? uiMaxExtensionSize : pCall->uiToStart;
+            iBegin = pCall->xYAxis.start( ) > uiMaxExtensionSize ? pCall->xYAxis.start( ) - uiMaxExtensionSize : 0;
+            iSize = pCall->xYAxis.start( ) > uiMaxExtensionSize ? uiMaxExtensionSize : pCall->xYAxis.start( );
             if( pRef->bridgingSubsection( iBegin, iSize ) )
                 pRef->unBridgeSubsection( iBegin, iSize );
             auto pNucSeqDown = pRef->vExtract( iBegin, iBegin + iSize );
             pNucSeqDown->vReverse( );
 
-            iBegin = pCall->uiToStart + pCall->uiToSize;
+            iBegin = pCall->xYAxis.end( );
             iSize = uiMaxExtensionSize;
             if( pRef->bridgingSubsection( iBegin, iSize ) )
                 pRef->unBridgeSubsection( iBegin, iSize );

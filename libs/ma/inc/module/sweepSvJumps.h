@@ -94,8 +94,8 @@ class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClus
      * @brief
      * @details
      */
-    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDB, std::string rsSvCallerName,
-                std::string rsSvCallerDesc, int64_t uiJumpRunId )
+    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDB,
+                std::string rsSvCallerName, std::string rsSvCallerDesc, int64_t uiJumpRunId )
         : pDB( pDB ), iRunId( pDB->pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
     {} // constructor
 
@@ -257,15 +257,15 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
 #endif
                 auto pNewCluster = std::make_shared<SvCall>( pEdge );
 
-                size_t uiStart = xPointerVec.to_physical_coord( pNewCluster->uiFromStart + pNewCluster->uiFromSize,
-                                                                pNewCluster->uiToStart );
-                size_t uiEnd = xPointerVec.to_physical_coord( pNewCluster->uiFromStart,
-                                                              pNewCluster->uiToStart + pNewCluster->uiToSize );
+                size_t uiStart =
+                    xPointerVec.to_physical_coord( pNewCluster->xXAxis.end( ), pNewCluster->xYAxis.start( ) );
+                size_t uiEnd =
+                    xPointerVec.to_physical_coord( pNewCluster->xXAxis.start( ), pNewCluster->xYAxis.end( ) );
                 assert( uiEnd >= uiStart );
                 // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
                 // this is necessary, since we need to work with these coords when joining clusters
-                pNewCluster->uiToStart = uiStart;
-                pNewCluster->uiToSize = uiEnd - uiStart;
+                pNewCluster->xYAxis.start( uiStart );
+                pNewCluster->xYAxis.size( uiEnd - uiStart );
 
                 // join with all covered clusters; make sure that we don't join the same cluster twice
                 std::shared_ptr<SvCall> pLastJoined;
@@ -286,7 +286,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                 xActiveClusters.push_back( pNewCluster );
 #endif
                 // redirect all covered pointers to the new cluster
-                for( size_t uiI = pNewCluster->uiToStart; uiI <= pNewCluster->uiToStart + pNewCluster->uiToSize; uiI++ )
+                for( size_t uiI = pNewCluster->xYAxis.start( ); uiI <= pNewCluster->xYAxis.end( ); uiI++ )
                 {
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                     if( xPointerVec.get( )[ uiI ] != nullptr )
@@ -321,7 +321,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                 // check if we want to save the cluster
                 if( pCluster->uiOpenEdges == 0 )
                 {
-                    for( size_t uiI = pCluster->uiToStart; uiI <= pCluster->uiToStart + pCluster->uiToSize; uiI++ )
+                    for( size_t uiI = pCluster->xYAxis.start( ); uiI <= pCluster->xYAxis.end( ); uiI++ )
                         xPointerVec.get( )[ uiI ] = nullptr;
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
@@ -329,7 +329,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
                                                            [&]( auto pX ) { return pX == pCluster; } ),
                                            xActiveClusters.end( ) );
 #endif
-                    if( pCluster->uiFromStart < uiForwStrandEnd && pCluster->uiFromStart >= uiForwStrandStart )
+                    if( pCluster->xXAxis.start( ) < uiForwStrandEnd && pCluster->xXAxis.start( ) >= uiForwStrandStart )
                         pRet->vContent.push_back( pCluster );
                 } // if
                 auto xInnerEnd = std::chrono::high_resolution_clock::now( );
@@ -366,8 +366,9 @@ class ExactCompleteBipartiteSubgraphSweep
      * @brief
      * @details
      */
-    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pSvDb,
-                                         std::shared_ptr<Pack> pPack, int64_t iSequencerId )
+    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters,
+                                         std::shared_ptr<SV_Schema<DBCon>> pSvDb, std::shared_ptr<Pack> pPack,
+                                         int64_t iSequencerId )
         : pPack( pPack )
     {} // constructor
 
@@ -424,7 +425,7 @@ class ExactCompleteBipartiteSubgraphSweep
 
                 // turn tail edge lines into squares
                 if( !vEdgesStart[ uiI ]->switch_strand_known( ) )
-                    pNewCluster->uiToSize = vEdgesStart[ uiI ]->from_size( );
+                    pNewCluster->xYAxis.size( vEdgesStart[ uiI ]->from_size( ) );
 
                 // join with all overlapping clusters
                 size_t uiStart = xSquashedY[ vEdgesStart[ uiI ]->to_start( ) ];
@@ -443,8 +444,8 @@ class ExactCompleteBipartiteSubgraphSweep
                 } // while
 
                 // insert the newly computed cluster into the pointer vector and counter vector
-                uiIdx = xSquashedY[ pNewCluster->uiToStart ];
-                size_t uiEnd2 = xSquashedY[ pNewCluster->uiToStart + pNewCluster->uiToSize + 1 ];
+                uiIdx = xSquashedY[ pNewCluster->xYAxis.start( ) ];
+                size_t uiEnd2 = xSquashedY[ pNewCluster->xYAxis.end( ) + 1 ];
                 while( uiIdx <= uiEnd2 )
                 {
                     if( uiStart <= uiIdx && uiIdx <= uiEnd )
@@ -653,7 +654,7 @@ class FilterFuzzyCalls
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
         for( auto pCall : pCalls->vContent )
             // if the call is presice enough we keep it
-            if( pCall->uiFromSize <= uiMaxFuzziness && pCall->uiToSize <= uiMaxFuzziness )
+            if( pCall->xXAxis.size( ) <= uiMaxFuzziness && pCall->xYAxis.size( ) <= uiMaxFuzziness )
                 pRet->vContent.push_back( pCall );
 #if ANALYZE_FILTERS
         std::lock_guard<std::mutex> xGuard( xLock );
@@ -800,17 +801,17 @@ class ComputeCallAmbiguity
     {
         for( auto pCall : pCalls->vContent )
         {
-            auto f = pCall->uiFromStart + pCall->uiFromSize / 2;
-            auto t = pCall->uiToStart + pCall->uiToSize / 2;
+            auto f = pCall->xXAxis.start( ) + pCall->xXAxis.size( ) / 2;
+            auto t = pCall->xYAxis.start( ) + pCall->xYAxis.size( ) / 2;
             // std::abs is ambigious under msvc...
             auto uiCallSize = f >= t ? f - t : t - f;
 
             if( uiCallSize > uiDistance )
             {
-                auto pLeftFrom = getRegion( pCall->uiFromStart + pCall->uiFromSize, true, pPack );
-                auto pRightFrom = getRegion( pCall->uiFromStart, false, pPack );
-                auto pLeftTo = getRegion( pCall->uiToStart + pCall->uiToSize, true, pPack );
-                auto pRightTo = getRegion( pCall->uiToStart, false, pPack );
+                auto pLeftFrom = getRegion( pCall->xXAxis.end( ), true, pPack );
+                auto pRightFrom = getRegion( pCall->xXAxis.start( ), false, pPack );
+                auto pLeftTo = getRegion( pCall->xYAxis.end( ), true, pPack );
+                auto pRightTo = getRegion( pCall->xYAxis.start( ), false, pPack );
 
                 // if we switch strand we have to compare forward and reverse strands
                 if( pCall->bSwitchStrand )

@@ -2,6 +2,7 @@
 
 #include "container/nucSeq.h"
 #include "container/seed.h"
+#include "geom.h"
 #include "util/parameter.h"
 #include <cmath>
 #include <limits>
@@ -300,7 +301,7 @@ class SvJump : public Container
     } // method
 }; // class
 
-class SvCall : public Container
+class SvCall : public Container, public geomUtil::Rectangle<nucSeqIndex>
 {
   public:
 #if 0
@@ -362,10 +363,6 @@ class SvCall : public Container
     }; // class
 #endif
 
-    nucSeqIndex uiFromStart;
-    nucSeqIndex uiToStart;
-    nucSeqIndex uiFromSize;
-    nucSeqIndex uiToSize;
     bool bSwitchStrand;
     nucSeqIndex uiNumSuppReads;
     nucSeqIndex uiReferenceAmbiguity;
@@ -396,10 +393,7 @@ class SvCall : public Container
             , Regex xRegex = Regex( "", 0 )
 #endif
             )
-        : uiFromStart( uiFromStart ),
-          uiToStart( uiToStart ),
-          uiFromSize( uiFromSize ),
-          uiToSize( uiToSize ),
+        : Rectangle( uiFromStart, uiToStart, uiFromSize, uiToSize ),
           bSwitchStrand( bSwitchStrand ),
           uiNumSuppReads( uiNumSuppReads ),
           uiReferenceAmbiguity( 1 ),
@@ -576,28 +570,30 @@ class SvCall : public Container
     {
         nucSeqIndex uiRight = this->right( );
         nucSeqIndex uiUp = this->up( );
-        this->uiFromStart = this->left( );
-        this->uiToStart = this->down( );
-        if( uiRight < this->uiFromStart )
+        this->xXAxis.start( this->left( ) );
+        this->xYAxis.start( this->down( ) );
+        if( uiRight < this->xXAxis.start( ) )
         {
-            this->uiFromStart = ( this->uiFromStart + uiRight ) / 2 - 3;
-            this->uiFromSize = 5;
+            this->xXAxis.start( ( this->xXAxis.start( ) + uiRight ) / 2 - 3 );
+            this->xXAxis.size( 5 );
         } // if
         else
-            this->uiFromSize = uiRight - uiFromStart;
-        if( uiUp < this->uiToStart )
+            this->xXAxis.size( uiRight - this->xXAxis.start( ) );
+        if( uiUp < this->xYAxis.start( ) )
         {
-            this->uiToStart = ( this->uiToStart + uiUp ) / 2 - 3;
-            this->uiToSize = 5;
+            this->xYAxis.start( ( this->xYAxis.start( ) + uiUp ) / 2 - 3 );
+            this->xYAxis.size( 5 );
         } // if
         else
-            this->uiToSize = uiUp - uiToStart;
+            this->xYAxis.size( uiUp - this->xYAxis.start( ) );
     } // method
 
     inline nucSeqIndex size( ) const
     {
         assert( this->supportedJumpsLoaded( ) );
-        nucSeqIndex uiRefSize = uiFromStart > uiToStart ? uiFromStart - uiToStart : uiToStart - uiFromStart;
+        nucSeqIndex uiRefSize = this->xXAxis.start( ) > this->xYAxis.start( )
+                                    ? this->xXAxis.start( ) - this->xYAxis.start( )
+                                    : this->xYAxis.start( ) - this->xXAxis.start( );
 
         nucSeqIndex uiQuerySize = 0;
         for( auto pJump : vSupportingJumps )
@@ -614,13 +610,12 @@ class SvCall : public Container
     void join( SvCall& rOther )
     {
         assert( this->bSwitchStrand == rOther.bSwitchStrand );
-        nucSeqIndex uiFromEnd =
-            std::max( this->uiFromStart + this->uiFromSize, rOther.uiFromStart + rOther.uiFromSize );
-        nucSeqIndex uiToEnd = std::max( this->uiToStart + this->uiToSize, rOther.uiToStart + rOther.uiToSize );
-        this->uiFromStart = std::min( this->uiFromStart, rOther.uiFromStart );
-        this->uiToStart = std::min( this->uiToStart, rOther.uiToStart );
-        this->uiFromSize = uiFromEnd - this->uiFromStart;
-        this->uiToSize = uiToEnd - this->uiToStart;
+        nucSeqIndex uiFromEnd = std::max( this->xXAxis.end( ), rOther.xXAxis.end( ) );
+        nucSeqIndex uiToEnd = std::max( this->xYAxis.end( ), rOther.xYAxis.end( ) );
+        this->xXAxis.start( std::min( this->xXAxis.start( ), rOther.xXAxis.start( ) ) );
+        this->xYAxis.start( std::min( this->xYAxis.start( ), rOther.xYAxis.start( ) ) );
+        this->xXAxis.size( uiFromEnd - this->xXAxis.start( ) );
+        this->xYAxis.size( uiToEnd - this->xYAxis.start( ) );
         this->vSupportingJumpIds.insert( this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ),
                                          rOther.vSupportingJumpIds.end( ) );
         this->uiNumSuppReads += rOther.uiNumSuppReads;

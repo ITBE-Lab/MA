@@ -229,7 +229,6 @@ template <typename DBCon> class SV_Schema : public Container
         // delete rows that can be found easily
         SQLStatement<DBCon>( pDatabase, "DELETE FROM sv_caller_run_table WHERE id = ?" ).exec( uiCallerId );
         SQLStatement<DBCon>( pDatabase, "DELETE FROM sv_call_table WHERE sv_caller_run_id = ?" ).exec( uiCallerId );
-        SQLStatement<DBCon>( pDatabase, "DELETE FROM sv_call_r_tree WHERE run_id_a = ? " ).exec( uiCallerId );
 
         // vacuum up dangeling objects -> compile sqlite with other switches so this is not needed anymore (@todo)
         SQLStatement<DBCon>( pDatabase,
