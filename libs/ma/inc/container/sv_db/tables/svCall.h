@@ -28,7 +28,7 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
                                                uint32_t, // reference_ambiguity
                                                int64_t // regex_id
                                                >;
-#ifdef WITHOUT_R_TREE
+
 // Emergency definition of the R-tree table for structural variations.
 template <typename DBCon>
 using SvCallRTreeType = SQLTable<DBCon, // DB connector type
@@ -50,34 +50,11 @@ const json jSvCallRTreeDef = { { TABLE_NAME, "sv_call_r_tree" },
                                    { { COLUMN_NAME, "maxX" } },
                                    { { COLUMN_NAME, "minY" } },
                                    { { COLUMN_NAME, "maxY" } } } } };
-#endif
 
 template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 {
     std::shared_ptr<DBCon> pDatabase;
 
-#ifndef WITHOUT_R_TREE
-    class RTreeIndex
-    {
-      public:
-        RTreeIndex( std::shared_ptr<DBCon> pDatabase )
-        {
-            // create a R*tree index
-            if( pDatabase->eDatabaseOpeningMode == eCREATE_DB )
-            {
-                /* We drop the table in the case that it exists already. */
-                pDatabase->execDML( "DROP TABLE IF EXISTS sv_call_r_tree" );
-                pDatabase->execDML( "CREATE VIRTUAL TABLE sv_call_r_tree USING rtree_i32( "
-                                    "       id, " // key from sv_call_table
-                                    "       run_id_a, run_id_b, " // run id -> has to be a dimension for it to work
-                                    "       minX, maxX, " // start & end of from positions
-                                    "       minY, maxY " // start & end of to positions
-                                    "   )" );
-
-            } // if
-        } // constructor
-    }; // class
-#else
     class RTreeIndex : public SvCallRTreeType<DBCon>
     {
       public:
@@ -85,7 +62,6 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
         RTreeIndex( std::shared_ptr<DBCon> pDB ) : SvCallRTreeType<DBCon>( pDB, jSvCallRTreeDef )
         {} // constructor
     }; // class
-#endif // WITHOUT_R_TREE
 
   public:
     /**
@@ -519,11 +495,7 @@ exit()
         } // method
     }; // class
 
-#ifndef WITHOUT_R_TREE
-    RTreeIndex xIndex; // merely required for calling the constructor
-#else
     std::shared_ptr<RTreeIndex> xIndex;
-#endif
     // Was originally CppSQLiteExtInsertStatement statement.
     // FIXME: Add insert statement SQLStatement<DBCon, int64_t, int64_t, int64_t, uint32_t, uint32_t, uint32_t,
     // uint32_t> xInsertRTree;
@@ -570,12 +542,7 @@ exit()
                                   jSvCallTableDef( ) ), // table definition
 
           pDatabase( pDatabase ),
-#ifndef WITHOUT_R_TREE
-          // pReconstructionTable( std::make_shared<ReconstructionTable>( pDatabase ) ),
-          xIndex( pDatabase ), // create R-tree (R-tree table view)
-#else
           xIndex( std::make_shared<RTreeIndex>( pDatabase ) ),
-#endif
 
           // FIXME: Add insert statement xInsertRTree( *pDatabase, "sv_call_r_tree", false ),
           xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),

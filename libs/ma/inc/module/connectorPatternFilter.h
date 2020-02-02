@@ -3,7 +3,6 @@
  */
 #pragma once
 
-#include "db_config.h"
 #include "module/needlemanWunsch.h"
 #include "module/sweepSvJumps.h"
 

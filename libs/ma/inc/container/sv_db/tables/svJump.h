@@ -6,7 +6,6 @@
  */
 #pragma once
 #include "common.h"
-#include "db_config.h"
 
 namespace libMA
 {
@@ -69,15 +68,6 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 
         // index intended for the sweep over the start of all sv-rectangles
         // interestingly sv_jump_run_id needs to be part of the index even if it's in the condition...
-        // DEL: pDatabase->execStmt( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_start_" //
-        // DEL:                        + std::to_string( uiRun ) +
-        // DEL:                        " ON sv_jump_table"
-        // DEL:                        "(sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
-        // DEL:                        " to_forward, from_seed_start, num_supporting_nt,"
-        // DEL:                        " id, read_id, sv_jump_run_id) "
-        // DEL:                        "WHERE sv_jump_run_id = " +
-        // DEL:                        std::to_string( uiRun ) )
-        // DEL:                          .c_str( ) );
         this->addIndex(
             json{{INDEX_NAME, "sv_jump_table_sort_index_start_" + std::to_string( uiRun )},
                  {INDEX_COLUMNS, "sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward,"
@@ -85,14 +75,6 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
                  {WHERE, "sv_jump_run_id = " + std::to_string( uiRun )}} );
 
         // index intended for the sweep over the end of all sv-rectangles
-        // DEL: pDatabase->execStmt( ( "CREATE INDEX IF NOT EXISTS sv_jump_table_sort_index_end_" //
-        // DEL:                        + std::to_string( uiRun ) +
-        // DEL:                        " ON sv_jump_table"
-        // DEL:                        "(sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
-        // DEL:                        " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id) "
-        // DEL:                        "WHERE sv_jump_run_id = " +
-        // DEL:                        std::to_string( uiRun ) )
-        // DEL:                          .c_str( ) );
         this->addIndex(
             json{{INDEX_NAME, "sv_jump_table_sort_index_end_" + std::to_string( uiRun )},
                  {INDEX_COLUMNS, "sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"

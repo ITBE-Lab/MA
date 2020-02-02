@@ -1,5 +1,3 @@
-#include "db_config.h"
-
 #include "container/container.h"
 #include "container/sv_db/svSchema.h"
 #include "module/combineOverlappingCalls.h"

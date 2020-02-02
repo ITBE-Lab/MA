@@ -1,4 +1,3 @@
-#include "db_config.h"
 #include "container/sv_db/query_objects/fetchSvJump.h"
 
 using namespace libMA;

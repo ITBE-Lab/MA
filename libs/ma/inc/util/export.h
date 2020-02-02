@@ -145,29 +145,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef EXPORT_H
 #define EXPORT_H
 
+#include "container/minimizer_index.h"
+#include "container/svJump.h"
+#include "container/sv_db/svSchema.h"
 #include "module/binarySeeding.h"
+#include "module/connectorPatternFilter.h"
 #include "module/dbWriter.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
 #include "module/harmonization.h"
+#include "module/hashMapSeeding.h"
 #include "module/mappingQuality.h"
 #include "module/needlemanWunsch.h"
 #include "module/otherSeeding.h"
 #include "module/pairedReads.h"
-#include "module/splitter.h"
-#include "module/hashMapSeeding.h"
 #include "module/smallInversions.h"
+#include "module/splitter.h"
 #include "module/stripOfConsideration.h"
 #include "module/svJumpsFromSeeds.h"
-#include "module/connectorPatternFilter.h"
 #include "module/sweepSvJumps.h"
 #include "util/default_parameters.h"
-
-#include "db_config.h"
-
-#include "container/sv_db/svSchema.h"
-#include "container/svJump.h"
-#include "container/minimizer_index.h"
 
 namespace libMA
 {

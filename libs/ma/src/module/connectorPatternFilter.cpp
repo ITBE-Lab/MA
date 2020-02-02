@@ -3,7 +3,6 @@
  * @author Markus Schmidt
  */
 #include "module/connectorPatternFilter.h"
-#include "db_config.h"
 
 using namespace libMA;
 

@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common.h"
-#include "db_config.h"
 
 namespace libMA
 {

@@ -4,7 +4,6 @@
  * @author Markus Schmidt
  */
 #include "container/sv_db/svSchema.h"
-#include "db_config.h"
 
 #pragma once
 

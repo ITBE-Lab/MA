@@ -1,6 +1,6 @@
 #pragma once
 #include "container/sv_db/query_objects/callInserter.h"
-#include "db_config.h"
+
 namespace libMA
 {
 // @todo this can be done via a linesweep...

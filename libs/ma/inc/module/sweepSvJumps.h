@@ -6,9 +6,6 @@
 
 #include "container/squeezedVector.h"
 #include "container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
-
-#include "db_config.h"
-
 #include "container/sv_db/query_objects/fetchSvJump.h"
 #include "container/sv_db/svSchema.h"
 using DBCon = SQLDB<MySQLConDB>; // For the moment we set this module fix to MySQL.

@@ -7,9 +7,6 @@
 
 #include "container/segment.h"
 #include "container/svJump.h"
-
-#include "db_config.h"
-
 #include "container/sv_db/svSchema.h"
 #include "module/binarySeeding.h"
 #include "module/harmonization.h"

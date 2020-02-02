@@ -5,7 +5,6 @@
  */
 #pragma once
 #include "container/sv_db/svSchema.h"
-#include "db_config.h"
 
 namespace libMA
 {

@@ -7,7 +7,6 @@
 #pragma once
 
 #include "container/sv_db/tables/read.h"
-#include "db_config.h"
 
 namespace libMA
 {
