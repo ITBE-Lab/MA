@@ -6,8 +6,12 @@
  */
 
 #pragma once
-
 // #define SQL_VERBOSE // define me if required
+
+#ifdef _MSC_VER
+#pragma warning( disable : 4996 ) // suppress warnings regarding the use of strerror
+#endif
+
 #include <cerrno> // error management for file I/O
 #include <cstring> // error management for file I/O
 #include <fstream>
@@ -28,8 +32,16 @@
 #define STD_APPLY std::apply
 #endif
 
+#if defined( __GNUC__ ) && ( __GNUC__ < 8 )
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+#include <filesystem>
+namespace fs = std::filesystem;
+#endif
+
+// Import JSON support
 #include <json.hpp>
-// json support should have been included already by the connector ...
 using nlohmann::json;
 
 /** @brief Returns a string that contains info regarding types and values of an argument pack.
@@ -144,12 +156,11 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( const std::string& rsDBName = "" )
-        : DBImpl( rsDBName ),
+    SQLDB( const json& jDBConData = json{ } )
+        : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ) // use the address for id creation
     {} // constructor
-
 
     ~SQLDB( )
     {
@@ -186,6 +197,18 @@ template <typename DBImpl> class SQLDB : public DBImpl
     bool indexExists( const std::string& rsTblName, const std::string& rsIdxName )
     {
         return DBImpl::indexExistsInDB( rsTblName, rsIdxName );
+    } // method
+
+    /** @brief Drop Database Schema */
+    void dropSchema( const std::string& rsSchemaName )
+    {
+        DBImpl::execSQL( "DROP DATABASE " + rsSchemaName );
+    } // method
+
+    /** @brief Drop Database Schema */
+    void useSchema( const std::string& rsSchemaName )
+    {
+        DBImpl::execSQL( "DROP DATABASE " + rsSchemaName );
     } // method
 
     /** @brief This function should be redefined in pooled SQL connections so that the function is executed in mutex
@@ -475,7 +498,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
         /** @brief Concatenates an array of tuples and returns the resulting single tuple.
          * IMPORTANT:
-         * Tuple elements are moved for efficiency, so the array and its elements should not be moved after catenation.
+         * Tuple elements are moved for efficiency, so the array and its elements should not be moved after
+         * catenation.
          */
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
@@ -494,7 +518,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
             // std::apply transforms the concatenated tuple to a argument pack and passes this to the lambda.
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
-            // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum) ...
+            // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum)
+            // ...
             STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 #else // Iterating approach for parameter binding with bulk inserts. (Lacks beauty, but better manageable for compilers)
@@ -561,8 +586,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             if( ++uiInsPos == BUF_SIZE )
             {
                 // bulkInsert( ) does not inspects uiInsPos anymore. However, it can throw an exceptions.
-                // In order to avoid the crash scenario described in flush(),  uiInsPos must be set zero before calling
-                // bulkInsert().
+                // In order to avoid the crash scenario described in flush(),  uiInsPos must be set zero before
+                // calling bulkInsert().
                 uiInsPos = 0; // reset counter
                 bulkInsert( ); // write full buffer to DB
             } // if
@@ -592,11 +617,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         } // destructor
     }; // class
 
-    /** @brief Like a standard SQLBulkInserter, but for the streaming a CSV-file is used in between. This approach is
-     *  sometimes faster than the standard SQLBulkInserter.
-     *  IMPORTANT NOTICE: Call release() before a SQLFileBulkInserter runs out of scope. In this case you get an
-     *  exception, if something goes wrong. If you let do the release-job automatically by the destructor all exception
-     *  are swallowed and you won't get any feedback about problems.
+    /** @brief Like a standard SQLBulkInserter, but for the streaming a CSV-file is used in between. This approach
+     * is sometimes faster than the standard SQLBulkInserter. IMPORTANT NOTICE: Call release() before a
+     * SQLFileBulkInserter runs out of scope. In this case you get an exception, if something goes wrong. If you let
+     * do the release-job automatically by the destructor all exception are swallowed and you won't get any feedback
+     * about problems.
      */
     template <size_t BUF_SIZE,
               typename... InsTypes> // InsTypes - either equal to corresponding type in ColTypes or std::nullptr_t
@@ -691,7 +716,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
               bStreamIsVoid( true ), // Boolean state that
               uiReleaseThreshold( uiReleaseThreshold )
         {
-            // DEBUG: std::cout << "SQLFileBulkInserter filename:" << this->sCSVFileName.generic_string( ) << std::endl;
+            // DEBUG: std::cout << "SQLFileBulkInserter filename:" << this->sCSVFileName.generic_string( ) <<
+            // std::endl;
         } // constructor
 
         /** @brief Inserts a row into the table belonging to the bulk inserter.
@@ -875,6 +901,21 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 #endif
         return sStmt;
     } // method
+
+    /** @brief Implementation part of getValuesStmt */
+    template <std::size_t... Is> void getValueStmtImpl( std::string& sStmtText, std::index_sequence<Is...> )
+    {
+        ( ( sStmtText.append( ( Is == 0 ? "" : "," ) ).append(DBCon::DBImplForward::TypeTranslator::template getPlaceholderForType<ColTypes>() ) ), ... );
+    } // meta
+
+    /** @brief Delivers the "VALUES"-art of an insertion statement */
+    inline std::string getValuesStmt( )
+    {
+        std::string sStmtText( "(" );
+        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+        return sStmtText.append( ")" );
+    } // method
+
   public:
     /** @brief Creates the text for a prepared SQL INSERT statement.
      *  uiNumberVals determines the number of values (rows) in the case of multiple row inserts.
@@ -882,29 +923,34 @@ template <typename DBCon, typename... ColTypes> class SQLTable
      */
     std::string makeInsertStmt( const size_t uiNumVals = 1 )
     {
+        // Number of colums
+        assert( this->rjTableCols.size( ) == sizeof...( ColTypes ) );
+
+        const std::string sValuesPartOfStmt( getValuesStmt( ) );
         std::string sStmt = "INSERT INTO ";
         sStmt.append( getTableName( ) ).append( " VALUES " );
 
         for( size_t uiItrRow = 0; uiItrRow < uiNumVals; )
         {
-            sStmt.append( "(" );
-            // Comma separated list
-            for( size_t uiItr = 0; uiItr < this->rjTableCols.size( ); )
-            {
-                if( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 0 )
-                    sStmt.append( "?" ); // default insert statement
-                else // custom insert statement
-                {
-                    // max one insert statement per column
-                    assert( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 1 );
-                    sStmt.append( this->rjTableCols[ uiItr ][ PLACEHOLDER ] ); // custom insert statement
-                } // else
-
-                // insert separating comma
-                if( ++uiItr < this->rjTableCols.size( ) )
-                    sStmt.append( ", " );
-            } // inner for
-            sStmt.append( ")" );
+            sStmt.append( sValuesPartOfStmt );
+            // DEPR sStmt.append( "(" );
+            // DEPR // Comma separated list
+            // DEPR for( size_t uiItr = 0; uiItr < this->rjTableCols.size( ); )
+            // DEPR {
+            // DEPR     if( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 0 )
+            // DEPR         sStmt.append( "?" ); // default insert statement
+            // DEPR     else // custom insert statement
+            // DEPR     {
+            // DEPR         // max one insert statement per column
+            // DEPR         assert( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 1 );
+            // DEPR         sStmt.append( this->rjTableCols[ uiItr ][ PLACEHOLDER ] ); // custom insert statement
+            // DEPR     } // else
+            // DEPR
+            // DEPR     // insert separating comma
+            // DEPR     if( ++uiItr < this->rjTableCols.size( ) )
+            // DEPR         sStmt.append( ", " );
+            // DEPR } // inner for
+            // DEPR sStmt.append( ")" );
             // insert separating comma
             if( ++uiItrRow < uiNumVals )
                 sStmt.append( ", " );
@@ -1092,9 +1138,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
           , xAutoNullCols( xAutoNullCols )
 #endif
     {
-        if( rjTableCols.size( ) != vSQLColumnTypes.size( ) )
-            throw std::runtime_error(
-                "Incorrect SQL table definition. Number of C++ types does not match number of columns." );
+        if( !( ( rjTableCols.size( ) == vSQLColumnTypes.size( ) ) &&
+               ( rjTableCols.size( ) == sizeof...( ColTypes ) ) ) )
+            throw std::runtime_error( "Incorrect SQL table definition. Number of C++ types does not match number of "
+                                      "columns in JSON definition." );
         init( );
     }; // constructor
 

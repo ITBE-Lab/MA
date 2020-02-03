@@ -30,9 +30,9 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
     PooledSQLDBCon( const PooledSQLDBCon<DBImpl>& ) = delete; // no copies of pooled connections
 
     PooledSQLDBCon( std::shared_ptr<std::mutex> pPoolLock, // pass shared pointer to pool mutex
-                    const std::string& rsDBName = "" ) // FIXME: Pass JSON here
+                    const json& jDBConData = json{ } ) // FIXME: Pass JSON here
 
-        : SQLDB<DBImpl>( rsDBName ), pPoolLock( pPoolLock )
+        : SQLDB<DBImpl>( jDBConData ), pPoolLock( pPoolLock )
     {} // constructor
 
     /** @brief The function func is executed protected by a global lock.
@@ -82,7 +82,7 @@ template <typename DBImpl> class SQLDBConPool
      * considered instantiated, and therefore its destructor will not be called.
      */
     SQLDBConPool( size_t uiPoolSize = 1, // pass pool size here
-                  const std::string& rsDBName = "" ) // FIXME: DB info as JSON
+                  const json& jDBConData = json{ } ) // Connection Info as JSON; format depends on the backend
         : pPoolLock( std::make_shared<std::mutex>( ) ), // create the pool lock
           bStop( false ), // stop must be false in the beginning
           uiPoolSize( uiPoolSize )
@@ -90,11 +90,11 @@ template <typename DBImpl> class SQLDBConPool
         // Check size of pool
         if( uiPoolSize == 0 )
             throw std::runtime_error( "SQLDBConPool: The requested pool size must be greater than zero." );
-        std::cout << "In constructor before emplace_back ..." << std::endl;
+
         // Create all connection managers.
         // The creation of the connections has to be done sequentially with MySQL or connection creation can fail.
         for( size_t uiItr = 0; uiItr < uiPoolSize; ++uiItr )
-            vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, rsDBName ) );
+            vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, jDBConData ) );
 
         // Create an initialize all workers.
         for( size_t uiTaskId = 0; uiTaskId < uiPoolSize; ++uiTaskId )
@@ -127,10 +127,7 @@ template <typename DBImpl> class SQLDBConPool
                             // If there is an indication for termination and if there is nothing to do any more, we
                             // terminate the thread by returning.
                             if( this->bStop && this->qTasks.empty( ) )
-                            {
-                                std::cout << "Thread " << uiTaskId << " terminated" << std::endl;
                                 return;
-                            } // if
 
                             // We now have exclusive access to a non-empty task queue.
                             // We pick the front element (front lambda expression) for execution and remove it from the
@@ -147,7 +144,7 @@ template <typename DBImpl> class SQLDBConPool
                             fTaskToBeExcuted( pConManager );
                         } // while
                     }, // lambda ( doNoExcept )
-                    // doNoExcept info message:
+                    // doNoExcept error message:
                     "SQLDBConPool:: The worker with Id " + std::to_string( uiTaskId ) +
                         "failed due to an internal error and terminated." );
             } ); // emplace_back

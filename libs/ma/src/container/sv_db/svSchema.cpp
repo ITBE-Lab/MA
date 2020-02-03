@@ -38,7 +38,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
                                           SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " );
 
 
-    auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
+    auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
     return xQuery.scalar( iRunId, xWkb, dMinScore );
 } // function
 

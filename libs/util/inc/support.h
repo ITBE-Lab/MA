@@ -182,6 +182,6 @@ std::vector<std::string> EXPORTED split( const std::string& sSubject, const std:
  * Taken from here: https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program.
  * Once we move to C++20 we can use https://en.cppreference.com/w/cpp/types/endian instead.
  */
-bool EXPORTED is_big_endian();
+bool /* EXPORTED */ is_big_endian();
 
 #endif
