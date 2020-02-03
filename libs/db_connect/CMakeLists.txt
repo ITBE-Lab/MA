@@ -18,6 +18,10 @@ add_library(dbSQL STATIC
 # cmake will add the -fPIC for compilation with GCC
 set_property( TARGET dbSQL PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Activate __declspec(dllexport) for DLL export 
+# PRIVATE => depending projects will not inherit the EXPORT definition
+target_compile_definitions( dbSQL PRIVATE EXPORT )
+
 # Insert the sqlite3 object file
 target_link_libraries ( dbSQL LINK_PUBLIC sqlite3 ${MYSQL_LIBRARIES} )
 
