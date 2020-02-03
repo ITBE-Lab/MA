@@ -1,6 +1,6 @@
 /**
  * @file geom.h
- * @brief Implements a generic Interval class.
+ * @brief Support of geometric entities 
  * @author Markus Schmidt
  */
 #pragma once
@@ -146,7 +146,7 @@ template <typename T> class Interval
     } // function
 
     ///@brief wrapper for boost-python
-    inline const T size_boost1( ) const
+    inline const T size_boost1( ) const 
     {
         return iSize;
     } // function
@@ -195,185 +195,24 @@ template <typename T> class Interval
     } // operator
 }; // class
 
-template <size_t SIZE> class WKBPolygon
-{
-  public:
-    std::array<uint8_t, SIZE> aData;
-
-    WKBPolygon( )
-    {} // constructor
-
-    inline void set( size_t uiPos, uint8_t uiData )
-    {
-        aData[ uiPos ] = uiData;
-    } // method
-
-    inline void setDouble( size_t uiPos, double fData )
-    {
-        assert( SIZE >= uiPos + sizeof( double ) );
-        memcpy( &aData[ uiPos ], &fData, sizeof( double ) );
-    } // method
-
-    inline size_t get( size_t uiI ) const
-    {
-        return aData[ uiI ];
-    } // method
-
-    inline double getDouble( size_t uiI ) const
-    {
-        assert( SIZE >= uiI + sizeof( double ) );
-
-        double fRes;
-        memcpy( &fRes, &aData[ uiI ], sizeof( double ) );
-        return fRes;
-    } // method
-
-    inline void* getData( ) const
-    {
-        return (void*)&aData[ 0 ];
-    } // method
-
-    inline void setData( void* auiData )
-    {
-        std::copy_n( reinterpret_cast<uint8_t*>( auiData ), SIZE, aData.begin( ) );
-    } // method
-}; // class
-
+/** @brief Very basic representation of a rectangle.
+  * FIXME: Rename to Rectangle.
+  */
 template <typename T> class Rectangle
 {
-  public:
-    const static size_t uiSizeWKBHeader = 1 + // big/little endian a 1 byte
-                                          4 + // geom type a 4 bytes
-                                          4 + // number of rings
-                                          4; // number of points in ring
-    const static size_t uiSizeWKB = uiSizeWKBHeader + 5 * 2 * sizeof( double );
+public:
+	Interval<T> xXAxis, xYAxis;
+	/**
+	 * @brief Creates a new Rectangle.
+	 */
+	Rectangle(T iStartX, T iStartY, T iSizeX, T iSizeY) : xXAxis(iStartX, iSizeX), xYAxis(iStartY, iSizeY)
+	{} // constructor
 
-  private:
-    static size_t posOfPointX( size_t uiIdx )
-    {
-        assert( sizeof( double ) == 8 ); // assert that float has the correct size
-        return uiSizeWKBHeader + uiIdx * 2 * sizeof( double ); // each point is expressed by two doubles (x and y);
-    } // method
-
-    static size_t posOfPointY( size_t uiIdx )
-    {
-        return posOfPointX( uiIdx ) + sizeof( double );
-    } // method
-
-  public:
-    Interval<T> xXAxis, xYAxis;
-    /**
-     * @brief Creates a new Rectangle.
-     */
-    Rectangle( T iStartX, T iStartY, T iSizeX, T iSizeY ) : xXAxis( iStartX, iSizeX ), xYAxis( iStartY, iSizeY )
-    {} // constructor
-
-    Rectangle( ) : Rectangle( 0, 0, 0, 0 )
-    {} // default constructor
-
-    inline WKBPolygon<uiSizeWKB> getWKB( )
-    {
-        WKBPolygon<uiSizeWKB> xData;
-        xData.set( 0, is_big_endian( ) ? 0x00 : 0x01 ); // big/little endian a 1 byte
-
-        xData.set( 1, is_big_endian( ) ? 0x00 : 0x03 ); // geom type a 4 bytes
-        xData.set( 2, 0 ); // geom type a 4 bytes
-        xData.set( 3, 0 ); // geom type a 4 bytes
-        xData.set( 4, is_big_endian( ) ? 0x03 : 0x00 ); // geom type a 4 bytes
-
-        xData.set( 5, is_big_endian( ) ? 0x00 : 0x01 ); // number of rings a 4 bytes
-        xData.set( 6, 0 ); // number of rings a 4 bytes
-        xData.set( 7, 0 ); // number of rings a 4 bytes
-        xData.set( 8, is_big_endian( ) ? 0x01 : 0x00 ); // number of rings a 4 bytes
-
-        xData.set( 9, is_big_endian( ) ? 0x00 : 0x05 ); // number of points a 4 bytes
-        xData.set( 10, 0 ); // number of points a 4 bytes
-        xData.set( 11, 0 ); // number of points a 4 bytes
-        xData.set( 12, is_big_endian( ) ? 0x05 : 0x00 ); // number of points a 4 bytes
-
-        // counterclockwise:
-        // bottom left
-        xData.setDouble( posOfPointX( 0 ), (double)xXAxis.start( ) );
-        xData.setDouble( posOfPointY( 0 ), (double)xYAxis.start( ) );
-
-        // bottom right
-        xData.setDouble( posOfPointX( 1 ), (double)xXAxis.end( ) );
-        xData.setDouble( posOfPointY( 1 ), (double)xYAxis.start( ) );
-
-        // top right
-        xData.setDouble( posOfPointX( 2 ), (double)xXAxis.end( ) );
-        xData.setDouble( posOfPointY( 2 ), (double)xYAxis.end( ) );
-
-        // top left
-        xData.setDouble( posOfPointX( 3 ), (double)xXAxis.start( ) );
-        xData.setDouble( posOfPointY( 3 ), (double)xYAxis.end( ) );
-
-        // bottom left (again)
-        xData.setDouble( posOfPointX( 4 ), (double)xXAxis.start( ) );
-        xData.setDouble( posOfPointY( 4 ), (double)xYAxis.start( ) );
-
-        return xData;
-    } // method
-
-    inline void fromWKB( WKBPolygon<uiSizeWKB>& xData )
-    {
-        std::cout << "WKBPolygon: ";
-        for( auto uiI : xData.aData )
-            std::cout << std::hex << (int)uiI << " ";
-        std::cout << std::endl;
-
-        // @todo might cause trouble if data from systems with different endian is inserted into the DB
-        // in this case code needs to be written to change the endian of xData.
-        if( xData.get( 0 ) != ( is_big_endian( ) ? 0x00 : 0x01 ) ) // check endian
-            throw std::runtime_error( "WKB endian of DB does not match endian of system" );
-        if( is_big_endian( ) && xData.get( 4 ) != 0x03 )
-            throw std::runtime_error( "WKB is no polygon" );
-        else if( !is_big_endian( ) && xData.get( 1 ) != 0x03 )
-            throw std::runtime_error( "WKB is no polygon" );
-
-        if( is_big_endian( ) && xData.get( 8 ) != 0x01 )
-            throw std::runtime_error( "WKB polygon has more than one ring" );
-        else if( !is_big_endian( ) && xData.get( 5 ) != 0x01 )
-            throw std::runtime_error( "WKB polygon has more than one ring" );
-
-        if( is_big_endian( ) && xData.get( 12 ) != 0x05 )
-            throw std::runtime_error( "WKB polygon does not have 4 points in ring" );
-        else if( !is_big_endian( ) && xData.get( 9 ) != 0x05 )
-            throw std::runtime_error( "WKB polygon does not have 4 points in ring" );
-
-        if( xData.getDouble( posOfPointX( 0 ) ) != xData.getDouble( posOfPointX( 4 ) ) )
-            throw std::runtime_error(
-                "WKB polygon is no (closed) rectangle (i.e. first points x does not match last points x)" );
-
-        if( xData.getDouble( posOfPointY( 0 ) ) != xData.getDouble( posOfPointY( 4 ) ) )
-            throw std::runtime_error(
-                "WKB polygon is no (closed) rectangle (i.e. first points y does not match last points y)" );
-
-        T uiXStart = (T)xData.getDouble( posOfPointX( 0 ) );
-        if( (T)xData.getDouble( posOfPointX( 3 ) ) != uiXStart )
-            throw std::runtime_error( "WKB polygon is no rectangle (i.e. angles are not rectangular uiXStart)" );
-
-        T uiXEnd = (T)xData.getDouble( posOfPointX( 1 ) );
-        if( (T)xData.getDouble( posOfPointX( 2 ) ) != uiXEnd )
-            throw std::runtime_error( "WKB polygon is no rectangle (i.e. angles are not rectangular uiXEnd)" );
-        if( uiXStart > uiXEnd )
-            throw std::runtime_error( "WKB rectangle is in wrong order (i.e. uiXStart >= uiXEnd)" );
-
-        T uiYStart = (T)xData.getDouble( posOfPointY( 0 ) );
-        if( (T)xData.getDouble( posOfPointY( 1 ) ) != uiYStart )
-            throw std::runtime_error( "WKB polygon is no rectangle (i.e. angles are not rectangular uiYStart)" );
-
-        T uiYEnd = (T)xData.getDouble( posOfPointY( 2 ) );
-        if( (T)xData.getDouble( posOfPointY( 3 ) ) != uiYEnd )
-            throw std::runtime_error( "WKB polygon is no rectangle (i.e. angles are not rectangular uiYEnd)" );
-        if( uiYStart > uiYEnd )
-            throw std::runtime_error( "WKB rectangle is in wrong order (i.e. uiYStart >= uiYEnd)" );
-
-        xXAxis.iStart = uiXStart;
-        xYAxis.iStart = uiYStart;
-        xXAxis.iSize = uiXEnd - uiXStart;
-        xYAxis.iSize = uiYEnd - uiYStart;
-    } // method
+	Rectangle() : Rectangle(0, 0, 0, 0)
+	{} // default constructor
 }; // class
 
-} // namespace geomUtil
+} // namespace geomUtil 
+
+
+

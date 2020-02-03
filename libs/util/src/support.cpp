@@ -79,7 +79,7 @@ void makeDir( const std::string& rsFile )
     } // if
 } // function
 
-bool EXPORTED is_big_endian( )
+bool /* EXPORTED */ is_big_endian( )
 {
     union
     {
