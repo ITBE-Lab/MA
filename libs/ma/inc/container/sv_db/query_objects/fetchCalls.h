@@ -18,7 +18,7 @@ template <typename DBCon> class SvCallsFromDb
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_Schema<DBCon>> pDb;
-    geomUtil::WKBPolygon<geomUtil::Rectangle<nucSeqIndex>::uiSizeWKB> xWkb;
+    WKBUint64Rectangle xWkb;
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t> xQuery;
     SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t> xQuerySupport;
     // DELETED: SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t,
@@ -133,7 +133,7 @@ template <typename DBCon> class SvCallsFromDb
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
-          xWkb( geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( ) ),
+          xWkb( geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) ),
           xQuery(
               pDb->pDatabase,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
@@ -159,8 +159,7 @@ template <typename DBCon> class SvCallsFromDb
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
           xWkb( geomUtil::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
-                                                  std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) )
-                    .getWKB( ) ),
+                                                  std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) ) ),
           xQuery( pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
                   "       supporting_reads, reference_ambiguity "

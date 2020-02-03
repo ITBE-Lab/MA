@@ -204,3 +204,15 @@ template <typename T> class WKBRectangle : public WKBPolygon<5>
 }; // class
 
 typedef WKBRectangle<uint64_t> WKBUint64Rectangle;
+
+/// 
+inline std::ostream& operator<<( std::ostream& xOS, const WKBUint64Rectangle& xRectWKB )
+{
+    const auto xRect = xRectWKB.getRect( );
+	xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
+    xOS << "WKBPolygon: ";
+    for( auto uiI : xRectWKB.aData )
+        xOS << std::hex << (int)uiI << " ";
+    xOS << std::endl;
+    return xOS;
+} // operator

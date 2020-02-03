@@ -8,8 +8,8 @@
 
 #include "common.h"
 #include "geom.h"
-#include "spatial.h"
 #include "system.h"
+#include "wkb_spatial.h"
 #include <csignal>
 #include <string>
 
@@ -17,7 +17,6 @@
 
 namespace libMA
 {
-typedef geomUtil::WKBPolygon<geomUtil::Rectangle<uint64_t>::uiSizeWKB> WKBRectangle;
 template <typename DBCon>
 using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
                                                int64_t, // sv_caller_run_id (foreign key)
@@ -30,7 +29,7 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
                                                uint32_t, // supporting_reads
                                                uint32_t, // reference_ambiguity
                                                int64_t, // regex_id
-                                               WKBRectangle // rectangle (geometry)
+                                               WKBUint64Rectangle // rectangle (geometry)
                                                >;
 
 template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
@@ -229,10 +228,9 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 while( true )
                                 {
                                     // check if current call overlaps a call with higher score of the same run
-                                    auto xWkb = geomUtil::Rectangle<nucSeqIndex>(
-                                                    uiFromStart - iBlurMax, uiToStart - iBlurMax,
-                                                    uiFromSize + iBlurMax * 2, uiToSize + iBlurMax * 2 )
-                                                    .getWKB( );
+                                    auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>(
+                                        uiFromStart - iBlurMax, uiToStart - iBlurMax, uiFromSize + iBlurMax * 2,
+                                        uiToSize + iBlurMax * 2 ) );
                                     xNumOverlapsHelper2.execAndFetch( iId, dScore, iId, iCallerRunIdB, xWkb,
                                                                       bSwitchStrand );
 
@@ -251,10 +249,9 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 int64_t iBlurMin = iAllowedDist;
                                 while( true )
                                 {
-                                    auto xWkb = geomUtil::Rectangle<nucSeqIndex>(
-                                                    uiFromStart - iBlurMin, uiToStart - iBlurMin,
-                                                    uiFromSize + iBlurMin * 2, uiToSize + iBlurMin * 2 )
-                                                    .getWKB( );
+                                    auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>(
+                                        uiFromStart - iBlurMin, uiToStart - iBlurMin, uiFromSize + iBlurMin * 2,
+                                        uiToSize + iBlurMin * 2 ) );
                                     xNumOverlapsHelper1.execAndFetch( iCallerRunIdA, xWkb, bSwitchStrand );
 
                                     if( xNumOverlapsHelper1.eof( ) )
@@ -427,8 +424,8 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                "SET reference_ambiguity = ? "
                                "WHERE id = ?" ),
           xDeleteCall( pDatabase,
-                        "DELETE FROM sv_call_table "
-                        "WHERE id = ? " ),
+                       "DELETE FROM sv_call_table "
+                       "WHERE id = ? " ),
           xUpdateCall( pDatabase,
                        "UPDATE sv_call_table "
                        "SET from_pos = ?, "
@@ -488,7 +485,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
-        auto xRectangle = rCall.getWKB( );
+        auto xRectangle = WKBUint64Rectangle( rCall );
         int64_t iCallId = this->insert( iSvCallerRunId, //
                                         (uint32_t)rCall.xXAxis.start( ), //
                                         (uint32_t)rCall.xYAxis.start( ), //
@@ -504,7 +501,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 
     inline int64_t updateCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
-        auto xRectangle = rCall.getWKB( );
+        auto xRectangle = WKBUint64Rectangle( rCall );
         xUpdateCall.exec( (uint32_t)rCall.xXAxis.start( ), (uint32_t)rCall.xYAxis.start( ),
                           (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bSwitchStrand,
                           // NucSeqSql can deal with nullpointers

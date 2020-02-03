@@ -196,6 +196,12 @@ template <typename T> class Interval
     } // operator
 }; // class
 
+inline std::ostream& operator<<( std::ostream& xOS, const Interval<uint64_t>& xInterval )
+{
+    xOS << "(" << xInterval.start( ) << ", " << xInterval.end( ) << "] ";
+    return xOS;
+} // operator
+
 /** @brief Very basic representation of a rectangle.
  * FIXME: Rename to Rectangle.
  */
@@ -222,5 +228,11 @@ template <typename T> class Rectangle
     } // operator
 
 }; // class
+
+inline std::ostream& operator<<( std::ostream& xOS, const Rectangle<uint64_t>& xRect )
+{
+	xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
+    return xOS;
+} // operator
 
 } // namespace geomUtil

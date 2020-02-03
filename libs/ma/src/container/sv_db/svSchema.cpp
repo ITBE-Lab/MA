@@ -1,5 +1,5 @@
-#include "container/container.h"
 #include "container/sv_db/svSchema.h"
+#include "container/container.h"
 #include "module/combineOverlappingCalls.h"
 
 // include classes that implement sql queries
@@ -39,12 +39,12 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
                                           SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " );
 
 
-        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
+    auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
     return xQuery.scalar( iRunId, xWkb, dMinScore );
 } // function
 
-uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
-                            int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
+uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+                            int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
     if( iX > 0 )

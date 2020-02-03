@@ -11,23 +11,6 @@
 #include "wkb_spatial.h"
 
 
-std::ostream& operator<<( std::ostream& xOS, const geomUtil::Interval<uint64_t>& xInterval )
-{
-    xOS << "(" << xInterval.start( ) << ", " << xInterval.end( ) << "] ";
-    return xOS;
-} // operator
-
-std::ostream& operator<<( std::ostream& xOS, const WKBUint64Rectangle& xRectWKB )
-{
-    const auto xRect = xRectWKB.getRect( );
-	xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
-    xOS << "WKBPolygon: ";
-    for( auto uiI : xRectWKB.aData )
-        xOS << std::hex << (int)uiI << " ";
-    xOS << std::endl;
-    return xOS;
-} // operator
-
 int main( void )
 {
     std::vector<int64_t> vuiIds;
