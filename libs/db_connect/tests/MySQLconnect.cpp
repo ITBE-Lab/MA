@@ -412,13 +412,6 @@ void excptTest( )
     doSwallowingExcpt( [ & ]( ) { xFuture.get( ); } ); // catch via future
 } // method
 
-// #ifdef _MSC_VER
-// libMA::SV_Schema xSB_DB_SchemaView( pDBCon );
-// #else
-// using Type = typename decltype( pDBCon )::element_type;
-// libMA::SV_Schema<Type> xSB_DB_SchemaView( pDBCon );
-// #endif
-
 int main( int argc, char** argv )
 {
     try

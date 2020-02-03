@@ -13,8 +13,6 @@
 #include <csignal>
 #include <string>
 
-// using DBCon = MySQLConDB; // FIXME: Implement as template parameter
-
 namespace libMA
 {
 template <typename DBCon>
@@ -387,7 +385,6 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                          "WHERE sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " ASC LIMIT 1 " ),
-
           xNextCallForwardContext(
               pDatabase,
               "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
