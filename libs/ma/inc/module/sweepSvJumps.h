@@ -8,8 +8,6 @@
 #include "container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
 #include "container/sv_db/query_objects/fetchSvJump.h"
 #include "container/sv_db/svSchema.h"
-using DBCon = SQLDB<MySQLConDB>; // For the moment we set this module fix to MySQL.
-
 #include "module/module.h"
 #include "util/statisticSequenceAnalysis.h"
 #include <cmath>
@@ -85,7 +83,7 @@ class CompleteBipartiteSubgraphClusterVector : public Container
  * @brief saves all computed clusters in the database
  * @details
  */
-class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
+template <typename DBCon> class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
 {
   public:
     std::shared_ptr<SV_Schema<DBCon>> pDB;
@@ -168,6 +166,7 @@ class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubg
  * @brief
  * @details
  */
+template <typename DBCon>
 class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphClusterVector, false, GenomeSection>
 {
   public:
@@ -356,6 +355,7 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
  * @brief
  * @details
  */
+template <typename DBCon>
 class ExactCompleteBipartiteSubgraphSweep
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
 {

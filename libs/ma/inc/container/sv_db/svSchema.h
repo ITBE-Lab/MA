@@ -75,28 +75,8 @@ template <typename DBCon> class SV_Schema : public Container
           //- pSvCallRegExTable( std::make_shared<SvCallRegExTable>( pDatabase ) ),
           pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pDatabase, pWriteLock, sName ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pDatabase ) )
-    {
-        // DEBUG( std::cout << "Opened DB connection" << std::endl; )
-        //--> Json SQLite : this->setNumThreads( 32 ); // @todo do this via a parameter
-        //--> Json SQLite : pDatabase->execDML( "PRAGMA busy_timeout=0;" ); // do not throw sqlite busy errors
-        //--> Json SQLite : //
-        // https://stackoverflow.com/questions/1711631/improve-insert-per-second-performance-of-sqlite
-        //--> Json SQLite : pDatabase->execDML( "PRAGMA synchronous = OFF;" ); // insert performance
-        //--> Json SQLite : pDatabase->execDML( "PRAGMA journal_mode = WAL;" ); // insert performance -> read while
-        // write
-    } // constructor
-
-    // Delete: SV_DB( std::string sName ) : SV_DB( sName, eCREATE_DB, false )
-    // Delete: {} // constructor
-
-    SV_Schema( std::string sName, std::string sMode, bool bInMemory ) : SV_Schema( std::make_shared<DBCon>( sName ) )
     {} // constructor
 
-    SV_Schema( std::string sName, std::string sMode ) : SV_Schema( sName, sMode, false )
-    {} // constructor
-
-    SV_Schema( std::string sName ) : SV_Schema( sName, "open" )
-    {} // constructor
 
     inline void createJumpIndices( int64_t uiRun )
     {

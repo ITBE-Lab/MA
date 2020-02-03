@@ -61,30 +61,6 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
  */
 template <typename DBImpl> class SQLDBConPool
 {
-  public:
-    // class PooledSQLDBCon
-    // {
-    //   private:
-    //     size_t uiTaskId; // id of the task belonging to the PooledSQLDBCon
-    //
-    //   public:
-    //     PooledSQLDBCon( const PooledSQLDBCon& ) = delete; // no copies of connection managers
-    //     std::shared_ptr<SQLDB<DBImpl>> pDBCon;
-    //
-    //     /** @brief Constructs a DB connection manager. */
-    //     PooledSQLDBCon( ) : pDBCon( std::make_shared<PooledSQLDBCon<DBImpl>>( ) )
-    //     {
-    //         std::cout << "Create PooledSQLDBCon " << std::endl;
-    //     } // constructor
-    //
-    //     inline size_t getTaskId( )
-    //     {
-    //         return this->uiTaskId;
-    //     } // method
-    //
-    //     friend class SQLDBConPool<DBImpl>;
-    // }; // class
-
   private:
     using TaskType = std::function<void( std::shared_ptr<PooledSQLDBCon<DBImpl>> )>; // type of the tasks to be executed
 
@@ -122,11 +98,11 @@ template <typename DBImpl> class SQLDBConPool
 
         // Create an initialize all workers.
         for( size_t uiTaskId = 0; uiTaskId < uiPoolSize; ++uiTaskId )
-            vWorkers.emplace_back( [ this, uiTaskId ] {
+            vWorkers.emplace_back( [this, uiTaskId] {
                 // Treads are not allowed to throw exceptions or we face crashes.
                 // Therefore the swallowing of exceptions.
                 doNoExcept(
-                    [ & ] {
+                    [&] {
                         // Get a reference to the connection manager belonging to this thread.
                         auto pConManager = vConPool[ uiTaskId ];
                         pConManager->uiTaskId = uiTaskId; // inform connector about corresponding taskid
@@ -177,7 +153,7 @@ template <typename DBImpl> class SQLDBConPool
             } ); // emplace_back
     } // constructor
 
-    /** brief@ Terminates the operation of the connection pool.
+    /** @brief Terminates the operation of the connection pool.
      *  Method blocks until all tasks in the queue have been executed.
      */
     void shutdown( )
@@ -204,7 +180,7 @@ template <typename DBImpl> class SQLDBConPool
         std::cout << "Pool shutdown finished ..." << std::endl;
     } // method
 
-    /** brief@ The destructor blocks until all workers terminated. */
+    /** @brief The destructor blocks until all workers terminated. */
     ~SQLDBConPool( )
     {
         std::cout << "SQLDBConPool Destructor." << std::endl;
@@ -239,7 +215,7 @@ template <typename DBImpl> class SQLDBConPool
             std::unique_lock<std::mutex> lock( xQueueMutex );
 
             // The task gets as input a shared pointer to a DBConnection for doing its job
-            qTasks.push( [ xTask ]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
+            qTasks.push( [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
         } // end of scope of lock (lock gets released)
         // Inform some waiting consumer (worker) that we have a fresh task.
         this->xCondition.notify_one( );

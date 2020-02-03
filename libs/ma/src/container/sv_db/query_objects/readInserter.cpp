@@ -4,7 +4,7 @@ using namespace libMA;
 
 #ifdef WITH_PYTHON
 
-using DBCon = SQLDB<MySQLConDB>;
+#include "container/sv_db/py_db_conf.h"
 
 int64_t insertReads( std::vector<std::shared_ptr<NucSeq>> vReads, std::shared_ptr<SV_Schema<DBCon>> pDb,
                       std::string sName, std::shared_ptr<Pack> pRef )

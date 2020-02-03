@@ -8,11 +8,13 @@ using namespace libMA;
 
 #ifdef WITH_PYTHON
 
+#include "container/sv_db/py_db_conf.h"
+
 void exportConnectorPatternFilter( py::module& rxPyModuleId )
 {
     // export the ConnectorPatternFilter class
-    using DBCon = SQLDB<MySQLConDB>;
-    exportModule<ConnectorPatternFilter, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId, "ConnectorPatternFilter" );
+    exportModule<ConnectorPatternFilter<DBCon>, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId,
+                                                                                    "ConnectorPatternFilter" );
 
 } // function
 #endif

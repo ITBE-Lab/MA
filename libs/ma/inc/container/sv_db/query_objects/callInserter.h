@@ -18,7 +18,10 @@ template <typename DBCon> class SvCallInserter
 {
   public:
     // this is here so that it gets destructed after the transaction context
-    std::shared_ptr<SV_Schema<DBCon>> pDB;
+    std::shared_ptr<DBCon> pConnection;
+
+    std::shared_ptr<SvCallTable<DBCon>> pSvCallTable;
+    std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable;
 
   private:
     // must be after the DB so that it is deconstructed first
@@ -79,8 +82,10 @@ template <typename DBCon> class SvCallInserter
      * @details
      * Expects the run to exists in the DB.
      */
-    SvCallInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, const int64_t iSvCallerRunId )
-        : pDB( pDB ),
+    SvCallInserter( std::shared_ptr<DBCon> pConnection, const int64_t iSvCallerRunId )
+        : pConnection( pConnection ),
+          pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pConnection ) ),
+          pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
           // @fixme: pTransactionContext( std::make_shared<CppSQLiteExtImmediateTransactionContext>( *pDB->pDatabase )
           // ),
           iSvCallerRunId( iSvCallerRunId )
@@ -91,12 +96,15 @@ template <typename DBCon> class SvCallInserter
      * @details
      * This creates a new caller run with the given name and description.
      */
-    SvCallInserter( std::shared_ptr<SV_Schema<DBCon>> pDB,
+    SvCallInserter( std::shared_ptr<DBCon> pConnection,
                     const std::string& rsSvCallerName,
                     const std::string& rsSvCallerDesc,
                     const int64_t uiJumpRunId )
-        : SvCallInserter( pDB, pDB->pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
+        : SvCallInserter(
+              pConnection,
+              SvCallerRunTable<DBCon>( pConnection ).insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
     {} // constructor
+
     /// @brief Object cannot be copied.
     SvCallInserter( const SvCallInserter& ) = delete; // delete copy constructor
 
@@ -108,7 +116,7 @@ template <typename DBCon> class SvCallInserter
      */
     inline void insertCall( SvCall& rCall )
     {
-        CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
+        CallContex xContext( pSvCallSupportTable, pSvCallTable->insertCall( iSvCallerRunId, rCall ) );
         for( int64_t iId : rCall.vSupportingJumpIds )
             xContext.addSupport( iId );
     } // method
@@ -121,7 +129,7 @@ template <typename DBCon> class SvCallInserter
      */
     inline void updateCall( SvCall& rCall )
     {
-        CallContex xContext( pDB->pSvCallSupportTable, pDB->pSvCallTable->updateCall( iSvCallerRunId, rCall ) );
+        CallContex xContext( pSvCallSupportTable, pSvCallTable->updateCall( iSvCallerRunId, rCall ) );
         // remove the link between jumps and this call
         xContext.remSupport( );
         // reinsert the link (no need to compare old and new set this way)

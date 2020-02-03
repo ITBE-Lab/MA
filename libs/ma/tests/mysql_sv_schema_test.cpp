@@ -21,12 +21,8 @@ int main( void )
                 vFutures.push_back( xDBPool.enqueue( []( auto pDBCon ) {
                     doNoExcept(
                         [&] {
-#ifdef _MSC_VER
-                            libMA::SV_Schema xSB_DB_SchemaView( pDBCon );
-#else
-                            using Type = typename decltype( pDBCon )::element_type;
-                            libMA::SV_Schema<Type> xSB_DB_SchemaView( pDBCon );
-#endif
+                            using ConnectionType = typename decltype( *pDBCon );
+                            libMA::SV_Schema<ConnectionType> xSB_DB_SchemaView( pDBCon );
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;
                             // checkDB( pDBCon, pDBCon->getTaskId( ) );
                             pDBCon->doPoolSafe( [] { std::cout << "This print is pool safe ..." << std::endl; } );

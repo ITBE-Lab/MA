@@ -18,20 +18,21 @@ namespace libMA
  */
 template <typename DBCon> class SvCallerRunsFromDb
 {
-    std::shared_ptr<SV_Schema<DBCon>> pDb;
+    std::shared_ptr<DBCon> pConnection;
+    // table object is not used. However its constructor guarantees its existence and the correctness of rows
+    std::shared_ptr<SvCallerRunTable<DBCon>> pSvCallerRunTable;
     SQLQuery<DBCon, int64_t, std::string, std::string> xQuery;
-    // DELETED: SQLQuery<DBCon, int64_t, std::string, std::string>::Iterator xTableIterator;
 
   public:
     /**
      * @brief queries information about all sv caller runs.
      */
-    SvCallerRunsFromDb( std::shared_ptr<SV_Schema<DBCon>> pDb )
-        : pDb( pDb ),
-          xQuery( pDb->pDatabase,
+    SvCallerRunsFromDb( std::shared_ptr<DBCon> pConnection )
+        : pConnection( pConnection ),
+          pSvCallerRunTable( std::make_shared<SvCallerRunTable<DBCon>>( pConnection ) ),
+          xQuery( pConnection,
                   "SELECT id, name, _desc_ "
                   "FROM sv_caller_run_table" )
-    // DELETED: xTableIterator(xQuery.vExecuteAndReturnIterator())
     {
         xQuery.execAndFetch( );
     } // constructor
@@ -39,7 +40,7 @@ template <typename DBCon> class SvCallerRunsFromDb
     /// @brief return the id of the current run. undefined if eof returns true
     int64_t id( )
     {
-        int64_t iId = std::get<0>( xQuery.get( ) );\
+        int64_t iId = std::get<0>( xQuery.get( ) );
         return iId;
     } // method
 

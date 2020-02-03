@@ -14,20 +14,19 @@ namespace libMA
  */
 template <typename DBCon> class SvJumpInserter
 {
-  public:
     // this is here so that it gets destructed after the transaction context
-    std::shared_ptr<SV_Schema<DBCon>> pDB;
-
-  private:
-    // must be after the DB so that it is deconstructed first
-
-
-    // REPLACED: std::shared_ptr<CppSQLiteExtImmediateTransactionContext> pTransactionContext;
-    typename DBCon::sharedGuardedTrxnType pGuardedTrxn; // technically a shared pointer
+    std::shared_ptr<DBCon> pConnection;
 
   public:
     /// @brief the id of the run this inserter is attached to.
     const int64_t iSvJumpRunId;
+
+  private:
+    std::shared_ptr<SvJumpTable<DBCon>> pSvJumpTable;
+
+    // must be after the DB so that it is deconstructed first
+    typename DBCon::sharedGuardedTrxnType pGuardedTrxn; // technically a shared pointer
+
 
     /**
      * @brief Inner helper class. Memorizes the context for a single read.
@@ -78,15 +77,11 @@ template <typename DBCon> class SvJumpInserter
      * @param iSvJumpRunId caller run id
      * @param bTransactionLess do not create a transaction
      */
-    SvJumpInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, int64_t iSvJumpRunId, bool bTransactionLess )
-        : pDB( std::make_shared<SV_Schema<DBCon>>(
-              *pDB ) ), // create a copy of the connection to the db
-                        // REPLACED: pTransactionContext(bTransactionLess
-                        // REPLACED: 	? nullptr
-                        // REPLACED: 	: std::make_shared<CppSQLiteExtImmediateTransactionContext>(*pDB->pDatabase)),
-          pGuardedTrxn( bTransactionLess ? nullptr : pDB->pDatabase->sharedGuardedTrxn( ) ),
-
-          iSvJumpRunId( iSvJumpRunId )
+    SvJumpInserter( std::shared_ptr<DBCon> pConnection, int64_t iSvJumpRunId, bool bTransactionLess )
+        : pConnection( pConnection ),
+          iSvJumpRunId( iSvJumpRunId ),
+          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
+          pGuardedTrxn( bTransactionLess ? nullptr : pConnection->sharedGuardedTrxn( ) )
     {} // constructor
 
     /**
@@ -94,8 +89,8 @@ template <typename DBCon> class SvJumpInserter
      * @param pDB the sv database
      * @param iSvJumpRunId caller run id
      */
-    SvJumpInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, int64_t iSvJumpRunId )
-        : SvJumpInserter( pDB, iSvJumpRunId, false )
+    SvJumpInserter( std::shared_ptr<DBCon> pConnection, int64_t iSvJumpRunId )
+        : SvJumpInserter( pConnection, iSvJumpRunId, false )
     {} // constructor
 
     /**
@@ -103,12 +98,14 @@ template <typename DBCon> class SvJumpInserter
      * @details
      * The new run gets a name and description
      */
-    SvJumpInserter( std::shared_ptr<SV_Schema<DBCon>> pDB, const std::string& rsSvCallerName,
+    SvJumpInserter( std::shared_ptr<DBCon> pConnection, const std::string& rsSvCallerName,
                     const std::string& rsSvCallerDesc )
-        : pDB( pDB ),
-          // REPLACED: pTransactionContext(std::make_shared<CppSQLiteExtImmediateTransactionContext>(*pDB->pDatabase)),
-          pGuardedTrxn( pDB->pDatabase->sharedGuardedTrxn( ) ),
-          iSvJumpRunId( pDB->pSvJumpRunTable->insert( rsSvCallerName, rsSvCallerDesc ) )
+        : pDB( pConnection ),
+          // this creates a new jump run id. If the sv_jump_run_table does not exists it also creates the table.
+          // -> we use the constructor of the table class to do so (@todo sv_jump_run_table should have its own class).
+          iSvJumpRunId(
+              NameDescTable<DBCon>( pConnection, "sv_jump_run_table" ).insert( rsSvCallerName, rsSvCallerDesc ) ),
+          pGuardedTrxn( pConnection->sharedGuardedTrxn( ) )
     {} // constructor
 
     /**
@@ -116,7 +113,7 @@ template <typename DBCon> class SvJumpInserter
      */
     inline ReadContex readContext( int64_t iReadId )
     {
-        return ReadContex( pDB->pSvJumpTable, iSvJumpRunId, iReadId );
+        return ReadContex( pSvJumpTable, iSvJumpRunId, iReadId );
     } // method
 
     /**
@@ -143,22 +140,18 @@ template <typename DBCon> class SvJumpInserter
  */
 template <typename DBCon> class SvDbInserter : public Module<Container, false, ContainerVector<SvJump>, NucSeq>
 {
-    std::shared_ptr<SV_Schema<DBCon>> pDb;
-
   public:
     /// @brief the jump inserter; This creates a transaction
     SvJumpInserter<DBCon> xInserter;
 
     ///@brief creates a new jump-run with the name MA-SV.
-    SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb, std::string sRunDesc )
-        : pDb( pDb ), xInserter( this->pDb, "MA-SV", sRunDesc )
+    SvDbInserter( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, std::string sRunDesc )
+        : xInserter( this->pDb, "MA-SV", sRunDesc )
     {} // constructor
 
     /// @brief insert all jumps in pJumps for the read pRead
     std::shared_ptr<Container> execute( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
-        std::lock_guard<std::mutex> xGuard( *pDb->pWriteLock );
-
         typename SvJumpInserter<DBCon>::ReadContex xReadContext = xInserter.readContext( pRead->iId );
         for( SvJump& rJump : *pJumps )
             xReadContext.insertJump( rJump ); // also updates the jump ids;

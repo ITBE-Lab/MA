@@ -9,9 +9,11 @@ using namespace libMA;
 
 
 #ifdef WITH_PYTHON
+
+#include "container/sv_db/py_db_conf.h"
+
 void exportSweepSvJump( py::module& rxPyModuleId )
 {
-    using DBCon = SQLDB<MySQLConDB>;
     py::class_<GenomeSection, Container, std::shared_ptr<GenomeSection>>( rxPyModuleId, "GenomeSection" )
         .def_readwrite( "start", &GenomeSection::iStart )
         .def_readwrite( "size", &GenomeSection::iSize );
@@ -26,24 +28,26 @@ void exportSweepSvJump( py::module& rxPyModuleId )
         .def_readwrite( "content", &CompleteBipartiteSubgraphClusterVector::vContent );
 
     exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
-    exportModule<SvCallSink, std::shared_ptr<SV_Schema<DBCon>>, std::string, std::string, int64_t>(
-        rxPyModuleId, "SvCallSink", []( auto&& x ) { x.def_readwrite( "run_id", &SvCallSink::iRunId ); } );
+    exportModule<SvCallSink<DBCon>, std::shared_ptr<SV_Schema<DBCon>>, std::string, std::string, int64_t>(
+        rxPyModuleId, "SvCallSink", []( auto&& x ) { x.def_readwrite( "run_id", &SvCallSink<DBCon>::iRunId ); } );
     exportModule<BufferedSvCallSink<DBCon>, std::shared_ptr<SvCallInserter<DBCon>>>(
         rxPyModuleId, "BufferedSvCallSink", []( auto&& x ) { x.def( "commit", &BufferedSvCallSink<DBCon>::commit ); } );
 
 
-    exportModule<CompleteBipartiteSubgraphSweep,
+    exportModule<CompleteBipartiteSubgraphSweep<DBCon>,
                  std::shared_ptr<SV_Schema<DBCon>>,
                  std::shared_ptr<Pack>,
                  int64_t,
                  int64_t>( rxPyModuleId, "CompleteBipartiteSubgraphSweep", []( auto&& x ) {
-        x.def_readonly( "time_init", &CompleteBipartiteSubgraphSweep::dInit )
-            .def_readonly( "time_complete_while", &CompleteBipartiteSubgraphSweep::dOuterWhile )
-            .def_readonly( "time_inner_while", &CompleteBipartiteSubgraphSweep::dInnerWhile );
+        x.def_readonly( "time_init", &CompleteBipartiteSubgraphSweep<DBCon>::dInit )
+            .def_readonly( "time_complete_while", &CompleteBipartiteSubgraphSweep<DBCon>::dOuterWhile )
+            .def_readonly( "time_inner_while", &CompleteBipartiteSubgraphSweep<DBCon>::dInnerWhile );
     } );
 
-    exportModule<ExactCompleteBipartiteSubgraphSweep, std::shared_ptr<SV_Schema<DBCon>>, std::shared_ptr<Pack>, int64_t>(
-        rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );
+    exportModule<ExactCompleteBipartiteSubgraphSweep<DBCon>,
+                 std::shared_ptr<SV_Schema<DBCon>>,
+                 std::shared_ptr<Pack>,
+                 int64_t>( rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );
     exportModule<FilterLowSupportShortCalls>( rxPyModuleId, "FilterLowSupportShortCalls" );
     exportModule<FilterLowScoreCalls>( rxPyModuleId, "FilterLowScoreCalls" );
     exportModule<FilterDiagonalLineCalls>( rxPyModuleId, "FilterDiagonalLineCalls" );

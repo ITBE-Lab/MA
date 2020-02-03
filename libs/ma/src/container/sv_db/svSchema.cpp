@@ -1,5 +1,6 @@
-#include "container/container.h"
 #include "container/sv_db/svSchema.h"
+#include "container/container.h"
+#include "container/sv_db/py_db_conf.h"
 #include "module/combineOverlappingCalls.h"
 
 // include classes that implement sql queries
@@ -12,8 +13,6 @@
 #include "container/sv_db/query_objects/readInserter.h"
 
 using namespace libMA;
-
-using DBCon = SQLDB<MySQLConDB>;
 
 uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
                               double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH )
@@ -39,12 +38,12 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
                                           SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " );
 
 
-        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
+    auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
     return xQuery.scalar( iRunId, xWkb, dMinScore );
 } // function
 
-uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
-                            int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
+uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+                            int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
     if( iX > 0 )
@@ -56,16 +55,6 @@ uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_p
         uiW = pPack->uiUnpackedSizeForwardStrand - uiX;
     if( uiY + uiH > pPack->uiUnpackedSizeForwardStrand )
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
-
-    // DEL:CppSQLiteExtQueryStatement<uint32_t> xQuery( *pDb->pDatabase,
-    // DEL:                                             "SELECT COUNT(*) "
-    // DEL:                                             "FROM sv_jump_table "
-    // DEL:                                             "WHERE sv_jump_run_id == ? "
-    // DEL:                                             "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos == ? ) "
-    // DEL:                                             "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos == ? ) "
-    // DEL:                                             "LIMIT ? " );
-    // DEL:return xQuery.scalar( iRunId, uiX, uiX + (uint32_t)uiW, std::numeric_limits<uint32_t>::max( ), uiY,
-    // DEL:                      uiY + (uint32_t)uiH, std::numeric_limits<uint32_t>::max( ), uiLimit );
 
     SQLQuery<DBCon, uint32_t> xQuery( pDb->pDatabase,
                                       "SELECT COUNT(*) "
@@ -143,12 +132,15 @@ std::vector<rect> getCallOverview( std::shared_ptr<SV_Schema<DBCon>> pDb, std::s
 
 void exportSoCDbWriter( py::module& rxPyModuleId )
 {
+    py::class_<DBCon, std::shared_ptr<DBCon>>( rxPyModuleId, "DB_Con" );
 
+    py::class_<SQLDBConPool<DBCon>, std::shared_ptr<SQLDBConPool<DBCon>>>( rxPyModuleId, "DB_Con_Pool" )
+        .def( py::init<size_t, std::string>( ) )
+        .def;
     // export the SV_DB class
-    py::class_<SV_Schema<DBCon>, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId, "SV_DB" )
-        .def( py::init<std::string, std::string>( ) ) // checked
-        .def( py::init<std::string, std::string, bool>( ) ) // checked
-        .def( "delete_run", &SV_Schema<DBCon>::deleteRun ) // checked
+    py::class_<SV_Schema<DBCon>, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId, "SV_Schema" )
+        .def( py::init<std::shared_ptr<DBCon>>( ) )
+        .def( "delete_run", &SV_Schema<DBCon>::deleteRun )
         .def( "get_run_id", &SV_Schema<DBCon>::getRunId )
         .def( "get_call_area", &SV_Schema<DBCon>::getCallArea )
         .def( "get_num_overlaps_between_calls", &SV_Schema<DBCon>::getNumOverlapsBetweenCalls )
@@ -172,7 +164,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "update_coverage", &SV_Schema<DBCon>::updateCoverage )
         .def( "insert_sv_caller_run", &SV_Schema<DBCon>::insertSvCallerRun )
         .def( "insert_sv_jump_run", &SV_Schema<DBCon>::insertSvJumpRun )
-        .def( "get_read", &SV_Schema<DBCon>::getRead ) // checked
+        .def( "get_read", &SV_Schema<DBCon>::getRead )
         .def( "num_jumps", &SV_Schema<DBCon>::numJumps );
 
     py::class_<rect>( rxPyModuleId, "rect" ) //

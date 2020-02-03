@@ -14,6 +14,7 @@ namespace libMA
  * Uses DP to check if the reference before and after the breakpoints matches better to itself than the reads to it.
  * If so it discards the SV.
  */
+template <typename DBCon>
 class ConnectorPatternFilter
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
 {

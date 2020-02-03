@@ -4,7 +4,7 @@ using namespace libMA;
 
 #ifdef WITH_PYTHON
 
-using DBCon = SQLDB<MySQLConDB>;
+#include "container/sv_db/py_db_conf.h"
 
 void exportSvJump(py::module& rxPyModuleId)
 {
