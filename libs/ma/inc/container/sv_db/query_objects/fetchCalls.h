@@ -140,7 +140,7 @@ template <typename DBCon> class SvCallsFromDb
               "       reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
-              "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) " ),
+              "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 " ),
           xQuerySupport( pDb->pDatabase,
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
