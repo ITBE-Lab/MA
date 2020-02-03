@@ -26,9 +26,9 @@ int main( void )
                     { { COLUMN_NAME, "rectangle" }, { PLACEHOLDER, "ST_PolyFromWKB(?, 0)" } },
                 } } } );
 
-        vxRectangles.emplace_back( WKBUint64Rectangle( geomUtil::Rectangle<uint64_t>( 1, 1, 1, 1 ) ) );
-        vxRectangles.emplace_back( WKBUint64Rectangle( geomUtil::Rectangle<uint64_t>( 1, 0, 9, 10 ) ) );
-        vxRectangles.emplace_back( WKBUint64Rectangle( geomUtil::Rectangle<uint64_t>( 2, 0, 8, 10 ) ) );
+        vxRectangles.emplace_back( WKBUint64Rectangle( geom::Rectangle<uint64_t>( 1, 1, 1, 1 ) ) );
+        vxRectangles.emplace_back( WKBUint64Rectangle( geom::Rectangle<uint64_t>( 1, 0, 9, 10 ) ) );
+        vxRectangles.emplace_back( WKBUint64Rectangle( geom::Rectangle<uint64_t>( 2, 0, 8, 10 ) ) );
 
         for( auto& xRect : vxRectangles )
         {

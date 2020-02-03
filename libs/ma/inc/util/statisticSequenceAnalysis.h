@@ -18,7 +18,7 @@ namespace libMA
  * where (1 - 1/4^k) is the probability that two k-sized nucleotide sequences do not match.
  *	     (w-k+1)*(h-k+1) ) is the number of possible K-mer combinations within the rectangle.
  */
-nucSeqIndex getKMerSizeForRectangle( geomUtil::Rectangle<nucSeqIndex>& rRect, double t );
+nucSeqIndex getKMerSizeForRectangle( geom::Rectangle<nucSeqIndex>& rRect, double t );
 
 /**
  * @brief returns the size at which all k-mer's on the reference interval of xArea are unique.

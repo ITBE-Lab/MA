@@ -10,20 +10,20 @@
 using namespace libMA;
 
 // @todo this whole function can be simplified a lot
-std::pair<geomUtil::Rectangle<nucSeqIndex>, geomUtil::Rectangle<nucSeqIndex>>
+std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>
 SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
                                         std::shared_ptr<Pack> pRefSeq )
 {
     // seeds are overlapping on query -> rectange size zero
     if( &rLast != &xDummySeed && &rNext != &xDummySeed && rNext.start( ) < rLast.end( ) )
-        return std::make_pair( geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     if( &rLast != &xDummySeed && rLast.end( ) >= uiQEnd )
-        return std::make_pair( geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     if( &rNext != &xDummySeed && rNext.start( ) <= uiQStart )
-        return std::make_pair( geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
     int64_t iLastRef; // inclusive
     int64_t iNextRef; // exclusive
@@ -90,8 +90,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
         iNextRef = (int64_t)rNext.start_ref( ) + 1;
 
     if( iLastRef == iNextRef )
-        return std::make_pair( geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     if( &rLast != &xDummySeed && &rNext != &xDummySeed )
     {
         int64_t iRefSize;
@@ -117,14 +117,14 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
-    return std::make_pair( geomUtil::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
+    return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
                                                           (nucSeqIndex)iRefSize,
                                                           ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
-                           geomUtil::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+                           geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 } // method
 
 
-void SvJumpsFromSeeds::computeSeeds( geomUtil::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
+void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
                                      std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet,
                                      HelperRetVal* pOutExtra )
 {
@@ -223,7 +223,7 @@ void SvJumpsFromSeeds::computeSeeds( geomUtil::Rectangle<nucSeqIndex>& xArea, st
 } // method
 
 std::shared_ptr<Seeds>
-SvJumpsFromSeeds::computeSeeds( std::pair<geomUtil::Rectangle<nucSeqIndex>, geomUtil::Rectangle<nucSeqIndex>>& xAreas,
+SvJumpsFromSeeds::computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>& xAreas,
                                 std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq, HelperRetVal* pOutExtra )
 {
     auto pSeeds = std::make_shared<Seeds>( );
@@ -466,12 +466,12 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_
 #ifdef WITH_PYTHON
 void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
 {
-    py::class_<geomUtil::Interval<nucSeqIndex>>( rxPyModuleId, "nucSeqInterval" )
-        .def_readwrite( "start", &geomUtil::Interval<nucSeqIndex>::iStart )
-        .def_readwrite( "size", &geomUtil::Interval<nucSeqIndex>::iSize );
-    py::class_<geomUtil::Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
-        .def_readwrite( "x_axis", &geomUtil::Rectangle<nucSeqIndex>::xXAxis )
-        .def_readwrite( "y_axis", &geomUtil::Rectangle<nucSeqIndex>::xYAxis );
+    py::class_<geom::Interval<nucSeqIndex>>( rxPyModuleId, "nucSeqInterval" )
+        .def_readwrite( "start", &geom::Interval<nucSeqIndex>::iStart )
+        .def_readwrite( "size", &geom::Interval<nucSeqIndex>::iSize );
+    py::class_<geom::Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
+        .def_readwrite( "x_axis", &geom::Rectangle<nucSeqIndex>::xXAxis )
+        .def_readwrite( "y_axis", &geom::Rectangle<nucSeqIndex>::xYAxis );
     py::class_<libMA::SvJumpsFromSeeds::HelperRetVal>( rxPyModuleId, "SvJumpsFromSeedsHelperRetVal" )
         .def_readwrite( "layer_of_seeds", &libMA::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
         .def_readwrite( "seeds", &libMA::SvJumpsFromSeeds::HelperRetVal::pSeeds )
@@ -480,7 +480,7 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
         .def_readwrite( "rectangles_fill", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
         .def_readwrite( "rectangle_ambiguity", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
         .def_readwrite( "rectangle_used_dp", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
-    py::bind_vector<std::vector<geomUtil::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
+    py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( rxPyModuleId, "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );
     exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>(

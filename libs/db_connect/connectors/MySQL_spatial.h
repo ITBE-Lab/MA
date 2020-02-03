@@ -9,7 +9,7 @@
 
 #include "wkb_spatial.h" // definitions of WKB data-structures
 
-/* Integration of geomUtil::Rectangle as data-type in the MySQL interface. */
+/* Integration of geom::Rectangle as data-type in the MySQL interface. */
 
 // Part1 : Specify the corresponding MySQL-type for your blob.
 template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<WKBUint64Rectangle>( )
@@ -53,7 +53,7 @@ struct /* MySQLConDB:: */ RowCell<WKBUint64Rectangle> : public /* MySQLConDB::*/
     // Fetch the blob from the buffer.
     inline void storeVarSizeCell( )
     {
-        // assert( this->uiLength == geomUtil::Rectangle<uint64_t>::uiSizeWKB );
+        // assert( this->uiLength == geom::Rectangle<uint64_t>::uiSizeWKB );
         // Fill the buffer with WKB values
         pCellValue->setData( this->pVarLenBuf.get( ) );
     } // method

@@ -15,7 +15,7 @@
 #include <iostream>
 /// @endcond DOXYGEN_SHOW_SYSTEM_INCLUDES
 
-namespace geomUtil
+namespace geom
 {
 /**
  * @brief A generic multipurpose Interval.
@@ -235,4 +235,4 @@ inline std::ostream& operator<<( std::ostream& xOS, const Rectangle<uint64_t>& x
     return xOS;
 } // operator
 
-} // namespace geomUtil
+} // namespace geom

@@ -227,7 +227,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 while( true )
                                 {
                                     // check if current call overlaps a call with higher score of the same run
-                                    auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>(
+                                    auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>(
                                         uiFromStart - iBlurMax, uiToStart - iBlurMax, uiFromSize + iBlurMax * 2,
                                         uiToSize + iBlurMax * 2 ) );
                                     xNumOverlapsHelper2.execAndFetch( iId, dScore, iId, iCallerRunIdB, xWkb,
@@ -248,7 +248,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 int64_t iBlurMin = iAllowedDist;
                                 while( true )
                                 {
-                                    auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>(
+                                    auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>(
                                         uiFromStart - iBlurMin, uiToStart - iBlurMin, uiFromSize + iBlurMin * 2,
                                         uiToSize + iBlurMin * 2 ) );
                                     xNumOverlapsHelper1.execAndFetch( iCallerRunIdA, xWkb, bSwitchStrand );
@@ -352,7 +352,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
               {{COLUMN_NAME, "supporting_reads"}},
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
-              {{COLUMN_NAME, "rectangle"}, {PLACEHOLDER, "ST_PolyFromWKB(?, 0)"}}}}, //
+              {{COLUMN_NAME, "rectangle"}}}},
             {FOREIGN_KEY,
              {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},
             {FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}};
@@ -394,7 +394,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
               "FROM sv_call_table "
               "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
               "AND sv_call_table.from_pos >= ? " // dim 2
-#if 0 // @todo ask arne about this...
+#if 0
                   "AND NOT EXISTS ( "
                   "  SELECT * "
                   "  FROM reconstruction_table "

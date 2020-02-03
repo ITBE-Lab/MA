@@ -41,7 +41,7 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
  * See http://en.wikipedia.org/wiki/FM-index (intervals within the F-L matrix )
  * @ingroup container
  */
-class SAInterval : public Container, public geomUtil::Interval<t_bwtIndex>
+class SAInterval : public Container, public geom::Interval<t_bwtIndex>
 {
   private:
     t_bwtIndex startOfComplement;

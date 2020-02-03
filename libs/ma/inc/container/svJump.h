@@ -301,7 +301,7 @@ class SvJump : public Container
     } // method
 }; // class
 
-class SvCall : public Container, public geomUtil::Rectangle<nucSeqIndex>
+class SvCall : public Container, public geom::Rectangle<nucSeqIndex>
 {
   public:
 #if 0

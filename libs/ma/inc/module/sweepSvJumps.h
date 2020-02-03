@@ -18,7 +18,7 @@
 namespace libMA
 {
 
-class GenomeSection : public Container, public geomUtil::Interval<int64_t>
+class GenomeSection : public Container, public geom::Interval<int64_t>
 {
     using Interval<int64_t>::Interval;
 }; // class

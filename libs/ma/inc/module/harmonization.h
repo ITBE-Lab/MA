@@ -39,7 +39,7 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
      * Each perfect match "casts a shadow" at the left and right border of the strip.
      * Each shadow is stored in one of these data structures.
      */
-    class ShadowInterval : public geomUtil::Interval<int64_t>
+    class ShadowInterval : public geom::Interval<int64_t>
     {
       public:
         Seeds::iterator pSeed;

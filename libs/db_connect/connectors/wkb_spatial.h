@@ -113,7 +113,7 @@ template <size_t NUM_POINTS> class WKBPolygon
 template <typename T> class WKBRectangle : public WKBPolygon<5>
 {
     /** @brief Uses the current rectangle data for computing the corresponding WKB data */
-    void computeWKBDataFromRectangle( const geomUtil::Rectangle<T>& rxRec )
+    void computeWKBDataFromRectangle( const geom::Rectangle<T>& rxRec )
     {
         // counterclockwise:
         // bottom left
@@ -143,16 +143,16 @@ template <typename T> class WKBRectangle : public WKBPolygon<5>
     } // method
 
   public:
-    WKBRectangle( const geomUtil::Rectangle<T>& rxRect ) : WKBPolygon<5>( )
+    WKBRectangle( const geom::Rectangle<T>& rxRect ) : WKBPolygon<5>( )
     {
         computeWKBDataFromRectangle( rxRect );
     } // constructor
 
     /** @brief (0, 0, 0, 0) rectangle. */
-    WKBRectangle( ) : WKBRectangle<T>( geomUtil::Rectangle<T>( 0, 0, 0, 0 ) )
+    WKBRectangle( ) : WKBRectangle<T>( geom::Rectangle<T>( 0, 0, 0, 0 ) )
     {} // default constructor
 
-    geomUtil::Rectangle<T> getRect( ) const
+    geom::Rectangle<T> getRect( ) const
     {
         if( this->get( 0 ) != ( is_big_endian( ) ? 0x00 : 0x01 ) ) // check endian
             throw std::runtime_error( "WKB endian of DB does not match endian of system" );
@@ -199,7 +199,7 @@ template <typename T> class WKBRectangle : public WKBPolygon<5>
         if( uiYStart > uiYEnd )
             throw std::runtime_error( "WKB rectangle is in wrong order (i.e. uiYStart >= uiYEnd)" );
 
-        return geomUtil::Rectangle<T>( uiXStart, uiYStart, uiXEnd - uiXStart, uiYEnd - uiYStart );
+        return geom::Rectangle<T>( uiXStart, uiYStart, uiXEnd - uiXStart, uiYEnd - uiYStart );
     } // method
 }; // class
 

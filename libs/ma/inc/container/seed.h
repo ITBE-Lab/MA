@@ -31,7 +31,7 @@ class NucSeq;
  * @note the overloaded functions of Interval refer to the Interval on the query.
  * @ingroup container
  */
-class Seed : public Container, public geomUtil::Interval<nucSeqIndex>
+class Seed : public Container, public geom::Interval<nucSeqIndex>
 {
   public:
     ///@brief the beginning of the match on the reference

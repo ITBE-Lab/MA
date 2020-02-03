@@ -57,7 +57,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         {
             // get all overlapping calls
 
-            auto xWkb = WKBUint64Rectangle( geomUtil::Rectangle<nucSeqIndex>(
+            auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>(
                 std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ) ) );
             xQuery2.execAndFetch( iSvCallerId,
                                   xWkb, // rectangle

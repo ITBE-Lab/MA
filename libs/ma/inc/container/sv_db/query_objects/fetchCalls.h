@@ -139,7 +139,7 @@ template <typename DBCon> class SvCallsFromDb
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
         : SvCallsFromDb( rParameters, pConnection ),
-          xWkb( geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) ),
+          xWkb( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) ),
           xQuery(
               pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
@@ -163,7 +163,7 @@ template <typename DBCon> class SvCallsFromDb
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
         : SvCallsFromDb( rParameters, pConnection ),
-          xWkb( geomUtil::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
+          xWkb( geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                                   std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) ) ),
           xQuery( pConnection,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
