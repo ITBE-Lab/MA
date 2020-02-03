@@ -3,7 +3,6 @@ from renderer.util import *
 import os.path
 import json
 
-DB_PREFIX = "/MAdata/sv_datasets2/"
 JSON_PREFIX = "/MAdata/sv_datasets/"
 
 def setup(self):
@@ -17,7 +16,7 @@ def setup(self):
         self.pack.load(ref_genome)
         self.fm_index = FMIndex()
         self.fm_index.load(ref_genome)
-        self.sv_db = SV_DB(DB_PREFIX + dataset_name + "/svs.db", "open")
+        self.sv_db = SV_DB(dataset_name, "open")
 
         self.xs = 0
         self.xe = self.pack.unpacked_size_single_strand

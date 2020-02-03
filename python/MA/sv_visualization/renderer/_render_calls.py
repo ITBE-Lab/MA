@@ -59,16 +59,16 @@ def render_calls(self):
             num_call_jumps += len(jump.supporing_jump_ids)
             for idx in range(len(jump.supporing_jump_ids)):
                 jump_list.append(jump.get_jump(idx))
-        if jump.from_size == 0 and jump.to_size == 0:
-            accepted_plus_data["x"].append(jump.from_start + 0.5)
-            accepted_plus_data["y"].append(jump.to_start + 0.5)
+        if jump.x.size == 0 and jump.y.size == 0:
+            accepted_plus_data["x"].append(jump.x.start + 0.5)
+            accepted_plus_data["y"].append(jump.y.start + 0.5)
         else:
-            accepted_boxes_data["x"].append(jump.from_start - 1)
-            accepted_boxes_data["y"].append(jump.to_start - 1)
+            accepted_boxes_data["x"].append(jump.x.start - 1)
+            accepted_boxes_data["y"].append(jump.y.start - 1)
             accepted_boxes_data["w"].append(
-                jump.from_start + jump.from_size + 1)
+                jump.x.start + jump.x.size + 1)
             accepted_boxes_data["h"].append(
-                jump.to_start + jump.to_size + 1)
+                jump.y.start + jump.y.size + 1)
             accepted_boxes_data["n"].append(jump.num_supp_reads)
             accepted_boxes_data["c"].append(jump.reference_ambiguity)
             accepted_boxes_data["r"].append(len(jump.supporing_jump_ids))
@@ -76,8 +76,8 @@ def render_calls(self):
             accepted_boxes_data["idx"].append(jump.id)
             accepted_boxes_data["supporing_jump_ids"].append(list(jump.supporing_jump_ids))
             accepted_plus_data["x"].append(
-                jump.from_start + jump.from_size/2)
-            accepted_plus_data["y"].append(jump.to_start + jump.to_size/2)
+                jump.x.start + jump.x.size/2)
+            accepted_plus_data["y"].append(jump.y.start + jump.y.size/2)
         accepted_plus_data["idx"].append(jump.id)
         accepted_plus_data["n"].append(jump.num_supp_reads)
         accepted_plus_data["c"].append(jump.reference_ambiguity)
@@ -89,22 +89,22 @@ def render_calls(self):
                                       self.get_min_score())
     while calls_from_db.hasNext():
         jump = calls_from_db.next()
-        if jump.from_size == 0 and jump.to_size == 0:
-            ground_plus_data["x"].append(jump.from_start + 0.5)
-            ground_plus_data["y"].append(jump.to_start + 0.5)
+        if jump.x.size == 0 and jump.y.size == 0:
+            ground_plus_data["x"].append(jump.x.start + 0.5)
+            ground_plus_data["y"].append(jump.y.start + 0.5)
         else:
-            ground_boxes_data["x"].append(jump.from_start - 1)
-            ground_boxes_data["y"].append(jump.to_start - 1)
-            ground_boxes_data["w"].append(jump.from_start + jump.from_size + 1)
-            ground_boxes_data["h"].append(jump.to_start + jump.to_size + 1)
+            ground_boxes_data["x"].append(jump.x.start - 1)
+            ground_boxes_data["y"].append(jump.y.start - 1)
+            ground_boxes_data["w"].append(jump.x.start + jump.x.size + 1)
+            ground_boxes_data["h"].append(jump.y.start + jump.y.size + 1)
             ground_boxes_data["s"].append(str(jump.get_score()))
             ground_boxes_data["idx"].append(jump.id)
             ground_boxes_data["supporing_jump_ids"].append(list(jump.supporing_jump_ids))
             ground_boxes_data["n"].append(jump.num_supp_reads)
             ground_boxes_data["c"].append(jump.reference_ambiguity)
             ground_boxes_data["r"].append(len(jump.supporing_jump_ids))
-            ground_plus_data["x"].append(jump.from_start + jump.from_size/2)
-            ground_plus_data["y"].append(jump.to_start + jump.to_size/2)
+            ground_plus_data["x"].append(jump.x.start + jump.x.size/2)
+            ground_plus_data["y"].append(jump.y.start + jump.y.size/2)
         ground_plus_data["idx"].append(jump.id)
         ground_plus_data["n"].append(jump.num_supp_reads)
         ground_plus_data["c"].append(jump.reference_ambiguity)

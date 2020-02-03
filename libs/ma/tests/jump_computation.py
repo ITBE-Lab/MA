@@ -35,10 +35,10 @@ def insert_reads(database, reference, parameter_set):
 def fetch_call_rectangles(database, parameter_set, run_id):
     class CallRectangle:
         def __init__(self, call):
-            self.from_start = call.from_start
-            self.to_start = call.to_start
-            self.from_size = call.from_size
-            self.to_size = call.to_size
+            self.from_start = call.x.start
+            self.to_start = call.y.start
+            self.from_size = call.x.size
+            self.to_size = call.y.size
 
         # so that we can use jump in list to check wether each jump overlaps at least one ground truth call
         def __eq__(self, other):

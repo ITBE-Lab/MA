@@ -107,10 +107,6 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                          " WHERE score_a >= ? "
                                          "AND blur_min <= ? "
                                          "AND blur_max >= ? " )
-            // create an index so that we can query the results quickly
-            // DEL: xCreateIndex( pDatabase,
-            // DEL:               "CREATE INDEX IF NOT EXISTS " + sTableName + "_index ON " + sTableName + " (score_a) "
-            // DEL: )
             {} // default constructor
         }; // class (OverlapCacheTable)
 
@@ -197,7 +193,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 // make sure that inner overlaps the outer:
                                 "SELECT id "
                                 "FROM sv_call_table "
-                                "AND sv_caller_run_id = ? " // dim 1
+                                "WHERE sv_caller_run_id = ? "
                                 "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
                                 "AND switch_strand = ? "
                                 "LIMIT 1 " );
@@ -206,7 +202,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                 // make sure that inner does not overlap with any other call with higher score
                                 "SELECT id "
                                 "FROM sv_call_table"
-                                "AND id != ? "
+                                "WHERE id != ? "
                                 // tuple comparison here, so that overlapping calls with equal score always have
                                 // one call take priority (in this case always the one inserted after)
                                 "AND (" +
@@ -331,10 +327,6 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
         } // method
     }; // class
 
-    std::shared_ptr<RTreeIndex<DBCon>> pIndex;
-    // Was originally CppSQLiteExtInsertStatement statement.
-    // FIXME: Add insert statement SQLStatement<DBCon, int64_t, int64_t, int64_t, uint32_t, uint32_t, uint32_t,
-    // uint32_t> xInsertRTree;
     SQLQuery<DBCon, uint32_t> xQuerySize;
     SQLQuery<DBCon, uint32_t> xQuerySizeSpecific;
     SQLQuery<DBCon, int64_t> xCallArea;
@@ -343,8 +335,8 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
     SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallForwardContext;
     SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallBackwardContext;
     SQLStatement<DBCon> xSetCoverageForCall;
-    SQLStatement<DBCon> xDeleteCall1, xDeleteCall2;
-    SQLStatement<DBCon> xUpdateCall, xUpdateRTree;
+    SQLStatement<DBCon> xDeleteCall;
+    SQLStatement<DBCon> xUpdateCall;
     std::shared_ptr<OverlapCache> pOverlapCache;
 
   public:
@@ -376,28 +368,27 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                   jSvCallTableDef( ) ), // table definition
 
           pDatabase( pDatabase ),
-          pIndex( std::make_shared<RTreeIndex<DBCon>>( pDatabase ) ),
           xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
 
           xQuerySizeSpecific( pDatabase, "SELECT COUNT(*) FROM sv_call_table "
-                                         "AND sv_caller_run_id = ? "
+                                         "WHERE sv_caller_run_id = ? "
                                          "AND " +
                                              getSqlForCallScore( ) + " >= ? " ),
           xCallArea( pDatabase,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
-                     "AND sv_caller_run_id = ? "
+                     "WHERE sv_caller_run_id = ? "
                      "AND " +
                          getSqlForCallScore( ) + " >= ? " ),
           xMaxScore( pDatabase,
                      "SELECT " + getSqlForCallScore( ) +
                          " FROM sv_call_table "
-                         "AND sv_caller_run_id = ? "
+                         "WHERE sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " DESC LIMIT 1 " ),
           xMinScore( pDatabase,
                      "SELECT " + getSqlForCallScore( ) +
                          " FROM sv_call_table "
-                         "AND sv_caller_run_id = ? "
+                         "WHERE sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " ASC LIMIT 1 " ),
 
@@ -435,7 +426,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
                                "WHERE id = ?" ),
-          xDeleteCall2( pDatabase,
+          xDeleteCall( pDatabase,
                         "DELETE FROM sv_call_table "
                         "WHERE id = ? " ),
           xUpdateCall( pDatabase,
@@ -463,7 +454,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
         // DEL:                       " WHERE sv_caller_run_id = " + std::to_string( iCallerRunId ) ) DEL
         // DEL:                     :.c_str( ) )
         // DEL:    .exec( );
-#if 0 // Must be fixed together with Markus		
+#if 0 // Must be fixed together with Markus
         this->addIndex( json{ { INDEX_NAME, "sv_call_table_score_index_" + std::to_string(iCallerRunId) },
                               { INDEX_COLUMNS, getSqlForCallScore( ) },
                               { WHERE, "sv_caller_run_id = " + std::to_string( iCallerRunId ) } } );
@@ -487,8 +478,7 @@ template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
 
     inline void deleteCall( int64_t iCallId )
     {
-        xDeleteCall1.exec( iCallId );
-        xDeleteCall2.exec( iCallId );
+        xDeleteCall.exec( iCallId );
     } // method
 
     inline void deleteCall( SvCall& rCall )

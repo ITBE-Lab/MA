@@ -10,6 +10,7 @@
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
+#include <cstring>
 #include <functional>
 #include <iostream>
 /// @endcond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -210,6 +211,9 @@ template <size_t SIZE> class WKBPolygon
     WKBPolygon( )
     {} // constructor
 
+    WKBPolygon( const WKBPolygon& rOther ) : aData( rOther.aData )
+    {} // copy constructor
+
     inline void set( size_t uiPos, uint8_t uiData )
     {
         aData[ uiPos ] = uiData;
@@ -218,7 +222,7 @@ template <size_t SIZE> class WKBPolygon
     inline void setDouble( size_t uiPos, double fData )
     {
         assert( SIZE >= uiPos + sizeof( double ) );
-        memcpy( &aData[ uiPos ], &fData, sizeof( double ) );
+        std::memcpy( &aData[ uiPos ], &fData, sizeof( double ) );
     } // method
 
     inline size_t get( size_t uiI ) const
@@ -231,7 +235,7 @@ template <size_t SIZE> class WKBPolygon
         assert( SIZE >= uiI + sizeof( double ) );
 
         double fRes;
-        memcpy( &fRes, &aData[ uiI ], sizeof( double ) );
+        std::memcpy( &fRes, &aData[ uiI ], sizeof( double ) );
         return fRes;
     } // method
 

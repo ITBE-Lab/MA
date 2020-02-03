@@ -22,14 +22,6 @@ std::ostream& operator<<( std::ostream& xOS, const geomUtil::Rectangle<uint64_t>
 }
 
 typedef geomUtil::WKBPolygon<geomUtil::Rectangle<uint64_t>::uiSizeWKB> WKBRectangle;
-std::ostream& operator<<( std::ostream& xOS, const MyRectangle& xRect )
-{
-    xOS << "WKBPolygon: ";
-    for( auto uiI : xRect.aData )
-        xOS << std::hex << (int)uiI << " ";
-    xOS << std::endl;
-    return xOS;
-}
 
 int main( void )
 {

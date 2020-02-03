@@ -18,6 +18,7 @@ template <typename DBCon> class SvCallsFromDb
 {
     const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<SV_Schema<DBCon>> pDb;
+    geomUtil::WKBPolygon<geomUtil::Rectangle<nucSeqIndex>::uiSizeWKB> xWkb;
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t> xQuery;
     SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t> xQuerySupport;
     // DELETED: SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t,
@@ -132,6 +133,7 @@ template <typename DBCon> class SvCallsFromDb
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
+          xWkb( geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( ) ),
           xQuery(
               pDb->pDatabase,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
@@ -146,7 +148,6 @@ template <typename DBCon> class SvCallsFromDb
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id = ? " )
     {
-        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
         xQuery.execAndFetch( iSvCallerId, xWkb );
     } // constructor
 
@@ -157,12 +158,15 @@ template <typename DBCon> class SvCallsFromDb
                    int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pDb( pDb ),
+          xWkb( geomUtil::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
+                                                  std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) )
+                    .getWKB( ) ),
           xQuery( pDb->pDatabase,
                   "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
                   "       supporting_reads, reference_ambiguity "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id = ? "
-                  "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                  "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
                   "AND " +
                       SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " ),
           xQuerySupport( pDb->pDatabase,
@@ -172,7 +176,6 @@ template <typename DBCon> class SvCallsFromDb
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
                          "WHERE sv_call_support_table.call_id = ? " )
     {
-        auto xWkb = geomUtil::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ).getWKB( );
         xQuery.execAndFetch( iSvCallerId, xWkb, dMinScore );
     } // constructor
 

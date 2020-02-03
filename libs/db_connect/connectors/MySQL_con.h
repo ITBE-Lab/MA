@@ -1028,7 +1028,7 @@ class MySQLConDB
         std::string sSecFilePriv, sTmpDir;
         if( getMySQLVar( "secure_file_priv", sSecFilePriv ) )
         {
-            std::cout << "sSecFilePriv: " << sSecFilePriv << std::endl;
+            //std::cout << "sSecFilePriv: " << sSecFilePriv << std::endl;
             if( sSecFilePriv != "NULL" )
             {
                 if( !sSecFilePriv.empty( ) )

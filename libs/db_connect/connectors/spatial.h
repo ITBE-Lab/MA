@@ -46,3 +46,12 @@ template <> struct /* MySQLConDB:: */ RowCell<MyRectangle> : public /* MySQLConD
         pCellValue->setData( this->pVarLenBuf.get( ) );
     } // method
 }; // specialized class
+
+inline std::ostream& operator<<( std::ostream& xOS, const MyRectangle& xRect )
+{
+    xOS << "WKBPolygon: ";
+    for( auto uiI : xRect.aData )
+        xOS << std::hex << (int)uiI << " ";
+    xOS << std::endl;
+    return xOS;
+}

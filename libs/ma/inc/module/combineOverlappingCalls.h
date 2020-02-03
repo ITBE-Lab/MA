@@ -20,7 +20,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
         "       inserted_sequence, supporting_reads "
         "FROM sv_call_table "
-        "AND sv_caller_run_id = ? " // dim 1
+        "WHERE sv_caller_run_id = ? "
         "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
         "AND id > ? "
         "AND switch_strand = ? " );

@@ -33,7 +33,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
     SQLQuery<DBCon, uint32_t> xQuery( pDb->pDatabase,
                                       "SELECT COUNT(*) "
                                       "FROM sv_call_table "
-                                      "AND ssv_caller_run_id = ? " // dim 1
+                                      "WHERE sv_caller_run_id = ? " // dim 1
                                       "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
                                       "AND " +
                                           SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " );

@@ -34,15 +34,12 @@ template <typename DBCon> class SvCallerRunsFromDb
     // DELETED: xTableIterator(xQuery.vExecuteAndReturnIterator())
     {
         xQuery.execAndFetch( );
-        int64_t iId = std::get<0>( xQuery.get( ) );
-        std::cout << "\nValue for iId after execution is: " << iId << std::endl;
     } // constructor
 
     /// @brief return the id of the current run. undefined if eof returns true
     int64_t id( )
     {
-        int64_t iId = std::get<0>( xQuery.get( ) );
-        std::cout << "\nValue for iId is: " << iId << std::endl;
+        int64_t iId = std::get<0>( xQuery.get( ) );\
         return iId;
     } // method
 
