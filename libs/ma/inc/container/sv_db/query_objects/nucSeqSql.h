@@ -5,6 +5,7 @@
  */
 #pragma once
 #include "container/sv_db/svSchema.h"
+#include "container/sv_db/connection_container.h"
 
 namespace libMA
 {
@@ -36,8 +37,8 @@ template <typename DBCon> class NucSeqFromSqlQuery : public Module<NucSeqQueryCo
             throw std::runtime_error( "NucSeqFromSqlQuery: fetching unpaired NucSeqs only is unimplemented" );
     } // constructor
 
-    /// @brief returns a query that can fetch NucSeqs. @todo DBCon in container
-    std::shared_ptr<NucSeqQueryContainer<DBCon>> execute( std::shared_ptr<DBCon> pConnection )
+    /// @brief returns a query that can fetch NucSeqs.
+    std::shared_ptr<NucSeqQueryContainer<DBCon>> execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
     {
         auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>(
             pConnection,

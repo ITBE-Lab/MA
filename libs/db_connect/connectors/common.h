@@ -1201,6 +1201,8 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     } // method
 
   public:
+    using ColumnTypes = ColTypes;
+
     SQLTableWithAutoPriKey( const SQLTableWithAutoPriKey& ) = delete; // no table copies
 
     /* Constructor */

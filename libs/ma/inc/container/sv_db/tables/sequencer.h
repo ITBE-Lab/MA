@@ -40,12 +40,6 @@ template <typename DBCon> class SequencerTable : public SequencerTableType<DBCon
   public:
     SequencerTable( std::shared_ptr<DBCon> pDB ) : SequencerTableType<DBCon>( pDB, jSequencerTableDef )
     {} // default constructor
-
-    // int64_t is the type of the primary key
-    inline int64_t insertSequencer( std::string& sSequencerName )
-    {
-        return SequencerTableType<DBCon>::insert( sSequencerName );
-    } // method
 }; // class
 
 } // namespace libMA

@@ -5,18 +5,18 @@ namespace libMA
 {
 // @todo this can be done via a linesweep...
 template <typename DBCon>
-size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDb,
+size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
                                 int64_t iSvCallerId )
 {
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
-        pDb->pDatabase,
+        pConnection,
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
         "FROM sv_call_table "
         "WHERE sv_caller_run_id = ? "
         "ORDER BY id " );
 
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
-        pDb->pDatabase,
+        pConnection,
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
         "       inserted_sequence, supporting_reads "
         "FROM sv_call_table "
@@ -26,14 +26,14 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         "AND switch_strand = ? " );
 
     SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
-        pDb->pDatabase,
+        pConnection,
         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
         "sv_jump_table.id "
         "FROM sv_call_support_table "
         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
         "WHERE sv_call_support_table.call_id = ? " );
 
-    SvCallInserter<DBCon> xInserter( pDb, iSvCallerId ); // also triggers transaction
+    SvCallInserter<DBCon> xInserter( pConnection, iSvCallerId ); // also triggers transaction
     auto vQuery1Res = xQuery.executeAndStoreAllInVector( iSvCallerId );
 
     size_t uiRet = 0;

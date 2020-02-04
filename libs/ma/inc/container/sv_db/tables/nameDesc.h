@@ -23,22 +23,10 @@ using NameDescTableType = SQLTableWithAutoPriKey<DBCon,
  * @details
  * template for table that saves name, description, timestamp and id
  */
-template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
+template <std::string sTableName, typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
 {
-    json jNameDescTableDef( const std::string sTableName )
-    {
-        return json{
-            {TABLE_NAME, sTableName},
-            {TABLE_COLUMNS,
-             {{{COLUMN_NAME, "name"}},
-              {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
-              {{COLUMN_NAME, "time_stamp"}}}},
-        };
-    } // method
 
     std::shared_ptr<DBCon> pDatabase;
-    const std::string sTableName;
-    // SQLQuery<DBCon, int64_t> xDelete; // FIXME: Query->Statement
     SQLStatement<DBCon> xDelete;
     SQLQuery<DBCon, int64_t> xGetId;
     SQLQuery<DBCon, std::string, std::string, int64_t> xGetName;
@@ -48,11 +36,16 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
     SQLQuery<DBCon, int64_t> xNewestUnique;
 
   public:
-    NameDescTable( std::shared_ptr<DBCon> pDatabase, const std::string sTableName )
+    NameDescTable( std::shared_ptr<DBCon> pDatabase )
         : NameDescTableType<DBCon>( pDatabase, // the database where the table resides
-                                    jNameDescTableDef( sTableName ) ),
+                                    json{
+            {TABLE_NAME, sTableName},
+            {TABLE_COLUMNS,
+             {{{COLUMN_NAME, "name"}},
+              {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
+              {{COLUMN_NAME, "time_stamp"}}}},
+        }) ),
           pDatabase( pDatabase ),
-          sTableName( sTableName ),
           xDelete( pDatabase, ( "DELETE FROM " + sTableName + " WHERE name = ?" ).c_str( ) ),
           xGetId( pDatabase,
                   ( "SELECT id FROM " + sTableName + " WHERE name = ? ORDER BY time_stamp ASC LIMIT 1" ).c_str( ) ),

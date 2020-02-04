@@ -103,7 +103,7 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
         std::string sArgNames;
         auto rTup = std::make_tuple( args... );
         TemplateLoop<NUM_ARGUMENTS, ArgNamesCollector>::iterate( sArgNames, rTup );
-        throw AnnotatedException( type_name( this ) + " did not implement execute with return type: " +
+        throw std::runtime_error( type_name( this ) + " did not implement execute with return type: " +
                                   type_name<TP_RETURN>( ) + " and parameters: " + sArgNames );
         return nullptr;
     } // method
@@ -112,6 +112,8 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
     {
         if( IS_VOLATILE )
             xFlags.set( uiFinishedFlag );
+        else
+            throw std::runtime_error( "only volatile modules are allowed to call setFinished()" );
     } // method
 
   private:
@@ -651,7 +653,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     virtual std::shared_ptr<TP_CONTENT> get( )
     {
         if( pPledger == nullptr && pContent == nullptr )
-            throw AnnotatedException( "No pledger known for unfulfilled pledge of type " + type_name( this ) +
+            throw std::runtime_error( "No pledger known for unfulfilled pledge of type " + type_name( this ) +
                                       "; With container type: " + type_name( pContent ) );
         // in this case there is no need to execute again
         if( pContent != nullptr && !IS_VOLATILE )
@@ -686,7 +688,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
 
                 // safety check
                 if( pContent == nullptr )
-                    throw AnnotatedException( "A module is not allowed to return nullpointers in execute; throw an "
+                    throw std::runtime_error( "A module is not allowed to return nullpointers in execute; throw an "
                                               "exception instead or return an empty container! Module type:" +
                                               type_name( pPledger ) );
             } // else
@@ -992,6 +994,7 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
     py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function
 
+// @todo this can be avoided with the using keyword: each module can remember its constructor parameters
 template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
 void exportModule( pybind11::module& xPyModuleId, // pybind module variable
                    const std::string&& sName, // module name
