@@ -52,7 +52,7 @@ template <typename DBCon> class SV_Schema : public Container
     std::shared_ptr<SequencerTable<DBCon>> pSequencerTable;
     std::shared_ptr<ReadTable<DBCon>> pReadTable;
     std::shared_ptr<PairedReadTable<DBCon>> pPairedReadTable;
-    std::shared_ptr<NameDescTable<DBCon>> pSvJumpRunTable;
+    std::shared_ptr<SvJumpRunTable<DBCon>> pSvJumpRunTable;
     std::shared_ptr<SvJumpTable<DBCon>> pSvJumpTable;
     std::shared_ptr<SvCallerRunTable<DBCon>> pSvCallerRunTable;
     //- std::shared_ptr<SvCallRegExTable> pSvCallRegExTable;
@@ -69,7 +69,7 @@ template <typename DBCon> class SV_Schema : public Container
           pSequencerTable( std::make_shared<SequencerTable<DBCon>>( pDatabase ) ),
           pReadTable( std::make_shared<ReadTable<DBCon>>( pDatabase ) ),
           pPairedReadTable( std::make_shared<PairedReadTable<DBCon>>( pDatabase, pReadTable ) ),
-          pSvJumpRunTable( std::make_shared<NameDescTable<DBCon>>( pDatabase, "sv_jump_run_table" ) ),
+          pSvJumpRunTable( std::make_shared<SvJumpRunTable<DBCon>>( pDatabase ) ),
           pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pDatabase ) ),
           pSvCallerRunTable( std::make_shared<SvCallerRunTable<DBCon>>( pDatabase ) ),
           //- pSvCallRegExTable( std::make_shared<SvCallRegExTable>( pDatabase ) ),

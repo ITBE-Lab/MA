@@ -8,6 +8,7 @@
 #pragma once
 
 #include "container/sv_db/svSchema.h"
+#include "module/get_inserter_container_module.h"
 
 namespace libMA
 {
@@ -16,6 +17,8 @@ namespace libMA
 template <typename DBCon> class ReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq>
 {
   public:
+    using InserterContainer<DBCon, ReadTable, NucSeq>::InserterContainer;
+
     virtual void insert( std::shared_ptr<NucSeq> pRead )
     {
         pInserter->insert( nullptr, iId, pRead->sName, NucSeqSql( pRead ) );
@@ -36,14 +39,14 @@ template <typename DBCon> class PairedReadInserterContainer : public InserterCon
 
 template <typename DBCon, typename DBConInit>
 using GetReadInserterContainerModule =
-    GetInserterContainerModule<ReadInserterContainer, DBCon, DBConInit, SequencerTable>;
-template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserterContainer<DBCon>>;
+    GetInserterContainerModule<ReadInserterContainer, DBCon, DBConInit, SequencerTable, std::string>;
+template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserterContainer<DBCon>, NucSeq>;
 
 template <typename DBCon, typename DBConInit>
 using GetPairedReadInserterContainerModule =
-    GetInserterContainerModule<PairedReadInserterContainer, DBCon, DBConInit, SequencerTable>;
+    GetInserterContainerModule<PairedReadInserterContainer, DBCon, DBConInit, SequencerTable, std::string>;
 template <typename DBCon>
-using PairedReadInserterModule = InserterModule<PairedReadInserterContainer<DBCon>>;
+using PairedReadInserterModule = InserterModule<PairedReadInserterContainer<DBCon>, NucSeq, NucSeq>;
 
 } // namespace libMA
 

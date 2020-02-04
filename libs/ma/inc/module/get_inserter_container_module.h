@@ -5,22 +5,23 @@
  */
 #pragma once
 
+#include "container/sv_db/connection_container.h"
 #include "module/module.h"
 
-
-template <typename DBCon, typename TableType, typename... InsertTypes> class InserterContainer : public Container
+namespace libMA
 {
+template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
+class InserterContainer : public Container
+{
+  public:
     const static size_t BUFFER_SIZE = 500;
-
-  protected:
-    using INSERTER_TYPE = decltype( TableType<DBCon>::template getBulkInserter<BUFFER_SIZE> );
-    INSERTER_TYPE pInserter;
+    using InserterType = typename TableType<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
+    std::shared_ptr<InserterType> pInserter;
 
   public:
-    int64_t iId;
-    using InsertTypes = InsertTypes;
+    const int64_t iId;
 
-    InserterContainer( std::shared_ptr<DBCon> pConnection, int64_t iId )
+    InserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
         : pInserter( TableType<DBCon>( pConnection ).template getBulkInserter<BUFFER_SIZE>( ) ), iId( iId )
     {} // constructor
 
@@ -38,22 +39,22 @@ template <typename DBCon, typename TableType, typename... InsertTypes> class Ins
 /**
  * @brief creates a call inserter container
  * @details
- * @todo this and the GetJumpCallerContainerModule could be unified via a templated class...
+ * @todo ArgTypes can be removed here using std::tuple and the gens structure defined in module.h
  */
-template <typename InserterContainerType, typename DBCon, typename DBConInit, typename TableType>
-class GetInserterContainerModule : public Module<InserterContainerType<DBCon>, false, DBCon>
+template <template <typename T> typename InserterContainerType, typename DBCon, typename DBConInit,
+          template <typename T> typename TableType, typename... ArgTypes>
+class GetInserterContainerModule : public Module<InserterContainerType<DBCon>, false, ConnectionContainer<DBCon>>
 {
-    int64_t iId;
+    const int64_t iId;
 
   public:
-    using InserterContainerType = InserterContainerType;
-    using DBCon = DBCon;
-    using DBConInit = DBConInit;
-    using TableType = TableType;
+    using InserterContainerType_ = InserterContainerType<DBCon>;
+    using DBCon_ = DBCon;
+    using DBConInit_ = DBConInit;
 
     ///@brief creates a new inserter from given arguments
     GetInserterContainerModule( const ParameterSetManager& rParameters, std::shared_ptr<DBConInit> pConnection,
-                                TableType::ColumnTypes... xArguments )
+                                ArgTypes... xArguments )
         : iId( TableType<DBConInit>( pConnection ).insert( xArguments... ) )
     {} // constructor
 
@@ -62,7 +63,7 @@ class GetInserterContainerModule : public Module<InserterContainerType<DBCon>, f
     {} // constructor
 
     /// @brief create a new jump inserter container
-    std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<DBCon> pConnection )
+    std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
     {
         return std::make_shared<InserterContainerType<DBCon>>( pConnection, iId );
     } // method
@@ -71,8 +72,8 @@ class GetInserterContainerModule : public Module<InserterContainerType<DBCon>, f
 /**
  * @brief Wraps a jump inserter, so that it can become part of a computational graph.
  */
-template <typename DBCon, typename InserterContainerType>
-class InserterModule : public Module<Container, false, InserterContainerType, InserterContainerType::InsertTypes>
+template <typename DBCon, typename InserterContainerType, typename... ArgTypes>
+class InserterModule : public Module<Container, false, InserterContainerType, ArgTypes...>
 {
   public:
     InserterModule( const ParameterSetManager& rParameters )
@@ -80,7 +81,7 @@ class InserterModule : public Module<Container, false, InserterContainerType, In
 
     /// @brief insert
     std::shared_ptr<Container> execute( std::shared_ptr<InserterContainerType> pInserter,
-                                        std::shared_ptr<InserterContainerType::InsertTypes>... pArgs )
+                                        std::shared_ptr<ArgTypes>... pArgs )
     {
         pInserter->insert( pArgs... );
 
@@ -91,19 +92,40 @@ class InserterModule : public Module<Container, false, InserterContainerType, In
 
 #ifdef WITH_PYTHON
 
-template <typename GetInserterContainerModuleType>
+template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
+void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
+                    const std::string&& sName, // module name
+                    std::function<void( py::class_<TP_MODULE>&& )> fExportMembers =
+                        []( py::class_<TP_MODULE>&& ) {} // default lambda
+)
+{
+    typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
+        TP_TO_EXPORT;
+    fExportMembers( py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__" ) + sName ).c_str( ) ) );
+
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xPyModuleId,
+                                                                                               sName.c_str( ) )
+        .def( py::init<const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
+        .def( py::init<const ParameterSetManager&, int64_t>( ) )
+        .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
+    py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
+} // function
+
+template <typename GetInserterContainerModuleType, typename... ArgTypes>
 inline void exportInserterContainer( py::module& rxPyModuleId, const std::string& rName )
 {
     // export the templated class
-    py::class_<GetInserterContainerModuleType::InserterContainerType, Container,
-               std::shared_ptr<GetInserterContainerModuleType::InserterContainerType>>( rxPyModuleId, rName )
-        .def( py::init<std::shared_ptr<DBConType>, int64_t>( ) )
+    py::class_<typename GetInserterContainerModuleType::InserterContainerType_, Container,
+               std::shared_ptr<typename GetInserterContainerModuleType::InserterContainerType_>>( rxPyModuleId, rName )
+        .def( py::init<std::shared_ptr<typename GetInserterContainerModuleType::DBConType_>, int64_t>( ) )
         .def( "insert", GetInserterContainerModuleType::InserterContainerType::insert )
         .def( "close", GetInserterContainerModuleType::InserterContainerType::close );
 
-    exportModule<GetInserterContainerModuleType, std::shared_ptr<GetInserterContainerModuleType::DBConInit>,
-                 GetInserterContainerModuleType::TableType::ColumnTypes...>(
-        rxPyModuleId, "Get" + rName, []( auto&& x ) { x.def( "id", &GetInserterContainerModuleType::iId ) ); } );
+    exportModule2<GetInserterContainerModuleType, std::shared_ptr<typename GetInserterContainerModuleType::DBConInit_>,
+                  ArgTypes...>( rxPyModuleId, "Get" + rName,
+                                []( auto&& x ) { x.def( "id", &GetInserterContainerModuleType::iId ); } );
 } // function
 
 #endif
+
+}; // namespace libMA

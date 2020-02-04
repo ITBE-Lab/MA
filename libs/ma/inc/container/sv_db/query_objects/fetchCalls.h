@@ -28,11 +28,15 @@ template <typename DBCon> class SvCallsFromDb
     SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t> xQuerySupport;
 
     /// @brief called from the other constructors of this class only
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection )
+    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, std::string sQueryString,
+                   std::string sSupportString, WKBUint64Rectangle xWkb )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pConnection( pConnection ),
           pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pConnection ) ),
-          pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) )
+          pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
+          xWkb( xWkb ),
+          xQuery( pConnection, sQueryString ),
+          xQuerySupport( pConnection, sSupportString )
     {}
 
   public:
@@ -40,19 +44,18 @@ template <typename DBCon> class SvCallsFromDb
      * @brief fetches all calls of a specific caller id.
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
-        : SvCallsFromDb( rParameters, pConnection ),
-          xQuery(
-              pConnection,
+        : SvCallsFromDb(
+              rParameters, pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
               "       reference_ambiguity "
               "FROM sv_call_table "
-              "WHERE sv_caller_run_id = ? " ),
-          xQuerySupport( pConnection,
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? " )
+              "WHERE sv_caller_run_id = ? ",
+              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+              "       num_supporting_nt, sv_jump_table.id, read_id "
+              "FROM sv_call_support_table "
+              "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+              "WHERE sv_call_support_table.call_id = ? ",
+              WKBUint64Rectangle( ) )
     {
         xQuery.execAndFetch( iSvCallerId );
     } // constructor
@@ -68,43 +71,42 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerIdA,
                    int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
-        : SvCallsFromDb( rParameters, pConnection ),
-          xQuery( pConnection,
-                  ( std::string( "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
-                                 "supporting_reads, "
-                                 "       reference_ambiguity "
-                                 "FROM sv_call_table AS inner "
-                                 "WHERE sv_caller_run_id = ? "
-                                 "AND " ) +
-                    ( bOverlapping ? "" : "NOT " ) +
-                    // make sure that inner overlaps the outer:
-                    "EXISTS( "
-                    "     SELECT outer.id "
-                    "     FROM sv_call_table AS outer "
-                    "     WHERE idx_outer.sv_caller_run_id = ? "
-                    "     AND ST_Distance(outer.rectangle, inner.rectangle) <= ? "
-                    "     AND outer.switch_strand = inner.switch_strand "
-                    ") "
-                    // make sure that inner does not overlap with any other call with higher score
-                    "AND NOT EXISTS( "
-                    "     SELECT inner2.id "
-                    "     FROM sv_call_table AS inner2 "
-                    "     WHERE idx_inner2.id != inner.id "
-                    "     AND " +
-                    SvCallTable<DBCon>::getSqlForCallScore( "inner2" ) +
-                    " >= " + SvCallTable<DBCon>::getSqlForCallScore( "inner" ) +
-                    "     AND idx_inner2.run_id_b >= inner.id " // dim 1
-                    "     AND idx_inner2.run_id_a <= inner.id " // dim 1
-                    "     AND ST_Distance(inner2.rectangle, inner.rectangle) <= ? "
-                    "     AND inner2.switch_strand = inner.switch_strand "
-                    ") " )
-                      .c_str( ) ),
-          xQuerySupport( pConnection,
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? " )
+        : SvCallsFromDb(
+              rParameters, pConnection,
+              std::string( "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
+                           "supporting_reads, "
+                           "       reference_ambiguity "
+                           "FROM sv_call_table AS inner "
+                           "WHERE sv_caller_run_id = ? "
+                           "AND " ) +
+                  ( bOverlapping ? "" : "NOT " ) +
+                  // make sure that inner overlaps the outer:
+                  "EXISTS( "
+                  "     SELECT outer.id "
+                  "     FROM sv_call_table AS outer "
+                  "     WHERE idx_outer.sv_caller_run_id = ? "
+                  "     AND ST_Distance(outer.rectangle, inner.rectangle) <= ? "
+                  "     AND outer.switch_strand = inner.switch_strand "
+                  ") "
+                  // make sure that inner does not overlap with any other call with higher score
+                  "AND NOT EXISTS( "
+                  "     SELECT inner2.id "
+                  "     FROM sv_call_table AS inner2 "
+                  "     WHERE idx_inner2.id != inner.id "
+                  "     AND " +
+                  SvCallTable<DBCon>::getSqlForCallScore( "inner2" ) +
+                  " >= " + SvCallTable<DBCon>::getSqlForCallScore( "inner" ) +
+                  "     AND idx_inner2.run_id_b >= inner.id " // dim 1
+                  "     AND idx_inner2.run_id_a <= inner.id " // dim 1
+                  "     AND ST_Distance(inner2.rectangle, inner.rectangle) <= ? "
+                  "     AND inner2.switch_strand = inner.switch_strand "
+                  ") ",
+              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+              "       num_supporting_nt, sv_jump_table.id, read_id "
+              "FROM sv_call_support_table "
+              "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+              "WHERE sv_call_support_table.call_id = ? ",
+              WKBUint64Rectangle( ) )
     {
         xQuery.execAndFetch( iSvCallerIdA, iSvCallerIdB, iAllowedDist );
     } // constructor
@@ -114,21 +116,20 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    double dMinScore )
-        : SvCallsFromDb( rParameters, pConnection ),
-          xQuery(
-              pConnection,
+        : SvCallsFromDb(
+              rParameters, pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
               "       reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
               "AND " +
-                  SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " ),
-          xQuerySupport( pConnection,
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? " )
+                  SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? ",
+              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+              "       num_supporting_nt, sv_jump_table.id, read_id "
+              "FROM sv_call_support_table "
+              "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+              "WHERE sv_call_support_table.call_id = ? ",
+              WKBUint64Rectangle( ) )
     {
         xQuery.execAndFetch( iSvCallerId, dMinScore );
     } // constructor
@@ -138,21 +139,19 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
-        : SvCallsFromDb( rParameters, pConnection ),
-          xWkb( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) ),
-          xQuery(
-              pConnection,
+        : SvCallsFromDb(
+              rParameters, pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
               "       reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
-              "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 " ), // @todo try ST_Intersects(g1, g2) instead
-          xQuerySupport( pConnection,
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? " )
+              "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 ",
+              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+              "       num_supporting_nt, sv_jump_table.id, read_id "
+              "FROM sv_call_support_table "
+              "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+              "WHERE sv_call_support_table.call_id = ? ",
+              geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) )
     {
         xQuery.execAndFetch( iSvCallerId, xWkb );
     } // constructor
@@ -162,23 +161,21 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
-        : SvCallsFromDb( rParameters, pConnection ),
-          xWkb( geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
-                                                  std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) ) ),
-          xQuery( pConnection,
-                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
-                  "       supporting_reads, reference_ambiguity "
-                  "FROM sv_call_table "
-                  "WHERE sv_caller_run_id = ? "
-                  "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
-                  "AND " +
-                      SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " ),
-          xQuerySupport( pConnection,
+        : SvCallsFromDb( rParameters, pConnection,
+                         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
+                         "       supporting_reads, reference_ambiguity "
+                         "FROM sv_call_table "
+                         "WHERE sv_caller_run_id = ? "
+                         "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
+                         "AND " +
+                             SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? ",
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? " )
+                         "WHERE sv_call_support_table.call_id = ? ",
+                         geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
+                                                       std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) ) )
     {
         xQuery.execAndFetch( iSvCallerId, xWkb, dMinScore );
     } // constructor

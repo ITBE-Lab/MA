@@ -33,29 +33,31 @@ template <typename DBCon> class SortedSvJumpFromSql
         xQueryEnd;
 
     /// @brief called from the other constructors of this class only
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection )
+    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
+                         std::string sQueryStart, std::string sQueryEnd )
         : pSelectedSetting( rParameters.getSelected( ) ),
           pConnection( pConnection ),
-          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) )
+          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
+          xQueryStart( pConnection, sQueryStart ),
+          xQueryEnd( pConnection, sQueryEnd )
     {} // constructor
 
   public:
     /// @brief fetches libMA::SvJump objects from the run with id = iSvCallerRunId sorted by their start/end positions.
     SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
                          int64_t iSvCallerRunId )
-        : SortedSvJumpFromSql( rParameters, pConnection ),
-          xQueryStart( pConnection,
-                       "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
-                       "       from_seed_start, num_supporting_nt, id, read_id "
-                       "FROM sv_jump_table "
-                       "WHERE sv_jump_run_id = ? "
-                       "ORDER BY sort_pos_start" ),
-          xQueryEnd( pConnection,
-                     "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
-                     "       from_seed_start, num_supporting_nt, id, read_id "
-                     "FROM sv_jump_table "
-                     "WHERE sv_jump_run_id = ? "
-                     "ORDER BY sort_pos_end" )
+        : SortedSvJumpFromSql(
+              rParameters, pConnection,
+              "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+              "       from_seed_start, num_supporting_nt, id, read_id "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
+              "ORDER BY sort_pos_start",
+              "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+              "       from_seed_start, num_supporting_nt, id, read_id "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
+              "ORDER BY sort_pos_end" )
     {
         xQueryStart.execAndFetch( iSvCallerRunId );
         xQueryEnd.execAndFetch( iSvCallerRunId );
@@ -71,23 +73,22 @@ template <typename DBCon> class SortedSvJumpFromSql
      */
     SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
                          int64_t iSvCallerRunId, int64_t iX, int64_t iY, uint32_t uiW, uint32_t uiH )
-        : SortedSvJumpFromSql( rParameters, pConnection ),
-          xQueryStart( pDb->pDatabase,
-                       "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
-                       "       from_seed_start, num_supporting_nt, id, read_id "
-                       "FROM sv_jump_table "
-                       "WHERE sv_jump_run_id = ? "
-                       "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
-                       "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
-                       "ORDER BY sort_pos_start" ),
-          xQueryEnd( pDb->pDatabase,
-                     "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
-                     "       from_seed_start, num_supporting_nt, id, read_id "
-                     "FROM sv_jump_table "
-                     "WHERE sv_jump_run_id = ? "
-                     "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
-                     "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
-                     "ORDER BY sort_pos_end" )
+        : SortedSvJumpFromSql(
+              rParameters, pConnection,
+              "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+              "       from_seed_start, num_supporting_nt, id, read_id "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
+              "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
+              "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
+              "ORDER BY sort_pos_start",
+              "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+              "       from_seed_start, num_supporting_nt, id, read_id "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
+              "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
+              "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
+              "ORDER BY sort_pos_end" )
     {
         xQueryStart.execAndFetch( iSvCallerRunId, iX, iX + uiW, std::numeric_limits<uint32_t>::max( ), iY, iY + uiH,
                                   std::numeric_limits<uint32_t>::max( ) );
@@ -105,23 +106,22 @@ template <typename DBCon> class SortedSvJumpFromSql
      */
     SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
                          int64_t iSvCallerRunId, int64_t iS, int64_t iE )
-        : SortedSvJumpFromSql( rParameters, pConnection ),
-          xQueryStart( pDb->pDatabase,
-                       "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
-                       "       from_seed_start, num_supporting_nt, id, read_id "
-                       "FROM sv_jump_table "
-                       "WHERE sv_jump_run_id = ? "
-                       "AND sort_pos_start >= ? "
-                       "AND sort_pos_start <= ? "
-                       "ORDER BY sort_pos_start" ),
-          xQueryEnd( pDb->pDatabase,
-                     "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
-                     "      from_seed_start, num_supporting_nt, id, read_id "
-                     "FROM sv_jump_table "
-                     "WHERE sv_jump_run_id = ? "
-                     "AND sort_pos_end >= ? "
-                     "AND sort_pos_end <= ? "
-                     "ORDER BY sort_pos_end" )
+        : SortedSvJumpFromSql(
+              rParameters, pConnection,
+              "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+              "       from_seed_start, num_supporting_nt, id, read_id "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
+              "AND sort_pos_start >= ? "
+              "AND sort_pos_start <= ? "
+              "ORDER BY sort_pos_start",
+              "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+              "      from_seed_start, num_supporting_nt, id, read_id "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
+              "AND sort_pos_end >= ? "
+              "AND sort_pos_end <= ? "
+              "ORDER BY sort_pos_end" )
     {
         assert( iE >= iS );
 

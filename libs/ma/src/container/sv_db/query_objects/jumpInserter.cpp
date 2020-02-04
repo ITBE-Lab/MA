@@ -8,9 +8,12 @@ using namespace libMA;
 
 void exportSvJumpInserter( py::module& rxPyModuleId )
 {
-    exportInserterContainer<GetJumpInserterContainerModule<DBCon, DBConSingle>>(rxPyModuleId, "JumpInserter");
+    exportInserterContainer<GetJumpInserterContainerModule<DBCon, DBConSingle>, std::string, // name
+                            std::string, // desc
+                            int64_t // timestamp
+                            >( rxPyModuleId, "JumpInserter" );
 
-    exportModule<JumpInserterModule>(rxPyModuleId, "JumpInserterModule");
+    exportModule<JumpInserterModule>( rxPyModuleId, "JumpInserterModule" );
 } // function
 
 #endif

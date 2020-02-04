@@ -23,7 +23,7 @@ using NameDescTableType = SQLTableWithAutoPriKey<DBCon,
  * @details
  * template for table that saves name, description, timestamp and id
  */
-template <std::string sTableName, typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
+template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
 {
 
     std::shared_ptr<DBCon> pDatabase;
@@ -36,15 +36,16 @@ template <std::string sTableName, typename DBCon> class NameDescTable : public N
     SQLQuery<DBCon, int64_t> xNewestUnique;
 
   public:
-    NameDescTable( std::shared_ptr<DBCon> pDatabase )
-        : NameDescTableType<DBCon>( pDatabase, // the database where the table resides
-                                    json{
-            {TABLE_NAME, sTableName},
-            {TABLE_COLUMNS,
-             {{{COLUMN_NAME, "name"}},
-              {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
-              {{COLUMN_NAME, "time_stamp"}}}},
-        }) ),
+    NameDescTable( std::shared_ptr<DBCon> pDatabase, std::string sTableName )
+        : NameDescTableType<DBCon>(
+              pDatabase, // the database where the table resides
+              json{
+                  {TABLE_NAME, sTableName},
+                  {TABLE_COLUMNS,
+                   {{{COLUMN_NAME, "name"}},
+                    {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
+                    {{COLUMN_NAME, "time_stamp"}}}},
+              } ),
           pDatabase( pDatabase ),
           xDelete( pDatabase, ( "DELETE FROM " + sTableName + " WHERE name = ?" ).c_str( ) ),
           xGetId( pDatabase,
@@ -126,6 +127,14 @@ template <std::string sTableName, typename DBCon> class NameDescTable : public N
         throw std::runtime_error( "executeAndStoreInVector not implemented yet." );
         return std::vector<int64_t>( );
     } // method
+}; // class
+
+template <typename DBCon> class SvJumpRunTable : public NameDescTable<DBCon>
+{
+  public:
+    SvJumpRunTable( std::shared_ptr<DBCon> pDatabase, std::string sTableName )
+        : NameDescTable<DBCon>( pDatabase, "sv_jump_run_table" )
+    {} // default constructor
 }; // class
 
 } // namespace libMA

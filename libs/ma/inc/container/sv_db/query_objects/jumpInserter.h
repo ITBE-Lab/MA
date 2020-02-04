@@ -24,13 +24,13 @@ class JumpInserterContainer : public InserterContainer<DBCon, ReadTable, Contain
     class ReadContex
     {
       private:
-        INSERTER_TYPE pInserter;
+        InserterContainer<DBCon, ReadTable, ContainerVector<SvJump>, NucSeq>::InserterType pInserter;
         const int64_t iSvJumpRunId;
         const int64_t iReadId;
 
       public:
         /// @brief create the context for the jump run iSvJumpRunId and read iReadId.
-        ReadContex( INSERTER_TYPE pInserter, const int64_t iSvJumpRunId, const int64_t iReadId )
+        ReadContex( InserterContainer<DBCon, ReadTable, ContainerVector<SvJump>, NucSeq>::InserterType pInserter, const int64_t iSvJumpRunId, const int64_t iReadId )
             : pInserter( pInserter ), iSvJumpRunId( iSvJumpRunId ), iReadId( iReadId )
         {} // constructor
 
@@ -120,11 +120,14 @@ template <typename DBCon> class JumpInserterContainer : public Container
 
 template <typename DBCon, typename DBConInit>
 using GetJumpInserterContainerModule =
-    GetInserterContainerModule<JumpInserterContainer, DBCon, DBConInit, NameDescTable<"sv_jump_run_table">>;
+    GetInserterContainerModule<JumpInserterContainer, DBCon, DBConInit, SvJumpRunTable, std::string, // name
+                               std::string, // desc
+                               int64_t // timestamp
+                               >;
 
 
 template <typename DBCon>
-using JumpInserterModule = InserterModule<JumpInserterContainer<DBCon>>;
+using JumpInserterModule = InserterModule<JumpInserterContainer<DBCon>, ContainerVector<SvJump>, NucSeq>;
 
 
 } // namespace libMA

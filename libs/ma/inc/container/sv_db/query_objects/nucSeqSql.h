@@ -4,15 +4,17 @@
  * @author Markus Schmidt
  */
 #pragma once
-#include "container/sv_db/svSchema.h"
+
 #include "container/sv_db/connection_container.h"
+#include "container/sv_db/svSchema.h"
 
 namespace libMA
 {
 
 template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, NucSeqSql, int64_t>, public Container
 {
-    using SQLQuery::SQLQuery;
+    // use the constructors from here
+    using SQLQuery<DBCon, NucSeqSql, int64_t>::SQLQuery;
 }; // class
 
 template <typename DBCon> class NucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, DBCon>
@@ -23,6 +25,7 @@ template <typename DBCon> class NucSeqFromSqlQuery : public Module<NucSeqQueryCo
     bool bAll;
     bool bUnpaired;
 
+  public:
     NucSeqFromSqlQuery( const ParameterSetManager& rParameters, int64_t iSequencerId, size_t uiRes, size_t uiModulo,
                         bool bPaired, bool bUnpaired )
         : iSequencerId( iSequencerId ),
@@ -38,7 +41,8 @@ template <typename DBCon> class NucSeqFromSqlQuery : public Module<NucSeqQueryCo
     } // constructor
 
     /// @brief returns a query that can fetch NucSeqs.
-    std::shared_ptr<NucSeqQueryContainer<DBCon>> execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
+    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>>
+        EXPORTED execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
     {
         auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>(
             pConnection,
@@ -80,7 +84,7 @@ template <typename DBCon> class NucSeqFetcher : public Module<NucSeq, true, NucS
     {}
 
     /// @brief returns one read at a time until isFinished returns true.
-    std::shared_ptr<NucSeq> execute( std::shared_ptr<NucSeqQueryContainer<DBCon>> pQuery )
+    virtual std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<NucSeqQueryContainer<DBCon>> pQuery )
     {
         if( pQuery->eof( ) )
             throw AnnotatedException( "No more NucSeqs" );
