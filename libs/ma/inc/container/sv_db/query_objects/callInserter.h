@@ -5,7 +5,10 @@
  */
 #pragma once
 
-#include "container/sv_db/svSchema.h"
+#include "container/svJump.h"
+#include "container/sv_db/tables/svCall.h"
+#include "container/sv_db/tables/svCallSupport.h"
+#include "container/sv_db/tables/svCallerRun.h"
 #include "module/get_inserter_container_module.h"
 
 namespace libMA
@@ -15,17 +18,22 @@ namespace libMA
  * @brief A transaction based structural variant call inserter
  * @details
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
+ * @todo make SvCallInserterContainer for CompleteBipartiteSubgraphClusterVector (see sweepSvJumps.h)
  */
 template <typename DBCon> class SvCallInserterContainer : public InserterContainer<DBCon, SvCallTable, SvCall>
 {
   public:
     using ParentType = InserterContainer<DBCon, SvCallTable, SvCall>;
-    using ParentType::InserterContainer;
 
     const static size_t BUFFER_SIZE = ParentType::BUFFER_SIZE;
     using SupportInserterType = typename SvCallSupportTable<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
     std::shared_ptr<SupportInserterType> pSupportInserter;
 
+
+    SvCallInserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
+        : ParentType::InserterContainer( pConnection, iId ),
+          pSupportInserter( std::make_shared<SupportInserterType>( SvCallSupportTable<DBCon>( pConnection ) ) )
+    {} // constructor
 
     /**
      * @brief insert a new call and link to the supporting jumps.
@@ -55,7 +63,7 @@ template <typename DBCon> class SvCallInserterContainer : public InserterContain
             pSupportInserter->insert( iCallId, iId );
     } // method
 
-    virtual void insert( std::shared_ptr<SvCall> pCall )
+    virtual void EXPORTED insert( std::shared_ptr<SvCall> pCall )
     {
         insertCall( *pCall );
     } // method
@@ -68,9 +76,8 @@ template <typename DBCon> class SvCallInserterContainer : public InserterContain
 }; // class
 
 template <typename DBCon, typename DBConInit>
-class GetCallInserterContainerModule
-    : public GetInserterContainerModule<SvCallInserterContainer, DBCon, DBConInit, SvCallerRunTable>
-{}; // class
+using GetCallInserterContainerModule =
+    GetInserterContainerModule<SvCallInserterContainer, DBCon, DBConInit, SvCallerRunTable>;
 
 template <typename DBCon> using SvCallInserterModule = InserterModule<SvCallInserterContainer<DBCon>>;
 

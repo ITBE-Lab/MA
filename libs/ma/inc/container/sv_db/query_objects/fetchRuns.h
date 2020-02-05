@@ -5,7 +5,8 @@
  */
 #pragma once
 
-#include "container/sv_db/svSchema.h"
+#include "container/sv_db/tables/svCallerRun.h"
+#include "module/module.h"
 
 namespace libMA
 {
@@ -15,6 +16,7 @@ namespace libMA
  * @details
  * A sv caller run is merely the creation of the calls.
  * the creation of libMA::SvJump is separate, so that multiple caller runs can use the same jumps.
+ * @todo this should become a module
  */
 template <typename DBCon> class SvCallerRunsFromDb
 {

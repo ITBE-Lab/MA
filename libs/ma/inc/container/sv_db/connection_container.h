@@ -5,6 +5,8 @@
  */
 #pragma once
 
+#include "container/container.h"
+
 namespace libMA
 {
     template <class DBCon> class ConnectionContainer : public DBCon, public Container

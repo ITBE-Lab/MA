@@ -36,6 +36,7 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
     SQLQuery<DBCon, int64_t> xNewestUnique;
 
   public:
+
     NameDescTable( std::shared_ptr<DBCon> pDatabase, std::string sTableName )
         : NameDescTableType<DBCon>(
               pDatabase, // the database where the table resides
@@ -114,6 +115,7 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
         return xNum.scalar( );
     } // method
 
+    using columnTypes = pack<std::string, std::string>; // redefine this to match the insert function
     inline int64_t insert( std::string sName, std::string sDesc )
     {
         // return this->xInsertRow(
@@ -132,7 +134,7 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
 template <typename DBCon> class SvJumpRunTable : public NameDescTable<DBCon>
 {
   public:
-    SvJumpRunTable( std::shared_ptr<DBCon> pDatabase, std::string sTableName )
+    SvJumpRunTable( std::shared_ptr<DBCon> pDatabase )
         : NameDescTable<DBCon>( pDatabase, "sv_jump_run_table" )
     {} // default constructor
 }; // class

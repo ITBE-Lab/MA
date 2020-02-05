@@ -5,7 +5,9 @@
  */
 #pragma once
 
-#include "container/sv_db/svSchema.h"
+#include "container/sv_db/tables/svCall.h"
+#include "container/sv_db/tables/svCallSupport.h"
+#include "util/parameter.h"
 
 namespace libMA
 {
@@ -13,6 +15,7 @@ namespace libMA
  * @brief fetches libMA::SvCall objects from a DB.
  * @details
  * Can do several 2d range queries.
+ * @todo this should become a volatile module
  */
 template <typename DBCon> class SvCallsFromDb
 {

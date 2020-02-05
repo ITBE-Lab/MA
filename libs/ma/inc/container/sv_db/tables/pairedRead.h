@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "container/svJump.h"
 #include "container/sv_db/tables/read.h"
 
 namespace libMA

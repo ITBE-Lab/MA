@@ -3,7 +3,6 @@
 
 #include "MySQL_con.h" // MySQL connector
 #include "common.h"
-#include "container/sv_db/svSchema.h"
 #include "db_con_pool.h"
 #include <cstdlib>
 #include <iostream>
@@ -22,7 +21,8 @@ int main( void )
                     doNoExcept(
                         [&] {
                             using ConnectionType = typename decltype( *pDBCon );
-                            libMA::SV_Schema<ConnectionType> xSB_DB_SchemaView( pDBCon );
+
+                            //libMA::SV_Schema<ConnectionType> xSB_DB_SchemaView( pDBCon );
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;
                             // checkDB( pDBCon, pDBCon->getTaskId( ) );
                             pDBCon->doPoolSafe( [] { std::cout << "This print is pool safe ..." << std::endl; } );

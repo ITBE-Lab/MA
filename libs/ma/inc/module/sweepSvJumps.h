@@ -4,10 +4,11 @@
  */
 #pragma once
 
+#include "container/pack.h"
 #include "container/squeezedVector.h"
+#include "container/sv_db/connection_container.h"
 #include "container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
 #include "container/sv_db/query_objects/fetchSvJump.h"
-#include "container/sv_db/svSchema.h"
 #include "module/module.h"
 #include "util/statisticSequenceAnalysis.h"
 #include <cmath>
@@ -79,103 +80,19 @@ class CompleteBipartiteSubgraphClusterVector : public Container
     std::vector<std::shared_ptr<SvCall>> vContent;
 }; // class
 
-/**
- * @brief saves all computed clusters in the database
- * @details
- */
-template <typename DBCon> class SvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
-{
-  public:
-    std::shared_ptr<SV_Schema<DBCon>> pDB;
-    int64_t iRunId;
-    /**
-     * @brief
-     * @details
-     */
-    SvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDB,
-                std::string rsSvCallerName, std::string rsSvCallerDesc, int64_t uiJumpRunId )
-        : pDB( pDB ), iRunId( pDB->pSvCallerRunTable->insert_( rsSvCallerName, rsSvCallerDesc, uiJumpRunId ) )
-    {} // constructor
-
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
-    {
-        {
-            std::lock_guard<std::mutex> xGuard( *pDB->pWriteLock );
-            auto pInserter = std::make_shared<SvCallInserter<DBCon>>( pDB, iRunId );
-            for( auto pCall : pVec->vContent )
-                pInserter->insertCall( *pCall );
-        } // scope for pInserter (transaction)
-        return std::make_shared<Container>( );
-    } // method & scope for xGuard
-}; // class
-
-/**
- * @brief saves all computed clusters in the database
- * @details buffers the calls in a vector before
- * @note in a parallel computational graph: use multiple instances of this module
- */
-template <typename DBCon>
-class BufferedSvCallSink : public Module<Container, false, CompleteBipartiteSubgraphClusterVector>
-{
-  public:
-    std::shared_ptr<SvCallInserter<DBCon>> pInserter;
-    std::vector<std::shared_ptr<CompleteBipartiteSubgraphClusterVector>> vContent;
-    size_t uiEleCnt = 0; // element count
-    /**
-     * @brief
-     * @details
-     */
-    BufferedSvCallSink( const ParameterSetManager& rParameters, std::shared_ptr<SvCallInserter<DBCon>> pInserter )
-        : pInserter( pInserter )
-    {} // constructor
-
-    inline void commit( bool bForce = false )
-    {
-        if( vContent.size( ) == 0 )
-            return;
-        if( !bForce && uiEleCnt < 10000 )
-            return;
-
-        {
-            std::lock_guard<std::mutex> xGuard( *pInserter->pDB->pWriteLock );
-            for( auto pVec : vContent )
-                for( auto pCall : pVec->vContent )
-                    pInserter->insertCall( *pCall );
-            pInserter->reOpenTransaction( );
-        } // scope for xGuard
-
-        vContent.clear( );
-        uiEleCnt = 0;
-    } // method
-
-    ~BufferedSvCallSink( )
-    {
-        commit( true );
-    } // scope for pInserter (transaction)
-
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pVec )
-    {
-        vContent.push_back( pVec );
-        uiEleCnt += pVec->vContent.size( );
-        commit( );
-        return std::make_shared<Container>( );
-    } // method & scope for xGuard
-}; // class
 
 /**
  * @brief
  * @details
  */
 template <typename DBCon>
-class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphClusterVector, false, GenomeSection>
+class CompleteBipartiteSubgraphSweep
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, GenomeSection, ConnectionContainer<DBCon>, Pack>
 {
   public:
     const ParameterSetManager& rParameters;
-    std::shared_ptr<SV_Schema<DBCon>> pSvDb;
-    std::shared_ptr<Pack> pPack;
     int64_t iSvCallerRunId;
     int64_t iMaxFuzziness;
-    nucSeqIndex uiGenomeSize;
     size_t uiSqueezeFactor;
     size_t uiCenterStripUp;
     size_t uiCenterStripDown;
@@ -189,29 +106,29 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
      * @brief
      * @details
      */
-    CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pSvDb,
-                                    std::shared_ptr<Pack> pPack, int64_t iSvCallerRunId, int64_t iSequencerId )
-        : rParameters( rParameters ),
-          pSvDb( std::make_shared<SV_Schema<DBCon>>( *pSvDb ) ),
-          pPack( pPack ),
+    CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, int64_t iSvCallerRunId )
+        : rParameters( rParameters ), // @todo rParameters should never be saved within a object
           iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
           // max of both limits)
           // also this should be the maximal cluster width not the maximal CBSG width
           iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( ) * 10 ),
-          uiGenomeSize( pPack->uiStartOfReverseStrand( ) ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
           uiCenterStripDown( 1000 )
     {} // constructor
 
+    // @todo document this function it is the main loop of the sv caller
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-        EXPORTED execute( std::shared_ptr<GenomeSection> pSection )
+        EXPORTED execute( std::shared_ptr<GenomeSection> pSection,
+                          std::shared_ptr<ConnectionContainer<DBCon>> pConnection, std::shared_ptr<Pack> pPack )
     {
+        nucSeqIndex uiGenomeSize = pPack->uiStartOfReverseStrand( );
+
         auto xInitStart = std::chrono::high_resolution_clock::now( );
         // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
         SortedSvJumpFromSql<DBCon> xEdges(
-            rParameters, pSvDb, iSvCallerRunId,
+            rParameters, pConnection, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
             pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,
@@ -357,23 +274,19 @@ class CompleteBipartiteSubgraphSweep : public Module<CompleteBipartiteSubgraphCl
  */
 template <typename DBCon>
 class ExactCompleteBipartiteSubgraphSweep
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
 {
   public:
-    std::shared_ptr<Pack> pPack;
     int64_t iMaxInsertRatioDiff = 150;
     /**
      * @brief
      * @details
      */
-    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters,
-                                         std::shared_ptr<SV_Schema<DBCon>> pSvDb, std::shared_ptr<Pack> pPack,
-                                         int64_t iSequencerId )
-        : pPack( pPack )
+    ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters )
     {} // constructor
 
     inline void exact_sweep( std::vector<std::shared_ptr<SvJump>>& rvEdges, size_t uiStart, size_t uiEnd,
-                             std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pRet )
+                             std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pRet, std::shared_ptr<Pack> pPack )
     {
         // squash sv_jump indices
         std::map<int64_t, size_t> xSquashedY;
@@ -515,8 +428,7 @@ class ExactCompleteBipartiteSubgraphSweep
     /// sequences. We need to consider these sequences individually -> cluster by sequence length
     /// if the sequences are different by nucleotides, we need to figure that out later in the multialignment step...
     inline void lineSweep( std::shared_ptr<SvCall> pCluster, //
-                           std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-                               pRet )
+                           std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pRet, std::shared_ptr<Pack> pPack )
     {
         std::vector<std::shared_ptr<SvJump>>& rvEdges = pCluster->vSupportingJumps;
         std::sort( rvEdges.begin( ), rvEdges.end( ), []( std::shared_ptr<SvJump> pA, std::shared_ptr<SvJump> pB ) {
@@ -544,19 +456,19 @@ class ExactCompleteBipartiteSubgraphSweep
                 uiJ++;
             else
             {
-                this->exact_sweep( rvEdges, uiI, uiJ, pRet );
+                this->exact_sweep( rvEdges, uiI, uiJ, pRet, pPack );
                 uiI = uiJ;
             } // else
         } // while
     } // method
 
-    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-        EXPORTED execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pClusters )
+    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector> EXPORTED
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pClusters, std::shared_ptr<Pack> pPack )
     {
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
 
         for( auto pCluster : pClusters->vContent )
-            this->lineSweep( pCluster, pRet );
+            this->lineSweep( pCluster, pRet, pPack );
 
         return pRet;
     } // method

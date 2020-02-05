@@ -7,7 +7,10 @@
 #pragma once
 
 #include "common.h"
+#include "container/svJump.h"
+#include "container/pack.h"
 #include "geom.h"
+#include "threadPool.h"
 #include "system.h"
 #include "wkb_spatial.h"
 #include <csignal>
@@ -32,8 +35,6 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
 
 template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
-    std::shared_ptr<DBCon> pDatabase;
-
   public:
     /**
      * @brief SQL code for score computation of sv call
@@ -356,37 +357,34 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             {FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}};
     }; // method
 
-    SvCallTable( std::shared_ptr<DBCon> pDatabase, std::shared_ptr<std::mutex> pWriteLock,
-                 std::string sDBName )
-        : SvCallTableType<DBCon>( pDatabase, // the database where the table resides
+    SvCallTable( std::shared_ptr<DBCon> pConnection )
+        : SvCallTableType<DBCon>( pConnection, // the database where the table resides
                                   jSvCallTableDef( ) ), // table definition
+          xQuerySize( pConnection, "SELECT COUNT(*) FROM sv_call_table" ),
 
-          pDatabase( pDatabase ),
-          xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_call_table" ),
-
-          xQuerySizeSpecific( pDatabase, "SELECT COUNT(*) FROM sv_call_table "
+          xQuerySizeSpecific( pConnection, "SELECT COUNT(*) FROM sv_call_table "
                                          "WHERE sv_caller_run_id = ? "
                                          "AND " +
                                              getSqlForCallScore( ) + " >= ? " ),
-          xCallArea( pDatabase,
+          xCallArea( pConnection,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
                      "AND " +
                          getSqlForCallScore( ) + " >= ? " ),
-          xMaxScore( pDatabase,
+          xMaxScore( pConnection,
                      "SELECT " + getSqlForCallScore( ) +
                          " FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " DESC LIMIT 1 " ),
-          xMinScore( pDatabase,
+          xMinScore( pConnection,
                      "SELECT " + getSqlForCallScore( ) +
                          " FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
                          "ORDER BY " +
                          getSqlForCallScore( ) + " ASC LIMIT 1 " ),
           xNextCallForwardContext(
-              pDatabase,
+              pConnection,
               "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
               "FROM sv_call_table "
               "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
@@ -400,7 +398,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #endif
               "ORDER BY sv_call_table.from_pos ASC "
               "LIMIT 1 " ),
-          xNextCallBackwardContext( pDatabase,
+          xNextCallBackwardContext( pConnection,
                                     "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
                                     "       inserted_sequence, to_pos "
                                     "FROM sv_call_table "
@@ -415,14 +413,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #endif
                                     "ORDER BY sv_call_table.to_pos DESC "
                                     "LIMIT 1 " ),
-          xSetCoverageForCall( pDatabase,
+          xSetCoverageForCall( pConnection,
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
                                "WHERE id = ?" ),
-          xDeleteCall( pDatabase,
+          xDeleteCall( pConnection,
                        "DELETE FROM sv_call_table "
                        "WHERE id = ? " ),
-          xUpdateCall( pDatabase,
+          xUpdateCall( pConnection,
                        "UPDATE sv_call_table "
                        "SET from_pos = ?, "
                        "    to_pos = ?, "
@@ -433,8 +431,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    supporting_reads = ?, "
                        "    reference_ambiguity = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
-                       "WHERE id = ? " ),
-          pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) )
+                       "WHERE id = ? " )
+          //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo reenable this..
     {} // default constructor
 
     inline void addScoreIndex( int64_t iCallerRunId )

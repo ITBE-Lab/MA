@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "container/sv_db/svSchema.h"
+#include "container/svJump.h"
+#include "container/sv_db/tables/read.h"
+#include "container/sv_db/tables/sequencer.h"
 #include "module/get_inserter_container_module.h"
 
 namespace libMA
@@ -20,7 +22,7 @@ template <typename DBCon> class ReadInserterContainer : public InserterContainer
     using ParentType = InserterContainer<DBCon, ReadTable, NucSeq>;
     using ParentType::InserterContainer;
 
-    virtual void insert( std::shared_ptr<NucSeq> pRead )
+    virtual void EXPORTED insert( std::shared_ptr<NucSeq> pRead )
     {
         ParentType::pInserter->insert( nullptr, ParentType::iId, pRead->sName, NucSeqSql( pRead ) );
     } // method
@@ -38,7 +40,7 @@ template <typename DBCon> class PairedReadInserterContainer : public InserterCon
     using ParentType = InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
     using ParentType::InserterContainer;
 
-    virtual void insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+    virtual void EXPORTED insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
         ParentType::pInserter->insert( nullptr, ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
         ParentType::pInserter->insert( nullptr, ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );

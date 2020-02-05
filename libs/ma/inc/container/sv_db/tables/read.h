@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.h" // NEW DATABASE INTERFACE
+#include "container/svJump.h"
 #include "db_sql.h"
 
 namespace libMA
@@ -20,10 +21,9 @@ using ReadTableType = SQLTableWithAutoPriKey<DBCon,
                                              NucSeqSql // read sequence
                                              >;
 const json jReadTableDef = {
-    { TABLE_NAME, "read_table" },
-    { TABLE_COLUMNS,
-      { { { COLUMN_NAME, "sequencer_id" } }, { { COLUMN_NAME, "name" } }, { { COLUMN_NAME, "sequence" } } } },
-    { FOREIGN_KEY, { { COLUMN_NAME, "sequencer_id" }, { REFERENCES, "sequencer_table(id)" } } } };
+    {TABLE_NAME, "read_table"},
+    {TABLE_COLUMNS, {{{COLUMN_NAME, "sequencer_id"}}, {{COLUMN_NAME, "name"}}, {{COLUMN_NAME, "sequence"}}}},
+    {FOREIGN_KEY, {{COLUMN_NAME, "sequencer_id"}, {REFERENCES, "sequencer_table(id)"}}}};
 /**
  * @brief this table saves reads
  */

@@ -478,7 +478,6 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // inner class SQL Index
 
   public:
-    using columnTypes = pack<ColTypes...>;
 
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
@@ -573,7 +572,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          *  Because we can not guarantee the life of host table for all of the life of the bulk inserter,
          *  we should not keep a reference to the table. Instead we copy the required info of the table.
          */
-        SQLBulkInserter( SQLTable& rxHost )
+        SQLBulkInserter( const SQLTable& rxHost )
             : uiInsPos( 0 ),
               pBulkInsertStmt( // compile bulk insert stmt
                   std::make_unique<typename DBCon::PreparedStmt>( rxHost.pDB, rxHost.makeInsertStmt( BUF_SIZE ) ) ),
@@ -908,13 +907,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     } // method
 
     /** @brief Implementation part of getValuesStmt */
-    template <std::size_t... Is> void getValueStmtImpl( std::string& sStmtText, std::index_sequence<Is...> )
+    template <std::size_t... Is> void getValueStmtImpl( std::string& sStmtText, std::index_sequence<Is...> ) const
     {
         ( ( sStmtText.append( ( Is == 0 ? "" : "," ) ).append(DBCon::DBImplForward::TypeTranslator::template getPlaceholderForType<ColTypes>() ) ), ... );
     } // meta
 
     /** @brief Delivers the "VALUES"-art of an insertion statement */
-    inline std::string getValuesStmt( )
+    inline std::string getValuesStmt( ) const
     {
         std::string sStmtText( "(" );
         getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
@@ -926,7 +925,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
      *  uiNumberVals determines the number of values (rows) in the case of multiple row inserts.
      *  @details Syntax should work with most SQL dialects.
      */
-    std::string makeInsertStmt( const size_t uiNumVals = 1 )
+    std::string makeInsertStmt( const size_t uiNumVals = 1 ) const
     {
         // Number of colums
         assert( this->rjTableCols.size( ) == sizeof...( ColTypes ) );
@@ -1206,6 +1205,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     } // method
 
   public:
+    using columnTypes = pack<ColTypes...>;
 
     SQLTableWithAutoPriKey( const SQLTableWithAutoPriKey& ) = delete; // no table copies
 

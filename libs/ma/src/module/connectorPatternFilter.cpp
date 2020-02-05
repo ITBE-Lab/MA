@@ -13,8 +13,7 @@ using namespace libMA;
 void exportConnectorPatternFilter( py::module& rxPyModuleId )
 {
     // export the ConnectorPatternFilter class
-    exportModule<ConnectorPatternFilter<DBCon>, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId,
-                                                                                    "ConnectorPatternFilter" );
+    exportModule<ConnectorPatternFilter<DBCon>>( rxPyModuleId, "ConnectorPatternFilter" );
 
 } // function
 #endif

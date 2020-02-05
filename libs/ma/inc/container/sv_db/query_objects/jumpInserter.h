@@ -5,8 +5,9 @@
  */
 #pragma once
 
-#include "container/sv_db/svSchema.h"
+#include "container/svJump.h"
 #include "container/sv_db/tables/nameDesc.h"
+#include "container/sv_db/tables/svJump.h"
 #include "module/get_inserter_container_module.h"
 
 namespace libMA
@@ -21,7 +22,7 @@ class JumpInserterContainer : public InserterContainer<DBCon, SvJumpTable, Conta
     using ParentType = InserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
     using ParentType::InserterContainer;
 
-    virtual void insert( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
+    virtual void EXPORTED insert( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         const int64_t iReadId = pRead->iId;
         for( SvJump& rJump : *pJumps )

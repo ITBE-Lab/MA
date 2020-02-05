@@ -5,7 +5,9 @@
  */
 
 #pragma once
-#include "container/sv_db/svSchema.h"
+
+#include "container/svJump.h"
+#include "container/sv_db/tables/svJump.h"
 
 namespace libMA
 {
@@ -18,6 +20,7 @@ namespace libMA
  * - one for sv jumps sorted by their end position (on the reference)
  * The iterators can be incremented independently.
  * This is necessary for the line sweep over the SV jumps.
+ * @todo this should become a module
  */
 template <typename DBCon> class SortedSvJumpFromSql
 {

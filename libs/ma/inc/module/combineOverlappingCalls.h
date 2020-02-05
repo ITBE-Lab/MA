@@ -33,7 +33,9 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
         "WHERE sv_call_support_table.call_id = ? " );
 
-    SvCallInserter<DBCon> xInserter( pConnection, iSvCallerId ); // also triggers transaction
+    SvCallTable<DBCon> xSvTable( pConnection );
+    SvCallSupportTable<DBCon> xSvCallSupportTable( pConnection );
+
     auto vQuery1Res = xQuery.executeAndStoreAllInVector( iSvCallerId );
 
     size_t uiRet = 0;
@@ -57,8 +59,8 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         {
             // get all overlapping calls
 
-            auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>(
-                std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ) ) );
+            auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( std::get<1>( xTup ), std::get<2>( xTup ),
+                                                                          std::get<3>( xTup ), std::get<4>( xTup ) ) );
             xQuery2.execAndFetch( iSvCallerId,
                                   xWkb, // rectangle
                                   std::get<0>( xTup ), // id
@@ -144,13 +146,13 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
         {
             for( int64_t iId : vToDel )
             {
-                pDb->pSvCallSupportTable->deleteCall( iId );
-                pDb->pSvCallTable->deleteCall( iId );
+                xSvCallSupportTable.deleteCall( iId );
+                xSvTable.deleteCall( iId );
                 sDeleted.insert( iId );
                 uiRet++;
             } // for
             xPrim.reEstimateClusterSize( );
-            xInserter.updateCall( xPrim );
+            xSvTable.updateCall( iSvCallerId, xPrim );
         } // if
 
     } // for

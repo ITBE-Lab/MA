@@ -3,11 +3,34 @@
  */
 #pragma once
 
+#include "container/sv_db/connection_container.h"
 #include "module/needlemanWunsch.h"
 #include "module/sweepSvJumps.h"
 
 namespace libMA
 {
+
+template <typename DBCon> class ReadsQueryContainer : public Container, public SQLQuery<DBCon, NucSeqSql>
+{
+  public:
+    ReadsQueryContainer( std::shared_ptr<DBCon> pConnection )
+        : SQLQuery<DBCon, NucSeqSql>( pConnection, "SELECT sequence FROM read_table WHERE id = ? " )
+    {} // constructor
+}; // class
+
+template <typename DBCon>
+class GetReadsQueryContainerModule : public Module<ReadsQueryContainer<DBCon>, false, ConnectionContainer<DBCon>>
+{
+  public:
+    GetReadsQueryContainerModule( const ParameterSetManager& rParameters )
+    {} // default constructor
+
+    std::shared_ptr<ReadsQueryContainer<DBCon>> execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
+    {
+        return std::make_shared<ReadsQueryContainer<DBCon>>( pConnection );
+    } // method
+}; // class
+
 /**
  * @brief filters SV calls out that occur due to ambiguities on the reference
  * @details
@@ -15,21 +38,21 @@ namespace libMA
  * If so it discards the SV.
  */
 template <typename DBCon>
-class ConnectorPatternFilter
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
+class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVector, false,
+                                             CompleteBipartiteSubgraphClusterVector, Pack, ReadsQueryContainer<DBCon>>
 {
   public:
     nucSeqIndex uiMaxExtensionSize = 100;
     const KswCppParam<5> xKswParameters;
     const size_t uiZDrop;
-    SQLQuery<DBCon, NucSeqSql> xGetRead;
 
-    ConnectorPatternFilter( const ParameterSetManager& rParameters, std::shared_ptr<SV_Schema<DBCon>> pDBEnv )
-        : uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
-          xGetRead( pDBEnv->pDatabase, "SELECT sequence FROM read_table WHERE id = ? " )
+    ConnectorPatternFilter( const ParameterSetManager& rParameters )
+        : uiZDrop( rParameters.getSelected( )->xZDrop->get( ) )
     {} // constructor
+
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pRef )
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pRef,
+             std::shared_ptr<ReadsQueryContainer<DBCon>> pGetRead )
     {
         AlignedMemoryManager xMemoryManager;
 
@@ -49,7 +72,7 @@ class ConnectorPatternFilter
             auto pNucSeqLeft = pRef->vExtract( iBegin, iBegin + iSize );
             pNucSeqLeft->vReverse( );
 
-            iBegin = pCall->xXAxis.end();
+            iBegin = pCall->xXAxis.end( );
             iSize = uiMaxExtensionSize;
             if( pRef->bridgingSubsection( iBegin, iSize ) )
                 pRef->unBridgeSubsection( iBegin, iSize );
@@ -97,7 +120,7 @@ class ConnectorPatternFilter
             for( auto pJump : pCall->vSupportingJumps )
             {
                 // this db read puts quite the strain on the system...
-                auto pRead = xGetRead.scalar( pJump->iReadId ).pNucSeq;
+                auto pRead = pGetRead->scalar( pJump->iReadId ).pNucSeq;
                 assert( pRead != nullptr );
                 pRead->iId = pJump->iReadId;
 

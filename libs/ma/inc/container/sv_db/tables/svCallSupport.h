@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common.h"
+#include "container/svJump.h"
 
 namespace libMA
 {

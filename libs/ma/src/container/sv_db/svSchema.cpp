@@ -1,5 +1,6 @@
 #include "container/sv_db/svSchema.h"
 #include "container/container.h"
+#include "container/pack.h"
 #include "container/sv_db/py_db_conf.h"
 #include "module/combineOverlappingCalls.h"
 
@@ -14,7 +15,7 @@
 
 using namespace libMA;
 
-uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+uint32_t getCallOverviewArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
                               double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH )
 {
     uint32_t uiX = 0;
@@ -29,7 +30,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
 
-    SQLQuery<DBCon, uint32_t> xQuery( pDb->pDatabase,
+    SQLQuery<DBCon, uint32_t> xQuery( pConnection,
                                       "SELECT COUNT(*) "
                                       "FROM sv_call_table "
                                       "WHERE sv_caller_run_id = ? " // dim 1
@@ -42,8 +43,8 @@ uint32_t getCallOverviewArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared
     return xQuery.scalar( iRunId, xWkb, dMinScore );
 } // function
 
-uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
-                            int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
+uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
+                            int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
     if( iX > 0 )
@@ -56,7 +57,7 @@ uint32_t getNumJumpsInArea( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_p
     if( uiY + uiH > pPack->uiUnpackedSizeForwardStrand )
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
-    SQLQuery<DBCon, uint32_t> xQuery( pDb->pDatabase,
+    SQLQuery<DBCon, uint32_t> xQuery( pConnection,
                                       "SELECT COUNT(*) "
                                       "FROM sv_jump_table "
                                       "WHERE sv_jump_run_id = ? "
@@ -76,7 +77,7 @@ struct rect
     {} // constructor
 }; // struct
 
-std::vector<rect> getCallOverview( std::shared_ptr<SV_Schema<DBCon>> pDb, std::shared_ptr<Pack> pPack, int64_t iRunId,
+std::vector<rect> getCallOverview( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
                                    double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH,
                                    uint64_t uiMaxW, uint64_t uiMaxH, uint32_t uiGiveUpFactor )
 {
@@ -116,8 +117,8 @@ std::vector<rect> getCallOverview( std::shared_ptr<SV_Schema<DBCon>> pDb, std::s
                 {
                     int64_t uiInnerX = ( int64_t )( uiI * dW + uiStartX );
                     int64_t uiInnerY = ( int64_t )( uiJ * dH + uiStartY );
-                    auto c = getCallOverviewArea( pDb, pPack, iRunId, dMinScore, uiInnerX, uiInnerY, (uint32_t)dW + 1,
-                                                  (uint32_t)dH + 1 );
+                    auto c = getCallOverviewArea( pConnection, pPack, iRunId, dMinScore, uiInnerX, uiInnerY,
+                                                  (uint32_t)dW + 1, (uint32_t)dH + 1 );
                     if( c > 0 )
                         vRet.emplace_back( (uint32_t)uiInnerX, (uint32_t)uiInnerY, (uint32_t)dW, (uint32_t)dH, c,
                                            (uint32_t)uiContigX, (uint32_t)uiContigY );
@@ -134,38 +135,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 {
     py::class_<DBCon, std::shared_ptr<DBCon>>( rxPyModuleId, "DB_Con" );
 
-    py::class_<SQLDBConPool<DBCon>, std::shared_ptr<SQLDBConPool<DBCon>>>( rxPyModuleId, "DB_Con_Pool" )
-        .def( py::init<size_t, std::string>( ) )
-        .def;
-    // export the SV_DB class
-    py::class_<SV_Schema<DBCon>, std::shared_ptr<SV_Schema<DBCon>>>( rxPyModuleId, "SV_Schema" )
-        .def( py::init<std::shared_ptr<DBCon>>( ) )
-        .def( "delete_run", &SV_Schema<DBCon>::deleteRun )
-        .def( "get_run_id", &SV_Schema<DBCon>::getRunId )
-        .def( "get_call_area", &SV_Schema<DBCon>::getCallArea )
-        .def( "get_num_overlaps_between_calls", &SV_Schema<DBCon>::getNumOverlapsBetweenCalls )
-        .def( "get_blur_on_overlaps_between_calls", &SV_Schema<DBCon>::getBlurOnOverlapsBetweenCalls )
-        .def( "get_num_invalid_calls", &SV_Schema<DBCon>::getNumInvalidCalls )
-        .def( "add_score_index", &SV_Schema<DBCon>::addScoreIndex )
-        .def( "get_num_calls", &SV_Schema<DBCon>::getNumCalls )
-        .def( "get_run_name", &SV_Schema<DBCon>::getRunName )
-        .def( "get_run_desc", &SV_Schema<DBCon>::getRunDesc )
-        .def( "get_run_date", &SV_Schema<DBCon>::getRunDate )
-        .def( "get_run_jump_id", &SV_Schema<DBCon>::getRunJumpId )
-        .def( "get_num_runs", &SV_Schema<DBCon>::getNumRuns )
-        .def( "get_max_score", &SV_Schema<DBCon>::getMaxScore )
-        .def( "get_min_score", &SV_Schema<DBCon>::getMinScore )
-        .def( "run_exists", &SV_Schema<DBCon>::runExists )
-        .def( "name_exists", &SV_Schema<DBCon>::nameExists )
-        .def( "set_num_threads", &SV_Schema<DBCon>::setNumThreads )
-        .def( "create_jump_indices", &SV_Schema<DBCon>::createJumpIndices )
-        .def( "reconstruct_sequenced_genome", &SV_Schema<DBCon>::reconstructSequencedGenome )
-        .def( "newest_unique_runs", &SV_Schema<DBCon>::getNewestUniqueRuns )
-        .def( "update_coverage", &SV_Schema<DBCon>::updateCoverage )
-        .def( "insert_sv_caller_run", &SV_Schema<DBCon>::insertSvCallerRun )
-        .def( "insert_sv_jump_run", &SV_Schema<DBCon>::insertSvJumpRun )
-        .def( "get_read", &SV_Schema<DBCon>::getRead )
-        .def( "num_jumps", &SV_Schema<DBCon>::numJumps );
+    //py::class_<SQLDBConPool<DBCon>, std::shared_ptr<SQLDBConPool<DBCon>>>( rxPyModuleId, "DB_Con_Pool" )
+    //    .def( py::init<size_t, std::string>( ) );
 
     py::class_<rect>( rxPyModuleId, "rect" ) //
         .def_readonly( "x", &rect::x )

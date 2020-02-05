@@ -8,12 +8,13 @@ using namespace libMA;
 
 void exportNucSeqSql( py::module& rxPyModuleId )
 {
-#if 0 // @todo
-    // export the NucSeqFromSql classes
-	exportModule<AllNucSeqFromSql<DBCon>, std::shared_ptr<SV_Schema<DBCon>>, int64_t, size_t, size_t>(rxPyModuleId, "AllNucSeqFromSql");
-	exportModule<NucSeqFromSql<DBCon>, std::shared_ptr<SV_Schema<DBCon>>, int64_t>(rxPyModuleId, "NucSeqFromSql");
-	exportModule<PairedNucSeqFromSql<DBCon>, std::shared_ptr<SV_Schema<DBCon>>, int64_t>(rxPyModuleId, "PairedNucSeqFromSql");
-#endif
+    py::class_<NucSeqQueryContainer<DBCon>, Container, std::shared_ptr<NucSeqQueryContainer<DBCon>>>(
+        rxPyModuleId, "NucSeqQueryContainer" );
+
+    exportModule<GetNucSeqFromSqlQuery<DBCon>, int64_t, size_t, size_t, bool, bool>( rxPyModuleId,
+                                                                                     "GetNucSeqFromSqlQuery" );
+
+    exportModule<NucSeqFetcher<DBCon>>( rxPyModuleId, "NucSeqFetcher" );
 } // function
 
 #endif
