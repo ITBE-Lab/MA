@@ -9,14 +9,10 @@ using namespace libMA;
 void exportSvCallInserter( py::module& rxPyModuleId )
 {
     // export the CallInserter class
-    exportInserterContainer<GetCallInserterContainerModule<DBCon, DBConSingle>,
-                            std::string, // name
-                            std::string, // desc
-                            int64_t, // timestamp
-                            int64_t> // sv_jump_run_id
+    exportInserterContainer<GetCallInserterContainerModule<DBCon, DBConSingle>>
         ( rxPyModuleId, "CallInserter" );
 
-    exportModule<CallInserterModule>( rxPyModuleId, "CallInserterModule" );
+    exportModule<SvCallInserterModule<DBCon>>( rxPyModuleId, "SvCallInserterModule" );
 } // function
 
 #endif // WITH_PYTHON

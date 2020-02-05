@@ -410,6 +410,9 @@ const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
 
+template<typename... Args>
+struct pack { };
+
 /* Tips: https://stackoverflow.com/questions/667643/mysql-batch-updates-in-c
  * Change the name to SQLTableView
  */
@@ -475,6 +478,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // inner class SQL Index
 
   public:
+    using columnTypes = pack<ColTypes...>;
+
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
      */

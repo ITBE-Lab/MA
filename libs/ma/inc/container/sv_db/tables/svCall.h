@@ -30,7 +30,7 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
                                                WKBUint64Rectangle // rectangle (geometry)
                                                >;
 
-template <typename DBCon> class SvCallTable : private SvCallTableType<DBCon>
+template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
     std::shared_ptr<DBCon> pDatabase;
 

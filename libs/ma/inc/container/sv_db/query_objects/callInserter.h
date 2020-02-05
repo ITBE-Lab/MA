@@ -16,11 +16,16 @@ namespace libMA
  * @details
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
  */
-template <typename DBCon> class SvCallInserterContainer : public InserterContainer<DBCon, ReadTable, SvCall>
+template <typename DBCon> class SvCallInserterContainer : public InserterContainer<DBCon, SvCallTable, SvCall>
 {
-    const static size_t BUFFER_SIZE = InserterContainer<DBCon, ReadTable, SvCall>::BUFFER_SIZE;
+  public:
+    using ParentType = InserterContainer<DBCon, SvCallTable, SvCall>;
+    using ParentType::InserterContainer;
+
+    const static size_t BUFFER_SIZE = ParentType::BUFFER_SIZE;
     using SupportInserterType = typename SvCallSupportTable<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
     std::shared_ptr<SupportInserterType> pSupportInserter;
+
 
     /**
      * @brief insert a new call and link to the supporting jumps.
@@ -31,22 +36,23 @@ template <typename DBCon> class SvCallInserterContainer : public InserterContain
     inline void insertCall( SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId = InserterContainer<DBCon, ReadTable, SvCall>::pInserter->insert( nullptr, //
-                                             InserterContainer<DBCon, ReadTable, SvCall>::iId, //
-                                             (uint32_t)rCall.xXAxis.start( ), //
-                                             (uint32_t)rCall.xYAxis.start( ), //
-                                             (uint32_t)rCall.xXAxis.size( ), //
-                                             (uint32_t)rCall.xYAxis.size( ), //
-                                             rCall.bSwitchStrand, //
-                                             // NucSeqSql can deal with nullpointers
-                                             NucSeqSql( rCall.pInsertedSequence ), //
-                                             (uint32_t)rCall.uiNumSuppReads, //
-                                             (uint32_t)rCall.uiReferenceAmbiguity, //
-                                             -1, //
-                                             xRectangle );
+        int64_t iCallId = 0; // @note @fixme @todo oh oh this is trouble
+        ParentType::pInserter->insert( nullptr, //
+                                       ParentType::iId, //
+                                       (uint32_t)rCall.xXAxis.start( ), //
+                                       (uint32_t)rCall.xYAxis.start( ), //
+                                       (uint32_t)rCall.xXAxis.size( ), //
+                                       (uint32_t)rCall.xYAxis.size( ), //
+                                       rCall.bSwitchStrand, //
+                                       // NucSeqSql can deal with nullpointers
+                                       NucSeqSql( rCall.pInsertedSequence ), //
+                                       (uint32_t)rCall.uiNumSuppReads, //
+                                       (uint32_t)rCall.uiReferenceAmbiguity, //
+                                       -1, //
+                                       xRectangle );
         rCall.iId = iCallId;
         for( int64_t iId : rCall.vSupportingJumpIds )
-            pSupportInserter->insert( nullptr, iCallId, iId );
+            pSupportInserter->insert( iCallId, iId );
     } // method
 
     virtual void insert( std::shared_ptr<SvCall> pCall )
@@ -56,23 +62,17 @@ template <typename DBCon> class SvCallInserterContainer : public InserterContain
 
     virtual void close( )
     {
-        pSupportInserter->reset( );
-        InserterContainer<DBCon, ReadTable, SvCall>::close( );
+        pSupportInserter.reset( );
+        ParentType::close( );
     } // method
 }; // class
 
 template <typename DBCon, typename DBConInit>
-class GetCallInserterContainerModule : public GetInserterContainerModule<SvCallInserterContainer,
-                                                                         DBCon,
-                                                                         DBConInit,
-                                                                         SvCallerRunTable,
-                                                                         std::string, // name
-                                                                         std::string, // desc
-                                                                         int64_t, // timestamp
-                                                                         int64_t> // sv_jump_run_id
+class GetCallInserterContainerModule
+    : public GetInserterContainerModule<SvCallInserterContainer, DBCon, DBConInit, SvCallerRunTable>
 {}; // class
 
-template <typename DBCon> using CallInserterModule = InserterModule<SvCallInserterContainer<DBCon>, SvCall>;
+template <typename DBCon> using SvCallInserterModule = InserterModule<SvCallInserterContainer<DBCon>>;
 
 } // namespace libMA
 

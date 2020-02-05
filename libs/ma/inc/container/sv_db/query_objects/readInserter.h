@@ -17,36 +17,39 @@ namespace libMA
 template <typename DBCon> class ReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq>
 {
   public:
-    using InserterContainer<DBCon, ReadTable, NucSeq>::InserterContainer;
+    using ParentType = InserterContainer<DBCon, ReadTable, NucSeq>;
+    using ParentType::InserterContainer;
 
     virtual void insert( std::shared_ptr<NucSeq> pRead )
     {
-        pInserter->insert( nullptr, iId, pRead->sName, NucSeqSql( pRead ) );
-    } // method
-}; // class
-
-/// @brief inserts reads into a DB
-template <typename DBCon> class PairedReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
-{
-  public:
-    virtual void insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
-    {
-        pInserter->insert( nullptr, iId, pReadA->sName, NucSeqSql( pReadA ) );
-        pInserter->insert( nullptr, iId, pReadB->sName, NucSeqSql( pReadB ) );
-        // @todo paired connection is lost here!
+        ParentType::pInserter->insert( nullptr, ParentType::iId, pRead->sName, NucSeqSql( pRead ) );
     } // method
 }; // class
 
 template <typename DBCon, typename DBConInit>
 using GetReadInserterContainerModule =
-    GetInserterContainerModule<ReadInserterContainer, DBCon, DBConInit, SequencerTable, std::string>;
-template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserterContainer<DBCon>, NucSeq>;
+    GetInserterContainerModule<ReadInserterContainer, DBCon, DBConInit, SequencerTable>;
+template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserterContainer<DBCon>>;
+
+/// @brief inserts reads into a DB
+template <typename DBCon> class PairedReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
+{
+  public:
+    using ParentType = InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
+    using ParentType::InserterContainer;
+
+    virtual void insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+    {
+        ParentType::pInserter->insert( nullptr, ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
+        ParentType::pInserter->insert( nullptr, ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );
+        // @todo paired connection is lost here!
+    } // method
+}; // class
 
 template <typename DBCon, typename DBConInit>
 using GetPairedReadInserterContainerModule =
-    GetInserterContainerModule<PairedReadInserterContainer, DBCon, DBConInit, SequencerTable, std::string>;
-template <typename DBCon>
-using PairedReadInserterModule = InserterModule<PairedReadInserterContainer<DBCon>, NucSeq, NucSeq>;
+    GetInserterContainerModule<PairedReadInserterContainer, DBCon, DBConInit, SequencerTable>;
+template <typename DBCon> using PairedReadInserterModule = InserterModule<PairedReadInserterContainer<DBCon>>;
 
 } // namespace libMA
 
