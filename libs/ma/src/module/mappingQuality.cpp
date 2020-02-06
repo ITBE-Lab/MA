@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/mappingQuality.h"
+#include "util/default_parameters.h"
 
 using namespace libMA;
 

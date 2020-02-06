@@ -17,19 +17,44 @@ class InserterContainer : public Container
   public:
     using insertTypes_ = pack<InsertTypes...>;
 
+    std::shared_ptr<TableType<DBCon>> pTable;
+
+    const int64_t iId;
+
+    InserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
+        : pTable( std::make_shared<TableType<DBCon>>( pConnection ) ), iId( iId )
+    {} // constructor
+
+    virtual void EXPORTED insert( std::shared_ptr<InsertTypes>... pArgs )
+    {
+        throw std::runtime_error( "insert function of InserterContainer was not defined." );
+    } // method
+
+    virtual void close( )
+    {
+        pTable.reset( );
+    } // method
+}; // class
+
+template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
+class BulkInserterContainer : public Container
+{
+  public:
+    using insertTypes_ = pack<InsertTypes...>;
+
     const static size_t BUFFER_SIZE = 500;
     using InserterType = typename TableType<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
     std::shared_ptr<InserterType> pInserter;
 
     const int64_t iId;
 
-    InserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
+    BulkInserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
         : pInserter( std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ) ), iId( iId )
     {} // constructor
 
     virtual void EXPORTED insert( std::shared_ptr<InsertTypes>... pArgs )
     {
-        throw std::runtime_error("insert function of InserterContainer was not defined.");
+        throw std::runtime_error( "insert function of BulkInserterContainer was not defined." );
     } // method
 
     virtual void close( )
@@ -150,18 +175,28 @@ void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
 )
 {
     exportModule2<TP_MODULE>( xPyModuleId, sName, typename TP_MODULE::TableType_::columnTypes( ) );
-};
+} // function
+
+template <typename InserterContainerType, typename DBCon, typename... InsertTypes>
+void exportHelper( pybind11::module& xPyModuleId, // pybind module variable
+                   const std::string& sName, // module name
+                   pack<InsertTypes...> // empty struct just to transport InsertTypes type
+)
+{
+    py::class_<InserterContainerType, Container, std::shared_ptr<InserterContainerType>>( xPyModuleId, sName.c_str( ) )
+        .def( py::init<std::shared_ptr<ConnectionContainer<DBCon>>, int64_t>( ) )
+        .def( "insert",
+              ( void ( InserterContainerType::* )( std::shared_ptr<InsertTypes>... ) ) & InserterContainerType::insert )
+        .def( "close", &InserterContainerType::close );
+} // function
 
 template <typename GetInserterContainerModuleType>
 inline void exportInserterContainer( py::module& rxPyModuleId, const std::string& rName )
 {
     // export the templated class
-    using InserterContainerType = typename GetInserterContainerModuleType::InserterContainerType_;
-    py::class_<InserterContainerType, Container, std::shared_ptr<InserterContainerType>>( rxPyModuleId, rName.c_str( ) )
-        .def( py::init<std::shared_ptr<ConnectionContainer<typename GetInserterContainerModuleType::DBCon_>>,
-                       int64_t>( ) )
-        .def( "insert", &InserterContainerType::insert )
-        .def( "close", &InserterContainerType::close );
+    exportHelper<typename GetInserterContainerModuleType::InserterContainerType_,
+                 typename GetInserterContainerModuleType::DBCon_>(
+        rxPyModuleId, rName, typename GetInserterContainerModuleType::InserterContainerType_::insertTypes_( ) );
 
     exportModule2<GetInserterContainerModuleType>( rxPyModuleId, rName );
 } // function

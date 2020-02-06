@@ -73,14 +73,6 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
     } // method
 }; // class
 
-
-class CompleteBipartiteSubgraphClusterVector : public Container
-{
-  public:
-    std::vector<std::shared_ptr<SvCall>> vContent;
-}; // class
-
-
 /**
  * @brief
  * @details

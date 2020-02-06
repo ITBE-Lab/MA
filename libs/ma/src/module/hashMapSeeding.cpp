@@ -2,6 +2,7 @@
  * @file hashMapSeeding.cpp
  * @author Markus Schmidt
  */
+#include "util/default_parameters.h"
 #include "module/hashMapSeeding.h"
 #include <limits>
 

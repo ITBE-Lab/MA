@@ -6,6 +6,7 @@
 #define NOMINMAX
 #endif
 
+#include "util/default_parameters.h"
 #include "module/pairedReads.h"
 #include <limits>
 

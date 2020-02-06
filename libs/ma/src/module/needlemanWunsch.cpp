@@ -2,6 +2,7 @@
  * @file needlemanWunsch.cpp
  * @author Markus Schmidt
  */
+#include "util/default_parameters.h"
 #include "module/needlemanWunsch.h"
 
 #if OLD_KSW == 1

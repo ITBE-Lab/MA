@@ -16,11 +16,11 @@ namespace libMA
  * @brief Insertion of libMA::SvJump into the database.
  */
 template <typename DBCon>
-class JumpInserterContainer : public InserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>
+class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>
 {
   public:
-    using ParentType = InserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
-    using ParentType::InserterContainer;
+    using ParentType = BulkInserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
+    using ParentType::BulkInserterContainer;
 
     virtual void EXPORTED insert( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {

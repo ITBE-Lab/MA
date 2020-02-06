@@ -8,6 +8,7 @@
 #pragma once
 
 #include "container/svJump.h"
+#include "container/sv_db/tables/pairedRead.h"
 #include "container/sv_db/tables/read.h"
 #include "container/sv_db/tables/sequencer.h"
 #include "module/get_inserter_container_module.h"
@@ -16,11 +17,11 @@ namespace libMA
 {
 
 /// @brief inserts reads into a DB
-template <typename DBCon> class ReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq>
+template <typename DBCon> class ReadInserterContainer : public BulkInserterContainer<DBCon, ReadTable, NucSeq>
 {
   public:
-    using ParentType = InserterContainer<DBCon, ReadTable, NucSeq>;
-    using ParentType::InserterContainer;
+    using ParentType = BulkInserterContainer<DBCon, ReadTable, NucSeq>;
+    using ParentType::BulkInserterContainer;
 
     virtual void EXPORTED insert( std::shared_ptr<NucSeq> pRead )
     {
@@ -33,18 +34,33 @@ using GetReadInserterContainerModule =
     GetInserterContainerModule<ReadInserterContainer, DBCon, DBConInit, SequencerTable>;
 template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserterContainer<DBCon>>;
 
-/// @brief inserts reads into a DB
+/**
+ * @brief inserts reads into a DB
+ * @details
+ * @todo ask arne if we can somehow use a bulk inserter here
+ */
 template <typename DBCon> class PairedReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
 {
   public:
     using ParentType = InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
-    using ParentType::InserterContainer;
+
+
+    const static size_t BUFFER_SIZE = 500;
+    using PairedReadInserterType = typename PairedReadTable<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
+    std::shared_ptr<PairedReadInserterType> pPairedReadInserter;
+
+
+    PairedReadInserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
+        : ParentType::InserterContainer( pConnection, iId ),
+          pPairedReadInserter( std::make_shared<PairedReadInserterType>( PairedReadTable<DBCon>(
+              pConnection, nullptr /* @todo nullptr is bad practice but save in this context */ ) ) )
+    {} // constructor
 
     virtual void EXPORTED insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
-        ParentType::pInserter->insert( nullptr, ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
-        ParentType::pInserter->insert( nullptr, ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );
-        // @todo paired connection is lost here!
+        int64_t iReadIdA = ParentType::pTable->insert( ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
+        int64_t iReadIdB = ParentType::pTable->insert( ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );
+        pPairedReadInserter->insert( iReadIdA, iReadIdB );
     } // method
 }; // class
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "util/default_parameters.h"
 #include "exception.h"
 #include "exported.h"
 #include "support.h"

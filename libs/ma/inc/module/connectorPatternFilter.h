@@ -119,7 +119,7 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
             // compute the read scores
             for( auto pJump : pCall->vSupportingJumps )
             {
-                // this db read puts quite the strain on the system...
+                // this db select puts quite the strain on the system...
                 auto pRead = pGetRead->scalar( pJump->iReadId ).pNucSeq;
                 assert( pRead != nullptr );
                 pRead->iId = pJump->iReadId;
@@ -151,12 +151,12 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
                         iReadScore += ez.ez->score;
                 } // scope for ez
 
-                // @todo optimization: this loop does not need to be executed all the way...
+                if( iReadScore / pCall->vSupportingJumps.size( ) > iReferenceScore )
+                    break;
             } // for
-            iReadScore /= pCall->vSupportingJumps.size( );
 
             // if the score for the read is better than the one purely on the reference, keep the call
-            if( iReadScore > iReferenceScore )
+            if( iReadScore / pCall->vSupportingJumps.size( ) > iReferenceScore )
                 pRet->vContent.push_back( pCall );
         } // for
 

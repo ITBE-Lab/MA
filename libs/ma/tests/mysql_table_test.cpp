@@ -3,9 +3,11 @@
 
 #include "MySQL_con.h" // MySQL connector
 #include "common.h"
+#include "container/sv_db/tables/sequencer.h"
 #include "db_con_pool.h"
 #include <cstdlib>
 #include <iostream>
+#include <type_traits>
 
 
 int main( void )
@@ -20,9 +22,11 @@ int main( void )
                 vFutures.push_back( xDBPool.enqueue( []( auto pDBCon ) {
                     doNoExcept(
                         [&] {
-                            using ConnectionType = typename decltype( *pDBCon );
+                            // pDBCon is of type std::shared_ptr<ConnectionType>
+                            using ConnectionType = typename std::remove_reference<decltype( *pDBCon )>::type;
 
-                            //libMA::SV_Schema<ConnectionType> xSB_DB_SchemaView( pDBCon );
+                            libMA::SequencerTable<ConnectionType> xSequencerTable( pDBCon );
+
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;
                             // checkDB( pDBCon, pDBCon->getTaskId( ) );
                             pDBCon->doPoolSafe( [] { std::cout << "This print is pool safe ..." << std::endl; } );

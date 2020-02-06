@@ -29,7 +29,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "container/fMIndex.h"
 #include "container/nucSeq.h"
 #include "container/pack.h"
-#include "module/dbWriter.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
 #include "debug.h"

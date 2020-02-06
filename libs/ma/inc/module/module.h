@@ -8,7 +8,6 @@
 
 #include "container/container.h"
 #include "threadPool.h"
-#include "util/default_parameters.h"
 #include "util/parameter.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -994,7 +993,6 @@ void exportModule( pybind11::module& xPyModuleId, // pybind module variable
     py::implicitly_convertible<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>>( );
 } // function
 
-// @todo this can be avoided with the using keyword: each module can remember its constructor parameters
 template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
 void exportModule( pybind11::module& xPyModuleId, // pybind module variable
                    const std::string&& sName, // module name

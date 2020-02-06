@@ -2,6 +2,7 @@
  * @file harmonization.cpp
  * @author Markus Schmidt
  */
+#include "util/default_parameters.h"
 #include "module/harmonization.h"
 #include "module/stripOfConsideration.h"
 #include "util/pybind11.h"

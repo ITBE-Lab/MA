@@ -150,7 +150,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "container/sv_db/svSchema.h"
 #include "module/binarySeeding.h"
 #include "module/connectorPatternFilter.h"
-#include "module/dbWriter.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
 #include "module/harmonization.h"

@@ -21,7 +21,6 @@ void exportContainer( py::module& rxPyModuleId )
         rxPyModuleId, "ContainerVector", "docstr" );
 
     // tell boost python that pointers of these classes can be converted implicitly 
-    // @todo is this still necessary?
     py::implicitly_convertible<PyContainerVector, Container>( );
 
 } // function

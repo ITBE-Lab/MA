@@ -13,7 +13,6 @@ extern int libMA::defaults::iExtend;
 extern int libMA::defaults::iMatch;
 extern int libMA::defaults::iMissMatch;
 extern size_t libMA::defaults::uiSVPenalty;
-// Note query 236 failed
 
 void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
 {

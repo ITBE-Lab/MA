@@ -301,6 +301,7 @@ class SvJump : public Container
     } // method
 }; // class
 
+// @todo move this to it's own file
 class SvCall : public Container, public geom::Rectangle<nucSeqIndex>
 {
   public:
@@ -632,6 +633,13 @@ class SvCall : public Container, public geom::Rectangle<nucSeqIndex>
         this->vUp.insert( this->vUp.end( ), rOther.vUp.begin( ), rOther.vUp.end( ) );
         this->vDown.insert( this->vDown.end( ), rOther.vDown.begin( ), rOther.vDown.end( ) );
     } // method
+}; // class
+
+
+class CompleteBipartiteSubgraphClusterVector : public Container
+{
+  public:
+    std::vector<std::shared_ptr<SvCall>> vContent;
 }; // class
 
 }; // namespace libMA

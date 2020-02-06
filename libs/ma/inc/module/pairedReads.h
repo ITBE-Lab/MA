@@ -36,11 +36,11 @@ class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, /
      * between the paired seed we make an unpaired alignment.
      * The default value is taken from BWA-MEM as we use the same formula for pairing.
      */
-    double u = defaults::dUnpaired;
+    double u;
     ///@brief the mean of the insert size
-    size_t mean = defaults::uiMean;
+    size_t mean;
     ///@brief the standard deviation of the insert size
-    double std = defaults::fStd;
+    double std;
 
     PairedReads( const ParameterSetManager& rParameters )
         : u( rParameters.getSelected( )->xPairedBonus->get( ) ),
