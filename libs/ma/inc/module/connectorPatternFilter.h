@@ -151,12 +151,12 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
                         iReadScore += ez.ez->score;
                 } // scope for ez
 
-                if( iReadScore / pCall->vSupportingJumps.size( ) > iReferenceScore )
+                if( iReadScore / (int64_t)pCall->vSupportingJumps.size( ) > iReferenceScore )
                     break;
             } // for
 
             // if the score for the read is better than the one purely on the reference, keep the call
-            if( iReadScore / pCall->vSupportingJumps.size( ) > iReferenceScore )
+            if( iReadScore / (int64_t)pCall->vSupportingJumps.size( ) > iReferenceScore )
                 pRet->vContent.push_back( pCall );
         } // for
 

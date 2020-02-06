@@ -156,7 +156,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( const json& jDBConData = json{ } )
+    SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ) // use the address for id creation
@@ -410,8 +410,13 @@ const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
 
-template<typename... Args>
-struct pack { };
+/**
+ * @brief completely empty struct
+ * @details
+ * can be used to hold and then extract a parameter pack from a variable.
+ */
+template <typename... Args> struct pack
+{};
 
 /* Tips: https://stackoverflow.com/questions/667643/mysql-batch-updates-in-c
  * Change the name to SQLTableView
@@ -460,7 +465,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                                                                  : pTable->getTableName( ) + "_idx";
 
             // In a pooled environment the creation of indexes should be serialzed.
-            pTable->pDB->doPoolSafe( [ & ] {
+            pTable->pDB->doPoolSafe( [&] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -478,7 +483,6 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // inner class SQL Index
 
   public:
-
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
      */
@@ -508,7 +512,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
         {
-            return cat_arr_of_tpl_impl( a, Indices{ } );
+            return cat_arr_of_tpl_impl( a, Indices{} );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -524,7 +528,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
             // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum)
             // ...
-            STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
+            STD_APPLY( [&]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 #else // Iterating approach for parameter binding with bulk inserts. (Lacks beauty, but better manageable for compilers)
 
@@ -533,7 +537,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         template <int OFFSET, typename... Args> void doSingleBind( const std::tuple<Args...>& rTpl )
         {
-            STD_APPLY( [ & ]( auto&... args ) //
+            STD_APPLY( [&]( auto&... args ) //
                        { pBulkInsertStmt->template bind<OFFSET>( args... ); },
                        rTpl );
         } // method
@@ -549,7 +553,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row) */
         template <typename T, std::size_t N> void forAllDoBind( const std::array<T, N>& a )
         {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
+            forAllDoBindImpl( a, std::make_index_sequence<N>{} );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -608,7 +612,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
             for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
                 // Write the current tuple in the array to the DB
-                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
+                STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
         } // method
 
         /** @brief Destructor flushes the buffer.
@@ -617,7 +621,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             // Throwing an exception in a destructor results in undefined behavior.
             // Therefore, we swallow these exceptions and report them via std:cerr.
-            doNoExcept( [ this ] { this->flush( ); } );
+            doNoExcept( [this] { this->flush( ); } );
         } // destructor
     }; // class
 
@@ -666,7 +670,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <class Ch, class Tr, class... Args>
         void prtTpltoStream( std::basic_ostream<Ch, Tr>& os, const std::tuple<Args...>& t )
         {
-            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{ } );
+            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{} );
             os << "\n";
         } // meta
 
@@ -680,14 +684,14 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // FIXME: Move to library with meta programming
         template <typename F, typename T, std::size_t N> void for_all_do( F f, const std::array<T, N>& a )
         {
-            for_all_do_impl( f, a, std::make_index_sequence<N>{ } );
+            for_all_do_impl( f, a, std::make_index_sequence<N>{} );
         } // meta
 
         /** @brief Writes the content of the buffer aBuf to the output-stream using CSV.
          */
         inline void writeBufToStream( )
         {
-            for_all_do( [ & ]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
+            for_all_do( [&]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
         } // method
 
         /** @brief Creates a filename for the CSV-file to be uploaded using the directory given by the backend.
@@ -787,7 +791,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // Throwing an exception in a destructor results in undefined behavior. Therefore, we swallow these
             // exceptions and report them via std:cerr.
             doNoExcept(
-                [ this ] {
+                [this] {
                     this->release( true ); // true indicates that the release call is done by the destructor
                     // Delete the CSV-file if it exists.
                     if( fs::exists( this->sCSVFileName ) )
@@ -909,14 +913,16 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /** @brief Implementation part of getValuesStmt */
     template <std::size_t... Is> void getValueStmtImpl( std::string& sStmtText, std::index_sequence<Is...> ) const
     {
-        ( ( sStmtText.append( ( Is == 0 ? "" : "," ) ).append(DBCon::DBImplForward::TypeTranslator::template getPlaceholderForType<ColTypes>() ) ), ... );
+        ( ( sStmtText.append( ( Is == 0 ? "" : "," ) )
+                .append( DBCon::DBImplForward::TypeTranslator::template getPlaceholderForType<ColTypes>( ) ) ),
+          ... );
     } // meta
 
     /** @brief Delivers the "VALUES"-art of an insertion statement */
     inline std::string getValuesStmt( ) const
     {
         std::string sStmtText( "(" );
-        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{} );
         return sStmtText.append( ")" );
     } // method
 
@@ -1018,7 +1024,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     void init( )
     {
         // Create table if not existing in DB guarantee
-        pDB->doPoolSafe( [ & ] {
+        pDB->doPoolSafe( [&] {
             if( !pDB->tableExistsInDB( getTableName( ) ) )
                 pDB->execSQL( makeTableCreateStmt( ) );
             else
@@ -1152,7 +1158,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Destructor */
     ~SQLTable( )
     {
-        do_exception_safe( [ & ]( ) {
+        do_exception_safe( [&]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
@@ -1177,16 +1183,15 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
         json jTableDef( rjTableDef );
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         if( jTableDef.count( TABLE_COLUMNS ) )
-            jTableDef[ TABLE_COLUMNS ].push_back( json::object( { { COLUMN_NAME, "ID" },
-                                                                  { CONSTRAINTS,
-                                                                    "NOT NULL AUTO_INCREMENT PRIMARY KEY" } } ) );
+            jTableDef[ TABLE_COLUMNS ].push_back( json::object( {{COLUMN_NAME, "ID"},
+                                                                 { CONSTRAINTS,
+                                                                   "NOT NULL AUTO_INCREMENT PRIMARY KEY" }} ) );
 #else
         // Primary key on first row:
         if( jTableDef.count( TABLE_COLUMNS ) )
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
-                json::object(
-                    { { COLUMN_NAME, "id" }, { CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY" } } ) );
+                json::object( {{COLUMN_NAME, "id"}, {CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY"}} ) );
 #endif
         return jTableDef;
     } // method
@@ -1205,6 +1210,14 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     } // method
 
   public:
+    /**
+     * @brief holds the columns types.
+     * @details
+     * since a parameter pack cannot be held in a using, we hold the type pack<ColTypes...>.
+     * pack is a completely empty struct.
+     * @see get_inserter_container_module.h, there this is used to extract the types of all column from a tabletype that
+     * is given as a template parameter.
+     */
     using columnTypes = pack<ColTypes...>;
 
     SQLTableWithAutoPriKey( const SQLTableWithAutoPriKey& ) = delete; // no table copies
@@ -1213,7 +1226,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     SQLTableWithAutoPriKey( std::shared_ptr<DBCon> pDB, const json& rjTableDef ) //--
 #ifdef PRIMARY_KEY_ON_LAST_ROW
         : SQLTable<DBCon, ColTypes..., int64_t>( pDB, inject( rjTableDef ),
-                                                 std::set<size_t>( { rjTableDef[ TABLE_COLUMNS ].size( ) } )
+                                                 std::set<size_t>( {rjTableDef[ TABLE_COLUMNS ].size( )} )
 #else
         : SQLTable<DBCon, int64_t, ColTypes...>( pDB, inject( rjTableDef ) /* , std::set<size_t>( { 0 } ) */
 #endif
