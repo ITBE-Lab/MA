@@ -142,9 +142,6 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportPairedReads( libMaModule );
     exportSplitter( libMaModule );
     exportSmallInversions( libMaModule );
-#ifdef WITH_POSTGRES
-    exportDBWriter( libMaModule );
-#endif
     exportSVJump( libMaModule );
     exportSoCDbWriter( libMaModule );
     exportSoC( libMaModule );

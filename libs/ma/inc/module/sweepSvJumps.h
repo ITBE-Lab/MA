@@ -79,7 +79,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
  */
 template <typename DBCon>
 class CompleteBipartiteSubgraphSweep
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, GenomeSection, ConnectionContainer<DBCon>, Pack>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, ConnectionContainer<DBCon>, GenomeSection, Pack>
 {
   public:
     const ParameterSetManager& rParameters;
@@ -112,8 +112,8 @@ class CompleteBipartiteSubgraphSweep
 
     // @todo document this function it is the main loop of the sv caller
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-        EXPORTED execute( std::shared_ptr<GenomeSection> pSection,
-                          std::shared_ptr<ConnectionContainer<DBCon>> pConnection, std::shared_ptr<Pack> pPack )
+        EXPORTED execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection,
+                          std::shared_ptr<GenomeSection> pSection, std::shared_ptr<Pack> pPack )
     {
         nucSeqIndex uiGenomeSize = pPack->uiStartOfReverseStrand( );
 

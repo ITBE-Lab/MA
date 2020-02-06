@@ -15,7 +15,7 @@ void exportSvCallInserter( py::module& rxPyModuleId )
     exportInserterContainer<GetCallVectorInserterContainerModule<DBCon, DBConSingle>>
         ( rxPyModuleId, "CallVectorInserter" );
 
-    exportModule<SvCallInserterModule<DBCon>>( rxPyModuleId, "SvCallInserterModule" );
+    exportModule<SvCallInserterModule<DBCon>>( rxPyModuleId, "CallInserterModule" );
 } // function
 
 #endif // WITH_PYTHON

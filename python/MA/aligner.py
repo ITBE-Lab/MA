@@ -19,21 +19,20 @@ from libMA import FMIndex
 from libMA import Module
 from libMA import VectorPledge
 from libMA import VolatileModule
-from libMA import configureAccurate
-from libMA import configureFast
 from libMA import NucSeq
-from libMA import SV_DB
-from libMA import SvJumpInserter
-from libMA import SvCallInserter
+from libMA import JumpInserter # @todo move this into a caller.py file
+from libMA import GetJumpInserter
+from libMA import CallInserter
+from libMA import CallVectorInserter
 from libMA import SvJump
 from libMA import SvCall
 from libMA import VectorPledge
 from libMA import ReadInserter
+from libMA import PairedReadInserter
 from libMA import ParameterSetManager
 from libMA import ExecutionContext
 from libMA import ContainerVectorNucSeq
 from libMA import SortedSvJumpFromSql
-from libMA import AllNucSeqFromSql
 from libMA import SvCallerRunsFromDb
 from libMA import SvCallsFromDb
 import libMA
@@ -304,15 +303,99 @@ class SmallInversions(libMA.SmallInversions):
 
 
 ##
-# @brief The NucSeqFromSql Module.
+# @brief The GetPairedReadInserter Module.
 # @ingroup module
 #
-class NucSeqFromSql(libMA.NucSeqFromSql):
+class GetPairedReadInserter(libMA.GetPairedReadInserter):
     def execute(self, *args):
         vec = libMA.ContainerVector()
         for arg in args:
             vec.append(arg)
-        return super(NucSeqFromSql, self).execute(vec)
+        return super(GetPairedReadInserter, self).execute(vec)
+
+
+##
+# @brief The PairedReadInserterModule Module.
+# @ingroup module
+#
+class PairedReadInserterModule(libMA.PairedReadInserterModule):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(PairedReadInserterModule, self).execute(vec)
+
+
+##
+# @brief The GetReadInserter Module.
+# @ingroup module
+#
+class GetReadInserter(libMA.GetReadInserter):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(GetReadInserter, self).execute(vec)
+
+
+##
+# @brief The ReadInserterModule Module.
+# @ingroup module
+#
+class ReadInserterModule(libMA.ReadInserterModule):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(ReadInserterModule, self).execute(vec)
+
+
+##
+# @brief The GetCallVectorInserter Module.
+# @ingroup module
+#
+class GetCallVectorInserter(libMA.GetCallVectorInserter):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(GetCallVectorInserter, self).execute(vec)
+
+
+##
+# @brief The JumpInserterModule Module.
+# @ingroup module
+#
+class JumpInserterModule(libMA.JumpInserterModule):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(JumpInserterModule, self).execute(vec)
+
+
+##
+# @brief The CallInserterModule Module.
+# @ingroup module
+#
+class CallInserterModule(libMA.CallInserterModule):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(CallInserterModule, self).execute(vec)
+
+
+##
+# @brief The CallInserterModule Module.
+# @ingroup module
+#
+class GetCallInserter(libMA.GetCallInserter):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(GetCallInserter, self).execute(vec)
 
 
 ##
@@ -325,18 +408,6 @@ class AlignmentCollector(libMA.AlignmentCollector):
         for arg in args:
             vec.append(arg)
         return super(NucSeqFromSql, self).execute(vec)
-
-
-##
-# @brief The PairedNucSeqFromSql Module.
-# @ingroup module
-#
-class PairedNucSeqFromSql(libMA.PairedNucSeqFromSql):
-    def execute(self, *args):
-        vec = libMA.ContainerVector()
-        for arg in args:
-            vec.append(arg)
-        return super(PairedNucSeqFromSql, self).execute(vec)
 
 
 ##
@@ -362,18 +433,6 @@ if hasattr(libMA, "FillSeedSet"):
             for arg in args:
                 vec.append(arg)
             return super(FillSeedSet, self).execute(vec)
-
-
-##
-# @brief The SvDbInserter Module.
-# @ingroup module
-#
-class SvDbInserter(libMA.SvDbInserter):
-    def execute(self, *args):
-        vec = libMA.ContainerVector()
-        for arg in args:
-            vec.append(arg)
-        return super(SvDbInserter, self).execute(vec)
 
 
 ##

@@ -271,6 +271,7 @@ class BasePledge
         throw AnnotatedException( type_name( this ) + " did not implement isFinished" );
         return false;
     } // method
+
     /**
      * @brief Gets the given pledges simultaneously.
      * @details
@@ -377,7 +378,6 @@ class BasePledge
                                 return;
                             } // catch
                         } while( bLoop && bContinue );
-                        // DEBUG( std::cout << "Thread " << uiTid << " finished." << std::endl; )
                     }, // lambda
                     pPledge );
             } // for
