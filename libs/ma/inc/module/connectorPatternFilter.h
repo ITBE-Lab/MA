@@ -27,7 +27,7 @@ class GetReadsQueryContainerModule : public Module<ReadsQueryContainer<DBCon>, f
 
     std::shared_ptr<ReadsQueryContainer<DBCon>> execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
     {
-        return std::make_shared<ReadsQueryContainer<DBCon>>( pConnection );
+        return std::make_shared<ReadsQueryContainer<DBCon>>( pConnection->pConnection );
     } // method
 }; // class
 

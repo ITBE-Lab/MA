@@ -120,7 +120,7 @@ class CompleteBipartiteSubgraphSweep
         auto xInitStart = std::chrono::high_resolution_clock::now( );
         // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
         SortedSvJumpFromSql<DBCon> xEdges(
-            rParameters, pConnection, iSvCallerRunId,
+            rParameters, pConnection->pConnection, iSvCallerRunId,
             // make sure we overlap the start of the next interval, so that clusters that span over two intervals
             // are being collected. -> for this we just keep going after the end of the interval
             pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,

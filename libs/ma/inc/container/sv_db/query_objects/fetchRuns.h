@@ -16,7 +16,7 @@ namespace libMA
  * @details
  * A sv caller run is merely the creation of the calls.
  * the creation of libMA::SvJump is separate, so that multiple caller runs can use the same jumps.
- * @todo this should become a module
+ * @todo this should become a container
  */
 template <typename DBCon> class SvCallerRunsFromDb
 {

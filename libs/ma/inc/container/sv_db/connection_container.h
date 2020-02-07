@@ -9,8 +9,20 @@
 
 namespace libMA
 {
-    template <class DBCon> class ConnectionContainer : public DBCon, public Container
-    {
-        using DBCon::DBCon;
-    }; // class
+/**
+ * @brief container that holds a connection
+ * @details
+ * The purpose of this container is to hold a database connection, so that the connection
+ * can be used in a computational graph.
+ */
+template <class DBCon> class ConnectionContainer : public Container
+{
+  public:
+    std::shared_ptr<DBCon> pConnection;
+
+    ConnectionContainer( std::shared_ptr<DBCon> pConnection ) : pConnection( pConnection )
+    {} // constructor
+
+}; // class
+
 } // namespace libMA

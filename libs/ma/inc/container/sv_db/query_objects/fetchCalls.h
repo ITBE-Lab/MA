@@ -15,7 +15,7 @@ namespace libMA
  * @brief fetches libMA::SvCall objects from a DB.
  * @details
  * Can do several 2d range queries.
- * @todo this should become a volatile module
+ * @todo this should become a container
  */
 template <typename DBCon> class SvCallsFromDb
 {

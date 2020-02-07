@@ -35,7 +35,7 @@ class InserterContainer : public Container
     const int64_t iId;
 
     InserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
-        : pTable( std::make_shared<TableType<DBCon>>( pConnection ) ), iId( iId )
+        : pTable( std::make_shared<TableType<DBCon>>( pConnection->pConnection ) ), iId( iId )
     {} // constructor
 
     /**
@@ -84,7 +84,7 @@ class BulkInserterContainer : public Container
     BulkInserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
         // This construction makes sure that the table exists in the database.
-        : pInserter( std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ) ), iId( iId )
+        : pInserter( std::make_shared<InserterType>( TableType<DBCon>( pConnection->pConnection ) ) ), iId( iId )
     {} // constructor
 
     /**

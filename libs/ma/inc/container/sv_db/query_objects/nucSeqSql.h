@@ -5,12 +5,12 @@
  */
 #pragma once
 
-#include "module/module.h"
+#include "common.h"
 #include "container/nucSeq.h"
 #include "container/sv_db/connection_container.h"
 #include "container/sv_db/tables/pairedRead.h"
 #include "container/sv_db/tables/read.h"
-#include "common.h"
+#include "module/module.h"
 
 namespace libMA
 {
@@ -19,19 +19,20 @@ template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, Nu
 {
   public:
     NucSeqQueryContainer( std::shared_ptr<DBCon> pConnection, bool bDoModulo, bool bUnpairedOnly )
-        : SQLQuery<DBCon, NucSeqSql, int64_t>( pConnection,
-                    std::string( "SELECT read_table.sequence, read_table.id "
-                                 "FROM read_table " )
-                        .append( bDoModulo ? "WHERE sequencer_id = ? "
-                                             "AND read_table.id % ? = ? "
-                                           : "" )
-                        .append( bUnpairedOnly && bDoModulo ? "AND " : "WHERE " )
-                        .append( bUnpairedOnly ? "read_table.id NOT IN ( "
-                                                 "   SELECT paired_read_table.first_read FROM paired_read_table "
-                                                 "   UNION "
-                                                 "   SELECT paired_read_table.second_read FROM paired_read_table "
-                                                 ") "
-                                               : "" ) )
+        : SQLQuery<DBCon, NucSeqSql, int64_t>(
+              pConnection,
+              std::string( "SELECT read_table.sequence, read_table.id "
+                           "FROM read_table " )
+                  .append( bDoModulo ? "WHERE sequencer_id = ? "
+                                       "AND read_table.id % ? = ? "
+                                     : "" )
+                  .append( bUnpairedOnly && bDoModulo ? "AND " : "WHERE " )
+                  .append( bUnpairedOnly ? "read_table.id NOT IN ( "
+                                           "   SELECT paired_read_table.first_read FROM paired_read_table "
+                                           "   UNION "
+                                           "   SELECT paired_read_table.second_read FROM paired_read_table "
+                                           ") "
+                                         : "" ) )
     {} // constructor
 }; // class
 
@@ -61,8 +62,8 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
     virtual std::shared_ptr<NucSeqQueryContainer<DBCon>>
         EXPORTED execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
     {
-        auto pQuery =
-            std::make_shared<NucSeqQueryContainer<DBCon>>( pConnection, iSequencerId != -1 && uiModulo != 1, !bAll );
+        auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>( pConnection->pConnection,
+                                                                     iSequencerId != -1 && uiModulo != 1, !bAll );
 
         if( iSequencerId != -1 && uiModulo != 1 )
             pQuery->execAndFetch( iSequencerId, uiRes, uiModulo );
