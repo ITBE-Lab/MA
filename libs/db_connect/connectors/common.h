@@ -414,6 +414,7 @@ const std::string WHERE = "WHERE";
  * @brief completely empty struct
  * @details
  * can be used to hold and then extract a parameter pack from a variable.
+ * @todo pack -> Pack
  */
 template <typename... Args> struct pack
 {};
@@ -1217,6 +1218,7 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
      * pack is a completely empty struct.
      * @see get_inserter_container_module.h, there this is used to extract the types of all column from a tabletype that
      * is given as a template parameter.
+     * columnTypes -> ForwardedColTypes
      */
     using columnTypes = pack<ColTypes...>;
 

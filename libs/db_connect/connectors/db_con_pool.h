@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -26,11 +27,11 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
     std::shared_ptr<std::mutex> pPoolLock; // the pool lock is shared with the pool and all its connections
 
   public:
-    size_t uiTaskId; // id of the task belonging to the PooledSQLDBCon
+    size_t uiThreadId; // id of the task belonging to the PooledSQLDBCon
     PooledSQLDBCon( const PooledSQLDBCon<DBImpl>& ) = delete; // no copies of pooled connections
 
     PooledSQLDBCon( std::shared_ptr<std::mutex> pPoolLock, // pass shared pointer to pool mutex
-                    const json& jDBConData = json{ } ) // FIXME: Pass JSON here
+                    const json& jDBConData = json{} ) // FIXME: Pass JSON here
 
         : SQLDB<DBImpl>( jDBConData ), pPoolLock( pPoolLock )
     {} // constructor
@@ -45,7 +46,7 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
 
     inline size_t getTaskId( )
     {
-        return this->uiTaskId;
+        return this->uiThreadId;
     } // method
 
 }; // class
@@ -66,11 +67,12 @@ template <typename DBImpl> class SQLDBConPool
 
     std::vector<std::thread> vWorkers; // worker threads; each thread manages one connection
     std::vector<std::shared_ptr<PooledSQLDBCon<DBImpl>>> vConPool; // pointers to actual connections
-    std::queue<TaskType> qTasks; // queue of lambda functions that shall to executed
+    std::deque<std::pair<TaskType, int>> qTasks; // queue of lambda functions that shall to executed
     std::mutex xQueueMutex; // mutex for control of concurrent access of the tasks queue
     std::condition_variable xCondition; // For wait, notify synchronization purposes.
     std::shared_ptr<std::mutex> pPoolLock; // pointer to mutex synchronizes concurrent activities in the pool
     bool bStop; // Flag for 'indicating end of pool operation'. If true, the pool operation is terminated.
+    int iNextBookedThreadId = 0;
 
   public:
     const size_t uiPoolSize; // size of the pool
@@ -82,7 +84,7 @@ template <typename DBImpl> class SQLDBConPool
      * considered instantiated, and therefore its destructor will not be called.
      */
     SQLDBConPool( size_t uiPoolSize = 1, // pass pool size here
-                  const json& jDBConData = json{ } ) // Connection Info as JSON; format depends on the backend
+                  const json& jDBConData = json{} ) // Connection Info as JSON; format depends on the backend
         : pPoolLock( std::make_shared<std::mutex>( ) ), // create the pool lock
           bStop( false ), // stop must be false in the beginning
           uiPoolSize( uiPoolSize )
@@ -97,15 +99,15 @@ template <typename DBImpl> class SQLDBConPool
             vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, jDBConData ) );
 
         // Create an initialize all workers.
-        for( size_t uiTaskId = 0; uiTaskId < uiPoolSize; ++uiTaskId )
-            vWorkers.emplace_back( [this, uiTaskId] {
+        for( size_t uiThreadId = 0; uiThreadId < uiPoolSize; ++uiThreadId )
+            vWorkers.emplace_back( [this, uiThreadId] {
                 // Treads are not allowed to throw exceptions or we face crashes.
                 // Therefore the swallowing of exceptions.
                 doNoExcept(
                     [&] {
                         // Get a reference to the connection manager belonging to this thread.
-                        auto pConManager = vConPool[ uiTaskId ];
-                        pConManager->uiTaskId = uiTaskId; // inform connector about corresponding taskid
+                        auto pConManager = vConPool[ uiThreadId ];
+                        pConManager->uiTaskId = uiThreadId; // inform connector about corresponding taskid
 
                         // The loop continues until the stop flags indicates termination.
                         while( true )
@@ -130,22 +132,38 @@ template <typename DBImpl> class SQLDBConPool
                                 return;
 
                             // We now have exclusive access to a non-empty task queue.
-                            // We pick the front element (front lambda expression) for execution and remove it from the
-                            // queue.
-                            TaskType fTaskToBeExcuted( this->qTasks.front( ) );
-                            this->qTasks.pop( );
+                            // Search for a matching task in the deque of tasks. If there are special demands with
+                            // respect to the thread id, we must check if teh current worker matches this id. Otherwise
+                            // we accept the next task in the deque that requires no specific thread id.
+                            auto xIteratorFirstMatch = std::find_if(
+                                this->qTasks.begin( ), this->qTasks.end( ), [&uiThreadId, this]( const auto& xPair ) {
+                                    return xPair.second == static_cast<int>( uiThreadId ) ||
+                                           xPair.second == NO_THREAD_ID;
+                                } );
 
-                            // Exclusive access to the task queue is not required any longer.
-                            xLock.unlock( );
+                            // Check, if there is a task that can be executed by this worker.
+                            if( xIteratorFirstMatch != this->qTasks.end( ) )
+                            {
+                                // We pick the matching task for execution and remove it from the queue.
+                                TaskType fTaskToBeExcuted( xIteratorFirstMatch->first );
+                                // For efficency reasons we check if a front_pop is sufficient.
+                                if( xIteratorFirstMatch == qTasks.begin( ) )
+                                    this->qTasks.pop_front( );
+                                else
+                                    this->qTasks.erase( xIteratorFirstMatch );
 
-                            // Execute the task delivering its connection manager as argument.
-                            // If the task throws an exception, this exception has to be caught via the future.
-                            // (See the notice in the description of this class.)
-                            fTaskToBeExcuted( pConManager );
+                                // Exclusive access to the task queue is not required any longer.
+                                xLock.unlock( );
+
+                                // Execute the task delivering its connection manager as argument.
+                                // If the task throws an exception, this exception has to be caught via the future.
+                                // (See the notice in the description of this class.)
+                                fTaskToBeExcuted( pConManager );
+                            } // if
                         } // while
                     }, // lambda ( doNoExcept )
                     // doNoExcept error message:
-                    "SQLDBConPool:: The worker with Id " + std::to_string( uiTaskId ) +
+                    "SQLDBConPool:: The worker with Id " + std::to_string( uiThreadId ) +
                         "failed due to an internal error and terminated." );
             } ); // emplace_back
     } // constructor
@@ -184,9 +202,21 @@ template <typename DBImpl> class SQLDBConPool
         this->shutdown( );
     } // destructor
 
-    /** @brief Enqueue a function func for execution via the DB pool */
+    /** @brief Delivers a valid connection id for enqueuing for a specific worker. Using repeatedly the same worker is
+     * reasonable, if two separate enqueues use the same query object.  */
+    int getValidConnectionId( )
+    {
+        int iRet = iNextBookedThreadId;
+        // increment and cycle
+        iNextBookedThreadId = ( iNextBookedThreadId + 1 ) % uiPoolSize;
+        return iRet;
+    } // method
+
+    const int NO_THREAD_ID = -1;
+
+    /** @brief Enqueue a function func for execution via the DB pool using specific connection uiThreadId */
     template <class F, class... Args>
-    auto inline enqueue( F&& func, Args&&... args )
+    auto inline enqueue( int iThreadId, F&& func, Args&&... args )
         -> std::future<typename std::result_of<F( std::shared_ptr<PooledSQLDBCon<DBImpl>>, Args... )>::type>
     {
         using return_type = typename std::result_of<F( std::shared_ptr<PooledSQLDBCon<DBImpl>>, Args... )>::type;
@@ -212,13 +242,22 @@ template <typename DBImpl> class SQLDBConPool
             std::unique_lock<std::mutex> lock( xQueueMutex );
 
             // The task gets as input a shared pointer to a DBConnection for doing its job
-            qTasks.push( [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
+            qTasks.push_back( std::make_pair(
+                [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); }, iThreadId ) );
         } // end of scope of lock (lock gets released)
         // Inform some waiting consumer (worker) that we have a fresh task.
         this->xCondition.notify_one( );
 
         return xFuture;
     } // method enqueue
+
+    /** @brief Enqueue a function func for execution via the DB pool */
+    template <class F, class... Args>
+    auto inline enqueue( F&& func, Args&&... args )
+        -> std::future<typename std::result_of<F( std::shared_ptr<PooledSQLDBCon<DBImpl>>, Args... )>::type>
+    {
+        return enqueue( NO_THREAD_ID, std::forward<F>( func ), std::forward<Args>( args )... );
+    } // method enqueue without thread id
 
 
     // Usage example:

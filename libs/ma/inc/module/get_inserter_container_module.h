@@ -144,6 +144,7 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
 
     // export the template types so we can access them from outside
     // there really should be a way to just get a template parameter from a type in standard c++.   -.-
+    // @todo InserterContainerType_ -> ForwardedInserterContainerType
     using InserterContainerType_ = InserterContainerType<DBCon>;
     using DBCon_ = DBCon;
     using DBConInit_ = DBConInit;
