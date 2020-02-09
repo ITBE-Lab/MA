@@ -33,7 +33,7 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
     execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pRef,
              std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-        return pPool->run(
+        return pPool->xPool.run(
             [this]( auto pConnection, std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls,
                     std::shared_ptr<Pack> pRef ) {
                 SQLQuery<DBCon, NucSeqSql> xGetRead( pConnection, "SELECT sequence FROM read_table WHERE id = ? " );

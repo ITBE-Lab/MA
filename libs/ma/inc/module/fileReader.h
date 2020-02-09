@@ -441,6 +441,11 @@ class FileReader : public SingleFileReader
     } // method
 }; // class
 
+/**
+ * @brief reads all files in a list
+ * @details
+ * @todo this could apply a round robin approach instead of reading the files sequentially
+ */
 class FileListReader : public SingleFileReader
 {
   public:

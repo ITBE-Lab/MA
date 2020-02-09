@@ -147,6 +147,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "container/minimizer_index.h"
 #include "container/svJump.h"
+#include "container/sv_db/pool_container.h"
 #include "container/sv_db/svSchema.h"
 #include "module/binarySeeding.h"
 #include "module/connectorPatternFilter.h"

@@ -133,10 +133,15 @@ std::vector<rect> getCallOverview( std::shared_ptr<DBCon> pConnection, std::shar
 
 void exportSoCDbWriter( py::module& rxPyModuleId )
 {
-    py::class_<DBCon, std::shared_ptr<DBCon>>( rxPyModuleId, "DB_Con" );
+    py::class_<DBConSingle, std::shared_ptr<DBConSingle>>( rxPyModuleId, "DbConn" ).def( py::init<std::string>( ) );
 
-    //py::class_<SQLDBConPool<DBCon>, std::shared_ptr<SQLDBConPool<DBCon>>>( rxPyModuleId, "DB_Con_Pool" )
-    //    .def( py::init<size_t, std::string>( ) );
+    py::class_<SvCallTable<DBConSingle>, std::shared_ptr<SvCallTable<DBConSingle>>>( rxPyModuleId, "SvCallTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome );
+    py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( rxPyModuleId,
+                                                                                           "JumpRunTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) );
+
 
     py::class_<rect>( rxPyModuleId, "rect" ) //
         .def_readonly( "x", &rect::x )

@@ -62,9 +62,10 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
     } // constructor
 
     /// @brief returns a query that can fetch NucSeqs.
-    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>> EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
+    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>>
+        EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-        int iConnectionId = pPool->getDedicatedConId( );
+        int iConnectionId = pPool->xPool.getDedicatedConId( );
         return pPool->xPool.run( iConnectionId,
                                  []( auto pConnection,
                                      int iConnectionId,

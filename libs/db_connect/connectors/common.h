@@ -162,6 +162,14 @@ template <typename DBImpl> class SQLDB : public DBImpl
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ) // use the address for id creation
     {} // constructor
 
+    /**
+     * @brief initialize DB connection from schema name
+     * @details
+     * this constructor is exported to python
+     */
+    SQLDB( std::string sSchemaName ) : SQLDB( json{{"SCHEMA", sSchemaName}} )
+    {}
+
     ~SQLDB( )
     {
         // Inform about the "death" of the database connection.

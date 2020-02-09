@@ -27,6 +27,8 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
     std::shared_ptr<std::mutex> pPoolLock; // the pool lock is shared with the pool and all its connections
 
   public:
+    using DBImplForwarded = DBImpl;
+
     size_t uiThreadId; // id of the task belonging to the PooledSQLDBCon
     PooledSQLDBCon( const PooledSQLDBCon<DBImpl>& ) = delete; // no copies of pooled connections
 
@@ -243,7 +245,7 @@ template <typename DBImpl> class SQLDBConPool
                 [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
         } // end of scope of lock (lock gets released)
         // Inform some waiting consumer (worker) that we have a fresh task.
-        this->xCondition.notify_one( );
+        this->xCondition.notify_all( );
 
         return xFuture;
     } // method enqueue

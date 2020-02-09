@@ -6,3 +6,4 @@ from .computeSvJumps import *
 from .sweepSvJumps import *
 from .analyzeRuntimes import *
 from .printColumns import *
+from .insertReads import *

@@ -16,14 +16,24 @@ namespace libMA
  * The purpose of this container is to hold a database pool, so that the pool
  * can be used in a computational graph.
  */
-template <class DBCon> class PoolContainer : public Container, public SQLDBConPool<DBCon>
+template <class DBCon> class PoolContainer : public Container
 {
   public:
-    SQLDBConPool<DBCon> xPool;
+    SQLDBConPool<typename DBCon::DBImplForwarded> xPool;
 
     PoolContainer( size_t uiPoolSize = 1, const json& jDBConData = json{} ) : xPool( uiPoolSize, jDBConData )
+    {} // constructor
+
+    PoolContainer( size_t uiPoolSize, std::string sSchemaName )
+        : PoolContainer( uiPoolSize, json{{"SCHEMA", sSchemaName}} )
     {} // constructor
 
 }; // class
 
 } // namespace libMA
+
+#ifdef WITH_PYTHON
+
+void exportPoolContainer( py::module& rxPyModuleId );
+
+#endif

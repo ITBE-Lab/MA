@@ -35,6 +35,10 @@ from libMA import ContainerVectorNucSeq
 from libMA import SortedSvJumpFromSql
 from libMA import SvCallerRunsFromDb
 from libMA import SvCallsFromDb
+from libMA import PoolContainer
+from libMA import DbConn
+from libMA import SvCallTable
+from libMA import JumpRunTable
 import libMA
 
 

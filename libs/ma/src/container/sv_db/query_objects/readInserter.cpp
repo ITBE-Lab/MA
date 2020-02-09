@@ -10,8 +10,7 @@ using namespace libMA;
 void exportReadInserter( py::module& rxPyModuleId )
 {
     exportInserterContainer<GetReadInserterContainerModule<DBCon, DBConSingle>>( rxPyModuleId, "ReadInserter" );
-    exportInserterContainer<GetPairedReadInserterContainerModule<DBCon, DBConSingle>>( rxPyModuleId,
-                                                                                       "PairedReadInserter" );
+    exportInserterContainer<GetPairedReadInserterContainerModule<DBCon, DBConSingle>>( rxPyModuleId, "PairedReadInserter" );
 
     exportModule<ReadInserterModule<DBCon>>( rxPyModuleId, "ReadInserterModule" );
     exportModule<PairedReadInserterModule<DBCon>>( rxPyModuleId, "PairedReadInserterModule" );

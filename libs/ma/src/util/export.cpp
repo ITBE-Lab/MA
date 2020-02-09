@@ -23,7 +23,7 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
         AlignerParameterBase, //
         std::shared_ptr<AlignerParameter<TP_VALUE>> //
         >( rxPyModuleId, sName.c_str( ) ) //
-        .def( py::init<const std::string, const std::string, const size_t, const std::string, const TP_VALUE>() )
+        .def( py::init<const std::string, const std::string, const size_t, const std::string, const TP_VALUE>( ) )
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
 } // function
@@ -43,8 +43,10 @@ void exportParameter( py::module& rxPyModuleId )
     exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
     exportAlignerParameter<double>( rxPyModuleId, "AlignerParameterDouble" );
     exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
-    py::class_<AlignerParameter<AlignerParameterBase::ChoicesType>, AlignerParameterBase, std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>>(
-        rxPyModuleId, "AlignerParameterChoice" ) //
+    py::class_<AlignerParameter<AlignerParameterBase::ChoicesType>,
+               AlignerParameterBase,
+               std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>>( rxPyModuleId,
+                                                                                      "AlignerParameterChoice" ) //
         .def( "set", &AlignerParameter<AlignerParameterBase::ChoicesType>::set ) //
         .def( "get", &AlignerParameter<AlignerParameterBase::ChoicesType>::get_py );
     // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
@@ -56,7 +58,7 @@ void exportParameter( py::module& rxPyModuleId )
         .def( "unregister_parameter", &ParameterSetBase::unregisterParameter ) //
         .def( "by_name", &ParameterSetBase::byName ) //
         .def( "by_short", &ParameterSetBase::byShort );
-    
+
 
     // Export Presetting Class
     py::class_<Presetting, ParameterSetBase, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //
@@ -99,7 +101,6 @@ void exportExecutionContext( py::module& rxPyModuleId )
         .def_readwrite( "reads_manager", &ExecutionContext::xReadsManager ) //
         .def_readwrite( "output_manager", &ExecutionContext::xOutputManager );
 } // function
-
 
 
 /**
@@ -152,6 +153,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSweepSvJump( libMaModule );
     exportConnectorPatternFilter( libMaModule );
     exportMinimizerIndex( libMaModule );
+    exportPoolContainer( libMaModule );
 } // function
 
 #endif
@@ -183,7 +185,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     for( unsigned int i = 0; i < uiThreads; i++ )
     {
         auto pQuery = promiseMe( pLock, pQueries );
-        auto pSeeds = promiseMe( pSeeding, promiseMe(pCast, pFMDIndex), pQuery );
+        auto pSeeds = promiseMe( pSeeding, promiseMe( pCast, pFMDIndex ), pQuery );
         auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack, pFMDIndex );
         auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery, pFMDIndex );
         auto pAlignments = promiseMe( pDP, pHarmonized, pQuery, pPack );
@@ -238,8 +240,8 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const Para
         auto pQueryTuple = promiseMe( pLock, pQueries );
         auto pQueryA = promiseMe( pGetFirst, pQueryTuple );
         auto pQueryB = promiseMe( pGetSecond, pQueryTuple );
-        auto pSeedsA = promiseMe( pSeeding, promiseMe(pCast, pFMDIndex), pQueryA );
-        auto pSeedsB = promiseMe( pSeeding, promiseMe(pCast, pFMDIndex), pQueryB );
+        auto pSeedsA = promiseMe( pSeeding, promiseMe( pCast, pFMDIndex ), pQueryA );
+        auto pSeedsB = promiseMe( pSeeding, promiseMe( pCast, pFMDIndex ), pQueryB );
         auto pSOCsA = promiseMe( pSOC, pSeedsA, pQueryA, pPack, pFMDIndex );
         auto pSOCsB = promiseMe( pSOC, pSeedsB, pQueryB, pPack, pFMDIndex );
         auto pHarmonizedA = promiseMe( pHarmonization, pSOCsA, pQueryA, pFMDIndex );

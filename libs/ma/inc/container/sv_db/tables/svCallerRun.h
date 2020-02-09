@@ -114,8 +114,8 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
         return xNum.scalar( );
     } // method
 
-    /* Discuss Markus: The NULL in col sv_jump_run_id creates touble in the context of later request... */
-    inline int64_t insert_( std::string sName, std::string sDesc, int64_t uiJumpRunId )
+    using columnTypes = pack<std::string, std::string, int64_t>; // redefine this to match the insert function
+    inline int64_t insert( std::string sName, std::string sDesc, int64_t uiJumpRunId )
     {
         auto iTimeNow = (int64_t)std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) );
         if( uiJumpRunId < 0 )
