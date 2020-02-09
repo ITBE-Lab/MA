@@ -197,8 +197,10 @@ template <typename DBImpl> class SQLDBConPool
 
     /** @brief Delivers a valid connection id for enqueuing for a specific worker. Using repeatedly the same worker is
      * reasonable, if two separate enqueues use the same query object.  */
-    int getValidConnectionId( )
+    int getDedicatedConId( )
     {
+        std::unique_lock<std::mutex> xLock( this->xQueueMutex );
+
         int iRet = iNextBookedThreadId;
         // increment and cycle
         iNextBookedThreadId = ( iNextBookedThreadId + 1 ) % ( uiPoolSize > 2 ? uiPoolSize - 2 : uiPoolSize );
@@ -254,6 +256,20 @@ template <typename DBImpl> class SQLDBConPool
         return enqueue( NO_THREAD_ID, std::forward<F>( func ), std::forward<Args>( args )... );
     } // method enqueue without thread id
 
+
+    template <class F, class... Args>
+    auto inline run( int iThreadId, F&& func, Args&&... args ) ->
+        typename std::result_of<F( std::shared_ptr<PooledSQLDBCon<DBImpl>>, Args... )>::type
+    {
+        return enqueue( iThreadId, std::forward<F>( func ), std::forward<Args>( args )... ).get( );
+    } // method
+
+    template <class F, class... Args>
+    auto inline run( F&& func, Args&&... args ) ->
+        typename std::result_of<F( std::shared_ptr<PooledSQLDBCon<DBImpl>>, Args... )>::type
+    {
+        return run( NO_THREAD_ID, std::forward<F>( func ), std::forward<Args>( args )... );
+    } // method
 
     // Usage example:
     //   dbpool.enqueue([&](std::shared_ptr<SQLDB<MySQLConDB>> pDBCon) { ... do something using the connection ... ;})

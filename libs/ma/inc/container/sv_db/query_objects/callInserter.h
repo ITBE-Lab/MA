@@ -31,9 +31,11 @@ class SvCallInserterContainerTmpl : public InserterContainer<DBCon, SvCallTable,
     std::shared_ptr<SupportInserterType> pSupportInserter;
 
 
-    SvCallInserterContainerTmpl( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
-        : ParentType::InserterContainer( pConnection, iId ),
-          pSupportInserter( std::make_shared<SupportInserterType>( SvCallSupportTable<DBCon>( pConnection->pConnection ) ) )
+    SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
+        : ParentType::InserterContainer( pPool, iId ),
+          pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
+              return std::make_shared<SupportInserterType>( SvCallSupportTable<DBCon>( pConnection ) );
+          } ) )
     {} // constructor
 
     /**

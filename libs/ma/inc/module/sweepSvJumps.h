@@ -6,7 +6,7 @@
 
 #include "container/pack.h"
 #include "container/squeezedVector.h"
-#include "container/sv_db/connection_container.h"
+#include "container/sv_db/pool_container.h"
 #include "container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
 #include "container/sv_db/query_objects/fetchSvJump.h"
 #include "module/module.h"
@@ -79,7 +79,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
  */
 template <typename DBCon>
 class CompleteBipartiteSubgraphSweep
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, ConnectionContainer<DBCon>, GenomeSection, Pack>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, PoolContainer<DBCon>, GenomeSection, Pack>
 {
   public:
     const ParameterSetManager& rParameters;
@@ -112,151 +112,157 @@ class CompleteBipartiteSubgraphSweep
 
     // @todo document this function it is the main loop of the sv caller
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-        EXPORTED execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection,
-                          std::shared_ptr<GenomeSection> pSection, std::shared_ptr<Pack> pPack )
+        EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<GenomeSection> pSection,
+                          std::shared_ptr<Pack> pPack )
     {
-        nucSeqIndex uiGenomeSize = pPack->uiStartOfReverseStrand( );
+        return pPool->xPool.run(
+            [this]( auto pConnection, std::shared_ptr<GenomeSection> pSection, std::shared_ptr<Pack> pPack ) {
+                nucSeqIndex uiGenomeSize = pPack->uiStartOfReverseStrand( );
 
-        auto xInitStart = std::chrono::high_resolution_clock::now( );
-        // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
-        SortedSvJumpFromSql<DBCon> xEdges(
-            rParameters, pConnection->pConnection, iSvCallerRunId,
-            // make sure we overlap the start of the next interval, so that clusters that span over two intervals
-            // are being collected. -> for this we just keep going after the end of the interval
-            pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,
-            pSection->end( ) + iMaxFuzziness );
+                auto xInitStart = std::chrono::high_resolution_clock::now( );
+                // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
+                SortedSvJumpFromSql<DBCon> xEdges(
+                    rParameters, pConnection, iSvCallerRunId,
+                    // make sure we overlap the start of the next interval, so that clusters that span over two
+                    // intervals are being collected. -> for this we just keep going after the end of the interval
+                    pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,
+                    pSection->end( ) + iMaxFuzziness );
 
-        // std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
-        nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
-        nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
-        if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
-        {
-            uiForwStrandStart =
-                ( nucSeqIndex )( pSection->start( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
-            uiForwStrandEnd = ( nucSeqIndex )( pSection->end( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
-        } // if
-
-        SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,
-                                                             uiCenterStripDown );
-
-        auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
-        // return pRet;
-
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-        std::set<int64_t> xVisitedStart;
-        std::vector<std::shared_ptr<SvCall>> xActiveClusters;
-#endif
-        auto xInitEnd = std::chrono::high_resolution_clock::now( );
-        std::chrono::duration<double> xDiffInit = xInitEnd - xInitStart;
-        dInit += xDiffInit.count( );
-
-        auto xLoopStart = std::chrono::high_resolution_clock::now( );
-        while( xEdges.hasNextStart( ) || xEdges.hasNextEnd( ) )
-        {
-            if( xEdges.nextStartIsSmaller( ) )
-            {
-                auto pEdge = xEdges.getNextStart( );
-                // edge actually outside of considered area
-                if( pEdge->from_end( ) > pSection->end( ) + iMaxFuzziness )
-                    continue;
-                auto xInnerStart = std::chrono::high_resolution_clock::now( );
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-                xVisitedStart.insert( pEdge->iId );
-#endif
-                auto pNewCluster = std::make_shared<SvCall>( pEdge );
-
-                size_t uiStart =
-                    xPointerVec.to_physical_coord( pNewCluster->xXAxis.end( ), pNewCluster->xYAxis.start( ) );
-                size_t uiEnd =
-                    xPointerVec.to_physical_coord( pNewCluster->xXAxis.start( ), pNewCluster->xYAxis.end( ) );
-                assert( uiEnd >= uiStart );
-                // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
-                // this is necessary, since we need to work with these coords when joining clusters
-                pNewCluster->xYAxis.start( uiStart );
-                pNewCluster->xYAxis.size( uiEnd - uiStart );
-
-                // join with all covered clusters; make sure that we don't join the same cluster twice
-                std::shared_ptr<SvCall> pLastJoined;
-                for( size_t uiI = uiStart; uiI <= uiEnd; uiI++ )
-                    if( xPointerVec.get( )[ uiI ] != nullptr && pLastJoined != xPointerVec.get( )[ uiI ] )
-                    {
-                        pLastJoined = xPointerVec.get( )[ uiI ];
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-                        assert( pLastJoined->uiOpenEdges > 0 );
-                        xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                               [&]( auto pX ) { return pX == pLastJoined; } ),
-                                               xActiveClusters.end( ) );
-#endif
-                        pNewCluster->join( *pLastJoined );
-                    } // if
-
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-                xActiveClusters.push_back( pNewCluster );
-#endif
-                // redirect all covered pointers to the new cluster
-                for( size_t uiI = pNewCluster->xYAxis.start( ); uiI <= pNewCluster->xYAxis.end( ); uiI++ )
+                // std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
+                nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
+                nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
+                if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
                 {
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-                    if( xPointerVec.get( )[ uiI ] != nullptr )
-                        for( int64_t iId : xPointerVec.get( )[ uiI ]->vSupportingJumpIds )
-                            assert( std::find( pNewCluster->vSupportingJumpIds.begin( ),
-                                               pNewCluster->vSupportingJumpIds.end( ),
-                                               iId ) != pNewCluster->vSupportingJumpIds.end( ) );
-#endif
-                    xPointerVec.get( )[ uiI ] = pNewCluster;
-                } // for
-                auto xInnerEnd = std::chrono::high_resolution_clock::now( );
-                std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
-                dInnerWhile += xDiffInner.count( );
-            } // if
-            else
-            {
-                auto pEndJump = xEdges.getNextEnd( );
-                // edge actually outside of considered area
-                if( pEndJump->from_start( ) + iMaxFuzziness < pSection->start( ) )
-                    continue;
-                auto xInnerStart = std::chrono::high_resolution_clock::now( );
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-                assert( xVisitedStart.count( pEndJump->iId ) != 0 );
-#endif
-                // find the correct cluster for this edge
-                auto pCluster = xPointerVec.get( )[ xPointerVec.to_physical_coord(
-                    pEndJump->from_start_same_strand( ) + pEndJump->from_size( ), pEndJump->to_start( ) ) ];
-                assert( pCluster != nullptr );
-                assert( std::find( pCluster->vSupportingJumpIds.begin( ), pCluster->vSupportingJumpIds.end( ),
-                                   pEndJump->iId ) != pCluster->vSupportingJumpIds.end( ) );
-                pCluster->uiOpenEdges--;
-                // check if we want to save the cluster
-                if( pCluster->uiOpenEdges == 0 )
-                {
-                    for( size_t uiI = pCluster->xYAxis.start( ); uiI <= pCluster->xYAxis.end( ); uiI++ )
-                        xPointerVec.get( )[ uiI ] = nullptr;
-
-#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-                    xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                           [&]( auto pX ) { return pX == pCluster; } ),
-                                           xActiveClusters.end( ) );
-#endif
-                    if( pCluster->xXAxis.start( ) < uiForwStrandEnd && pCluster->xXAxis.start( ) >= uiForwStrandStart )
-                        pRet->vContent.push_back( pCluster );
+                    uiForwStrandStart =
+                        ( nucSeqIndex )( pSection->start( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
+                    uiForwStrandEnd =
+                        ( nucSeqIndex )( pSection->end( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
                 } // if
-                auto xInnerEnd = std::chrono::high_resolution_clock::now( );
-                std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
-                dInnerWhile += xDiffInner.count( );
-            } // else
-        } // while
-        // std::cout << "done (" << pSection->iStart << ")" << std::endl;
-        auto xLoopEnd = std::chrono::high_resolution_clock::now( );
-        std::chrono::duration<double> xDiffLoop = xLoopEnd - xLoopStart;
-        dOuterWhile += xDiffLoop.count( );
+
+                SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,
+                                                                     uiCenterStripDown );
+
+                auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
+            // return pRet;
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
-        // make sure that there is no open cluster left
-        for( auto pCluster : xPointerVec.get( ) )
-            assert( pCluster == nullptr );
+                std::set<int64_t> xVisitedStart;
+                std::vector<std::shared_ptr<SvCall>> xActiveClusters;
+#endif
+                auto xInitEnd = std::chrono::high_resolution_clock::now( );
+                std::chrono::duration<double> xDiffInit = xInitEnd - xInitStart;
+                dInit += xDiffInit.count( );
+
+                auto xLoopStart = std::chrono::high_resolution_clock::now( );
+                while( xEdges.hasNextStart( ) || xEdges.hasNextEnd( ) )
+                {
+                    if( xEdges.nextStartIsSmaller( ) )
+                    {
+                        auto pEdge = xEdges.getNextStart( );
+                        // edge actually outside of considered area
+                        if( pEdge->from_end( ) > pSection->end( ) + iMaxFuzziness )
+                            continue;
+                        auto xInnerStart = std::chrono::high_resolution_clock::now( );
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                        xVisitedStart.insert( pEdge->iId );
+#endif
+                        auto pNewCluster = std::make_shared<SvCall>( pEdge );
+
+                        size_t uiStart =
+                            xPointerVec.to_physical_coord( pNewCluster->xXAxis.end( ), pNewCluster->xYAxis.start( ) );
+                        size_t uiEnd =
+                            xPointerVec.to_physical_coord( pNewCluster->xXAxis.start( ), pNewCluster->xYAxis.end( ) );
+                        assert( uiEnd >= uiStart );
+                        // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
+                        // this is necessary, since we need to work with these coords when joining clusters
+                        pNewCluster->xYAxis.start( uiStart );
+                        pNewCluster->xYAxis.size( uiEnd - uiStart );
+
+                        // join with all covered clusters; make sure that we don't join the same cluster twice
+                        std::shared_ptr<SvCall> pLastJoined;
+                        for( size_t uiI = uiStart; uiI <= uiEnd; uiI++ )
+                            if( xPointerVec.get( )[ uiI ] != nullptr && pLastJoined != xPointerVec.get( )[ uiI ] )
+                            {
+                                pLastJoined = xPointerVec.get( )[ uiI ];
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                                assert( pLastJoined->uiOpenEdges > 0 );
+                                xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
+                                                                       [&]( auto pX ) { return pX == pLastJoined; } ),
+                                                       xActiveClusters.end( ) );
+#endif
+                                pNewCluster->join( *pLastJoined );
+                            } // if
+
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                        xActiveClusters.push_back( pNewCluster );
+#endif
+                        // redirect all covered pointers to the new cluster
+                        for( size_t uiI = pNewCluster->xYAxis.start( ); uiI <= pNewCluster->xYAxis.end( ); uiI++ )
+                        {
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                            if( xPointerVec.get( )[ uiI ] != nullptr )
+                                for( int64_t iId : xPointerVec.get( )[ uiI ]->vSupportingJumpIds )
+                                    assert( std::find( pNewCluster->vSupportingJumpIds.begin( ),
+                                                       pNewCluster->vSupportingJumpIds.end( ),
+                                                       iId ) != pNewCluster->vSupportingJumpIds.end( ) );
+#endif
+                            xPointerVec.get( )[ uiI ] = pNewCluster;
+                        } // for
+                        auto xInnerEnd = std::chrono::high_resolution_clock::now( );
+                        std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
+                        dInnerWhile += xDiffInner.count( );
+                    } // if
+                    else
+                    {
+                        auto pEndJump = xEdges.getNextEnd( );
+                        // edge actually outside of considered area
+                        if( pEndJump->from_start( ) + iMaxFuzziness < pSection->start( ) )
+                            continue;
+                        auto xInnerStart = std::chrono::high_resolution_clock::now( );
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                        assert( xVisitedStart.count( pEndJump->iId ) != 0 );
+#endif
+                        // find the correct cluster for this edge
+                        auto pCluster = xPointerVec.get( )[ xPointerVec.to_physical_coord(
+                            pEndJump->from_start_same_strand( ) + pEndJump->from_size( ), pEndJump->to_start( ) ) ];
+                        assert( pCluster != nullptr );
+                        assert( std::find( pCluster->vSupportingJumpIds.begin( ), pCluster->vSupportingJumpIds.end( ),
+                                           pEndJump->iId ) != pCluster->vSupportingJumpIds.end( ) );
+                        pCluster->uiOpenEdges--;
+                        // check if we want to save the cluster
+                        if( pCluster->uiOpenEdges == 0 )
+                        {
+                            for( size_t uiI = pCluster->xYAxis.start( ); uiI <= pCluster->xYAxis.end( ); uiI++ )
+                                xPointerVec.get( )[ uiI ] = nullptr;
+
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                            xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
+                                                                   [&]( auto pX ) { return pX == pCluster; } ),
+                                                   xActiveClusters.end( ) );
+#endif
+                            if( pCluster->xXAxis.start( ) < uiForwStrandEnd &&
+                                pCluster->xXAxis.start( ) >= uiForwStrandStart )
+                                pRet->vContent.push_back( pCluster );
+                        } // if
+                        auto xInnerEnd = std::chrono::high_resolution_clock::now( );
+                        std::chrono::duration<double> xDiffInner = xInnerEnd - xInnerStart;
+                        dInnerWhile += xDiffInner.count( );
+                    } // else
+                } // while
+                // std::cout << "done (" << pSection->iStart << ")" << std::endl;
+                auto xLoopEnd = std::chrono::high_resolution_clock::now( );
+                std::chrono::duration<double> xDiffLoop = xLoopEnd - xLoopStart;
+                dOuterWhile += xDiffLoop.count( );
+
+#if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
+                // make sure that there is no open cluster left
+                for( auto pCluster : xPointerVec.get( ) )
+                    assert( pCluster == nullptr );
 #endif
 
-        return pRet;
+                return pRet;
+            },
+            pSection, pPack );
     } // method
 }; // class
 

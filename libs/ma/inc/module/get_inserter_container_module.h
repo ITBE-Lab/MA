@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "container/sv_db/connection_container.h"
+#include "container/sv_db/pool_container.h"
 #include "module/module.h"
 
 namespace libMA
@@ -23,19 +23,25 @@ namespace libMA
  * This class holds the table pTable for this purpose.
  * This inserter is intended for e.g. inserting reads, where each inserted row has a foreign key if belongs to.
  * E.g. the sequencer id for the read. This foreign key is saved in iId and available to the extending class.
+ * @todo BulkInserterContainer and InserterContainer have duplicate code
  */
 template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
 class InserterContainer : public Container
 {
   public:
     using insertTypes_ = pack<InsertTypes...>;
+    using DBConForwarded = DBCon;
 
+    const int iConnectionId;
     std::shared_ptr<TableType<DBCon>> pTable;
 
     const int64_t iId;
 
-    InserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
-        : pTable( std::make_shared<TableType<DBCon>>( pConnection->pConnection ) ), iId( iId )
+    InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
+        : iConnectionId( pPool->getDedicatedConId( ) ),
+          pTable( pPool->xPool.run(
+              iConnectionId, []( auto pConnection ) { return std::make_shared<TableType<DBCon>>( pConnection ); } ) ),
+          iId( iId )
     {} // constructor
 
     /**
@@ -48,11 +54,24 @@ class InserterContainer : public Container
         throw std::runtime_error( "insert function of InserterContainer was not defined." );
     } // method
 
+  private:
+    static void insert_helper( std::shared_ptr<DBCon> pConnection, InserterContainer* pThis,
+                               std::shared_ptr<InsertTypes>... pArgs )
+    {
+        pThis->insert( pArgs... );
+    } // method
+
+  public:
+    void pool_save_insert( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<InsertTypes>... pArgs )
+    {
+        pPool->xPool.run( iConnectionId, &InserterContainer::insert_helper, this, pArgs... );
+    } // method
+
     /**
      * @brief destruct the table
      * @details
      * Once this is called any following calls to insert result in undefined behaviour.
-     * In a c++ application this should never be called, since the deconstructor of this class fullfills the same 
+     * In a c++ application this should never be called, since the deconstructor of this class fullfills the same
      * purpose.
      * Use this from python in order to make sure all elements are inserted.
      */
@@ -74,17 +93,23 @@ class BulkInserterContainer : public Container
 {
   public:
     using insertTypes_ = pack<InsertTypes...>;
+    using DBConForwarded = DBCon;
 
+    const int iConnectionId;
     const static size_t BUFFER_SIZE = 500;
     using InserterType = typename TableType<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
     std::shared_ptr<InserterType> pInserter;
 
     const int64_t iId;
 
-    BulkInserterContainer( std::shared_ptr<ConnectionContainer<DBCon>> pConnection, int64_t iId )
+    BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
         // This construction makes sure that the table exists in the database.
-        : pInserter( std::make_shared<InserterType>( TableType<DBCon>( pConnection->pConnection ) ) ), iId( iId )
+        : iConnectionId( pPool->getDedicatedConId( ) ),
+          pInserter( pPool->xPool.run(
+              iConnectionId,
+              []( auto pConnection ) { return std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ); } ) ),
+          iId( iId )
     {} // constructor
 
     /**
@@ -97,11 +122,24 @@ class BulkInserterContainer : public Container
         throw std::runtime_error( "insert function of BulkInserterContainer was not defined." );
     } // method
 
+  private:
+    static void insert_helper( std::shared_ptr<DBCon> pConnection, BulkInserterContainer* pThis,
+                               std::shared_ptr<InsertTypes>... pArgs )
+    {
+        pThis->insert( pArgs... );
+    } // method
+
+  public:
+    void pool_save_insert( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<InsertTypes>... pArgs )
+    {
+        pPool->xPool.run( iConnectionId, &BulkInserterContainer::insert_helper, this, pArgs... );
+    } // method
+
     /**
      * @brief close the bulk inserter
      * @details
      * Once this is called any following calls to insert result in undefined behaviour.
-     * In a c++ application this should never be called, since the deconstructor of this class fullfills the same 
+     * In a c++ application this should never be called, since the deconstructor of this class fullfills the same
      * purpose.
      * Use this from python in order to make sure all elements are inserted.
      */
@@ -120,7 +158,7 @@ class BulkInserterContainer : public Container
  * - GetInserterContainerModule (module that generates an InserterContainer/BulkInserterContainer)
  * - InserterModule (module that calls the insert function of the InserterContainer/BulkInserterContainer)
  * This module is used in the computational graph in order to create a InserterContainer/BulkInserterContainer from
- * a ConnectionContainer.
+ * a PoolContainer.
  * InserterContainer's documentation says: "each inserted row has a foreign key if belongs to. E.g. the sequencer id for
  * the read."
  * This module has two constructors: one where the value of the foreign key can be given explicitly.
@@ -137,7 +175,7 @@ template <template <typename T> typename InserterContainerType, typename DBCon, 
           // the above template makes it so, that the compiler can infer ColumnTypes on it's own.
           template <typename T> typename TableType, typename... ColumnTypes>
 class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableType, pack<ColumnTypes...>>
-    : public Module<InserterContainerType<DBCon>, false, ConnectionContainer<DBCon>>
+    : public Module<InserterContainerType<DBCon>, false, PoolContainer<DBCon>>
 {
   public:
     const int64_t iId;
@@ -160,9 +198,9 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
     GetInserterContainerModule( const ParameterSetManager& rParameters, int64_t iId ) : iId( iId )
     {} // constructor
 
-    std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
+    std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-        return std::make_shared<InserterContainerType<DBCon>>( pConnection, iId );
+        return std::make_shared<InserterContainerType<DBCon>>( pPool, iId );
     } // method
 }; // class
 
@@ -191,7 +229,8 @@ class InserterModule<InserterContainerType, pack<InsertTypes...>>
     // we want to extract InsertTypes from InserterContainerType::insertTypes_
     // in order to achieve this we use pack<InsertTypes...> in combination with the template above
     // the above template makes it so, that the compiler can inferr InsertTypes on it's own.
-    : public Module<Container, false, InserterContainerType, InsertTypes...>
+    : public Module<Container, false, InserterContainerType,
+                    PoolContainer<typename InserterContainerType::DBConForwarded>, InsertTypes...>
 {
   public:
     InserterModule( const ParameterSetManager& rParameters )
@@ -201,9 +240,11 @@ class InserterModule<InserterContainerType, pack<InsertTypes...>>
     {} // default constructor
 
     std::shared_ptr<Container> execute( std::shared_ptr<InserterContainerType> pInserter,
+                                        std::shared_ptr<PoolContainer<typename InserterContainerType::DBConForwarded>>
+                                            pPool,
                                         std::shared_ptr<InsertTypes>... pArgs )
     {
-        pInserter->insert( pArgs... );
+        pInserter->pool_save_insert( pPool, pArgs... );
 
         return std::make_shared<Container>( );
     } // method
@@ -231,7 +272,7 @@ class ModuleWrapperCppToPy2 : public ModuleWrapperCppToPy<TP_MODULE, const Param
     {} // constructor
 
     ModuleWrapperCppToPy2( const ParameterSetManager& xParams, int64_t iId )
-          // simply redirect to the ModuleWrapperCppToPy (<- no 2 at the end) constructor
+        // simply redirect to the ModuleWrapperCppToPy (<- no 2 at the end) constructor
         : ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, int64_t>( xParams, iId )
     {} // constructor
 }; // class
@@ -276,7 +317,8 @@ void exportHelper( pybind11::module& xPyModuleId, // pybind module variable
 )
 {
     py::class_<InserterContainerType, Container, std::shared_ptr<InserterContainerType>>( xPyModuleId, sName.c_str( ) )
-        .def( py::init<std::shared_ptr<ConnectionContainer<DBCon>>, int64_t>( ) )
+        // inserter container should never be constructed directly in python
+        // .def( py::init<std::shared_ptr<PoolContainer<DBCon>>, int64_t>( ) )
         .def( "insert",
               // insert might be overloaded in some child classes
               // in order to pick the correct insert we cast it.

@@ -7,7 +7,7 @@
 
 #include "common.h"
 #include "container/nucSeq.h"
-#include "container/sv_db/connection_container.h"
+#include "container/sv_db/pool_container.h"
 #include "container/sv_db/tables/pairedRead.h"
 #include "container/sv_db/tables/read.h"
 #include "module/module.h"
@@ -18,7 +18,9 @@ namespace libMA
 template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, NucSeqSql, int64_t>, public Container
 {
   public:
-    NucSeqQueryContainer( std::shared_ptr<DBCon> pConnection, bool bDoModulo, bool bUnpairedOnly )
+    int iConnectionId;
+
+    NucSeqQueryContainer( int iConnectionId, std::shared_ptr<DBCon> pConnection, bool bDoModulo, bool bUnpairedOnly )
         : SQLQuery<DBCon, NucSeqSql, int64_t>(
               pConnection,
               std::string( "SELECT read_table.sequence, read_table.id "
@@ -32,12 +34,13 @@ template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, Nu
                                            "   UNION "
                                            "   SELECT paired_read_table.second_read FROM paired_read_table "
                                            ") "
-                                         : "" ) )
+                                         : "" ) ),
+          iConnectionId( iConnectionId )
     {} // constructor
 }; // class
 
 template <typename DBCon>
-class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, ConnectionContainer<DBCon>>
+class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, PoolContainer<DBCon>>
 {
     int64_t iSequencerId;
     uint32_t uiRes;
@@ -59,23 +62,32 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
     } // constructor
 
     /// @brief returns a query that can fetch NucSeqs.
-    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>>
-        EXPORTED execute( std::shared_ptr<ConnectionContainer<DBCon>> pConnection )
+    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>> EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-        auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>( pConnection->pConnection,
-                                                                     iSequencerId != -1 && uiModulo != 1, !bAll );
+        int iConnectionId = pPool->getDedicatedConId( );
+        return pPool->xPool.run( iConnectionId,
+                                 []( auto pConnection,
+                                     int iConnectionId,
+                                     int64_t iSequencerId,
+                                     uint32_t uiRes,
+                                     uint32_t uiModulo,
+                                     bool bAll ) {
+                                     auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>(
+                                         iConnectionId, pConnection, iSequencerId != -1 && uiModulo != 1, !bAll );
 
-        if( iSequencerId != -1 && uiModulo != 1 )
-            pQuery->execAndFetch( iSequencerId, uiRes, uiModulo );
-        else if( iSequencerId != -1 )
-            pQuery->execAndFetch( iSequencerId );
-        else
-            pQuery->execAndFetch( );
+                                     if( iSequencerId != -1 && uiModulo != 1 )
+                                         pQuery->execAndFetch( iSequencerId, uiRes, uiModulo );
+                                     else if( iSequencerId != -1 )
+                                         pQuery->execAndFetch( iSequencerId );
+                                     else
+                                         pQuery->execAndFetch( );
 
-        if( pQuery->eof( ) )
-            throw AnnotatedException( "No NucSeqs in database" );
+                                     if( pQuery->eof( ) )
+                                         throw AnnotatedException( "No NucSeqs in database" );
 
-        return pQuery;
+                                     return pQuery;
+                                 },
+                                 iConnectionId, iSequencerId, uiRes, uiModulo, bAll );
     } // method
 }; // class
 
