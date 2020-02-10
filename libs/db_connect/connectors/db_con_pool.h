@@ -9,6 +9,7 @@
 #pragma once
 
 #include <algorithm>
+#include <chrono>
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -64,12 +65,185 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
  */
 template <typename DBImpl> class SQLDBConPool
 {
+#define DO_MEASURE_USAGE 1
   private:
     using TaskType = std::function<void( std::shared_ptr<PooledSQLDBCon<DBImpl>> )>; // type of the tasks to be executed
 
     std::vector<std::thread> vWorkers; // worker threads; each thread manages one connection
     std::vector<std::shared_ptr<PooledSQLDBCon<DBImpl>>> vConPool; // pointers to actual connections
     std::vector<std::queue<TaskType>> vqTasks; // queue of lambda functions that shall to executed
+#if DO_MEASURE_USAGE == 1
+    using duration = std::chrono::duration<double>;
+    using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
+
+    std::vector<std::array<duration, 4>> vTimeAmountTasksInQueue;
+    std::vector<std::tuple<time_point, duration, bool>> vTimeThreadSleeping;
+    std::vector<uint64_t> vAmountTasks;
+    std::vector<uint64_t> vAmountBookedTasks;
+
+    time_point xLastTimePoint;
+    time_point xInitTimePoint;
+
+    /**
+     * @brief initializes the usage measurement
+     * @details
+     * call this before you start using any of the usage measurement functions
+     * calling this again will reset the usage measurement
+     *
+     * all the Time functions are not threadsave and assume that they are called while the pPoolLock is held
+     */
+    inline void initTime( size_t uiPoolSize )
+    {
+        vTimeAmountTasksInQueue.clear( );
+        vAmountTasks.clear( );
+        xLastTimePoint = std::chrono::steady_clock::now( );
+        xInitTimePoint = xLastTimePoint;
+        for( size_t uiI = 0; uiI < uiPoolSize; uiI++ )
+        {
+            vTimeAmountTasksInQueue.emplace_back( );
+            // if init is called while threads are sleeping this will
+            if( vTimeThreadSleeping.size( ) <= uiI )
+                vTimeThreadSleeping.emplace_back( xLastTimePoint, duration::zero( ), false );
+            else
+                vTimeThreadSleeping[ uiI ] =
+                    std::make_tuple( xLastTimePoint, duration::zero( ), std::get<2>( vTimeThreadSleeping[ uiI ] ) );
+            vAmountTasks.emplace_back( 0 );
+            if( vAmountBookedTasks.size( ) <= uiI )
+                vAmountBookedTasks.emplace_back( 0 );
+        } // for
+        vAmountTasks.emplace_back( );
+        vTimeAmountTasksInQueue.emplace_back( );
+    } // method
+
+    /**
+     * @brief call this whenever a thread gets a new task
+     */
+    inline void incTasks( size_t uiThreadId )
+    {
+        vAmountTasks[ uiThreadId ]++;
+    } // method
+
+    /**
+     * @brief call this whenever a thread id is booked
+     */
+    inline void bookTask( size_t uiThreadId )
+    {
+        vAmountBookedTasks[ uiThreadId ]++;
+    } // method
+
+    /**
+     * @brief call this just before the the size of any task queue changes
+     */
+    inline void updateTime( )
+    {
+        auto xNow = std::chrono::steady_clock::now( );
+        auto xTimePassed = xNow - xLastTimePoint;
+
+        for( size_t uiI = 0; uiI < vTimeAmountTasksInQueue.size( ); uiI++ )
+            vTimeAmountTasksInQueue[ uiI ][ std::min( vqTasks[ uiI ].size( ), (size_t)3 ) ] += xTimePassed;
+
+        xLastTimePoint = xNow;
+    } // method
+
+    /**
+     * @brief call this just before a thread goes to sleep
+     */
+    inline void goingToSleep( size_t uiThreadId )
+    {
+        std::get<0>( vTimeThreadSleeping[ uiThreadId ] ) = std::chrono::steady_clock::now( );
+        std::get<2>( vTimeThreadSleeping[ uiThreadId ] ) = true;
+    } // method
+
+    /**
+     * @brief call this just after a thread wakes up
+     */
+    inline void wakingUp( size_t uiThreadId )
+    {
+        std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) +=
+            std::chrono::steady_clock::now( ) - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
+        std::get<2>( vTimeThreadSleeping[ uiThreadId ] ) = false;
+    } // method
+
+    /**
+     * @brief call this to print a summary of the activity within the pool
+     */
+    inline void printTime( std::ostream& xOut )
+    {
+        xOut << "SQLDBConPool usage evaluation: " << std::endl;
+        xOut << "tID\t#tsk/s\t#book\t%act\t%qlen=0\t%qlen=1\t%qlen=2\t%qlen>2" << std::endl;
+
+        // two digits precision double output
+        xOut << std::fixed << std::setprecision( 2 );
+
+        auto xTotalTime = ( xLastTimePoint - xInitTimePoint ).count( );
+
+        for( size_t uiI = 0; uiI < vTimeAmountTasksInQueue.size( ); uiI++ )
+        {
+            // print the values for tID #tasks #book %act
+            auto fTasksPerSecond = vAmountTasks[ uiI ] / xTotalTime;
+            if( uiI < vTimeThreadSleeping.size( ) )
+            {
+                // get the amount of time thread uiI was active
+                auto xTimeAwake = 1 - std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
+                // if thread uiI is sleeping currently subtract the time it is currently sleeping from the awake time
+                // since that amount will be added only once the thread wakes up...
+                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) )
+                    xTimeAwake -=
+                        ( std::chrono::steady_clock::now( ) - std::get<0>( vTimeThreadSleeping[ uiI ] ) ).count( );
+                // sometimes we get weird negative numbers here...
+                if( xTimeAwake < 0 )
+                    xTimeAwake = 0;
+                xOut << uiI << "\t" << fTasksPerSecond << "\t" << vAmountBookedTasks[ uiI ] << "\t"
+                     << 100 * xTimeAwake / xTotalTime;
+            } // if
+            else
+                // the queue that can be used by any thread requires a special print because for this queue
+                // we do not have a sleep time entry as well as a amount booked entry
+                xOut << "NO_T_ID\t" << fTasksPerSecond << "\tn/a\tn/a";
+            // print the values for qlen=0 %qlen=1 %qlen=2 %qlen>2
+            for( size_t uiJ = 0; uiJ < 4; uiJ++ )
+                xOut << "\t" << 100 * vTimeAmountTasksInQueue[ uiI ][ uiJ ].count( ) / xTotalTime;
+            xOut << std::endl;
+        } // for
+        // reset to default float output
+        xOut << std::defaultfloat;
+    } // method
+
+    /**
+     * @brief call this periodically to print a top like summary of the activity within the pool
+     * @details
+     * this calls printTime and then initTime every 10 seconds.
+     */
+    inline void top( std::ostream& xOut )
+    {
+        // return; // disable prints
+        if( ( xLastTimePoint - xInitTimePoint ).count( ) > 10 /*amount of seconds between prints*/ )
+        {
+            printTime( xOut );
+            initTime( vTimeThreadSleeping.size( ) );
+        } // if
+    } // method
+#else
+    // the following function are empty dummies in case DO_MEASURE_USAGE is set to zero
+
+    inline void initTime( size_t uiPoolSize )
+    {} // method
+    inline void incTasks( size_t uiThreadId )
+    {} // method
+    inline void bookTask( size_t uiThreadId )
+    {} // method
+    inline void updateTime( )
+    {} // method
+    inline void goingToSleep( size_t uiThreadId )
+    {} // method
+    inline void wakingUp( size_t uiThreadId )
+    {} // method
+    inline void printTime( std::ostream& xOut )
+    {} // method
+    inline void top( std::ostream& xOut )
+    {} // method
+#endif
+
     std::mutex xQueueMutex; // mutex for control of concurrent access of the tasks queue
     std::condition_variable xCondition; // For wait, notify synchronization purposes.
     std::shared_ptr<std::mutex> pPoolLock; // pointer to mutex synchronizes concurrent activities in the pool
@@ -92,6 +266,7 @@ template <typename DBImpl> class SQLDBConPool
           bStop( false ), // stop must be false in the beginning
           uiPoolSize( uiPoolSize )
     {
+        initTime( uiPoolSize );
         // Check size of pool
         if( uiPoolSize == 0 )
             throw std::runtime_error( "SQLDBConPool: The requested pool size must be greater than zero." );
@@ -126,8 +301,10 @@ template <typename DBImpl> class SQLDBConPool
                             while( !this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
                                    this->vqTasks[ uiThreadId ].empty( ) )
                             {
+                                goingToSleep( uiThreadId );
                                 this->xCondition.wait( xLock );
                                 // When we continue here, we have exclusive access once again.
+                                wakingUp( uiThreadId );
                             } // while
 
                             // If there is an indication for termination and if there is nothing to do any more, we
@@ -137,14 +314,15 @@ template <typename DBImpl> class SQLDBConPool
                                 return;
 
                             // We now have exclusive access to a non-empty task queue.
-                            // Search for a matching task in the deque of tasks. If there are special demands with
-                            // respect to the thread id, we must check if teh current worker matches this id. Otherwise
-                            // we accept the next task in the deque that requires no specific thread id.
+                            // Search for a matching task in the queues of tasks. Check the queue for this specific
+                            // thread first, if there is no task in this queue then check the general queue.
                             size_t uiQueueId = uiThreadId;
                             if( this->vqTasks[ uiThreadId ].empty( ) )
                                 uiQueueId = this->uiPoolSize;
 
-                            // We pick the matching task for execution and remove it from the queue.
+                            updateTime( );
+
+                            // We pick the matching task for execution and remove it from the respective queue.
                             TaskType fTaskToBeExecuted( this->vqTasks[ uiQueueId ].front( ) );
                             this->vqTasks[ uiQueueId ].pop( );
 
@@ -195,6 +373,8 @@ template <typename DBImpl> class SQLDBConPool
     {
         std::cout << "SQLDBConPool Destructor." << std::endl;
         this->shutdown( );
+        updateTime( );
+        printTime( std::cout );
     } // destructor
 
     /** @brief Delivers a valid connection id for enqueuing for a specific worker. Using repeatedly the same worker is
@@ -204,8 +384,9 @@ template <typename DBImpl> class SQLDBConPool
         std::unique_lock<std::mutex> xLock( this->xQueueMutex );
 
         int iRet = iNextBookedThreadId;
-        // increment and cycle
-        iNextBookedThreadId = ( iNextBookedThreadId + 1 ) % ( uiPoolSize > 2 ? uiPoolSize - 2 : uiPoolSize );
+        // increment and cycle (always leave at least one thread out of the cycle)
+        iNextBookedThreadId = ( iNextBookedThreadId + 1 ) % ( uiPoolSize > 1 ? uiPoolSize - 1 : uiPoolSize );
+        bookTask( iRet );
         return iRet;
     } // method
 
@@ -238,14 +419,28 @@ template <typename DBImpl> class SQLDBConPool
             // Mutual access to the task queue has to be synchronized.
             std::unique_lock<std::mutex> lock( xQueueMutex );
 
+            // Here we select the correct queue to put the task into.
+            // There are two options: either a specific thread id is requested (iThreadId != NO_THREAD_ID)
+            // then the task is put into the respective queue
+            // or no specific thread is requested. then the task is put into the general queue
             if( iThreadId == NO_THREAD_ID )
                 iThreadId = static_cast<int>( uiPoolSize );
+
+            top( std::cout );
+            updateTime( );
+            incTasks( iThreadId );
+
             // The task gets as input a shared pointer to a DBConnection for doing its job
             vqTasks[ iThreadId ].push(
                 [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
         } // end of scope of lock (lock gets released)
-        // Inform some waiting consumer (worker) that we have a fresh task.
-        this->xCondition.notify_all( );
+
+        if( iThreadId == NO_THREAD_ID )
+            // Inform one waiting workers that we have a fresh task. Because any worker can execute the task.
+            this->xCondition.notify_one( );
+        else
+            // Inform all waiting workers that we have a fresh task. Only one worker will be able to execute the task
+            this->xCondition.notify_all( );
 
         return xFuture;
     } // method enqueue

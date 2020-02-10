@@ -2,7 +2,7 @@ from MA import *
 from .analyzeRuntimes import AnalyzeRuntimes
 import datetime
 
-def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, runtime_file=None):
+def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id=0, runtime_file=None):
     #parameter_set_manager.by_name("Number of Threads").set(1)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
@@ -42,7 +42,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, sv_db, seq_id=0, run
         res.append(unlock_pledge)
 
     # drain all sources
-    res.simultaneous_get(1) # Arne reduced to 1 job - parameter_set_manager.get_num_threads()
+    res.simultaneous_get(parameter_set_manager.get_num_threads())
     print("commiting remaining jumps...")
 
     start = datetime.datetime.now()
