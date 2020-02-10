@@ -39,6 +39,8 @@ from libMA import PoolContainer
 from libMA import DbConn
 from libMA import SvCallTable
 from libMA import JumpRunTable
+from libMA import NucSeqFetcher
+from libMA import GetNucSeqFromSqlQuery
 import libMA
 
 

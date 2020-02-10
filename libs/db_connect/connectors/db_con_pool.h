@@ -159,8 +159,10 @@ template <typename DBImpl> class SQLDBConPool
      */
     inline void wakingUp( size_t uiThreadId )
     {
-        std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) +=
-            std::chrono::steady_clock::now( ) - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
+        auto now = std::chrono::steady_clock::now( );
+        // sanity check
+        if( now > std::get<0>( vTimeThreadSleeping[ uiI ] ) )
+            std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) += now - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
         std::get<2>( vTimeThreadSleeping[ uiThreadId ] ) = false;
     } // method
 
@@ -170,7 +172,7 @@ template <typename DBImpl> class SQLDBConPool
     inline void printTime( std::ostream& xOut )
     {
         xOut << "SQLDBConPool usage evaluation: " << std::endl;
-        xOut << "tID\t#tsk/s\t#book\t%act\t%qlen=0\t%qlen=1\t%qlen=2\t%qlen>2" << std::endl;
+        xOut << "tID\t#tsk/s\t#booked\t%active\t%qlen=0\t%qlen=1\t%qlen=2\t%qlen>2" << std::endl;
 
         // two digits precision double output
         xOut << std::fixed << std::setprecision( 2 );
@@ -184,17 +186,17 @@ template <typename DBImpl> class SQLDBConPool
             if( uiI < vTimeThreadSleeping.size( ) )
             {
                 // get the amount of time thread uiI was active
-                auto xTimeAwake = 1 - std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
+                auto xTimeSleeping = std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
                 // if thread uiI is sleeping currently subtract the time it is currently sleeping from the awake time
                 // since that amount will be added only once the thread wakes up...
-                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) )
-                    xTimeAwake -=
-                        ( std::chrono::steady_clock::now( ) - std::get<0>( vTimeThreadSleeping[ uiI ] ) ).count( );
-                // sometimes we get weird negative numbers here...
-                if( xTimeAwake < 0 )
-                    xTimeAwake = 0;
-                xOut << uiI << "\t" << fTasksPerSecond << "\t" << vAmountBookedTasks[ uiI ] << "\t"
-                     << 100 * xTimeAwake / xTotalTime;
+                auto now = std::chrono::steady_clock::now( );
+                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) &&
+                    // sanity check
+                    now > std::get<0>( vTimeThreadSleeping[ uiI ] ) )
+                    xTimeSleeping += ( now - std::get<0>( vTimeThreadSleeping[ uiI ] ) ).count( );
+                xOut << uiI << "\t" << fTasksPerSecond << "\t" << vAmountBookedTasks[ uiI ] << "\t";
+
+                xOut << 100 * ( 1.0 - xTimeSleeping / xTotalTime );
             } // if
             else
                 // the queue that can be used by any thread requires a special print because for this queue
@@ -217,7 +219,7 @@ template <typename DBImpl> class SQLDBConPool
     inline void top( std::ostream& xOut )
     {
         // return; // disable prints
-        if( ( xLastTimePoint - xInitTimePoint ).count( ) > 10 /*amount of seconds between prints*/ )
+        if( ( xLastTimePoint - xInitTimePoint ).count( ) > 30 /*amount of seconds between prints*/ )
         {
             printTime( xOut );
             initTime( vTimeThreadSleeping.size( ) );

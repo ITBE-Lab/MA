@@ -415,6 +415,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
 {
   public:
     double execTime = 0;
+    double waitOnLockTime = 0;
     typedef TP_TYPE TP_CONTENT;
     /*
      * typename TP_DEPENDENCIES::TP_CONTENT...
@@ -532,15 +533,22 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
      * Does not lock otherwise.
      * In either case fDo is called.
      */
-    template <typename FUNCTOR> inline std::shared_ptr<TP_CONTENT> lockIfNecessary( FUNCTOR&& fDo ) const
+    template <typename FUNCTOR> inline std::shared_ptr<TP_CONTENT> lockIfNecessary( FUNCTOR&& fDo )
     {
         // if(vSuccessors.size() > 1) @todo @fixme this should be here
         if( pPledger->requiresLock( ) )
         {
+            auto timeStamp = std::chrono::system_clock::now( );
             // multithreading is possible thus a guard is required here.
             // deadlock prevention is trivial,
             // since computational graphs are essentially trees.
             std::lock_guard<std::mutex> xGuard( *pMutex );
+
+            std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
+            // record how long we took to obtain the lock
+            // the increment operation has to be done within the scope of xGuard
+            waitOnLockTime += duration.count( );
+
             return fDo( );
         } // if
         else

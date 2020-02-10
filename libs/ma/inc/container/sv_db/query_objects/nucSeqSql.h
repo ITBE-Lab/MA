@@ -28,7 +28,7 @@ template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, Nu
                   .append( bDoModulo ? "WHERE sequencer_id = ? "
                                        "AND read_table.id % ? = ? "
                                      : "" )
-                  .append( bUnpairedOnly && bDoModulo ? "AND " : "WHERE " )
+                  .append( bUnpairedOnly && bDoModulo ? "AND " : bUnpairedOnly ? "WHERE " : "" )
                   .append( bUnpairedOnly ? "read_table.id NOT IN ( "
                                            "   SELECT paired_read_table.first_read FROM paired_read_table "
                                            "   UNION "
@@ -77,7 +77,7 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
                                          iConnectionId, pConnection, iSequencerId != -1 && uiModulo != 1, !bAll );
 
                                      if( iSequencerId != -1 && uiModulo != 1 )
-                                         pQuery->execAndFetch( iSequencerId, uiRes, uiModulo );
+                                         pQuery->execAndFetch( iSequencerId, uiModulo, uiRes );
                                      else if( iSequencerId != -1 )
                                          pQuery->execAndFetch( iSequencerId );
                                      else
