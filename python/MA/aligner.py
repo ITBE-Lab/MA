@@ -41,6 +41,9 @@ from libMA import SvCallTable
 from libMA import JumpRunTable
 from libMA import NucSeqFetcher
 from libMA import GetNucSeqFromSqlQuery
+from libMA import SvJumpTable
+from libMA import CallInserterModule
+from libMA import CallVectorInserterModule
 import libMA
 
 

@@ -7,11 +7,11 @@
 #pragma once
 
 #include "common.h"
-#include "container/svJump.h"
 #include "container/pack.h"
+#include "container/svJump.h"
 #include "geom.h"
-#include "threadPool.h"
 #include "system.h"
+#include "threadPool.h"
 #include "wkb_spatial.h"
 #include <csignal>
 #include <string>
@@ -363,9 +363,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
           xQuerySize( pConnection, "SELECT COUNT(*) FROM sv_call_table" ),
 
           xQuerySizeSpecific( pConnection, "SELECT COUNT(*) FROM sv_call_table "
-                                         "WHERE sv_caller_run_id = ? "
-                                         "AND " +
-                                             getSqlForCallScore( ) + " >= ? " ),
+                                           "WHERE sv_caller_run_id = ? "
+                                           "AND " +
+                                               getSqlForCallScore( ) + " >= ? " ),
           xCallArea( pConnection,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
@@ -432,9 +432,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    reference_ambiguity = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
                        "WHERE id = ? " )
-          //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo reenable this..
+    //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo reenable this..
     {} // default constructor
 
+    // @todo use a Generated Column here. see:
+    // https://dev.mysql.com/doc/refman/8.0/en/generated-column-index-optimizations.html
     inline void addScoreIndex( int64_t iCallerRunId )
     {
         // Discuss Markus: This index definition is somehow defect ...
@@ -460,6 +462,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline uint32_t numCalls( int64_t iCallerRunId, double dMinScore )
     {
         return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
+    } // method
+    inline uint32_t numCalls_py( int64_t iCallerRunId, double dMinScore )
+    {
+        return numCalls( iCallerRunId, dMinScore );
     } // method
 
     inline void updateCoverage( SvCall& rCall )

@@ -83,19 +83,18 @@ class SvCallInserterContainerTmpl : public InserterContainer<DBCon, SvCallTable,
 }; // class
 
 template <typename DBCon> using SvCallInserterContainer = SvCallInserterContainerTmpl<SvCall, DBCon>;
-
 template <typename DBCon>
 using SvCallVectorInserterContainer = SvCallInserterContainerTmpl<CompleteBipartiteSubgraphClusterVector, DBCon>;
 
 template <typename DBCon, typename DBConInit>
 using GetCallInserterContainerModule =
     GetInserterContainerModule<SvCallInserterContainer, DBCon, DBConInit, SvCallerRunTable>;
-
 template <typename DBCon, typename DBConInit>
 using GetCallVectorInserterContainerModule =
     GetInserterContainerModule<SvCallVectorInserterContainer, DBCon, DBConInit, SvCallerRunTable>;
 
 template <typename DBCon> using SvCallInserterModule = InserterModule<SvCallInserterContainer<DBCon>>;
+template <typename DBCon> using SvCallVectorInserterModule = InserterModule<SvCallVectorInserterContainer<DBCon>>;
 
 } // namespace libMA
 

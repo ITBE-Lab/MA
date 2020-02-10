@@ -161,7 +161,7 @@ template <typename DBImpl> class SQLDBConPool
     {
         auto now = std::chrono::steady_clock::now( );
         // sanity check
-        if( now > std::get<0>( vTimeThreadSleeping[ uiI ] ) )
+        if( now > std::get<0>( vTimeThreadSleeping[ uiThreadId ] ) )
             std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) += now - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
         std::get<2>( vTimeThreadSleeping[ uiThreadId ] ) = false;
     } // method
@@ -321,6 +321,7 @@ template <typename DBImpl> class SQLDBConPool
                             size_t uiQueueId = uiThreadId;
                             if( this->vqTasks[ uiThreadId ].empty( ) )
                                 uiQueueId = this->uiPoolSize;
+                            assert( !this->vqTasks[ uiQueueId ].empty( ) );
 
                             updateTime( );
 
@@ -437,7 +438,7 @@ template <typename DBImpl> class SQLDBConPool
                 [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
         } // end of scope of lock (lock gets released)
 
-        if( iThreadId == NO_THREAD_ID )
+        if( iThreadId == static_cast<int>( uiPoolSize ) )
             // Inform one waiting workers that we have a fresh task. Because any worker can execute the task.
             this->xCondition.notify_one( );
         else

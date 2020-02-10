@@ -52,13 +52,13 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
     # drain all sources
     res.simultaneous_get(parameter_set_manager.get_num_threads())
 
-    #@ print("creating index...")
-    #@ start = datetime.datetime.now()
-    #@ sv_db.create_jump_indices( get_jump_inserter.cpp_module.id )
-    #@ end = datetime.datetime.now()
-    #@ delta = end - start
-    #@ analyze.register("created_index", delta.total_seconds(), False, lambda x: x)
-    #@ print("created index")
+    print("creating index...")
+    start = datetime.datetime.now()
+    SvJumpTable( DbConn(dataset_name) ).create_indices( get_jump_inserter.cpp_module.id )
+    end = datetime.datetime.now()
+    delta = end - start
+    analyze.register("created_index", delta.total_seconds(), False, lambda x: x)
+    print("created index")
 
     analyze.analyze(runtime_file)
     if not runtime_file is None:

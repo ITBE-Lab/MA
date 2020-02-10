@@ -1,4 +1,5 @@
 from .aligner import *
+from .analyzeRuntimes import *
 
 def to_file_path_vec(string_vec):
     return libMA.filePathVector([libMA.path(x) for x in string_vec])

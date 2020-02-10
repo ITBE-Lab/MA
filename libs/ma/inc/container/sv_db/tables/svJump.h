@@ -49,7 +49,6 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 {
     std::shared_ptr<DBCon> pDatabase;
     SQLQuery<DBCon, uint32_t> xQuerySize;
-    // SQLQuery<DBCon, int64_t> xDeleteRun; // FIXME: Why is this a query and not a statement?
     SQLStatement<DBCon> xDeleteRun;
 
   public:
@@ -62,6 +61,7 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
                                  "sv_jump_run_table WHERE name = ?)" )
     {} // default constructor
 
+    // @todo make the jumps rectangles as well and then use an r-tree for the sweep?
     inline void createIndices( int64_t uiRun )
     {
         // https://www.sqlite.org/queryplanner.html -> 3.2. Searching And Sorting With A Covering Index
@@ -89,7 +89,6 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 
     inline void deleteRun( std::string& rS )
     {
-        // xDeleteRun.bindAndExecQuery<>( rS );
         xDeleteRun.execAndBind( rS );
     } // method
 }; // class

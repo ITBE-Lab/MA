@@ -137,11 +137,17 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
     py::class_<SvCallTable<DBConSingle>, std::shared_ptr<SvCallTable<DBConSingle>>>( rxPyModuleId, "SvCallTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome );
+        .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome )
+        .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
+        .def( "add_score_index", &SvCallTable<DBConSingle>::addScoreIndex );
+
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( rxPyModuleId,
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
 
+    py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( rxPyModuleId, "SvJumpTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "create_indices", &SvJumpTable<DBConSingle>::createIndices );
 
     py::class_<rect>( rxPyModuleId, "rect" ) //
         .def_readonly( "x", &rect::x )
