@@ -120,7 +120,7 @@ typedef bool my_bool;
 template <class F, class... Ts, std::size_t... Is>
 void for_each_in_tuple( std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ) ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ) ), 0 )...};
 } // meta
 
 template <class F, class... Ts> void for_each_in_tuple( std::tuple<Ts...>& tuple, F&& func )
@@ -135,7 +135,7 @@ template <class F, class... Ts, std::size_t... Is, class... Tss>
 void for_each_in_tuple_pairwise( std::tuple<Ts...>& tuple, F func, std::tuple<Tss...>& tuple1,
                                  std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )...};
 } // meta
 
 template <class F, class... Ts, class... Tss>
@@ -755,13 +755,12 @@ class MySQLConDB
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
-            for_each_in_tuple_pairwise(
-                tCellWrappers,
-                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
-                    // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
-                    rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
-                },
-                tCellValues );
+            for_each_in_tuple_pairwise( tCellWrappers,
+                                        [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                                            // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
+                                            rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
+                                        },
+                                        tCellValues );
         } // constructor
 
         /** @brief Performs argument binding before fetching. Has to called after statement execution and
@@ -803,7 +802,7 @@ class MySQLConDB
 #ifdef REPORT_ROWS_WITH_NULL_VALUES
             // Check for possible NULL values
             // Currently, there is no solution for these cases.
-            for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+            for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                 if( rCell.is_null )
                     throw std::runtime_error( "fetchNextRow reports a cell with NULL value." );
             } ); // for each tuple
@@ -812,7 +811,7 @@ class MySQLConDB
             if( this->iStatus == MYSQL_DATA_TRUNCATED )
             {
                 // Find the column(s) responsible and resize the buffer appropriately.
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.error ) // error identifies the cell(s), where we have truncation
                     {
                         // Truncation can occur for variable size data only.
@@ -841,7 +840,7 @@ class MySQLConDB
             // Pick variable size data (Text or Blob) from cell buffers.
             if( this->iStatus == 0 )
             {
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.bIsVarSizeCell )
                         rCell.storeVarSizeCell( );
                 } ); // for each tuple
@@ -922,10 +921,11 @@ class MySQLConDB
         std::string sUser( jConfig.count( USER ) > 0 ? jConfig[ USER ] : DEFAULT_USER );
         std::string sPasswd( jConfig.count( PASSWORD ) > 0 ? jConfig[ PASSWORD ] : DEFAULT_PASSWD );
         unsigned int uiPortNr = jConfig.count( PORT ) > 0 ? jConfig[ PORT ].get<unsigned int>( ) : DEFAULT_PORT;
-
+#if 0
         std::cout << "MySQL::Connection details:\n"
                   << "Hostname: '" << sHostName << "' User: '" << sUser << "' Passwd: '" << sPasswd
                   << "' Port: " << uiPortNr << std::endl;
+#endif
 
         if( !( mysql_real_connect( pMySQLHandler, sHostName.c_str( ), sUser.c_str( ), sPasswd.c_str( ), NULL, uiPortNr,
                                    NULL, 0 ) ) )
@@ -971,7 +971,7 @@ class MySQLConDB
         std::string sSecFilePriv, sTmpDir;
         if( getMySQLVar( "secure_file_priv", sSecFilePriv ) )
         {
-            std::cout << "sSecFilePriv: " << sSecFilePriv << std::endl;
+            // std::cout << "sSecFilePriv: " << sSecFilePriv << std::endl;
             if( sSecFilePriv != "NULL" )
             {
                 if( !sSecFilePriv.empty( ) )
@@ -1000,14 +1000,14 @@ class MySQLConDB
     MySQLConDB& operator=( const MySQLConDB& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    MySQLConDB( const json& jDBConfig = { } ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
+    MySQLConDB( const json& jDBConfig = {} ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
         if( !( pMySQLHandler = mysql_init( NULL ) ) )
             throw MySQLConException( "Initialization of MySQL connection failed" );
 
         // Establish connection to database
-        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
+        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
 
         // Set the used database. If it does not exist, create it.
         this->useSchema( jDBConfig.count( SCHEMA ) > 0 ? std::string( jDBConfig[ SCHEMA ] ) : DEFAULT_DBNAME );
@@ -1023,7 +1023,7 @@ class MySQLConDB
 
         // Collect client info in numeric form.
         this->uiCLientVersion = mysql_get_client_version( );
-        std::cout << "MySQL client version: " << uiCLientVersion << std::endl;
+        //std::cout << "MySQL client version: " << uiCLientVersion << std::endl;
 
         // Find out the appropriate directory for CSV data uploads.
         this->setUploadDirs( );
@@ -1032,7 +1032,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [ & ]( ) { this->close( ); } );
+        do_exception_safe( [&]( ) { this->close( ); } );
 
         // For really freeing all memory allocated by MySQL ...
         // See: https://stackoverflow.com/questions/8554585/mysql-c-api-memory-leak
@@ -1068,7 +1068,7 @@ class MySQLConDB
     void useSchema( const std::string& rsSchemaName )
     {
         checkDBCon( );
-        std::cout << "MySQL::Used Schema: " << rsSchemaName << std::endl;
+        // std::cout << "MySQL::Used Schema: " << rsSchemaName << std::endl;
         if( mysql_select_db( pMySQLHandler, rsSchemaName.c_str( ) ) )
             // Create the database if not existing.
             execSQL( "CREATE DATABASE " + rsSchemaName );

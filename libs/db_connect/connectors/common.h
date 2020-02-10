@@ -574,7 +574,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // Iterates over the array during compile time.
             forAllDoBind( aBuf );
             // After binding all arguments, actually execute the insert statement.
-            pBulkInsertStmt->exec( );
+            pBulkInsertStmt->template exec<InsTypes...>( );
         } // method
 #endif // alternative approach
 
