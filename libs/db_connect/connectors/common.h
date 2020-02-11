@@ -201,9 +201,9 @@ template <typename DBImpl> class SQLDB : public DBImpl
         return std::make_unique<GuardedTransaction>( *this, pTombStone );
     } // method
 
-    std::unique_ptr<GuardedTransaction> sharedGuardedTrxn( )
+    std::shared_ptr<GuardedTransaction> sharedGuardedTrxn( )
     {
-        return std::make_unique<GuardedTransaction>( *this, pTombStone );
+        return std::make_shared<GuardedTransaction>( *this, pTombStone );
     } // method
 
     // WARNING: If indexExists is coupled with an index creation, it should be executed "pool safe".

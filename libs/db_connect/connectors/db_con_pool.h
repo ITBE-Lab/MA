@@ -105,8 +105,10 @@ template <typename DBImpl> class SQLDBConPool
             if( vTimeThreadSleeping.size( ) <= uiI )
                 vTimeThreadSleeping.emplace_back( xLastTimePoint, duration::zero( ), false );
             else
-                vTimeThreadSleeping[ uiI ] =
-                    std::make_tuple( xLastTimePoint, duration::zero( ), std::get<2>( vTimeThreadSleeping[ uiI ] ) );
+            {
+                std::get<0>( vTimeThreadSleeping[ uiI ] ) = xLastTimePoint;
+                std::get<1>( vTimeThreadSleeping[ uiI ] ) = duration::zero( );
+            } // else
             vAmountTasks.emplace_back( 0 );
             if( vAmountBookedTasks.size( ) <= uiI )
                 vAmountBookedTasks.emplace_back( 0 );
@@ -159,10 +161,9 @@ template <typename DBImpl> class SQLDBConPool
      */
     inline void wakingUp( size_t uiThreadId )
     {
-        auto now = std::chrono::steady_clock::now( );
+        auto xNow = std::chrono::steady_clock::now( );
         // sanity check
-        if( now > std::get<0>( vTimeThreadSleeping[ uiThreadId ] ) )
-            std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) += now - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
+        std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) += xNow - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
         std::get<2>( vTimeThreadSleeping[ uiThreadId ] ) = false;
     } // method
 
@@ -177,26 +178,29 @@ template <typename DBImpl> class SQLDBConPool
         // two digits precision double output
         xOut << std::fixed << std::setprecision( 2 );
 
-        auto xTotalTime = ( xLastTimePoint - xInitTimePoint ).count( );
+        double fTotalTime = ( xLastTimePoint - xInitTimePoint ).count( );
+        auto xNow = std::chrono::steady_clock::now( );
 
         for( size_t uiI = 0; uiI < vTimeAmountTasksInQueue.size( ); uiI++ )
         {
             // print the values for tID #tasks #book %act
-            auto fTasksPerSecond = vAmountTasks[ uiI ] / xTotalTime;
+            auto fTasksPerSecond = vAmountTasks[ uiI ] / fTotalTime;
             if( uiI < vTimeThreadSleeping.size( ) )
             {
                 // get the amount of time thread uiI was active
-                auto xTimeSleeping = std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
+                double fTimeSleeping = std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
                 // if thread uiI is sleeping currently subtract the time it is currently sleeping from the awake time
                 // since that amount will be added only once the thread wakes up...
-                auto now = std::chrono::steady_clock::now( );
-                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) &&
-                    // sanity check
-                    now > std::get<0>( vTimeThreadSleeping[ uiI ] ) )
-                    xTimeSleeping += ( now - std::get<0>( vTimeThreadSleeping[ uiI ] ) ).count( );
+                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) )
+                {
+                    // explicit definition of xExtraSleepTime is required, so that .count() expresses the result in
+                    // seconds.
+                    duration xExtraSleepTime = xNow - std::get<0>( vTimeThreadSleeping[ uiI ] );
+                    fTimeSleeping += xExtraSleepTime.count( );
+                } // if
                 xOut << uiI << "\t" << fTasksPerSecond << "\t" << vAmountBookedTasks[ uiI ] << "\t";
 
-                xOut << 100 * ( 1.0 - xTimeSleeping / xTotalTime );
+                xOut << 100 * ( 1.0 - fTimeSleeping / fTotalTime );
             } // if
             else
                 // the queue that can be used by any thread requires a special print because for this queue
@@ -204,7 +208,7 @@ template <typename DBImpl> class SQLDBConPool
                 xOut << "NO_T_ID\t" << fTasksPerSecond << "\tn/a\tn/a";
             // print the values for qlen=0 %qlen=1 %qlen=2 %qlen>2
             for( size_t uiJ = 0; uiJ < 4; uiJ++ )
-                xOut << "\t" << 100 * vTimeAmountTasksInQueue[ uiI ][ uiJ ].count( ) / xTotalTime;
+                xOut << "\t" << 100 * vTimeAmountTasksInQueue[ uiI ][ uiJ ].count( ) / fTotalTime;
             xOut << std::endl;
         } // for
         // reset to default float output
