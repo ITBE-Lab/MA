@@ -65,22 +65,27 @@ template <typename T> inline std::string intToHex( T val, size_t width = sizeof(
 } // helper function
 
 /** @brief Executes the func so that exceptions are swallowed.
- *  @detail For destructors and threads so that they do not throw.
+ *         Returns true, if an exceptions was dropped.
+ *         Returns false, if execution was OK.
+ *  @detail For destructors threads and tests so that they do not throw.
  */
-template <typename F> inline void doNoExcept( F&& func, std::string sInfo = "" )
+template <typename F> inline bool doNoExcept( F&& func, std::string sInfo = "" )
 {
     try
     {
         func( );
+        return false;
     } // try
     catch( std::exception& rxExcept )
     {
-        std::cerr << sInfo << ( sInfo.empty( ) ? "" : " - " )
-                  << std::string( "The following exceptions is dropped:\n" ) + rxExcept.what( ) << std::endl;
+        std::cout << sInfo << ( sInfo.empty( ) ? "" : " - " )
+                  << std::string( "Dropped exception:\n" ) + rxExcept.what( ) << std::endl;
+        return true;
     } // catch
     catch( ... )
     {
-        std::cerr << sInfo << ( sInfo.empty( ) ? "" : "\n" ) << "Drop unknown exception." << std::endl;
+        std::cout << sInfo << ( sInfo.empty( ) ? "" : "\n" ) << "Dropped unknown exception." << std::endl;
+        return true;
     } // catch
 } // method
 
@@ -213,10 +218,10 @@ template <typename DBImpl> class SQLDB : public DBImpl
         DBImpl::execSQL( "DROP DATABASE " + rsSchemaName );
     } // method
 
-    /** @brief Drop Database Schema */
+    /** @brief Use Database Schema */
     void useSchema( const std::string& rsSchemaName )
     {
-        DBImpl::execSQL( "DROP DATABASE " + rsSchemaName );
+        DBImpl::execSQL( "USE DATABASE " + rsSchemaName );
     } // method
 
     /** @brief This function should be redefined in pooled SQL connections so that the function is executed in mutex
@@ -258,14 +263,6 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
     const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
     /* Deprecated. Execute and bind the query args., but do not fetch the first row. */
 
-    template <typename... ArgTypes> void execAndBind( ArgTypes&&... args )
-    {
-        // Execute statement
-        pQuery->bindAndExec( std::forward<ArgTypes>( args )... );
-        // Bind for later fetching
-        pQuery->bindResult( );
-    } // method
-
     template <typename F> void forAllRowsDo( F&& func )
     {
         // Fetch all rows and apply func to all of them
@@ -275,35 +272,44 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
     } // method
 
   public:
-    SQLQuery( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText ) //--
+    /** @brief Constructs a query instance using the statement rsStmtText */
+    SQLQuery( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText )
         : pDB( pDB ),
           pQuery( std::make_unique<typename DBCon::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText ) ),
           sStmtText( rsStmtText )
     {} // constructor
 
+    /** @brief Execute the query */
+    template <typename... ArgTypes> void exec( ArgTypes&&... args )
+    {
+        // Execute statement
+        pQuery->bindAndExec( std::forward<ArgTypes>( args )... );
+        // Bind outcome of statement execution for later fetching
+        pQuery->bindResult( );
+    } // method
+
+    /** @brief Execute the query and fetch first row */
     template <typename... ArgTypes> bool execAndFetch( ArgTypes&&... args )
     {
         // Execute the query
-        this->execAndBind( std::forward<ArgTypes>( args )... );
+        this->exec( std::forward<ArgTypes>( args )... );
         // Fetch first row for getting correct EOF value.
         return this->next( );
     } // method
 
-    /** @brief Execute the query passing args and call the function func for all rows of the query outcome
-     */
+    /** @brief Execute the query passing args and call the function func for all rows of the query outcome. */
     template <typename F, typename... ArgTypes> void execAndForAll( F&& func, ArgTypes&&... args )
     {
-        this->execAndBind( std::forward<ArgTypes>( args )... );
+        this->exec( std::forward<ArgTypes>( args )... );
         this->forAllRowsDo( std::forward<F>( func ) );
     } // method
 
-    /** @brief Execute the query and get the n-th cell of the first row of a query.
-     */
+    /** @brief Execute the query and get the n-th cell of the first row of a query. */
     template <int COL_NUM, typename... ArgTypes>
     typename std::tuple_element<COL_NUM, std::tuple<ColTypes...>>::type execAndGetNthCell( ArgTypes&&... args )
     {
         // Execute query, bind, and fetch first row
-        this->execAndBind( std::forward<ArgTypes>( args )... );
+        this->exec( std::forward<ArgTypes>( args )... );
         if( !pQuery->fetchNextRow( ) )
             throw std::runtime_error( "SQLQuery: Tried to retrieve first row for an empty query outcome. For stmt:" +
                                       sStmtText + "\nArgs: " + dumpArgPack( args... ) );
@@ -319,7 +325,7 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
         return execAndGetNthCell<0>( std::forward<ArgTypes>( args )... );
     } // method
 
-    /* Delivers a reference to a tuple holding the data of the current row.
+    /** @brief Delivers a reference to a tuple holding the data of the current row.
      * WARNING: For efficiency reasons, the tuple is delivered by reference. The returned reference
      * stays valid for the lifetime of the current query object.
      * https://stackoverflow.com/questions/24725740/using-auto-and-decltype-to-return-reference-from-function-in-templated-class
@@ -347,7 +353,7 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
     } // method
 
     /** @brief End Of File. Delivers true, if the previous call of next() did not deliver a fresh row.
-     *         This kind of eof works in a "look back" fashion; it tells if the previous fetch failed or not.
+     *  This kind of eof works in a "look back" fashion; it tells if the previous fetch failed or not.
      */
     inline bool eof( )
     {
@@ -372,7 +378,7 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
         // Returned vector that receives column of table
         std::vector<typename std::tuple<ColTypes...>> vRetVec;
         // Execute query, bind, and fetch first row
-        this->execAndBind( std::forward<ArgTypes>( args )... );
+        this->exec( std::forward<ArgTypes>( args )... );
         // Fetch all rows and add them to the returned vector
         while( pQuery->fetchNextRow( ) )
             vRetVec.push_back( pQuery->tCellValues );
@@ -391,7 +397,7 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
         // Returned vector that receives column of table
         std::vector<typename std::tuple_element<COL_NUM, std::tuple<ColTypes...>>::type> vRetVec;
         // Execute query, bind, and fetch first row
-        this->execAndBind( std::forward<ArgTypes>( args )... );
+        this->exec( std::forward<ArgTypes>( args )... );
         // Fetch all rows and add them to the returned vector
         while( pQuery->fetchNextRow( ) )
             vRetVec.emplace_back( std::get<COL_NUM>( pQuery->tCellValues ) );
@@ -417,6 +423,26 @@ const std::string REFERENCES = "REFERENCES";
 const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
+
+
+/** @brief Serializes a value for CSV representation.
+ *  The translation is required by the SQLFileBulkInserter.
+ *  NULL values are represented by '\N'.
+ */
+template <typename DBCon, typename Type> inline std::string csvPrint( DBCon& rxDBCon, Type& rVal )
+{
+    return "'" + std::to_string( rVal ) + "'";
+}; // method
+
+template <typename DBCon> inline std::string csvPrint( DBCon& rxDBCon, const std::string& rVal )
+{
+    return "'" + rVal + "'";
+}; // method
+
+template <typename DBCon> inline std::string csvPrint( DBCon& rxDBCon, const std::nullptr_t& rVal )
+{
+    return "\\N";
+}; // method
 
 /**
  * @brief completely empty struct
@@ -596,10 +622,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         } // constructor
 
         /** @brief Inserts a row into the table via a bulk-insert approach.
+         * Reasonable addition: insert using moves.
          */
-        inline void insert( const InsTypes... args )
+        inline void insert( const InsTypes&... args )
         {
-            aBuf[ uiInsPos ] = std::tuple<InsTypes...>( args... ); // TO DO: Check for std::move( args )...
+            aBuf[ uiInsPos ] = std::tuple<InsTypes...>( args... ); // This triggers a copy...
             if( ++uiInsPos == BUF_SIZE )
             {
                 // bulkInsert( ) does not inspects uiInsPos anymore. However, it can throw an exceptions.
@@ -634,6 +661,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         } // destructor
     }; // class
 
+
     /** @brief Like a standard SQLBulkInserter, but for the streaming a CSV-file is used in between. This approach
      * is sometimes faster than the standard SQLBulkInserter. IMPORTANT NOTICE: Call release() before a
      * SQLFileBulkInserter runs out of scope. In this case you get an exception, if something goes wrong. If you let
@@ -649,31 +677,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         size_t uiInsPos; // index of the next insert into the array
         size_t uiInsCnt; // counter for all inserts so far
 
-        /** @brief Serializes a value for CSV representation.
-         *  NULL values are represented by '\N'.
-         */
-        template <typename Type> std::string csvPrint( Type& rVal )
-        {
-            return std::to_string( rVal );
-        }; // method
-
-        std::string csvPrint( const std::string& rVal )
-        {
-            return "'" + rVal + "'";
-        }; // method
-
-        std::string csvPrint( const std::nullptr_t& rVal )
-        {
-            return "\\N";
-        }; // method
-
         // Tuple printer for ostream.
         // Found at: https://en.cppreference.com/w/cpp/utility/integer_sequence
         template <class Ch, class Tr, class Tuple, std::size_t... Is>
         void prtTpltoStreamImpl( std::basic_ostream<Ch, Tr>& os, const Tuple& t, std::index_sequence<Is...> )
         {
             // Requires C++17 folded expression support ...
-            ( ( os << ( Is == 0 ? "" : "\t" ) << csvPrint( std::get<Is>( t ) ) ), ... );
+            ( ( os << ( Is == 0 ? "" : "\t" ) << csvPrint( *pHostTblDB, std::get<Is>( t ) ) ), ... );
         } // meta
 
         template <class Ch, class Tr, class... Args>
@@ -714,7 +724,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                    fs::path( std::string( "upload_" ) + sHostTblName + "_con_" + rsConId + rsExtension + ".csv" );
         } // method
 
-        // Private attributes
+        // Private attributes of SQLFileBulkInserter
         std::string sHostTblName; // name of host table
         std::shared_ptr<DBCon> pHostTblDB; // database connection of the host table /--
         fs::path sCSVFileName; // name of the file for CSV output
@@ -733,6 +743,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
               bStreamIsVoid( true ), // Boolean state that
               uiReleaseThreshold( uiReleaseThreshold )
         {
+            std::cout << "COL NAMES:";
+            for( auto rxName : rxHost.tableColNames())
+                std::cout << rxName << " ";
+            std::cout << std::endl;
             // DEBUG: std::cout << "SQLFileBulkInserter filename:" << this->sCSVFileName.generic_string( ) <<
             // std::endl;
         } // constructor
@@ -744,6 +758,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             if( bStreamIsVoid ) // 'bRelease == true' implies that the stream (file) must be closed.
             {
                 // Open the stream and get any existing content purged.
+                // DEBUG: std::cout << sCSVFileName << std::endl;
                 ofStream.open( sCSVFileName, std::ofstream::out | std::ofstream::trunc );
                 // Check whether something went wrong
                 if( !ofStream )
@@ -810,7 +825,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         } // destructor
     }; // class (SQLFileBulkInserter)
 
-  protected:
+  protected: // class SQLTable
     /** @brief get the SQL-type for each table column via the C++-type.
      *  ( C++ types are automatically translated to SQL types. )
      *  @param - Translator The delivered class that must define a C++ to SQL type translation
@@ -858,7 +873,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         } // method
     }; // outer struct
 
-    // Protected attributes
+    // Protected attributes of class SQLTable
     // typedef std::remove_pointer<DBCon>::type DBConBaseType;
     std::shared_ptr<DBCon> pDB; // database connection (templated) //--
     const json jTableDef; // json table definition (jTableDef must stay due to references)
@@ -1004,6 +1019,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         return jTableDef[ TABLE_NAME ];
     } // method
 
+    /** @brief Returns the JSON definition of the table as formated string. */
     std::string dumpJsonDefToStr( )
     {
         std::stringstream ss;
@@ -1011,8 +1027,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         return ss.str( );
     } // method
 
-    /** @brief: Get the columns reference safely.
-     */
+    /** @brief: Get the columns reference safely. */
     const json& getTableCols( )
     {
 #ifdef SQL_VERBOSE
@@ -1022,6 +1037,20 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             throw std::runtime_error( dumpJsonDefToStr( ) +
                                       "\nJSON table definitions require exactly one TABLE_COLUMNS section." );
         return this->jTableDef[ TABLE_COLUMNS ];
+    } // method
+
+    /** @brief: Returns a vector comprising the names of table columns. */
+    std::vector<std::string> tableColNames( )
+    {
+        std::vector<std::string> vColNames;
+        for( auto& rxCol : rjTableCols )
+            if( rxCol.count( COLUMN_NAME ) )
+                vColNames.push_back( rxCol[ COLUMN_NAME ] );
+            else
+                throw std::runtime_error( "JSON for table definition: Missing item COLUMN_NAME.\n" +
+                                          dumpJsonDefToStr( ) );
+
+        return vColNames;
     } // method
 
   public:

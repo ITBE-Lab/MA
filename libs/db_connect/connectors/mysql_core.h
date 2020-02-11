@@ -209,57 +209,74 @@ struct GenericBlob
     size_t uiSize; // size of buffer
 }; // struct
 
+/** @brief For really freeing all memory allocated by MySQL ...
+ * See: https://stackoverflow.com/questions/8554585/mysql-c-api-memory-leak
+ */
+struct MySQLLibraryEnd
+{
+    MySQLLibraryEnd( )
+    {
+        // DEBUG: std::cout << "MySQL library start ..." << std::endl;
+    } // constructor
+
+    ~MySQLLibraryEnd( )
+    {
+        // DEBUG:std::cout << "MySQl library end ..." << std::endl;
+        mysql_library_end( );
+    } // destructor
+}; // class
+
+/** @brief Single global object that is responsible for finally freeing all MySQL resources. */
+const MySQLLibraryEnd mySQLLibrayResourceDeallocator;
+
+/** @brief This class is for cases where we want to have a simple byte buffer without the initialization as it
+ *  occurs in std::vector.
+ */
+class ByteBuffer
+{
+  private:
+    size_t uiBufSize = 0;
+    char* pBuffer = NULL;
+    static const size_t SEG_SIZE = 512; // segment size chosen in the context of allocations
+
+  public:
+    /** @brief Delivers pointer to buffer. */
+    inline char* get( )
+    {
+        return pBuffer;
+    } // method
+
+    /** @brief Returns the size of the actually allocated buffer */
+    template <typename Type> inline Type resize( Type uiReq )
+    {
+        if( uiReq > uiBufSize )
+        {
+            // uiReq is guaranteed to be one at least
+            // allocate multiple of SEG_SIZE
+            uiBufSize = ( ( ( uiReq - 1 ) / SEG_SIZE ) + 1 ) * SEG_SIZE;
+
+            // realloc frees automatically in the case of relocation
+            pBuffer = static_cast<char*>( realloc( pBuffer, uiBufSize ) );
+            if( !pBuffer )
+                throw std::runtime_error( "ByteBuffer reports out of memory for size " + std::to_string( uiBufSize ) );
+        }
+        return static_cast<Type>( uiBufSize );
+    } // method
+
+    /* Free at destruction */
+    ~ByteBuffer( )
+    {
+        if( pBuffer != NULL )
+            free( pBuffer );
+    } // destructor
+}; // class
+
 
 /* Basic class for a single cell in row for a query outcome.
  * Full support of C++17 would allow moving all these specializations inside MySQLConDB.
  */
 template <typename CellType> class RowCellBase
 {
-
-  private:
-    /** @brief This class is for cases where we want to have a simple byte buffer without the initialization as it
-     * occurs in std::vector.
-     */
-    class ByteBuffer
-    {
-      private:
-        size_t uiBufSize = 0;
-        char* pBuffer = NULL;
-        static const size_t SEG_SIZE = 512; // segment size chosen in the context of allocations
-
-      public:
-        /** @brief Delivers pointer to buffer. */
-        inline char* get( )
-        {
-            return pBuffer;
-        } // method
-
-        /** @brief Returns the size of the actually allocated buffer */
-        template <typename Type> inline Type resize( Type uiReq )
-        {
-            if( uiReq > uiBufSize )
-            {
-                // uiReq is guaranteed to be one at least
-                // allocate multiple of SEG_SIZE
-                uiBufSize = ( ( ( uiReq - 1 ) / SEG_SIZE ) + 1 ) * SEG_SIZE;
-
-                // realloc frees automatically in the case of relocation
-                pBuffer = static_cast<char*>( realloc( pBuffer, uiBufSize ) );
-                if( !pBuffer )
-                    throw std::runtime_error( "ByteBuffer reports out of memory for size " +
-                                              std::to_string( uiBufSize ) );
-            }
-            return static_cast<Type>( uiBufSize );
-        } // method
-
-        /* Free at destruction */
-        ~ByteBuffer( )
-        {
-            if( pBuffer != NULL )
-                free( pBuffer );
-        } // destructor
-    }; // class
-
   public:
     MYSQL_BIND* pMySQLBind; // pointer to MySQL bind
     CellType* pCellValue; // pointer to the actual cell value (this pointer refers into tCellValues)
@@ -634,11 +651,12 @@ class MySQLConDB
         } // constructor
 
         /** @brief Execute the statement after all parameters have been bound successfully.
+         *  The existence of parameters has to be initiated via the boolean argument.
          */
-        template <typename... ArgTypes> inline my_ulonglong exec( void )
+        inline my_ulonglong exec( bool bMoreThanZeroArgs = true )
         {
             // If there is at least one argument, inform MySQL about the arguments
-            if( sizeof...( ArgTypes ) > 0 )
+            if( bMoreThanZeroArgs )
                 if( mysql_stmt_bind_param( pStmt, &vMySQLInpArgBind[ 0 ] ) )
                     throw std::runtime_error( "mysql_stmt_bind_param() failed.\n" + stmtErrMsg( ) );
             // Execute statement
@@ -674,7 +692,7 @@ class MySQLConDB
                                           sStmtText + "\n Actual number: " + std::to_string( sizeof...( ArgTypes ) ) +
                                           " Expected number: " + std::to_string( iStmtParamCount ) );
             this->bind<0, ArgTypes&&...>( std::forward<ArgTypes>( args )... );
-            return this->exec<ArgTypes...>( );
+            return this->exec( sizeof...( ArgTypes ) > 0 );
         } // method
 
         /** @brief Close the statement and free all its resources.
@@ -1032,11 +1050,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [&]( ) { this->close( ); } );
-
-        // For really freeing all memory allocated by MySQL ...
-        // See: https://stackoverflow.com/questions/8554585/mysql-c-api-memory-leak
-        // mysql_library_end( );
+        do_exception_safe( [ & ]( ) { this->close( ); } );
     } // destructor
 
     /** @brief: Immediately execute the SQL statement giver as argument.
@@ -1093,6 +1107,7 @@ class MySQLConDB
             return false; // search failed
     } // method
 
+    /** @brief Delivers the directory that shall be used for data uploads */
     fs::path getDataUploadDir( )
     {
         if( pServerDataUploadDir == nullptr )
@@ -1159,12 +1174,135 @@ class MySQLConDB
     /** @brief Load the file 'sCSVFileName' into the table 'sTblName' */
     void fillTableByFile( const fs::path& sCSVFileName, const std::string sTblName )
     {
-        // Some clients seg. fault if they see local
+        // Some clients seg. fault if they see the keyword lOCAL
         bool bUseKeywordLocal = uiCLientVersion != 100141;
         // Important: Use the generic filename here, because MySQL does not like backslashes in Windows.
         this->execSQL( std::string( "LOAD DATA " + std::string( bUseKeywordLocal ? "LOCAL " : "" ) + "INFILE \"" +
-                                    sCSVFileName.generic_string( ) + "\" INTO TABLE " + sTblName ) );
+                                    sCSVFileName.generic_string( ) + "\" INTO TABLE " + sTblName +
+                                    " FIELDS TERMINATED BY '\t' ENCLOSED BY '\\\'' ESCAPED BY '\\\\'" ) );
     } // method
+
+    std::string string_to_hex( const std::string& input )
+    {
+        static const char hex_digits[] = "0123456789ABCDEF";
+
+        std::string output;
+        output.reserve( input.length( ) * 2 );
+        for( unsigned char c : input )
+        {
+            output.push_back( hex_digits[ c >> 4 ] );
+            output.push_back( hex_digits[ c & 15 ] );
+            output.push_back( ' ' );
+        }
+        return output;
+    }
+    std::string buf_to_hex( uint8_t* pBuf, size_t uiSize )
+    {
+        static const char hex_digits[] = "0123456789ABCDEF";
+
+        std::string output;
+        output.reserve( uiSize * 2 );
+        for( auto pItr = pBuf; pItr < pBuf + uiSize; pItr++ )
+        {
+            uint8_t c = *pItr;
+            // std::cout << "1: " << int( c >> 4 ) << " 2: " << int( c & 15 ) << std::endl;
+            output.push_back( hex_digits[ c >> 4 ] );
+            output.push_back( hex_digits[ c & 15 ] );
+            output.push_back( ' ' );
+        }
+        return output;
+    }
+    // 00 00 00 00 00 00 00 32 02 02 43 84 40 DF EC 00 00 40 C5 9F 00 00 40 FD AB D8 0F B6 00 02 40
+    // 00 00 00 00 00 00 00 32 02 02 43 84 40 DF EC 5C 30 00 40 C5 9F 00 00 40 FD AB D8 0F B6 00 02 40
+
+    // 00 00 00 00 00 00 00 32 B5 02 41 BD 03 41 E6 27 42 EA 27 43 A3 BF 41 00 01 46
+    // 00 00 00 00 00 00 00 32 B5 02 41 BD 03 41 E6 5C 27 42 EA 5C 27 43 A3 BF 41 00 01 46
+
+    // 00 00 00 00 00 00 00 32 00 01 42 B0 01 41 B0 95 43 C2 60 43 C2 09 49 01
+    // 00 00 00 00 00 00 00 32 00 01 42 B0 01 41 B0 95 43 C2 60 43 C2
+
+    // 00 00 00 00 00 00 00 32 41 E1 27 03 01 40 A3 02 42 9B 47 D8 07 89 88 41 98 02 02
+    // 00 00 00 00 00 00 00 32 41 E1 5C 27 03 01 40 A3 02 42 9B 47 D8 07 89 88 41 98 02 02
+
+    std::string blobEncodeAsString( uint8_t* pFrom, size_t uiLength )
+    {
+        std::string sEncodedText;
+        for( auto pItr = pFrom; pItr < pFrom + uiLength; pItr++ )
+        {
+            switch( *pItr )
+            {
+                // case '\0':
+                //     sEncodedText.append( "\\0" );
+                //     break;
+                // case '\'':
+                //     sEncodedText.append( "\\'" );
+                //     break;
+                case '\t':
+                    sEncodedText.append( "\\t" );
+                    break;
+                // case '"':
+                //    sEncodedText.append( "\\\"" );
+                //    break;
+                // case '\b':
+                //    sEncodedText.append( "\\b" );
+                //    break;
+                // case '\n':
+                //    sEncodedText.append( "\\n" );
+                //    break;
+                // case '\r':
+                //    sEncodedText.append( "\\r" );
+                //    break;
+                // case '\t':
+                //    sEncodedText.append( "\\t" );
+                //    break;
+                // case '\26':
+                //    sEncodedText.append( "\\Z" );
+                //    break;
+                // case '\\':
+                //     sEncodedText.append( "\\\\" );
+                //     break;
+                // case '%':
+                //    sEncodedText.append( "\\%" );
+                //    break;
+                // case '_':
+                //    sEncodedText.append( "\\_" );
+                //    break;
+                default:
+                    sEncodedText.push_back( *pItr );
+            } // switch
+        } // for
+        // std::cout << string_to_hex(sEncodedText) << std::endl;
+        std::cout << buf_to_hex( pFrom, uiLength ) << std::endl;
+        return sEncodedText;
+    } // method
+
+    /** @brief Represents a BLOB as string for safe output in a CSV file.
+     * @details See: https://dev.mysql.com/doc/refman/8.0/en/mysql-real-escape-string-quote.html
+     */
+    std::string blobAsQuotedSafeString( uint8_t* pFrom, size_t uiLength )
+    {
+        return blobEncodeAsString( pFrom, uiLength );
+#if 0
+        ByteBuffer xByteBuf;
+        xByteBuf.resize( uiLength * 2 + 3 ); // + 3 = "'" at the beginning and end plus finishing NULL
+        auto pBufStart = xByteBuf.get( );
+
+        // Regarding mysql_real_escape_string_quote see:
+        // https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-6.html#mysqld-5-7-6-feature
+#ifdef MARIADB_BASE_VERSION
+        auto uiEncSize = mysql_real_escape_string( pMySQLHandler, pBufStart + 1, pFrom, (unsigned long)uiLength );
+#else
+        auto uiEncSize =
+            mysql_real_escape_string_quote( pMySQLHandler, pBufStart + 1, pFrom, (unsigned long)uiLength, '\'' );
+#endif
+
+        pBufStart[ 0 ] = '\'';
+        pBufStart[ uiEncSize + 1 ] = '\'';
+        pBufStart[ uiEncSize + 2 ] = '\0';
+        return std::string( pBufStart ); // mysql_real_escape_string_quote()
+#endif
+    } // method
+
 
   protected:
     void checkDBCon( )
