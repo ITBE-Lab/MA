@@ -774,6 +774,7 @@ class NucSeq : public Container
     } // method
 }; // class NucSeq
 
+#if 0
 /** @brief This class is for cases where we want to have a simple byte buffer without the initialization as it
  *  occurs in std::vector.
  *  FIXME: Move this class to the util section
@@ -832,7 +833,7 @@ class ByteBuffer
             free( pBuffer );
     } // destructor
 }; // class
-
+#endif
 
 /** @brief Compressed representation of nucleotide sequences without quality information.
  *  @details

@@ -241,7 +241,7 @@ class ByteBuffer
 
   public:
     /** @brief Delivers pointer to buffer. */
-    inline char* get( )
+    inline char* get( ) const
     {
         return pBuffer;
     } // method

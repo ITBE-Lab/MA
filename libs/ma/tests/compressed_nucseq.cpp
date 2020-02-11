@@ -87,9 +87,9 @@ void databaseTest( )
     using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
 
     std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs;
-    for( size_t uiItr = 0; uiItr < 10; uiItr++ )
+    for( size_t uiItr = 0; uiItr < 10000; uiItr++ )
     {
-        auto pNucSeq = randomNucSeq( 25000000, 50, 10 );
+        auto pNucSeq = randomNucSeq( 250, 50, 10 );
         vCompNucSeqs.emplace_back( pNucSeq );
     } // for
 
