@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "container/seed.h"
 #include "MySQL_con.h" // NEW DATABASE INTERFACE
+#include "container/seed.h"
 #include "db_sql.h"
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
@@ -181,7 +181,7 @@ class NucSeq : public Container
         pxSequenceRef = pxReallocRef;
         pxQualityRef = pxReallocRef2;
         uxCapacity = uxRequestedSize;
-    } // methdo
+    } // method
 #endif
 
     /** Default constructor
@@ -487,7 +487,7 @@ class NucSeq : public Container
         /* Complements of nucleotides
          *                               0  1  2  3
          */
-        static const char chars[ 4 ] = {3, 2, 1, 0};
+        static const char chars[ 4 ] = { 3, 2, 1, 0 };
 
         return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
@@ -518,7 +518,7 @@ class NucSeq : public Container
      */
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
-        static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
+        static const char chars[ 4 ] = { 'A', 'C', 'G', 'T' };
         if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
@@ -762,7 +762,7 @@ class NucSeq : public Container
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
-        static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
+        static const uint8_t aTranslate[ 4 ] = { 1, 2, 4, 8 };
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
@@ -774,8 +774,467 @@ class NucSeq : public Container
     } // method
 }; // class NucSeq
 
+/** @brief This class is for cases where we want to have a simple byte buffer without the initialization as it
+ *  occurs in std::vector.
+ *  FIXME: Move this class to the util section
+ */
+class ByteBuffer
+{
+  private:
+    size_t uiBufSize = 0;
+    uint8_t* pBuffer = NULL;
+    static const size_t SEG_SIZE = 512; // segment size chosen in the context of allocations
 
-class NucSeqSql : public SQL_BLOB
+  public:
+    /** @brief Delivers pointer to buffer. */
+    inline uint8_t* get( ) const
+    {
+        return pBuffer;
+    } // method
+
+    /** @brief Returns the size of the actually allocated buffer */
+    template <typename Type> inline Type resize( Type uiReq )
+    {
+        if( uiReq > uiBufSize )
+        {
+            // uiReq is guaranteed to be one at least
+            // allocate multiple of SEG_SIZE
+            uiBufSize = ( ( ( uiReq - 1 ) / SEG_SIZE ) + 1 ) * SEG_SIZE;
+
+            // realloc frees automatically in the case of relocation
+            pBuffer = static_cast<uint8_t*>( realloc( pBuffer, uiBufSize ) );
+            if( !pBuffer )
+                throw std::runtime_error( "ByteBuffer reports out of memory for size " + std::to_string( uiBufSize ) );
+        }
+        return static_cast<Type>( uiBufSize );
+    } // method
+
+    /** @brief Returns the buffer as hex string. */
+    std::string getHexString( )
+    {
+        static const char hex_digits[] = "0123456789ABCDEF";
+
+        std::string sHexStr;
+        sHexStr.reserve( this->uiBufSize * 2 );
+        for( auto pItr = this->pBuffer; pItr < this->pBuffer + this->uiBufSize; pItr++ )
+        {
+            uint8_t c = *pItr;
+            sHexStr.push_back( hex_digits[ c >> 4 ] );
+            sHexStr.push_back( hex_digits[ c & 15 ] );
+        } // for
+        return sHexStr;
+    } // method
+
+    /* Free at destruction */
+    ~ByteBuffer( )
+    {
+        if( pBuffer != NULL )
+            free( pBuffer );
+    } // destructor
+}; // class
+
+
+/** @brief Compressed representation of nucleotide sequences without quality information.
+ *  @details
+ *  Header: uint64 value that tells the size of the uncompressed sequence.
+ *  Compression scheme:
+ * - bit 7 = 1               : 2 bit representation
+ * -             bit 6 = 0   : bits 0 - 5 encode three A,C,T,G and next byte is not special (first symbol in bits 5,4)
+ * -             bit 6 = 1   : like above, but additionally, the following byte encodes 4 A,C,G,T (fourth symbol in
+ * -                           bits 7,6)
+ * - bit 7 = 0   bit 6 = 1   : N symbols, the number of N symbols is encoded bits 0 - 5. PLEASE NOTE:
+ *                             Because there is at least one N we store the number of following N. (occurrences(N) - 1 )
+ * - bit 7 = 0   bit 6 = 0   : NT symbol is in bits 0 - 3 (see coding table for NT sequences)
+ *
+ * | Symbol       | Description                   | Bases represented  |    | Complement |Code|
+ * |--------------|-------------------------------|--------------------|----|------------|----|
+ * | A            | Adenine                       | A                  | 1  | T          | 0  |
+ * | C            | Cytosine                      |     C              |    | G          | 1  |
+ * | G            | Guanine                       |         G          |    | C          | 2  |
+ * | T            | Thymine                       |             T      |    | A          | 3  |
+ * | U            | Uracil                        |             U      |    | A          |    |
+ * | W            | Weak                          | A           T      | 2  | W          |    |
+ * | S            | Strong                        |     C   G          |    | S          |    |
+ * | M            | aMino                         | A   C              |    | K          |    |
+ * | K            | Keto                          |         G   T      |    | M          |    |
+ * | R            | puRine                        | A       G          |    | Y          |    |
+ * | Y            | pYrimidine                    |     C       T      |    | R          |    |
+ * | B            | not A (B comes after A)       |     C   G   T      | 3  | V          |    |
+ * | D            | not C (D comes after C)       | A       G   T      |    | H          |    |
+ * | H            | not G (H comes after G)       | A   C       T      |    | D          |    |
+ * | V            | not T (V comes after T and U) | A   C   G          |    | B          |    |
+ * | N            | any Nucleotide (not a gap)    | A   C   G   T      | 4  | N          | 4  |
+ * | Z            | Zero                          |                    | 0  | Z          |    |
+ */
+class CompressedNucSeq
+{
+    /** @brief Checks if next NUM_REQUESTED symbols starting at pUncomp are all A,C,G,T. uiSize is the number of
+     *   remaining symbols in the uncompressed sequence.
+     *  @details Template encourages loop unrolling.
+     */
+    template <size_t NUM_REQUESTED> inline size_t countAcgt( uint8_t* pUncomp, size_t uiSize )
+    {
+        size_t uiAcgtCount = 0;
+        for( ; uiAcgtCount < uiSize; uiAcgtCount++ )
+        {
+            if( ( pUncomp[ uiAcgtCount ] > 3 ) // is not A,C,G or T
+                || ( uiAcgtCount >= NUM_REQUESTED ) ) // exceeded maximum
+                break;
+            // DEL: else
+            // DEL:     std::cout << uiAcgtCount << std::endl;
+        }
+        assert( uiAcgtCount <= NUM_REQUESTED );
+        return uiAcgtCount;
+    } // method
+
+    /** @brief Counts and returns the number of N-symbols starting from of pUncompItr. The counting is limited by
+     *  MAX_COUNT.
+     */
+    template <size_t MAX_COUNT> inline size_t countAnyNucleotide( uint8_t* pNucSecBuf, size_t uiSize )
+    {
+        size_t uiNCount = 0;
+        for( ; uiNCount < uiSize; uiNCount++ )
+            if( ( pNucSecBuf[ uiNCount ] != 4 ) // is not N
+                || ( uiNCount >= MAX_COUNT ) ) // exceeded maximum
+                break;
+        return uiNCount;
+    } // method
+
+#if 0
+    /** @brief Returns uiNuc shifted by SHIT bits in uiDest. */
+    template <size_t SHIFT> inline uint8_t acgtShift( const uint8_t uiDest, const uint8_t uiNuc )
+    {
+        assert( uiNuc < 4 ); // must be ACGT
+        return uiDest | ( uiNuc << SHIFT );
+    } // method
+
+    /** @brief Compresses 3 consecutive A,C,G,T into the bits 0-6 of a byte, shifted by SHIFT bits. */
+    template <size_t SHIFT> inline uint8_t acgt3Compress( uint8_t* pNucSecBuf )
+    {
+        return acgtShift<0 + SHIFT>(
+            acgtShift<2 + SHIFT>( acgtShift<4 + SHIFT>( 0x00, *pNucSecBuf ), *( pNucSecBuf + 1 ) ),
+            *( pNucSecBuf + 2 ) );
+    } // method
+#else
+    /** @brief Returns uiNuc shifted by SHIT bits in uiDest. */
+    inline uint8_t acgtShift( const uint8_t uiDest, const uint8_t uiNuc, const uint8_t SHIFT )
+    {
+        assert( uiNuc < 4 ); // must be ACGT
+        return uiDest | ( uiNuc << SHIFT );
+    } // method
+
+    /** @brief Compresses 3 consecutive A,C,G,T into the bits 0-6 of a byte, shifted by SHIFT bits. */
+    template <size_t SHIFT> inline uint8_t acgt3Compress( uint8_t* pNucSecBuf )
+    {
+        return acgtShift( acgtShift( acgtShift( 0x00, *pNucSecBuf, 4 + SHIFT ), *( pNucSecBuf + 1 ), 2 + SHIFT ),
+                          *( pNucSecBuf + 2 ), 0 + SHIFT );
+    } // method
+#endif
+
+    /** @brief Compresses 4 consecutive A,C,G,T into a single byte. */
+    inline uint8_t acgt4Compress( uint8_t* pNucSecBuf )
+    {
+        return acgtShift( acgt3Compress<2>( pNucSecBuf ), *( pNucSecBuf + 3 ), 0 );
+    } // method
+
+    /** @brief Write header to buffer. The header is the size of the uncompressed sequence as uint64 in big-endian. */
+    inline void writeHeader( uint8_t* pComprBuf, uint64_t uiDecompSeqSize )
+    {
+        memcpy( pComprBuf, &uiDecompSeqSize, sizeof uiDecompSeqSize );
+        // little-endian to big-endian on Intel and friends
+        std::reverse( pComprBuf, pComprBuf + sizeof uiDecompSeqSize );
+    } // method
+
+    /** @brief Reads the size of the uncompressed sequence from the header. */
+    inline uint64_t readHeader( uint8_t* pComprBuf )
+    {
+        uint64_t uiSize;
+        // little-endian to big-endian on Intel and friends
+        std::reverse( pComprBuf, pComprBuf + sizeof( uint64_t ) );
+        memcpy( &uiSize, pComprBuf, sizeof uiSize );
+        return uiSize;
+    } // method
+
+    /** @brief Decompress the bits 0-5 of *rpComp into three symbols in rpUncomp.
+     *  Move the pointers forward accordingly.
+     *  IMPROVEMENT: Via a table based approach, the decompression times could be improved.
+     */
+    inline void acgt3decompress( uint8_t*& rpComp, uint8_t*& rpUncomp )
+    {
+        auto uiFstByte = *( rpComp++ );
+        *( rpUncomp + 2 ) = uiFstByte & ( 0x03 );
+        uiFstByte = uiFstByte >> 2;
+        *( rpUncomp + 1 ) = uiFstByte & ( 0x03 );
+        uiFstByte = uiFstByte >> 2;
+        *( rpUncomp + 0 ) = uiFstByte & ( 0x03 );
+        rpUncomp += 3;
+    } // method
+
+    /** @brief Decompress the bits 0-7 of *rpComp into four symbols in rpUncomp.
+     *  Move the pointers forward accordingly.
+     *  IMPROVEMENT: Via a table based approach, the decompression times could be improved.
+     */
+    inline void acgt7decompress( uint8_t*& rpComp, uint8_t*& rpUncomp )
+    {
+        acgt3decompress( rpComp, rpUncomp );
+        auto uiSecByte = *( rpComp++ );
+        *( rpUncomp + 3 ) = uiSecByte & ( 0x03 );
+        uiSecByte = uiSecByte >> 2;
+        *( rpUncomp + 2 ) = uiSecByte & ( 0x03 );
+        uiSecByte = uiSecByte >> 2;
+        *( rpUncomp + 1 ) = uiSecByte & ( 0x03 );
+        uiSecByte = uiSecByte >> 2;
+        *( rpUncomp + 0 ) = uiSecByte & ( 0x03 );
+        rpUncomp += 4;
+    } // method
+
+  public:
+    size_t uiSizeCompSeq = 0; // size of final compressed sequence after compressing
+    ByteBuffer xCompSeqBuf; // Internal buffer for storage of the compressed sequence.
+
+    CompressedNucSeq( )
+    {}
+
+    CompressedNucSeq( const CompressedNucSeq& ) = delete; // no copies of compressed NucSeqs
+
+    // CompressedNucSeq(const CompressedNucSeq&& other )
+    // {
+    //     std::cout << "MOVE CONSTRUCTOR" << std::endl;
+    // } // move constructor
+
+    CompressedNucSeq& operator=( CompressedNucSeq&& other )
+    {
+        // this may be called once or twice
+        // if called twice, 'other' is the just-moved-from V subobject
+        std::cout << "Used Move assignment" << std::endl;
+        return *this;
+    }
+
+    /** @brief Returns the size of the compressed sequence. */
+    inline size_t size( ) const
+    {
+        return uiSizeCompSeq;
+    } // method
+
+    /** @brief Returns a pointer to the internal buffer. */
+    inline uint8_t* get( ) const
+    {
+        return (uint8_t*)xCompSeqBuf.get( );
+    } // method
+
+    /** @brief Compresses the nucleotide sequence given as argument and stores the result internally in the current
+     *  object.
+     */
+    void compress( const NucSeq& rxNucSeq )
+    {
+        size_t uiReqBufSize = rxNucSeq.uiSize // size of nucleotide seq
+                              + sizeof( uint64_t ); // storage for seq size memorizing
+
+        xCompSeqBuf.resize( uiReqBufSize ); // compressed seq won't become longer than rxNucSeq itself
+        const auto pCompStart = (uint8_t*)xCompSeqBuf.get( );
+        auto pCompItr = pCompStart;
+        writeHeader( pCompItr, rxNucSeq.uiSize );
+        pCompItr += sizeof( uint64_t ); // forward the pointer after the header
+        const uint8_t* pUncompEnd = rxNucSeq.pxSequenceRef + rxNucSeq.uiSize;
+        // Iterate over the nucleotide sequence to be compressed
+        for( uint8_t* pUncompItr = rxNucSeq.pxSequenceRef; pUncompItr < pUncompEnd; )
+        {
+            assert( pUncompItr - rxNucSeq.pxSequenceRef >= 0 );
+            size_t uiSize = static_cast<size_t>( pUncompEnd - pUncompItr ); // remaining length of nuc seq
+            size_t uiAcgtCount = countAcgt<7>( pUncompItr, uiSize );
+            if( uiAcgtCount == 7 )
+            {
+                // Next seven symbols are all A,C,G,T
+                // DEBUG: std::cout << "7";
+                *( pCompItr++ ) = 0xC0 | acgt3Compress<0>( pUncompItr ); // write next 3 symbols
+                *( pCompItr++ ) = acgt4Compress( pUncompItr + 3 ); // write next 4 symbols
+                pUncompItr += 7; // move 7 symbols forward
+            } // if (7 consecutive A,C,G<T)
+            else if( uiAcgtCount >= 3 )
+            {
+                // AT least next three symbols are all A,C,G,T
+                // DEBUG: std::cout << "3";
+                *( pCompItr++ ) = 0x80 | acgt3Compress<0>( pUncompItr ); // write next 3 symbols
+                pUncompItr += 3; // move 3 symbols forward
+            } // else if (3 consecutive A,C,G<T)
+            else if( size_t uiNum = countAnyNucleotide<64>( pUncompItr, uiSize ) )
+            {
+                // Consecutive sequence of uiNum N symbols (maximal 64 symbols)
+                // DEBUG:std::cout << "N(" << uiNum << ")";
+                assert( uiNum <= 64 && ( uiNum > 0 ) );
+                size_t numAnyNucleotideAhead = uiNum - 1;
+                assert( numAnyNucleotideAhead >= 0 && numAnyNucleotideAhead < 64 );
+                *( pCompItr++ ) = 0x40 | static_cast<uint8_t>( numAnyNucleotideAhead );
+                pUncompItr += uiNum;
+            } // else if (consecutive N)
+            else
+            {
+                // Encode a single symbol
+                // DEBUG: std::cout << "*";
+                assert( *pUncompItr < 32 );
+                *( pCompItr++ ) = *( pUncompItr++ );
+            } // else (single symbol)
+        } // for
+
+        uiSizeCompSeq = pCompItr - pCompStart;
+        // DEBUG: std::cout << "Compression rate: " << (double)uiSizeCompSeq / (double)rxNucSeq.uiSize << std::endl;
+    } // method
+
+    /** @brief Decompresses the internally stored compressed nucleotide sequence into the object given as argument.
+     *  The sequence that is hold by the argument is overwritten by the outcome of the decompression.
+     */
+    void decompress( NucSeq& rxNucSeq, uint8_t* pCompItr = NULL, size_t uiExtBufSize = 0 )
+    {
+        // If there is specific external buffer for decomposition, use the internal one that is used for compression.
+        if( pCompItr == NULL )
+            pCompItr = (uint8_t*)xCompSeqBuf.get( );
+        uint64_t uiNucSeqSize = readHeader( pCompItr );
+#ifndef NDEBUG
+        auto pCompEnd = pCompItr + ( ( uiExtBufSize > 0 ) ? uiExtBufSize : this->uiSizeCompSeq );
+#endif
+        pCompItr += sizeof( uint64_t );
+
+        rxNucSeq.resize( uiNucSeqSize );
+        uint8_t* pUncompItr = rxNucSeq.pxSequenceRef;
+        const uint8_t* pUncompEnd = rxNucSeq.pxSequenceRef + rxNucSeq.uiSize;
+        // DEBUG: std::cout << uiNucSeqSize << std::endl;
+        // Iterate so long decompression has not finished
+        while( pUncompItr < pUncompEnd )
+        {
+            assert( pUncompEnd > pUncompItr );
+#ifndef NDEBUG
+            size_t uiSize = static_cast<size_t>( pUncompEnd - pUncompItr ); // remaining length of nuc seq
+#endif
+            if( *pCompItr & 0x80 ) // first check for 2 bit compression
+            {
+                // 2 bit compression
+                if( *pCompItr & 0x40 )
+                {
+                    // 7 consecutive A,C,G,T
+                    assert( uiSize >= 7 );
+                    acgt7decompress( pCompItr, pUncompItr ); // pointers are moved via reference
+                } // if
+                else
+                {
+                    // 3 consecutive A,C,G,T
+                    assert( uiSize >= 3 );
+                    acgt3decompress( pCompItr, pUncompItr ); // pointers are moved via reference
+                }
+            } // if (2 bit encoded)
+            else if( *pCompItr & 0x40 ) // check for consecutive N
+            {
+                // consecutive N symbols
+                size_t uiNumSyms =
+                    *pCompItr & 0x3F; // least 6 bit encode the number of N's
+                                      // DEBUG:std::cout << "N decompress with size: " << uiNumSyms << std::endl;
+                uiNumSyms++; // the stored value is reduced by one for efficiency reasons.
+                assert( uiNumSyms <= uiSize );
+                for( size_t uiCount = 0; uiCount < uiNumSyms; uiCount++ )
+                    *( pUncompItr++ ) = 4; // 4 encodes N
+                pCompItr++;
+            } // else if (consecutive N)
+            else // top two bits are zero, so we have a single symbol in bits 0-6
+            {
+                // copy single symbol
+                *( pUncompItr++ ) = *( pCompItr++ );
+            } // else (single symbol)
+        } // while
+        assert( pCompItr == pCompEnd );
+    } // method
+
+    std::shared_ptr<NucSeq> pUncomNucSeq;
+
+    /** @brief Decompresses from the buffer given as argument into the shared NucSeq available as attribute */
+    void decompress( uint8_t* pCompExtBuf, size_t uiExtBufSize )
+    {
+        this->pUncomNucSeq = std::make_shared<NucSeq>( );
+        this->decompress( *pUncomNucSeq.get( ), pCompExtBuf, uiExtBufSize );
+    } // method
+}; // class CompressedNucSeq
+
+inline std::shared_ptr<CompressedNucSeq> makeSharedCompNucSeq( const NucSeq& rxNucSeq )
+{
+    std::shared_ptr<CompressedNucSeq> pCompdNucSeq = std::make_shared<CompressedNucSeq>( );
+    pCompdNucSeq->compress( rxNucSeq );
+    return pCompdNucSeq;
+} // function
+
+} // namespace libMA
+
+inline std::string buf_to_hex( char* pBuf, size_t uiSize )
+{
+    static const char hex_digits[] = "0123456789ABCDEF";
+
+    std::string output;
+    output.reserve( uiSize * 2 );
+    for( auto pItr = pBuf; pItr < pBuf + uiSize; pItr++ )
+    {
+        uint8_t c = (uint8_t)*pItr;
+        // std::cout << (int)(c >> 4) << " " << (int)(c & 15) << std::endl;
+        output.push_back( hex_digits[ c >> 4 ] );
+        output.push_back( hex_digits[ c & 15 ] );
+        output.push_back( ' ' );
+    }
+    return output;
+} // function
+
+/** @brief Implements the binary representation of compressed sequences */
+template <typename DBCon>
+inline std::string csvPrint( DBCon& rxDBCon, const std::shared_ptr<libMA::CompressedNucSeq>& pCompNucSep )
+{
+    return rxDBCon.blobAsQuotedSafeString( pCompNucSep->xCompSeqBuf.get( ),
+                                           pCompNucSep->uiSizeCompSeq ); // mysql_real_escape_string_quote()
+}; // method
+
+/* NEW DATABASE INTERFACE */
+/* Integration of shared pointers to CompressedNucSeq objects as data-type in the MySQL interface.
+ */
+using CompNucSeqSharedPtr = std::shared_ptr<libMA::CompressedNucSeq>;
+
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<CompNucSeqSharedPtr>( )
+{
+    return "LONGBLOB";
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void MySQLConDB::StmtArg::set( const CompNucSeqSharedPtr& rxCompSeq )
+{
+    // On MSVC the size of unsigned long is 32 bit merely ...
+    if( rxCompSeq->size( ) > static_cast<size_t>( std::numeric_limits<unsigned long>::max( ) ) )
+        std::runtime_error( "MySQLConDB::StmtArg::set: Overflow for rxCompSeq.size() " );
+    unsigned long uiCompSeqSize = static_cast<unsigned long>( rxCompSeq->size( ) );
+    this->uiLength = uiCompSeqSize;
+    pMySQLBind->buffer_length = uiCompSeqSize;
+    pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
+    pMySQLBind->buffer = (void*)( rxCompSeq->get( ) );
+} // specialized method
+
+// Part 3: Code for supporting query output:
+//         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
+//         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
+template <>
+struct /* MySQLConDB:: */ RowCell<CompNucSeqSharedPtr> : public /* MySQLConDB::*/ RowCellBase<CompNucSeqSharedPtr>
+{
+    inline void init( MYSQL_BIND* pMySQLBind, CompNucSeqSharedPtr* pCellValue, size_t uiColNum )
+    {
+        *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
+        RowCellBase<CompNucSeqSharedPtr>::init( pMySQLBind, pCellValue, MYSQL_TYPE_LONG_BLOB, uiColNum );
+    } // method
+
+    // Decompress the nucleotide sequence directly from the buffer.
+    inline void storeVarSizeCell( )
+    {
+        // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
+        ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
+    } // method
+}; // specialized class
+
+
+namespace libMA
+{
+/** @brief Encapsulates a shared pointer to a nucleotide sequence */
+class NucSeqSql // not required any longer : public SQL_BLOB
 {
   public:
     std::shared_ptr<NucSeq> pNucSeq;
@@ -812,11 +1271,12 @@ class NucSeqSql : public SQL_BLOB
 
 } // namespace libMA
 
-
+#if 0
 template <> inline std::string getSQLTypeName<libMA::NucSeqSql>( )
 {
-    return "BLOB";
+return "BLOB";
 } // specialized function
+#endif
 
 
 /* NEW DATABASE INTERFACE */
@@ -854,7 +1314,6 @@ template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQ
         pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
-
 
 
 #ifdef WITH_PYTHON

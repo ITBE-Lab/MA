@@ -39,17 +39,17 @@ void metaMeasureAndLogDuration( const std::string& sLogText, // additional loggi
 )
 {
     if( bLog )
-    { /* Measure duration and log.
-       */
+    {
+        // Measure duration and log.
         auto xDuration = metaMeasureDuration( std::forward<FUNCTOR>( f ) );
         std::cout << sLogText << " required " << xDuration.count( ) * 1000 << " milliseconds." << std::endl;
     } // if
     else
-    { /* Simply call the functor.
-       */
+    { 
+        // Simply call the functor.
         f( );
     } // else
-} // meta function
+} // function
 
 #if _MSC_VER
 template <class TP_FUNC_APPLY> __int64 time_call_( TP_FUNC_APPLY&& f )
@@ -96,4 +96,3 @@ std::string timeAsString( const timespec& time );
 #ifdef _MSC_VER
 std::string timeAsString( const __int64& time );
 #endif
-
