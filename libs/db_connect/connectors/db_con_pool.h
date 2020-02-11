@@ -230,7 +230,7 @@ template <typename DBImpl> class SQLDBConPool
         } // if
     } // method
 #else
-    // the following function are empty dummies in case DO_MEASURE_USAGE is set to zero
+    // the following functions are empty dummies in case DO_MEASURE_USAGE is set to zero
 
     inline void initTime( size_t uiPoolSize )
     {} // method

@@ -28,8 +28,6 @@ namespace libMA
 template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
 class InserterContainer : public Container
 {
-    typename DBCon::sharedGuardedTrxnType pTransaction;
-
   public:
     using insertTypes_ = pack<InsertTypes...>;
     using DBConForwarded = DBCon;
@@ -40,13 +38,16 @@ class InserterContainer : public Container
     const int64_t iId;
 
   private:
+    // needs to be below pTable, so that the transactions destructor is called first
+    typename DBCon::sharedGuardedTrxnType pTransaction;
+
     InserterContainer(
         std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType<DBCon>>> xFromRun,
         int64_t iId )
-        : pTransaction( std::get<0>( xFromRun ) ),
-          iConnectionId( std::get<1>( xFromRun ) ),
+        : iConnectionId( std::get<1>( xFromRun ) ),
           pTable( std::get<2>( xFromRun ) ),
-          iId( iId )
+          iId( iId ),
+          pTransaction( std::get<0>( xFromRun ) )
     {}
 
   public:
@@ -96,6 +97,7 @@ class InserterContainer : public Container
     virtual void close( )
     {
         pTable.reset( );
+        pTransaction.reset( );
     } // method
 }; // class
 
@@ -109,7 +111,6 @@ class InserterContainer : public Container
 template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
 class BulkInserterContainer : public Container
 {
-    typename DBCon::sharedGuardedTrxnType pTransaction;
 
   public:
     using insertTypes_ = pack<InsertTypes...>;
@@ -123,12 +124,15 @@ class BulkInserterContainer : public Container
     const int64_t iId;
 
   private:
+    // needs to be below pInserter, so that the transactions destructor is called first
+    typename DBCon::sharedGuardedTrxnType pTransaction;
+
     BulkInserterContainer(
         std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<InserterType>> xFromRun, int64_t iId )
-        : pTransaction( std::get<0>( xFromRun ) ),
-          iConnectionId( std::get<1>( xFromRun ) ),
+        : iConnectionId( std::get<1>( xFromRun ) ),
           pInserter( std::get<2>( xFromRun ) ),
-          iId( iId )
+          iId( iId ),
+          pTransaction( std::get<0>( xFromRun ) )
     {}
 
   public:
@@ -180,6 +184,7 @@ class BulkInserterContainer : public Container
     virtual void close( )
     {
         pInserter.reset( );
+        pTransaction.reset( );
     } // method
 }; // class
 

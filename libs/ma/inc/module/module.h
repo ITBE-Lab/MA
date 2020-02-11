@@ -916,6 +916,11 @@ class PyPledgeVector : public Pledge<PyContainerVector>
     {
         BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
     } // method
+
+    inline void clear()
+    {
+        vPledges.clear();
+    } // method
 }; // class
 
 template <class TP_MODULE, typename... TP_CONSTR_PARAMS>

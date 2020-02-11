@@ -35,6 +35,7 @@ void exportModuleClass( py::module& rxPyModuleId )
         .def( py::init<>( ) ) // default constructor
         .def( "append", &PyPledgeVector::append )
         .def( "get", &PyPledgeVector::get )
+        .def( "clear", &PyPledgeVector::clear )
         .def( "simultaneous_get", &PyPledgeVector::simultaneousGetPy );
 
     py::implicitly_convertible<PyPledgeVector, BasePledge>( );
