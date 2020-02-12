@@ -35,18 +35,6 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
 
 template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
-  public:
-    /**
-     * @brief SQL code for score computation of sv call
-     */
-    static std::string getSqlForCallScore( std::string sTableName = "" )
-    {
-        if( !sTableName.empty( ) )
-            sTableName.append( "." );
-        return " ( " + sTableName + "supporting_reads * 1.0 ) / " + sTableName + "reference_ambiguity ";
-    } // method
-
-  private:
     class OverlapCache
     {
         typedef SQLTable<DBCon, // DB connector type
@@ -91,13 +79,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                               std::to_string( iCallerRunIdB ) ),
                   xNumOverlaps( pDatabase,
                                 // each inner call can overlap an outer call at most once
-                                "SELECT id, " + SvCallTable::getSqlForCallScore( ) +
-                                    ", from_pos, from_size, "
-                                    "       to_pos, to_size, switch_strand "
-                                    "FROM sv_call_table "
-                                    "WHERE sv_caller_run_id = ? "
-                                    "AND " +
-                                    SvCallTable::getSqlForCallScore( ) + " >= ? " ),
+                                "SELECT id, score, from_pos, from_size, "
+                                "       to_pos, to_size, switch_strand "
+                                "FROM sv_call_table "
+                                "WHERE sv_caller_run_id = ? "
+                                "AND score >= ? " ),
                   xNumOverlapsCache( pDatabase,
                                      "SELECT COUNT(*) "
                                      "FROM " +
@@ -202,13 +188,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                 "WHERE id != ? "
                                 // tuple comparison here, so that overlapping calls with equal score always have
                                 // one call take priority (in this case always the one inserted after)
-                                "AND (" +
-                                    SvCallTable::getSqlForCallScore( ) +
-                                    ", id) > (?, ?) "
-                                    "AND run_id_b = ? " // dim 1
-                                    "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
-                                    "AND switch_strand = ? "
-                                    "LIMIT 1 " );
+                                "AND (score, id) > (?, ?) "
+                                "AND run_id_b = ? " // dim 1
+                                "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                                "AND switch_strand = ? "
+                                "LIMIT 1 " );
                             for( size_t uiTupId = uiJobId_; uiTupId < vResults.size( ); uiTupId += uiNumThreads )
                             {
                                 auto& rTup = vResults[ uiTupId ];
@@ -352,6 +336,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
               {{COLUMN_NAME, "rectangle"}}}},
+            // @todo show arne generated columns
+            {GENERATED_COLUMNS,
+             {{{COLUMN_NAME, "score"},
+               {TYPE, "DOUBLE"},
+               {AS, "(supporting_reads * 1.0) / reference_ambiguity"},
+               // stored true raises errors... :()
+               {STORED, false}}}},
             {FOREIGN_KEY,
              {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},
             {FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}};
@@ -364,25 +355,21 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
           xQuerySizeSpecific( pConnection, "SELECT COUNT(*) FROM sv_call_table "
                                            "WHERE sv_caller_run_id = ? "
-                                           "AND " +
-                                               getSqlForCallScore( ) + " >= ? " ),
+                                           "AND score >= ? " ),
           xCallArea( pConnection,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
-                     "AND " +
-                         getSqlForCallScore( ) + " >= ? " ),
+                     "AND score >= ? " ),
           xMaxScore( pConnection,
-                     "SELECT " + getSqlForCallScore( ) +
-                         " FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? "
-                         "ORDER BY " +
-                         getSqlForCallScore( ) + " DESC LIMIT 1 " ),
+                     "SELECT score "
+                     " FROM sv_call_table "
+                     "WHERE sv_caller_run_id = ? "
+                     "ORDER BY score DESC LIMIT 1 " ),
           xMinScore( pConnection,
-                     "SELECT " + getSqlForCallScore( ) +
-                         " FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? "
-                         "ORDER BY " +
-                         getSqlForCallScore( ) + " ASC LIMIT 1 " ),
+                     "SELECT score "
+                     " FROM sv_call_table "
+                     "WHERE sv_caller_run_id = ? "
+                     "ORDER BY score ASC LIMIT 1 " ),
           xNextCallForwardContext(
               pConnection,
               "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
@@ -435,22 +422,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo reenable this..
     {} // default constructor
 
-    // @todo use a Generated Column here. see:
-    // https://dev.mysql.com/doc/refman/8.0/en/generated-column-index-optimizations.html
     inline void addScoreIndex( int64_t iCallerRunId )
     {
-        // Discuss Markus: This index definition is somehow defect ...
-        // DEL:SQLStatement<DBCon>( pDatabase,
-        // DEL:                     ( "CREATE INDEX IF NOT EXISTS sv_call_table_score_index_" +
-        // DEL:                       std::to_string( iCallerRunId ) + " ON sv_call_table ( " + getSqlForCallScore( ) +
-        // DEL:                       " )                         " +
-        // DEL:                       " WHERE sv_caller_run_id = " + std::to_string( iCallerRunId ) ) DEL
-        // DEL:                     :.c_str( ) )
-        // DEL:    .exec( );
-#if 0 // Must be fixed together with Markus
-        this->addIndex( json{ { INDEX_NAME, "sv_call_table_score_index_" + std::to_string(iCallerRunId) },
-                              { INDEX_COLUMNS, getSqlForCallScore( ) },
-                              { WHERE, "sv_caller_run_id = " + std::to_string( iCallerRunId ) } } );
+#if 0 // @todo apparently the mysql docs are lying? get errors doing this...
+    // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+    // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
+        this->addIndex( json{{INDEX_NAME, "sv_call_table_score_index_" + std::to_string( iCallerRunId )},
+                             {INDEX_COLUMNS, "score"},
+                             {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRunId )}} );
 #endif
     } // method
 

@@ -34,8 +34,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<DBConSingle> pConnection, std::sha
                                             "FROM sv_call_table "
                                             "WHERE sv_caller_run_id = ? " // dim 1
                                             "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
-                                            "AND " +
-                                                SvCallTable<DBConSingle>::getSqlForCallScore( ) + " >= ? " );
+                                            "AND score >= ? " );
 
 
     auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );

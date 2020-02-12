@@ -96,9 +96,7 @@ template <typename DBCon> class SvCallsFromDb
                   "     SELECT inner2.id "
                   "     FROM sv_call_table AS inner2 "
                   "     WHERE idx_inner2.id != inner.id "
-                  "     AND " +
-                  SvCallTable<DBCon>::getSqlForCallScore( "inner2" ) +
-                  " >= " + SvCallTable<DBCon>::getSqlForCallScore( "inner" ) +
+                  "     AND inner2.score >= inner.score "
                   "     AND idx_inner2.run_id_b >= inner.id " // dim 1
                   "     AND idx_inner2.run_id_a <= inner.id " // dim 1
                   "     AND ST_Distance(inner2.rectangle, inner.rectangle) <= ? "
@@ -125,8 +123,7 @@ template <typename DBCon> class SvCallsFromDb
               "       reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
-              "AND " +
-                  SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? ",
+              "AND score >= ? ",
               "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
               "       num_supporting_nt, sv_jump_table.id, read_id "
               "FROM sv_call_support_table "
@@ -170,8 +167,7 @@ template <typename DBCon> class SvCallsFromDb
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
                          "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
-                         "AND " +
-                             SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? ",
+                         "AND score >= ? ",
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "

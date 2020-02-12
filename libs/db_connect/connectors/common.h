@@ -424,6 +424,17 @@ const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
 
+// generated columns; see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+// @todo talk with arne about design here
+// part of ColTypes?:
+// yes: problem with inserters
+// no: TYPE keyword required... (currently this is implemented)
+const std::string GENERATED_COLUMNS = "GENERATED_COLUMNS";
+// the following keywords do only have an effect on generated columns
+const std::string TYPE = "TYPE";
+const std::string AS = "AS";
+const std::string STORED = "STORED";
+
 
 /** @brief Serializes a value for CSV representation.
  *  The translation is required by the SQLFileBulkInserter.
@@ -744,7 +755,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
               uiReleaseThreshold( uiReleaseThreshold )
         {
             std::cout << "COL NAMES:";
-            for( auto rxName : rxHost.tableColNames())
+            for( auto rxName : rxHost.tableColNames( ) )
                 std::cout << rxName << " ";
             std::cout << std::endl;
             // DEBUG: std::cout << "SQLFileBulkInserter filename:" << this->sCSVFileName.generic_string( ) <<
@@ -892,6 +903,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     std::string makeTableCreateStmt( )
     {
         std::string sStmt = "CREATE TABLE " + getTableName( ) + " (";
+        // deal with regular columns
         for( size_t iItr = 0; iItr < this->rjTableCols.size( ); )
         {
             auto& rjCol = this->rjTableCols[ iItr ]; // current column in jTableDef
@@ -906,6 +918,53 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             if( ++iItr < this->rjTableCols.size( ) )
                 sStmt.append( ", " );
         } // for
+        // deal with generated columns if there are any defined
+        if( this->jTableDef.count( GENERATED_COLUMNS ) )
+            for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
+            {
+                // get the json column enty
+                auto& rjCol = this->jTableDef[ GENERATED_COLUMNS ][ iItr ]; // current column in jTableDef
+
+                // check that each colum is complete
+                if( rjCol.count( COLUMN_NAME ) == 0 )
+                    throw std::runtime_error(
+                        std::string( "COLUMN_NAME is missing for a GENERATED_COLUMNS in the table " )
+                            .append( getTableName( ) ) );
+                if( rjCol.count( TYPE ) == 0 )
+                    throw std::runtime_error( std::string( "TYPE is missing for the generated column: " )
+                                                  .append( rjCol[ COLUMN_NAME ] )
+                                                  .append( " in the table " )
+                                                  .append( getTableName( ) ) );
+                if( rjCol.count( AS ) == 0 )
+                    throw std::runtime_error( std::string( "AS is missing for the generated column: " )
+                                                  .append( rjCol[ COLUMN_NAME ] )
+                                                  .append( " in the table " )
+                                                  .append( getTableName( ) ) );
+                // append to the SQL statemnt
+                sStmt
+                    // insert separating comma. since the last regular colum does not have a comma we can always saveley
+                    // insert a seperating comma
+                    .append( ", " )
+                    .append( rjCol[ COLUMN_NAME ] ) // column name
+                    .append( " " )
+                    .append( rjCol[ TYPE ] ) // column type
+                    /* Generated columns are columns that are computed from other columns
+                     * InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
+                     * the STORED variant. -> actually it doesn't...
+                     * The user is supposed to supply an expression that computes the generated column
+                     * see:
+                     * https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+                     * https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
+                     */
+                    .append( " AS ( " )
+                    .append( rjCol[ AS ] )
+                    .append( " ) " )
+                    .append( rjCol.count( STORED ) == 0 || rjCol[ STORED ] ? "STORED" : "VIRTUAL" );
+                // generated columns can have constraints as well
+                if( rjCol.count( CONSTRAINTS ) )
+                    // CONSTRAINTS must be plain text describing all constraints
+                    sStmt.append( " " ).append( rjCol[ CONSTRAINTS ] );
+            } // for
 
         // Primary Key (for composite form of primary key)
         if( jTableDef.count( PRIMARY_KEY ) )
@@ -947,6 +1006,12 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     {
         std::string sStmtText( "(" );
         getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{} );
+        // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated explicitly, the
+        // only permitted value is DEFAULT.
+        // this assumes that the create table statement always appends all generated columns at the end
+        if( this->jTableDef.count( GENERATED_COLUMNS ) )
+            for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
+                sStmtText.append( ", DEFAULT" );
         return sStmtText.append( ")" );
     } // method
 
@@ -967,24 +1032,6 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         for( size_t uiItrRow = 0; uiItrRow < uiNumVals; )
         {
             sStmt.append( sValuesPartOfStmt );
-            // DEPR sStmt.append( "(" );
-            // DEPR // Comma separated list
-            // DEPR for( size_t uiItr = 0; uiItr < this->rjTableCols.size( ); )
-            // DEPR {
-            // DEPR     if( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 0 )
-            // DEPR         sStmt.append( "?" ); // default insert statement
-            // DEPR     else // custom insert statement
-            // DEPR     {
-            // DEPR         // max one insert statement per column
-            // DEPR         assert( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 1 );
-            // DEPR         sStmt.append( this->rjTableCols[ uiItr ][ PLACEHOLDER ] ); // custom insert statement
-            // DEPR     } // else
-            // DEPR
-            // DEPR     // insert separating comma
-            // DEPR     if( ++uiItr < this->rjTableCols.size( ) )
-            // DEPR         sStmt.append( ", " );
-            // DEPR } // inner for
-            // DEPR sStmt.append( ")" );
             // insert separating comma
             if( ++uiItrRow < uiNumVals )
                 sStmt.append( ", " );
