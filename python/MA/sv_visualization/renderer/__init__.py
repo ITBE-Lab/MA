@@ -15,7 +15,7 @@ class Renderer():
         self.widgets = Widgets(self)
         self.pack = None
         self.fm_index = None
-        self.sv_db = None
+        self.db_conn = None
         self.w = None
         self.h = None
         self.params = ParameterSetManager()

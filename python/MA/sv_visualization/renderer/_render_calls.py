@@ -51,7 +51,7 @@ def render_calls(self):
     num_call_jumps = 0
     jump_list = []
     with self.measure("SvCallFromDb(run_id)"):
-        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.get_run_id(), int(self.xs - self.w),
+        calls_from_db = SvCallsFromDb(self.params, self.db_conn, self.get_run_id(), int(self.xs - self.w),
                                       int(self.ys - self.h), self.w*3, self.h*3, self.get_min_score())
     while calls_from_db.hasNext():
         jump = calls_from_db.next()
@@ -84,7 +84,7 @@ def render_calls(self):
         accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
         accepted_plus_data["s"].append(str(jump.get_score()))
     with self.measure("SvCallFromDb(run_id)"):
-        calls_from_db = SvCallsFromDb(self.params, self.sv_db, self.get_gt_id(),
+        calls_from_db = SvCallsFromDb(self.params, self.db_conn, self.get_gt_id(),
                                       int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
                                       self.get_min_score())
     while calls_from_db.hasNext():
@@ -121,8 +121,8 @@ def render_calls(self):
         if self.do_render_call_jumps_only:
             num_jumps = num_call_jumps
         else:
-            num_jumps = libMA.get_num_jumps_in_area(self.sv_db, self.pack,
-                                                self.sv_db.get_run_jump_id(self.get_run_id()),
+            num_jumps = libMA.get_num_jumps_in_area(self.db_conn, self.pack,
+                                                SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
                                                 int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
                                                 self.get_max_num_ele())
     if num_jumps < self.get_max_num_ele():

@@ -9,7 +9,7 @@ def render_overview(self):
     #self.plot.grid.visible = False
     with self.measure("get_call_overview"):
         div = int(math.sqrt(self.get_max_num_ele()/10))
-        rect_vec = libMA.get_call_overview(self.sv_db, self.pack, self.get_run_id(), self.get_min_score(),
+        rect_vec = libMA.get_call_overview(self.db_con, self.pack, self.get_run_id(), self.get_min_score(),
                                         int(self.xs - self.w),
                                         int(self.ys - self.h),
                                         self.w*3, self.h*3,

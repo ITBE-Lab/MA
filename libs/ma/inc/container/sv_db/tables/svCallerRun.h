@@ -34,6 +34,7 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
     std::shared_ptr<DBCon> pDatabase;
     SQLStatement<DBCon> xDelete; // Discuss Markus: Shouldn't this be a statement?
     SQLQuery<DBCon, int64_t> xGetId;
+    SQLQuery<DBCon, int64_t> xGetIds;
     SQLQuery<DBCon, std::string, std::string, int64_t, int64_t> xGetName;
     SQLQuery<DBCon, uint32_t> xNum;
     SQLQuery<DBCon, uint32_t> xExists;
@@ -47,6 +48,7 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
           pDatabase( pDB ),
           xDelete( pDB, "DELETE FROM sv_caller_run_table WHERE name = ?" ),
           xGetId( pDB, "SELECT id FROM sv_caller_run_table WHERE name = ? ORDER BY time_stamp ASC LIMIT 1" ),
+          xGetIds( pDB, "SELECT id FROM sv_caller_run_table" ),
           xGetName( pDB, "SELECT name, _desc_, time_stamp, sv_jump_run_id FROM sv_caller_run_table WHERE id = ?" ),
           xNum( pDB, "SELECT COUNT(*) FROM sv_caller_run_table " ),
           xExists( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id = ?" ),
@@ -67,8 +69,12 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
     inline int64_t getId( std::string& rS )
     {
         int64_t xId = xGetId.scalar( rS );
-        std::cout << "\n>>>xId has value " << xId << " for rS = " << rS << std::endl;
         return xGetId.scalar( rS );
+    } // method
+
+    inline std::vector<int64_t> getIds( )
+    {
+        return xGetIds.template executeAndStoreInVector<0>( );
     } // method
 
     inline bool exists( int64_t iId )

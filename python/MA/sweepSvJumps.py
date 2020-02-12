@@ -5,9 +5,9 @@ import datetime
 
 def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequencer_ids, pack,
                        out_file=None):
-    parameter_set_manager.by_name("Number of Threads").set(2)
-    parameter_set_manager.by_name("Use all Processor Cores").set(False)
-    assert parameter_set_manager.get_num_threads() == 2
+    #parameter_set_manager.by_name("Number of Threads").set(2)
+    #parameter_set_manager.by_name("Use all Processor Cores").set(False)
+    #assert parameter_set_manager.get_num_threads() == 2
 
     # creates scope so that deconstructor of call inserter is triggered (commits insert transaction)
     def graph():

@@ -7,7 +7,7 @@ JSON_PREFIX = "/MAdata/sv_datasets/"
 
 def setup(self):
     dataset_name = self.widgets.file_input.value
-    if os.path.isfile(JSON_PREFIX + dataset_name + "/info.json"):
+    if not dataset_name is None and os.path.isfile(JSON_PREFIX + dataset_name + "/info.json"):
         with open(JSON_PREFIX + dataset_name + "/info.json", "r") as json_file:
             json_info_file = json.loads(json_file.read(), object_hook=decode)
         ref_genome = json_info_file["reference_path"] + "/ma/genome"
@@ -16,7 +16,7 @@ def setup(self):
         self.pack.load(ref_genome)
         self.fm_index = FMIndex()
         self.fm_index.load(ref_genome)
-        self.sv_db = SV_DB(dataset_name, "open")
+        self.db_conn = DbConn(dataset_name)
 
         self.xs = 0
         self.xe = self.pack.unpacked_size_single_strand
@@ -26,16 +26,12 @@ def setup(self):
         menu = []
         self.widgets.run_id_dropdown.label="select run id here"
         self.widgets.ground_truth_id_dropdown.label="select ground truth id here"
-        if not self.sv_db is None:
-            jump_fetcher = libMA.SvCallerRunsFromDb(self.sv_db)
-            while not jump_fetcher.eof():
-                text = jump_fetcher.name() + " - " + \
-                    self.sv_db.get_run_date(jump_fetcher.id()) + " - " + \
-                    jump_fetcher.desc()
-                text += " - " + \
-                    str(self.sv_db.get_num_calls(jump_fetcher.id(), self.widgets.score_slider.value))
-                menu.append((text, str(jump_fetcher.id())))
-                jump_fetcher.next()
+        if not self.db_conn is None:
+            run_table = SvCallerRunTable(self.db_conn)
+            for run_id in run_table.getIds():
+                text = run_table.getName(run_id) + " - " + run_table.getDate(run_id) + " - " + run_table.getDesc(run_id)
+                text += " - " + str(SvCallTable(self.db_conn).num_calls(run_id, self.widgets.score_slider.value))
+                menu.append((text, str(run_id)))
         self.widgets.run_id_dropdown.menu = menu
         self.widgets.ground_truth_id_dropdown.menu = menu
 
