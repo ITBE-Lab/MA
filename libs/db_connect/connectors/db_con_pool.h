@@ -65,14 +65,14 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
  */
 template <typename DBImpl> class SQLDBConPool
 {
-#define DO_MEASURE_USAGE 1
+#define DO_PROFILE 1
   private:
     using TaskType = std::function<void( std::shared_ptr<PooledSQLDBCon<DBImpl>> )>; // type of the tasks to be executed
 
     std::vector<std::thread> vWorkers; // worker threads; each thread manages one connection
     std::vector<std::shared_ptr<PooledSQLDBCon<DBImpl>>> vConPool; // pointers to actual connections
     std::vector<std::queue<TaskType>> vqTasks; // queue of lambda functions that shall to executed
-#if DO_MEASURE_USAGE == 1
+#if DO_PROFILE == 1
     using duration = std::chrono::duration<double>;
     using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
 
@@ -172,7 +172,7 @@ template <typename DBImpl> class SQLDBConPool
      */
     inline void printTime( std::ostream& xOut )
     {
-        xOut << "SQLDBConPool usage evaluation: " << std::endl;
+        xOut << "SQLDBConPool profiler: " << std::endl;
         xOut << "tID\t#tsk/s\t#booked\t%active\t%qlen=0\t%qlen=1\t%qlen=2\t%qlen>2" << std::endl;
 
         // two digits precision double output
@@ -230,7 +230,7 @@ template <typename DBImpl> class SQLDBConPool
         } // if
     } // method
 #else
-    // the following functions are empty dummies in case DO_MEASURE_USAGE is set to zero
+    // the following functions are empty dummies in case DO_PROFILE is set to zero
 
     inline void initTime( size_t uiPoolSize )
     {} // method
