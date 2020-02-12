@@ -1,6 +1,6 @@
 #pragma once
 
-#include "exception.h"
+#include <stdexcept>
 #include "exported.h"
 #include "support.h"
 
@@ -79,7 +79,7 @@ class AlignerParameterBase
 
     virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
     {
-        throw AnnotatedException( "Mirroring of AlignerParameterBase objects is prohibited." );
+        throw std::runtime_error( "Mirroring of AlignerParameterBase objects is prohibited." );
     } // method
 
     virtual std::string type_name( ) const
@@ -89,12 +89,12 @@ class AlignerParameterBase
 
     virtual std::string asText( ) const
     {
-        throw AnnotatedException( "AlignerParameterBase has go value" );
+        throw std::runtime_error( "AlignerParameterBase has go value" );
     } // method
 
     virtual void setByText( const std::string& sValueAsString )
     {
-        throw AnnotatedException( "Cannot set value of AlignerParameterBase" );
+        throw std::runtime_error( "Cannot set value of AlignerParameterBase" );
     } // method
 }; // class
 
@@ -410,7 +410,7 @@ class ParameterSetBase
         {
             auto xEmplaceRet = xpParametersByShort.emplace( pParameter->cShort, pParameter );
             if( !xEmplaceRet.second ) // there is another parameter with this shorthand...
-                throw AnnotatedException( std::string( "Shorthand: " )
+                throw std::runtime_error( std::string( "Shorthand: " )
                                               .append( std::to_string( pParameter->cShort ) )
                                               .append( " used twice: 1) " )
                                               .append( xEmplaceRet.first->second->sName )
@@ -456,7 +456,7 @@ class ParameterSetBase
         } // try
         catch( std::out_of_range& )
         {
-            throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
+            throw std::runtime_error( std::string( "Could not find parameter: " ).append( rParameterName ) );
         } // catch
     } // method
 
@@ -468,7 +468,7 @@ class ParameterSetBase
         } // try
         catch( std::out_of_range& )
         {
-            throw AnnotatedException( "Could not find parameter: " + cX );
+            throw std::runtime_error( "Could not find parameter: " + cX );
         } // catch
     } // method
 
@@ -1031,7 +1031,7 @@ class ParameterSetManager
             return pGlobalParameterSet->byName( rParameterName );
         if( this->getSelected( )->hasName( rParameterName ) )
             return this->getSelected( )->byName( rParameterName );
-        throw AnnotatedException( std::string( "Could not find parameter: " ).append( rParameterName ) );
+        throw std::runtime_error( std::string( "Could not find parameter: " ).append( rParameterName ) );
     } // method
 
     std::shared_ptr<AlignerParameterBase> byShort( const char cX )
@@ -1040,7 +1040,7 @@ class ParameterSetManager
             return pGlobalParameterSet->byShort( cX );
         if( this->getSelected( )->hasShort( cX ) )
             return this->getSelected( )->byShort( cX );
-        throw AnnotatedException( "Could not find parameter: " + cX );
+        throw std::runtime_error( "Could not find parameter: " + cX );
     } // method
 
     size_t getNumThreads( ) const

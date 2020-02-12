@@ -118,7 +118,7 @@ template <typename TP> class Splitter : public Module<TP, true, ContainerVector<
     {
         if( pIn->empty( ) )
             // if we reach this point we have read all content vector
-            throw AnnotatedException( "Tried to extract element from empty vector" );
+            throw std::runtime_error( "Tried to extract element from empty vector" );
         auto pBack = pIn->back( );
         pIn->pop_back( );
         if( pIn->empty( ) )
@@ -149,7 +149,7 @@ template <typename TP> class StaticSplitter : public Module<TP, true>
     {
         if( pIn->empty( ) )
             // if we reach this point we have read all content vector
-            throw AnnotatedException( "Tried to extract element from empty vector" );
+            throw std::runtime_error( "Tried to extract element from empty vector" );
         auto pBack = pIn->back( );
         pIn->pop_back( );
         if( pIn->empty( ) )

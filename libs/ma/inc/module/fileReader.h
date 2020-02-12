@@ -36,28 +36,28 @@ class FileStream
 
     virtual bool eof( ) const
     {
-        throw AnnotatedException( "This function should have been overridden" );
+        throw std::runtime_error( "This function should have been overridden" );
     }
 
     virtual bool is_open( ) const
     {
-        throw AnnotatedException( "This function should have been overridden" );
+        throw std::runtime_error( "This function should have been overridden" );
     }
     virtual void close( )
     {
-        throw AnnotatedException( "This function should have been overridden" );
+        throw std::runtime_error( "This function should have been overridden" );
     }
     virtual size_t tellg( )
     {
-        throw AnnotatedException( "This function should have been overridden" );
+        throw std::runtime_error( "This function should have been overridden" );
     }
     virtual char peek( )
     {
-        throw AnnotatedException( "This function should have been overridden" );
+        throw std::runtime_error( "This function should have been overridden" );
     }
     virtual void safeGetLine( std::string& t )
     {
-        throw AnnotatedException( "This function should have been overridden" );
+        throw std::runtime_error( "This function should have been overridden" );
     }
 }; // class
 
@@ -357,7 +357,7 @@ class FileReader : public SingleFileReader
             pFile = std::make_shared<StdFileStream>( sFileName );
         if( !pFile->is_open( ) )
         {
-            throw AnnotatedException( "Unable to open file" + sFileName.string( ) );
+            throw std::runtime_error( "Unable to open file" + sFileName.string( ) );
         } // if
         std::ifstream xFileEnd( sFileName, std::ifstream::ate | std::ifstream::binary );
         uiFileSize = xFileEnd.tellg( );
@@ -379,7 +379,7 @@ class FileReader : public SingleFileReader
         pFile = std::make_shared<StringStream>( sString );
         uiFileSize = uiStringSize;
         if( uiFileSize == 0 )
-            throw AnnotatedException( "Got empty query via text input." );
+            throw std::runtime_error( "Got empty query via text input." );
     } // constructor
 
     ~FileReader( )

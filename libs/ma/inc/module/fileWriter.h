@@ -53,7 +53,7 @@ class FileOutStream : public OutStream
     {
         if( !file.good( ) )
         {
-            throw AnnotatedException( "Unable to open file" + sFileName );
+            throw std::runtime_error( "Unable to open file" + sFileName );
         } // if
     } // constructor
 

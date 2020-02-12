@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "exception.h"
+#include <stdexcept>
 #include "support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
@@ -173,7 +173,7 @@ template <typename T> class Interval
             return start( );
         if( i == 1 )
             return end( );
-        throw AnnotatedException( "can only access index 0 and 1 of interval" );
+        throw std::runtime_error( "can only access index 0 and 1 of interval" );
     } // operator
 
     /*

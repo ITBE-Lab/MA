@@ -318,7 +318,7 @@ class ExecutionContext
 
 
             if( this->xReadsManager.hasPrimaryPath( ) != this->xReadsManager.hasMatePath( ) )
-                throw AnnotatedException( "Cannot combine file and text input." );
+                throw std::runtime_error( "Cannot combine file and text input." );
 
             std::shared_ptr<PairedFileReader> pxPairedFileReader;
             if( this->xReadsManager.hasPrimaryPath( ) && this->xReadsManager.hasMatePath( ) )

@@ -84,7 +84,7 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
                                          pQuery->execAndFetch( );
 
                                      if( pQuery->eof( ) )
-                                         throw AnnotatedException( "No NucSeqs in database" );
+                                         throw std::runtime_error( "No NucSeqs in database" );
 
                                      return pQuery;
                                  },
@@ -106,7 +106,7 @@ template <typename DBCon> class NucSeqFetcher : public Module<NucSeq, true, NucS
     virtual std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<NucSeqQueryContainer<DBCon>> pQuery )
     {
         if( pQuery->eof( ) )
-            throw AnnotatedException( "No more NucSeqs" );
+            throw std::runtime_error( "No more NucSeqs" );
 
         auto xTup = pQuery->get( );
         std::get<0>( xTup ).pNucSeq->iId = std::get<1>( xTup );

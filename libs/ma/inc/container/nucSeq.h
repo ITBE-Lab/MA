@@ -132,7 +132,7 @@ class NucSeq : public Container
 #endif
         )
         {
-            throw AnnotatedException(
+            throw std::runtime_error(
                 ( std::string( "Memory Reallocation Failed for requested size " ) + std::to_string( uxRequestedSize ) )
                     .c_str( ) );
         } // if
@@ -173,7 +173,7 @@ class NucSeq : public Container
 
         if( pxReallocRef == NULL || pxReallocRef2 == NULL )
         {
-            throw AnnotatedException(
+            throw std::runtime_error(
                 ( std::string( "Memory Reallocation Failed for requested size " ) + std::to_string( uxRequestedSize ) )
                     .c_str( ) );
         } // if
@@ -567,7 +567,7 @@ class NucSeq : public Container
     {
         if( uxPosition >= uiSize )
         {
-            throw AnnotatedException( "Index out of range (charAt)" );
+            throw std::runtime_error( "Index out of range (charAt)" );
         } // if
 
         return translateACGTCodeToCharacter( pxSequenceRef[ uxPosition ] );
@@ -580,7 +580,7 @@ class NucSeq : public Container
     {
         if( uxPosition >= uiSize )
         {
-            throw AnnotatedException( "Index out of range (compCharAt)" );
+            throw std::runtime_error( "Index out of range (compCharAt)" );
         } // if
 
         return translateACGTCodeToCharacter( nucleotideComplement( pxSequenceRef[ uxPosition ] ) );
@@ -743,7 +743,7 @@ class NucSeq : public Container
                 // if was not allow print error and throw exception
                 std::cerr << "Having invalid character in string: '" << pxSequenceRef[ i ] << "' at position: " << i
                           << " full fastaq: " << fastaq( ) << std::endl;
-                throw AnnotatedException( "Found invalid character in nucSeq." );
+                throw std::runtime_error( "Found invalid character in nucSeq." );
             } // if
         } // for
     } // method

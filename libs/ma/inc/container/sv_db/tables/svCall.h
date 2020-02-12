@@ -341,7 +341,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
              {{{COLUMN_NAME, "score"},
                {TYPE, "DOUBLE"},
                {AS, "(supporting_reads * 1.0) / reference_ambiguity"},
-               // stored true raises errors... :()
+               // stored true raises errors... :(
                {STORED, false}}}},
             {FOREIGN_KEY,
              {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},

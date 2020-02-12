@@ -74,7 +74,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
                 std::cerr << "End is reverse: True" << std::endl;
             else
                 std::cerr << "End is reverse: False" << std::endl;
-            throw AnnotatedException( "Error: Tried to write wrong index to file" );
+            throw std::runtime_error( "Error: Tried to write wrong index to file" );
         } // if
 #endif
 
@@ -262,7 +262,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                 std::cerr << "End is reverse: True" << std::endl;
             else
                 std::cerr << "End is reverse: False" << std::endl;
-            throw AnnotatedException( "Error: Tried to write wrong index to file" );
+            throw std::runtime_error( "Error: Tried to write wrong index to file" );
         } // if
 #endif
         std::string sTag =

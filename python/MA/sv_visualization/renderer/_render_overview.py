@@ -39,10 +39,3 @@ def render_overview(self):
     self.main_plot.overview_quad.data = cds
 
     self.analyze.analyze()
-
-    # @todo
-    # url = "http://localhost:5006/bokeh_server?xs=@x&ys=@y&xe=@w&ye=@h&run_id=" + str(self.run_id) + \
-    #     "&min_score=" + str(self.min_score) + "&ground_truth_id=" + str(self.ground_truth_id) + "&dataset_name=" + \
-    #     self.dataset_name
-    # taptool = self.plot.select(type=TapTool)
-    # taptool.callback = OpenURL(url=url, same_tab=True)
