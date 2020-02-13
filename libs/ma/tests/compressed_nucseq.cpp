@@ -53,9 +53,9 @@ void compressedNucSeqTest( size_t uiLenStart, // start length sequence
             auto pNucSeq = randomNucSeq( iSize, uiNMod, uiMaxSizeNseq );
             CompressedNucSeq xCompressedNucSeq;
             uiCountMeasure++;
-            dDurtationComp += metaMeasureDuration( [ & ] { xCompressedNucSeq.compress( *pNucSeq ); } ).count( );
+            dDurtationComp += metaMeasureDuration( [&] { xCompressedNucSeq.compress( *pNucSeq ); } ).count( );
             NucSeq xNucSeqOut;
-            dDurtationDeComp += metaMeasureDuration( [ & ] { xCompressedNucSeq.decompress( xNucSeqOut ); } ).count( );
+            dDurtationDeComp += metaMeasureDuration( [&] { xCompressedNucSeq.decompress( xNucSeqOut ); } ).count( );
 
             if( pNucSeq->toString( ) != xNucSeqOut.toString( ) )
             {
@@ -73,12 +73,11 @@ void compressedNucSeqTest( size_t uiLenStart, // start length sequence
 void databaseTest( )
 {
     std::shared_ptr<SQLDB<MySQLConDB>> pDBCon = std::make_shared<SQLDB<MySQLConDB>>(
-        json{ { SCHEMA, "nucseq_test" },
-              { CONNECTION, { { HOSTNAME, "localhost" }, { USER, "root" }, { PASSWORD, "admin" }, { PORT, 0 } } } } );
+        json{{SCHEMA, "nucseq_test"}, {TEMPORARY, true},
+             {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}} );
 
     json xCompNucSeqTableDef =
-        json{ { TABLE_NAME, "nucseq_table" },
-              { TABLE_COLUMNS, { { { COLUMN_NAME, "nucseqs" } }, { { COLUMN_NAME, "ins_id" } } } } };
+        json{{TABLE_NAME, "nucseq_table"}, {TABLE_COLUMNS, {{{COLUMN_NAME, "nucseqs"}}, {{COLUMN_NAME, "ins_id"}}}}};
 
     SQLTableWithAutoPriKey<SQLDB<MySQLConDB>, std::shared_ptr<CompressedNucSeq>, size_t> xTestTable(
         pDBCon,
@@ -97,7 +96,7 @@ void databaseTest( )
         auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
         auto xBulkInserter = xTestTable.template getBulkInserter<300>( );
         metaMeasureAndLogDuration<true>( "Time required for table insertion:", //
-                                         ( [ & ] {
+                                         ( [&] {
                                              for( size_t uiItr = 0; uiItr < vCompNucSeqs.size( ); uiItr++ )
                                              {
                                                  xBulkInserter->insert(
@@ -170,7 +169,7 @@ int main( void )
     // xAObj.testTuple( 2, std::move( xBObj ) );
     // std::cout << "Test end" << std::endl;
     // return 0;
-    // 
+    //
     srand( static_cast<unsigned int>( time( NULL ) ) );
     // compressedNucSeqTest( 1, 100, 5, 5 ); // Test for short sequences with a mix of A,C,G,T,N
     // compressedNucSeqTest( 1, 100, 0, 0 ); // Test for short sequences with a mix of A,C,G,T only
@@ -188,7 +187,7 @@ int main( void )
     // compressedNucSeqTest( 100000000, 100000001, 0, 0, 3 ); // Test for long sequences with a mix of A,C,G,T only
     // compressedNucSeqTest( 100000000, 100000001, 1, 1000, 3 ); // Test for long N sequences
 
-    return doNoExcept( [ & ] { databaseTest( ); } );
+    return doNoExcept( [&] { databaseTest( ); } );
 
     return EXIT_SUCCESS;
 } /// main function

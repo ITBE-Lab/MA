@@ -21,6 +21,7 @@
 
 #include "common.h" // general API for SQL like DB
 
+
 // Rename: PooledSQLDBCon => PooledSQLDBCon
 template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
 {
@@ -35,7 +36,6 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
 
     PooledSQLDBCon( std::shared_ptr<std::mutex> pPoolLock, // pass shared pointer to pool mutex
                     const json& jDBConData = json{} ) // FIXME: Pass JSON here
-
         : SQLDB<DBImpl>( jDBConData ), pPoolLock( pPoolLock )
     {} // constructor
 
@@ -68,6 +68,10 @@ template <typename DBImpl> class SQLDBConPool
 #define DO_PROFILE 1
   private:
     using TaskType = std::function<void( std::shared_ptr<PooledSQLDBCon<DBImpl>> )>; // type of the tasks to be executed
+
+    // for temporary pools this takes care of the creation and destruction of the schema
+    // @note order of elements is important here: this needs to be first so that it is destructed last
+    std::shared_ptr<SQLDB<DBImpl>> pCreateNDropForTempConn = nullptr;
 
     std::vector<std::thread> vWorkers; // worker threads; each thread manages one connection
     std::vector<std::shared_ptr<PooledSQLDBCon<DBImpl>>> vConPool; // pointers to actual connections
@@ -277,10 +281,19 @@ template <typename DBImpl> class SQLDBConPool
         if( uiPoolSize == 0 )
             throw std::runtime_error( "SQLDBConPool: The requested pool size must be greater than zero." );
 
+        // if a temporary connection is requested open one extra connection that takes care of the creation
+        // and destruction of the schema
+        // @todo this is somewhat of a hack right now...
+        auto jPooledConn = jDBConData;
+        if( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>( ) )
+        {
+            pCreateNDropForTempConn = std::make_shared<SQLDB<DBImpl>>( jDBConData );
+            jPooledConn[ "TEMPORARY" ] = false;
+        } // if
         // Create all connection managers.
         // The creation of the connections has to be done sequentially with MySQL or connection creation can fail.
         for( size_t uiItr = 0; uiItr < uiPoolSize; ++uiItr )
-            vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, jDBConData ) );
+            vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, jPooledConn ) );
 
         // Create an initialize all workers.
         for( size_t uiThreadId = 0; uiThreadId < uiPoolSize; ++uiThreadId )

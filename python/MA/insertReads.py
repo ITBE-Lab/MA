@@ -38,8 +38,7 @@ def insert_paired_reads(parameter_set, dataset_name, sequencer_name, filename_ve
 
     return get_read_inserter.cpp_module.id
 
-def insert_reads(parameter_set, dataset_name, sequencer_name, filename_vec1, runtime_file=None):
-    file_reader = FileReader(parameter_set, to_file_path_vec(filename_vec1))
+def insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name, queries_pledge, runtime_file=None):
     get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
     read_inserter_module = ReadInserterModule(parameter_set)
 
@@ -49,8 +48,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, filename_vec1, run
     analyze = AnalyzeRuntimes()
 
     res = VectorPledge()
-    queries_pledge = promise_me(file_reader)
-    analyze.register("FileReader", queries_pledge, False)
+    analyze.register("GetQueries", queries_pledge, False)
     for _ in range(parameter_set.get_num_threads()):
         read_inserter = promise_me(get_read_inserter, pool_pledge)
         # insert the queries
@@ -63,3 +61,12 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, filename_vec1, run
     analyze.analyze(runtime_file)
 
     return get_read_inserter.cpp_module.id
+
+def insert_reads(parameter_set, dataset_name, sequencer_name, filename_vec1, runtime_file=None):
+    file_reader = FileReader(parameter_set, to_file_path_vec(filename_vec1))
+    return insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name, promise_me(file_reader), runtime_file)
+
+def insert_reads_vec(parameter_set, dataset_name, sequencer_name, read_vector, runtime_file=None):
+    file_splitter = NucSeqSplitter(parameter_set, read_vector)
+    return insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name, promise_me(file_splitter),
+                                    runtime_file)

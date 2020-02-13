@@ -13,7 +13,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     def graph():
         analyze = AnalyzeRuntimes()
         print("\tsetting up graph...")
-        
+
         pack_pledge = Pledge()
         pack_pledge.set(pack)
         pool_pledge = Pledge()

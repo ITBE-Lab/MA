@@ -148,11 +148,14 @@ template <typename DBImpl> class SQLDB : public DBImpl
     std::shared_ptr<bool> pTombStone; // So long the database connection is alive the stone says false.
                                       // As soon as the DB is gone, the stone says true.
 
+
   public:
     typedef std::unique_ptr<GuardedTransaction> uniqueGuardedTrxnType;
     typedef std::shared_ptr<GuardedTransaction> sharedGuardedTrxnType;
     typedef DBImpl DBImplForward; // Forwarding of the template parameter type
     const std::string sConId; // unique connection ID with respect to the current machine
+    const std::string sSchemaName; // unique connection ID with respect to the current machine
+    const bool bTemporary; // this is true the schema shall self delete in its destructor
 
     SQLDB( const SQLDB& ) = delete; // no DB connection copies
 
@@ -164,7 +167,9 @@ template <typename DBImpl> class SQLDB : public DBImpl
     SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
-          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ) // use the address for id creation
+          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
+          sSchemaName( jDBConData.count( "SCHEMA" ) ? jDBConData[ "SCHEMA" ] : "" ),
+          bTemporary( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>() )
     {} // constructor
 
     /**
@@ -177,6 +182,8 @@ template <typename DBImpl> class SQLDB : public DBImpl
 
     ~SQLDB( )
     {
+        if( bTemporary && !sSchemaName.empty( ) )
+            dropSchema( sSchemaName );
         // Inform about the "death" of the database connection.
         *pTombStone = true;
         // Now the destructor of the DB implementor is called ...

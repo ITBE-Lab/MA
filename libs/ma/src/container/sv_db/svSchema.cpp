@@ -127,11 +127,21 @@ std::vector<rect> getCallOverview( std::shared_ptr<DBConSingle> pConnection, std
 } // function
 
 #ifdef WITH_PYTHON
-
+#include "pybind11_json/pybind11_json.hpp"
 
 void exportSoCDbWriter( py::module& rxPyModuleId )
 {
-    py::class_<DBConSingle, std::shared_ptr<DBConSingle>>( rxPyModuleId, "DbConn" ).def( py::init<std::string>( ) );
+    py::class_<DBConSingle, std::shared_ptr<DBConSingle>>( rxPyModuleId, "DbConn" )
+        .def( py::init<std::string>( ) )
+        /* This makes it so, that DbConn can be initialized from a python dictionary.
+         * It makes use of https://github.com/pybind/pybind11_json
+         * For some reason the nlohmann::json object can not be passed directly to py::init,
+         * however the py::object is converted automatically since the header pybind11_json.hpp is included here.
+         * @todo we drop the guy an issue asking/suggesting to make it possible of putting the json directly,
+         * which would make the code more readable
+         */
+        .def( py::init<py::object /* = json */>( ) )
+        .def( "drop_schema", &DBConSingle::dropSchema );
 
     py::class_<SvCallTable<DBConSingle>, std::shared_ptr<SvCallTable<DBConSingle>>>( rxPyModuleId, "SvCallTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
