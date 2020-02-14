@@ -169,7 +169,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
           sSchemaName( jDBConData.count( "SCHEMA" ) ? jDBConData[ "SCHEMA" ] : "" ),
-          bTemporary( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>() )
+          bTemporary( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>( ) )
     {} // constructor
 
     /**

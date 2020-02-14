@@ -283,7 +283,8 @@ template <typename DBImpl> class SQLDBConPool
 
         // if a temporary connection is requested open one extra connection that takes care of the creation
         // and destruction of the schema
-        // @todo this is somewhat of a hack right now...
+        // @todo this is somewhat of a hack right now... -> do this via the pool destructor
+        // @todo discuss with arne TEMPORARY vs CPP_EXTRA...
         auto jPooledConn = jDBConData;
         if( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>( ) )
         {

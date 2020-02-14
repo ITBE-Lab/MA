@@ -487,7 +487,7 @@ class NucSeq : public Container
         /* Complements of nucleotides
          *                               0  1  2  3
          */
-        static const char chars[ 4 ] = { 3, 2, 1, 0 };
+        static const char chars[ 4 ] = {3, 2, 1, 0};
 
         return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
@@ -518,7 +518,7 @@ class NucSeq : public Container
      */
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
-        static const char chars[ 4 ] = { 'A', 'C', 'G', 'T' };
+        static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
         if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
@@ -762,7 +762,7 @@ class NucSeq : public Container
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
-        static const uint8_t aTranslate[ 4 ] = { 1, 2, 4, 8 };
+        static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
@@ -1238,7 +1238,7 @@ namespace libMA
 class NucSeqSql // not required any longer : public SQL_BLOB
 {
   public:
-    std::shared_ptr<NucSeq> pNucSeq;
+    std::shared_ptr<NucSeq> pNucSeq = nullptr;
 
     NucSeqSql( std::shared_ptr<NucSeq> pNucSeq ) : pNucSeq( pNucSeq )
     {} // constructor
@@ -1262,10 +1262,10 @@ class NucSeqSql // not required any longer : public SQL_BLOB
 
     void fromBlob( const unsigned char* ucBlob, const size_t uiSize )
     {
-        if( uiSize == 0 )
-            return;
         pNucSeq = std::make_shared<NucSeq>( );
         pNucSeq->vClear( );
+        if( uiSize == 0 )
+            return;
         pNucSeq->vAppend( (const uint8_t*)ucBlob, uiSize );
     } // method
 }; // class
@@ -1312,7 +1312,8 @@ template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQ
     // Fetch the blob from the buffer.
     inline void storeVarSizeCell( )
     {
-        pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
+        if( !( this->is_null ) )
+            pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
 
