@@ -1143,12 +1143,12 @@ class CompressedNucSeq
         assert( pCompItr == pCompEnd );
     } // method
 
-    std::shared_ptr<NucSeq> pUncomNucSeq;
+    std::shared_ptr<NucSeq> pUncomNucSeq = nullptr;
 
     /** @brief Decompresses from the buffer given as argument into the shared NucSeq available as attribute */
     void decompress( uint8_t* pCompExtBuf, size_t uiExtBufSize )
     {
-        this->pUncomNucSeq = std::make_shared<NucSeq>( );
+        this->pUncomNucSeq = std::make_shared<NucSeq>( ); // create shared pointer for decompression.
         this->decompress( *pUncomNucSeq.get( ), pCompExtBuf, uiExtBufSize );
     } // method
 }; // class CompressedNucSeq
@@ -1227,7 +1227,8 @@ struct /* MySQLConDB:: */ RowCell<CompNucSeqSharedPtr> : public /* MySQLConDB::*
     inline void storeVarSizeCell( )
     {
         // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
-        ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
+        if( !(this->is_null) )
+            ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
 

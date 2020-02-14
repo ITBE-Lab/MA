@@ -34,8 +34,8 @@ template <class FUNCTOR> std::chrono::duration<double> metaMeasureDuration( FUNC
 } // meta function
 
 template <bool bLog, class FUNCTOR>
-void metaMeasureAndLogDuration( const std::string& sLogText, // additional logging text
-                                FUNCTOR&& f // the functor called for measuring execution time
+double metaMeasureAndLogDuration( const std::string& sLogText, // additional logging text
+                                  FUNCTOR&& f // the functor called for measuring execution time
 )
 {
     if( bLog )
@@ -43,11 +43,13 @@ void metaMeasureAndLogDuration( const std::string& sLogText, // additional loggi
         // Measure duration and log.
         auto xDuration = metaMeasureDuration( std::forward<FUNCTOR>( f ) );
         std::cout << sLogText << " required " << xDuration.count( ) * 1000 << " milliseconds." << std::endl;
+        return xDuration.count( ) * 1000;
     } // if
     else
-    { 
+    {
         // Simply call the functor.
         f( );
+        return 0;
     } // else
 } // function
 

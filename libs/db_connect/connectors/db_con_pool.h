@@ -44,6 +44,7 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
     template <typename F> void doPoolSafe( F&& func )
     {
         std::lock_guard<std::mutex> lock( *pPoolLock );
+        // DEBUG: std::cout << "doPoolSafe in PooledSQLDBCon ..." << std::endl;
         func( );
     } // method
 
@@ -51,7 +52,6 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
     {
         return this->uiThreadId;
     } // method
-
 }; // class
 
 
