@@ -33,7 +33,6 @@ from libMA import ParameterSetManager
 from libMA import ExecutionContext
 from libMA import ContainerVectorNucSeq
 from libMA import SortedSvJumpFromSql
-from libMA import SvCallerRunsFromDb
 from libMA import SvCallsFromDb
 from libMA import PoolContainer
 from libMA import DbConn
@@ -44,6 +43,8 @@ from libMA import GetNucSeqFromSqlQuery
 from libMA import SvJumpTable
 from libMA import CallInserterModule
 from libMA import CallVectorInserterModule
+from libMA import SvCallerRunTable
+from libMA import ReadTable
 import libMA
 
 

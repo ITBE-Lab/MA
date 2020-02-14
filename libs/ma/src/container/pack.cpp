@@ -76,7 +76,7 @@ template <int BUFFER_SIZE, typename StreamType> class BufferedStreamer
 
         if( xBufferedStream.bad( ) )
         {
-            throw AnnotatedException( "Something went wrong during FASTA stream reading" );
+            throw std::runtime_error( "Something went wrong during FASTA stream reading" );
         } // if
 
         /* uiEnd saves the number of characters that we could read in the stream operation
@@ -520,7 +520,7 @@ void Pack::vAppendFASTA( const std::string& sFastaFilePath )
     if( xFastaReader.fail( ) )
     { /* Something is wrong with respect to the input-file
        */
-        throw AnnotatedException( "File open error." );
+        throw std::runtime_error( "File open error." );
     } // if
 
 

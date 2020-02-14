@@ -83,11 +83,12 @@ def render_reads(self):
 
     with self.measure("computing seeds"):
         if self.do_render_seeds:
+            read_table = ReadTable(self.db_conn)
             all_seeds = []
             for read_id in sorted(self.read_ids, reverse=True):
                 self.read_plot.nuc_plot.nucs_by_r_id[read_id] = {"p": [], "c": [], "i": []}
                 self.read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[], "dp": []}
-                read = self.sv_db.get_read(read_id)
+                read = read_table.get_read(read_id)
                 for y, nuc in enumerate(str(read)):
                     append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
                 with self.measure("seeder.execute"):

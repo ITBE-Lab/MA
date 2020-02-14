@@ -7,7 +7,6 @@
 // include classes that implement sql queries
 #include "container/sv_db/query_objects/callInserter.h"
 #include "container/sv_db/query_objects/fetchCalls.h"
-#include "container/sv_db/query_objects/fetchRuns.h"
 #include "container/sv_db/query_objects/fetchSvJump.h"
 #include "container/sv_db/query_objects/jumpInserter.h"
 #include "container/sv_db/query_objects/nucSeqSql.h"
@@ -15,7 +14,7 @@
 
 using namespace libMA;
 
-uint32_t getCallOverviewArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
+uint32_t getCallOverviewArea( std::shared_ptr<DBConSingle> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
                               double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH )
 {
     uint32_t uiX = 0;
@@ -30,21 +29,20 @@ uint32_t getCallOverviewArea( std::shared_ptr<DBCon> pConnection, std::shared_pt
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
 
-    SQLQuery<DBCon, uint32_t> xQuery( pConnection,
-                                      "SELECT COUNT(*) "
-                                      "FROM sv_call_table "
-                                      "WHERE sv_caller_run_id = ? " // dim 1
-                                      "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
-                                      "AND " +
-                                          SvCallTable<DBCon>::getSqlForCallScore( ) + " >= ? " );
+    SQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
+                                            "SELECT COUNT(*) "
+                                            "FROM sv_call_table "
+                                            "WHERE sv_caller_run_id = ? " // dim 1
+                                            "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "AND score >= ? " );
 
 
     auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
     return xQuery.scalar( iRunId, xWkb, dMinScore );
 } // function
 
-uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
-                            int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
+uint32_t getNumJumpsInArea( std::shared_ptr<DBConSingle> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
+                            int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
     if( iX > 0 )
@@ -57,13 +55,13 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
     if( uiY + uiH > pPack->uiUnpackedSizeForwardStrand )
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
-    SQLQuery<DBCon, uint32_t> xQuery( pConnection,
-                                      "SELECT COUNT(*) "
-                                      "FROM sv_jump_table "
-                                      "WHERE sv_jump_run_id = ? "
-                                      "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
-                                      "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
-                                      "LIMIT ? " );
+    SQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
+                                            "SELECT COUNT(*) "
+                                            "FROM sv_jump_table "
+                                            "WHERE sv_jump_run_id = ? "
+                                            "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
+                                            "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
+                                            "LIMIT ? " );
     // FIXME: Don't use scalar anymore!
     return xQuery.scalar( iRunId, uiX, uiX + (uint32_t)uiW, std::numeric_limits<uint32_t>::max( ), uiY,
                           uiY + (uint32_t)uiH, std::numeric_limits<uint32_t>::max( ), uiLimit );
@@ -77,8 +75,8 @@ struct rect
     {} // constructor
 }; // struct
 
-std::vector<rect> getCallOverview( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
-                                   double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH,
+std::vector<rect> getCallOverview( std::shared_ptr<DBConSingle> pConnection, std::shared_ptr<Pack> pPack,
+                                   int64_t iRunId, double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH,
                                    uint64_t uiMaxW, uint64_t uiMaxH, uint32_t uiGiveUpFactor )
 {
     uint32_t uiX = 0;
@@ -129,16 +127,28 @@ std::vector<rect> getCallOverview( std::shared_ptr<DBCon> pConnection, std::shar
 } // function
 
 #ifdef WITH_PYTHON
-
+#include "pybind11_json/pybind11_json.hpp"
 
 void exportSoCDbWriter( py::module& rxPyModuleId )
 {
-    py::class_<DBConSingle, std::shared_ptr<DBConSingle>>( rxPyModuleId, "DbConn" ).def( py::init<std::string>( ) );
+    py::class_<DBConSingle, std::shared_ptr<DBConSingle>>( rxPyModuleId, "DbConn" )
+        .def( py::init<std::string>( ) )
+        /* This makes it so, that DbConn can be initialized from a python dictionary.
+         * It makes use of https://github.com/pybind/pybind11_json
+         * For some reason the nlohmann::json object can not be passed directly to py::init,
+         * however the py::object is converted automatically since the header pybind11_json.hpp is included here.
+         * @todo we drop the guy an issue asking/suggesting to make it possible of putting the json directly,
+         * which would make the code more readable
+         */
+        .def( py::init<py::object /* = json */>( ) )
+        .def( "drop_schema", &DBConSingle::dropSchema );
 
     py::class_<SvCallTable<DBConSingle>, std::shared_ptr<SvCallTable<DBConSingle>>>( rxPyModuleId, "SvCallTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
+        .def( "max_score", &SvCallTable<DBConSingle>::maxScore )
+        .def( "min_score", &SvCallTable<DBConSingle>::minScore )
         .def( "add_score_index", &SvCallTable<DBConSingle>::addScoreIndex );
 
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( rxPyModuleId,
@@ -148,6 +158,19 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( rxPyModuleId, "SvJumpTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "create_indices", &SvJumpTable<DBConSingle>::createIndices );
+
+    py::class_<ReadTable<DBConSingle>, std::shared_ptr<ReadTable<DBConSingle>>>( rxPyModuleId, "ReadTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "get_read", &ReadTable<DBConSingle>::getRead );
+
+    py::class_<SvCallerRunTable<DBConSingle>, std::shared_ptr<SvCallerRunTable<DBConSingle>>>( rxPyModuleId,
+                                                                                               "SvCallerRunTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "getIds", &SvCallerRunTable<DBConSingle>::getIds )
+        .def( "getName", &SvCallerRunTable<DBConSingle>::getName )
+        .def( "getDesc", &SvCallerRunTable<DBConSingle>::getDesc )
+        .def( "jump_run_id", &SvCallerRunTable<DBConSingle>::getSvJumpRunId )
+        .def( "getDate", &SvCallerRunTable<DBConSingle>::getDate );
 
     py::class_<rect>( rxPyModuleId, "rect" ) //
         .def_readonly( "x", &rect::x )
@@ -162,11 +185,10 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     rxPyModuleId.def( "get_call_overview", &getCallOverview );
     rxPyModuleId.def( "get_call_overview_area", &getCallOverviewArea );
 
-    rxPyModuleId.def( "combine_overlapping_calls", &combineOverlappingCalls<DBCon> );
+    rxPyModuleId.def( "combine_overlapping_calls", &combineOverlappingCalls<DBConSingle> );
 
     exportSvCallInserter( rxPyModuleId );
     exportCallsFromDb( rxPyModuleId );
-    exportRunsFromDb( rxPyModuleId );
     exportSvJump( rxPyModuleId );
     exportSvJumpInserter( rxPyModuleId );
     exportNucSeqSql( rxPyModuleId );

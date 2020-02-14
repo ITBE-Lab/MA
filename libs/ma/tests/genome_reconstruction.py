@@ -5,28 +5,30 @@ import tempfile
 # there is a ppt file that describes the example used in this test
 #
 
-def insert_calls(database):
-    sv_inserter = SvCallInserter(database, "simulated sv", "the sv's that were simulated", -1)
+def insert_calls(db_conn, dataset_name):
+    JumpRunTable(db_conn)
+    get_inserter = GetCallInserter(ParameterSetManager(), db_conn, "simulated_sv",
+                                  "the sv's that were simulated", -1)
+    sv_inserter = get_inserter.execute(PoolContainer(1, dataset_name))
 
     # deletion
-    sv_inserter.insert_call(SvCall(4, 7, 0, 0, False, 1000))  # a
+    sv_inserter.insert(SvCall(4, 7, 0, 0, False, 1000))  # a
 
     # inversion
-    sv_inserter.insert_call(SvCall(9, 14, 0, 0, True, 1000))  # b
-    sv_inserter.insert_call(SvCall(15, 10, 0, 0, True, 1000)) # c
+    sv_inserter.insert(SvCall(9, 14, 0, 0, True, 1000))  # b
+    sv_inserter.insert(SvCall(15, 10, 0, 0, True, 1000)) # c
 
     # insertion
     insertion = SvCall(16, 17, 0, 0, False, 1000)
     insertion.inserted_sequence = NucSeq("TGTT")
-    sv_inserter.insert_call(insertion) # d
+    sv_inserter.insert(insertion) # d
 
     # translocation
-    sv_inserter.insert_call(SvCall(0, 19, 0, 0, False, 1000))  # e
-    sv_inserter.insert_call(SvCall(19, 1, 0, 0, False, 1000))  # f
-    sv_inserter.insert_call(SvCall(18, 20, 0, 0, False, 1000))  # g
+    sv_inserter.insert(SvCall(0, 19, 0, 0, False, 1000))  # e
+    sv_inserter.insert(SvCall(19, 1, 0, 0, False, 1000))  # f
+    sv_inserter.insert(SvCall(18, 20, 0, 0, False, 1000))  # g
 
-    sv_inserter.end_transaction()
-    return sv_inserter.sv_caller_run_id
+    return get_inserter.cpp_module.id
 
 def get_reference():
     reference = Pack()
@@ -35,15 +37,14 @@ def get_reference():
     return reference
 
 if __name__ == "__main__":
-    exit(1) # endless loop here :(
-    database = SV_DB("tmp_2", "create")
+    db_conn = DbConn({"SCHEMA": "tmp_2", "TEMPORARY": True})
 
-    run_id = insert_calls(database)
+    run_id = insert_calls(db_conn, "tmp_2")
     reference = get_reference()
 
     expected_sequence = "GGATCGTCCGACGAAATGTTCA"
 
-    reconstr = database.reconstruct_sequenced_genome(reference, run_id)
+    reconstr = SvCallTable(db_conn).reconstruct_sequenced_genome(reference, run_id)
 
     if str(reconstr.extract_forward_strand_n()) != expected_sequence:
         print("original sequence     ", reference.extract_forward_strand_n())

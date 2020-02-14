@@ -66,6 +66,8 @@ const std::string HOSTNAME = "HOSTNAME";
 const std::string USER = "USER";
 const std::string PASSWORD = "PASSWORD";
 const std::string PORT = "PORT";
+// indicated that the connection shall drop the DB on its destruction
+const std::string TEMPORARY = "TEMPORARY";
 
 /* Example for definition of database connection in json:
  * auto jDBConfig = json{ { SCHEMA, "sv_db" },
@@ -1018,7 +1020,8 @@ class MySQLConDB
     MySQLConDB& operator=( const MySQLConDB& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    MySQLConDB( const json& jDBConfig = {} ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
+    MySQLConDB( const json& jDBConfig = {} )
+        : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
         if( !( pMySQLHandler = mysql_init( NULL ) ) )
@@ -1028,7 +1031,11 @@ class MySQLConDB
         this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
 
         // Set the used database. If it does not exist, create it.
-        this->useSchema( jDBConfig.count( SCHEMA ) > 0 ? std::string( jDBConfig[ SCHEMA ] ) : DEFAULT_DBNAME );
+        this->useSchema( jDBConfig.count( SCHEMA ) > 0 ? std::string( jDBConfig[ SCHEMA ] ) : DEFAULT_DBNAME,
+                         // if jDBConfig is configured, so that this connection is to a TEMPORARY DB,
+                         // and we are the first connection (in case this is via a conn pool)
+                         // we have to throw an exception if this schema already exists
+                         jDBConfig.count( TEMPORARY ) > 0 && jDBConfig[ TEMPORARY ].get<bool>() );
 
         // Compile the statement that checks for the existence of an index.
         // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
@@ -1041,7 +1048,7 @@ class MySQLConDB
 
         // Collect client info in numeric form.
         this->uiCLientVersion = mysql_get_client_version( );
-        //std::cout << "MySQL client version: " << uiCLientVersion << std::endl;
+        // std::cout << "MySQL client version: " << uiCLientVersion << std::endl;
 
         // Find out the appropriate directory for CSV data uploads.
         this->setUploadDirs( );
@@ -1050,7 +1057,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [ & ]( ) { this->close( ); } );
+        do_exception_safe( [&]( ) { this->close( ); } );
     } // destructor
 
     /** @brief: Immediately execute the SQL statement giver as argument.
@@ -1078,14 +1085,20 @@ class MySQLConDB
 
     /** @brief Informs the connection about the schema that has to used.
      *  If the schema does not exist already, it is created.
+     * @details
+     * if bTemporaryDb is true useSchema throws an exception if the schema already exists
      */
-    void useSchema( const std::string& rsSchemaName )
+    void useSchema( const std::string& rsSchemaName, bool bTemporaryDb )
     {
         checkDBCon( );
         // std::cout << "MySQL::Used Schema: " << rsSchemaName << std::endl;
         if( mysql_select_db( pMySQLHandler, rsSchemaName.c_str( ) ) )
+        {
             // Create the database if not existing.
             execSQL( "CREATE DATABASE " + rsSchemaName );
+        } // if
+        else if( bTemporaryDb )
+            throw std::runtime_error( "Tried to open a temporary schema that already exists" );
 
         // Tell MySQL to USE this database
         sSchemaInUse = rsSchemaName;

@@ -2,9 +2,9 @@ from MA import *
 import tempfile
 from genome_reconstruction import *
 
-def insert_reads(database, reference, parameter_set):
+def insert_reads(db_conn, reference, parameter_set, dataset_name):
     print("inserting calls...")
-    ground_truth_id = insert_calls(database)
+    ground_truth_id = insert_calls(db_conn, dataset_name)
     print("done")
 
     print("creating fmd index...")
@@ -12,7 +12,7 @@ def insert_reads(database, reference, parameter_set):
     print("done")
 
     print("reconstructing genome...")
-    reconstr = database.reconstruct_sequenced_genome(reference, ground_truth_id)
+    reconstr = SvCallTable(db_conn).reconstruct_sequenced_genome(reference, ground_truth_id)
     print("done")
 
     print("inserting reads...")
@@ -26,13 +26,13 @@ def insert_reads(database, reference, parameter_set):
     reconstr_nuc_seq.reverse()
     for x in range(5):
         reads.append(reconstr_nuc_seq)
-    sequencer_id = libMA.insert_reads(reads, database, "perfect whole genome read", reference)
+    sequencer_id = insert_reads_vec(parameter_set, "tmp_3", "perfect whole genome read", reads)
     print("done")
 
     return ground_truth_id, fm_index, sequencer_id
 
 
-def fetch_call_rectangles(database, parameter_set, run_id):
+def fetch_call_rectangles(db_conn, parameter_set, run_id):
     class CallRectangle:
         def __init__(self, call):
             self.from_start = call.x.start
@@ -53,36 +53,31 @@ def fetch_call_rectangles(database, parameter_set, run_id):
         def __str__(self):
             return str(("call", self.from_start, self.to_start, self.from_size, self.to_size))
 
-    calls_from_db = SvCallsFromDb(parameter_set, database, run_id)
+    calls_from_db = SvCallsFromDb(parameter_set, db_conn, run_id)
     ret = []
     while calls_from_db.hasNext():
         ret.append(CallRectangle(calls_from_db.next()))
     return ret
 
 if __name__ == "__main__":
-    exit(1) # something wrond in here :(
     parameter_set = ParameterSetManager()
     # @todo create example where there are only unique seeds...
     parameter_set.by_name("Minimal Seed Size SV").set(2)
 
-    database = SV_DB("tmp_3", "create")
-
     reference = get_reference()
+    db_conn = DbConn({"SCHEMA": "tmp_3", "TEMPORARY": True})
 
-    ground_truth_id, fm_index, sequencer_id = insert_reads(database, reference, parameter_set)
-    del database
+    ground_truth_id, fm_index, sequencer_id = insert_reads(db_conn, reference, parameter_set, "tmp_3")
 
     print("computing jumps...")
-    # @todo i should not have to reopen the DB but somehow it is locked if i don't
-    database = SV_DB("tmp_3", "open")
-    jump_id = compute_sv_jumps(parameter_set, fm_index, reference, database, sequencer_id)
+    jump_id = compute_sv_jumps(parameter_set, fm_index, reference, db_conn, sequencer_id)
     print("done")
 
-    call_rectangles = fetch_call_rectangles(database, parameter_set, ground_truth_id)
+    call_rectangles = fetch_call_rectangles(db_conn, parameter_set, ground_truth_id)
     for x in call_rectangles:
         print(x)
 
-    sweeper = SortedSvJumpFromSql(parameter_set, database, jump_id)
+    sweeper = SortedSvJumpFromSql(parameter_set, db_conn, jump_id)
     while sweeper.has_next_start():
         jump = sweeper.get_next_start()
         print(("jump", jump.from_start_same_strand(), jump.to_start(), jump.from_size(), jump.to_size()))

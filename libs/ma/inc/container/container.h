@@ -8,7 +8,7 @@
 #define CONTAINER_H
 
 #include "debug.h"
-#include "exception.h"
+#include <stdexcept>
 #include "support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES

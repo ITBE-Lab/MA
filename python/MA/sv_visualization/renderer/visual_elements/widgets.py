@@ -8,7 +8,7 @@ import copy
 
 class Widgets:
     def __init__(self, renderer):
-        self.file_input = TextInput(value="minimal", title="Dataset Name:")
+        self.file_input = TextInput(value=None, title="Dataset Name:")
         self.run_id_dropdown = Dropdown(label="select run id here", menu=[])
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
         self.score_slider = Slider(start=0, end=1, value=0, step=.1, callback_policy='mouseup', title="min score")
@@ -32,15 +32,17 @@ class Widgets:
         renderer.setup()
 
     def run_id_change(self, renderer):
-        self.run_id_dropdown.label = "Selected run: " + renderer.sv_db.get_run_name(int(self.run_id_dropdown.value)) + \
+        run_table = SvCallerRunTable(renderer.db_conn)
+        self.run_id_dropdown.label = "Selected run: " + run_table.getName(int(self.run_id_dropdown.value)) + \
                                      " - " + self.run_id_dropdown.value
-        self.score_slider.end = renderer.sv_db.get_max_score(int(self.run_id_dropdown.value))
+        self.score_slider.end = SvCallTable(renderer.db_conn).max_score(int(self.run_id_dropdown.value))
         renderer.render()
 
     def ground_id_change(self, renderer):
+        run_table = SvCallerRunTable(renderer.db_conn)
         self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
-                                     renderer.sv_db.get_run_name(int(self.ground_truth_id_dropdown.value)) + \
-                                     " - " + self.ground_truth_id_dropdown.value
+                                            run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
+                                            " - " + self.ground_truth_id_dropdown.value
         renderer.render()
 
     def slider_change(self, renderer):
@@ -48,7 +50,7 @@ class Widgets:
 
     def render_mems_button_event(self, renderer):
         if not renderer.selected_read_id is None:
-            read = renderer.sv_db.get_read(renderer.selected_read_id)
+            read = ReadTable(renderer.db_conn).get_read(renderer.selected_read_id)
 
             seed_plot_y_s = max(renderer.read_plot.plot.y_range.start, 0)
             seed_plot_y_e = min(renderer.read_plot.plot.y_range.end, len(read))
@@ -77,5 +79,6 @@ class Widgets:
             renderer.read_plot.seeds.data = seed_data_new
 
     def delete_button_event(self, renderer):
-        renderer.sv_db.delete_run(renderer.get_run_id())
+        print("unimplemented at the moment...")
+        #renderer.sv_db.delete_run(renderer.get_run_id())
         renderer.setup()

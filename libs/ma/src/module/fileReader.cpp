@@ -43,7 +43,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         std::string sLine = "";
         pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
-            throw AnnotatedException( "Invalid line in fasta" );
+            throw std::runtime_error( "Invalid line in fasta" );
         ;
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
@@ -72,7 +72,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
                 if( !bOkay )
                 {
                     std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
-                    throw AnnotatedException( "Invalid symbol in fasta" );
+                    throw std::runtime_error( "Invalid symbol in fasta" );
                 } // if
             } // for
                    ) // DEBUG
@@ -98,7 +98,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         std::string sLine;
         pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
-            throw AnnotatedException( "Invalid line in fasta" );
+            throw std::runtime_error( "Invalid line in fasta" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
@@ -142,7 +142,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         std::string sLine = "";
         pFile->safeGetLine( sLine );
         if( sLine.size( ) == 0 )
-            throw AnnotatedException( "Invalid line in fastq" );
+            throw std::runtime_error( "Invalid line in fastq" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
         pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
@@ -170,7 +170,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
                 if( !bOkay )
                 {
                     std::cerr << "Invalid symbol in fasta: " << sLine << std::endl;
-                    throw AnnotatedException( "Invalid symbol in fastq" );
+                    throw std::runtime_error( "Invalid symbol in fastq" );
                 } // if
             } // for
                    ) // DEBUG
@@ -182,14 +182,14 @@ std::shared_ptr<NucSeq> FileReader::execute( )
         // quality
         pFile->safeGetLine( sLine );
         if( sLine.size( ) != 1 || sLine[ 0 ] != '+' )
-            throw AnnotatedException( "Invalid line in fastq" );
+            throw std::runtime_error( "Invalid line in fastq" );
         while( !pFile->eof( ) && uiNumChars > 0 )
         {
             pFile->safeGetLine( sLine );
             uiNumChars -= sLine.size( );
         } // while
         // if(pFile->good() && !pFile->eof() && pFile->peek() != '@')
-        //    throw AnnotatedException("Invalid line in fastq");
+        //    throw std::runtime_error("Invalid line in fastq");
         pFile->peek( ); // peek is necessary since eof() depends on last stream operation
         if( pFile->eof( ) )
             this->setFinished( );
@@ -204,7 +204,7 @@ std::shared_ptr<NucSeq> FileReader::execute( )
     else
         this->setFinished( );
     // if we reach this point we have read all content of the file
-    throw AnnotatedException(
+    throw std::runtime_error(
         "Error while reading file.\nIs your input really in FASTA/Q format?\nError occurred in file: " +
         xFileName.string( ) );
 } // function

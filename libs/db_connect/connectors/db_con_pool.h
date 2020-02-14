@@ -21,6 +21,7 @@
 
 #include "common.h" // general API for SQL like DB
 
+
 // Rename: PooledSQLDBCon => PooledSQLDBCon
 template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
 {
@@ -35,7 +36,6 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
 
     PooledSQLDBCon( std::shared_ptr<std::mutex> pPoolLock, // pass shared pointer to pool mutex
                     const json& jDBConData = json{} ) // FIXME: Pass JSON here
-
         : SQLDB<DBImpl>( jDBConData ), pPoolLock( pPoolLock )
     {} // constructor
 
@@ -65,14 +65,18 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
  */
 template <typename DBImpl> class SQLDBConPool
 {
-#define DO_MEASURE_USAGE 1
+#define DO_PROFILE 1
   private:
     using TaskType = std::function<void( std::shared_ptr<PooledSQLDBCon<DBImpl>> )>; // type of the tasks to be executed
+
+    // for temporary pools this takes care of the creation and destruction of the schema
+    // @note order of elements is important here: this needs to be first so that it is destructed last
+    std::shared_ptr<SQLDB<DBImpl>> pCreateNDropForTempConn = nullptr;
 
     std::vector<std::thread> vWorkers; // worker threads; each thread manages one connection
     std::vector<std::shared_ptr<PooledSQLDBCon<DBImpl>>> vConPool; // pointers to actual connections
     std::vector<std::queue<TaskType>> vqTasks; // queue of lambda functions that shall to executed
-#if DO_MEASURE_USAGE == 1
+#if DO_PROFILE == 1
     using duration = std::chrono::duration<double>;
     using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
 
@@ -105,8 +109,10 @@ template <typename DBImpl> class SQLDBConPool
             if( vTimeThreadSleeping.size( ) <= uiI )
                 vTimeThreadSleeping.emplace_back( xLastTimePoint, duration::zero( ), false );
             else
-                vTimeThreadSleeping[ uiI ] =
-                    std::make_tuple( xLastTimePoint, duration::zero( ), std::get<2>( vTimeThreadSleeping[ uiI ] ) );
+            {
+                std::get<0>( vTimeThreadSleeping[ uiI ] ) = xLastTimePoint;
+                std::get<1>( vTimeThreadSleeping[ uiI ] ) = duration::zero( );
+            } // else
             vAmountTasks.emplace_back( 0 );
             if( vAmountBookedTasks.size( ) <= uiI )
                 vAmountBookedTasks.emplace_back( 0 );
@@ -159,10 +165,9 @@ template <typename DBImpl> class SQLDBConPool
      */
     inline void wakingUp( size_t uiThreadId )
     {
-        auto now = std::chrono::steady_clock::now( );
+        auto xNow = std::chrono::steady_clock::now( );
         // sanity check
-        if( now > std::get<0>( vTimeThreadSleeping[ uiThreadId ] ) )
-            std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) += now - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
+        std::get<1>( vTimeThreadSleeping[ uiThreadId ] ) += xNow - std::get<0>( vTimeThreadSleeping[ uiThreadId ] );
         std::get<2>( vTimeThreadSleeping[ uiThreadId ] ) = false;
     } // method
 
@@ -171,32 +176,35 @@ template <typename DBImpl> class SQLDBConPool
      */
     inline void printTime( std::ostream& xOut )
     {
-        xOut << "SQLDBConPool usage evaluation: " << std::endl;
+        xOut << "SQLDBConPool profiler: " << std::endl;
         xOut << "tID\t#tsk/s\t#booked\t%active\t%qlen=0\t%qlen=1\t%qlen=2\t%qlen>2" << std::endl;
 
         // two digits precision double output
         xOut << std::fixed << std::setprecision( 2 );
 
-        auto xTotalTime = ( xLastTimePoint - xInitTimePoint ).count( );
+        double fTotalTime = ( xLastTimePoint - xInitTimePoint ).count( );
+        auto xNow = std::chrono::steady_clock::now( );
 
         for( size_t uiI = 0; uiI < vTimeAmountTasksInQueue.size( ); uiI++ )
         {
             // print the values for tID #tasks #book %act
-            auto fTasksPerSecond = vAmountTasks[ uiI ] / xTotalTime;
+            auto fTasksPerSecond = vAmountTasks[ uiI ] / fTotalTime;
             if( uiI < vTimeThreadSleeping.size( ) )
             {
                 // get the amount of time thread uiI was active
-                auto xTimeSleeping = std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
+                double fTimeSleeping = std::get<1>( vTimeThreadSleeping[ uiI ] ).count( );
                 // if thread uiI is sleeping currently subtract the time it is currently sleeping from the awake time
                 // since that amount will be added only once the thread wakes up...
-                auto now = std::chrono::steady_clock::now( );
-                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) &&
-                    // sanity check
-                    now > std::get<0>( vTimeThreadSleeping[ uiI ] ) )
-                    xTimeSleeping += ( now - std::get<0>( vTimeThreadSleeping[ uiI ] ) ).count( );
+                if( std::get<2>( vTimeThreadSleeping[ uiI ] ) )
+                {
+                    // explicit definition of xExtraSleepTime is required, so that .count() expresses the result in
+                    // seconds.
+                    duration xExtraSleepTime = xNow - std::get<0>( vTimeThreadSleeping[ uiI ] );
+                    fTimeSleeping += xExtraSleepTime.count( );
+                } // if
                 xOut << uiI << "\t" << fTasksPerSecond << "\t" << vAmountBookedTasks[ uiI ] << "\t";
 
-                xOut << 100 * ( 1.0 - xTimeSleeping / xTotalTime );
+                xOut << 100 * ( 1.0 - fTimeSleeping / fTotalTime );
             } // if
             else
                 // the queue that can be used by any thread requires a special print because for this queue
@@ -204,7 +212,7 @@ template <typename DBImpl> class SQLDBConPool
                 xOut << "NO_T_ID\t" << fTasksPerSecond << "\tn/a\tn/a";
             // print the values for qlen=0 %qlen=1 %qlen=2 %qlen>2
             for( size_t uiJ = 0; uiJ < 4; uiJ++ )
-                xOut << "\t" << 100 * vTimeAmountTasksInQueue[ uiI ][ uiJ ].count( ) / xTotalTime;
+                xOut << "\t" << 100 * vTimeAmountTasksInQueue[ uiI ][ uiJ ].count( ) / fTotalTime;
             xOut << std::endl;
         } // for
         // reset to default float output
@@ -226,7 +234,7 @@ template <typename DBImpl> class SQLDBConPool
         } // if
     } // method
 #else
-    // the following function are empty dummies in case DO_MEASURE_USAGE is set to zero
+    // the following functions are empty dummies in case DO_PROFILE is set to zero
 
     inline void initTime( size_t uiPoolSize )
     {} // method
@@ -273,10 +281,20 @@ template <typename DBImpl> class SQLDBConPool
         if( uiPoolSize == 0 )
             throw std::runtime_error( "SQLDBConPool: The requested pool size must be greater than zero." );
 
+        // if a temporary connection is requested open one extra connection that takes care of the creation
+        // and destruction of the schema
+        // @todo this is somewhat of a hack right now... -> do this via the pool destructor
+        // @todo discuss with arne TEMPORARY vs CPP_EXTRA...
+        auto jPooledConn = jDBConData;
+        if( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>( ) )
+        {
+            pCreateNDropForTempConn = std::make_shared<SQLDB<DBImpl>>( jDBConData );
+            jPooledConn[ "TEMPORARY" ] = false;
+        } // if
         // Create all connection managers.
         // The creation of the connections has to be done sequentially with MySQL or connection creation can fail.
         for( size_t uiItr = 0; uiItr < uiPoolSize; ++uiItr )
-            vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, jDBConData ) );
+            vConPool.emplace_back( std::make_shared<PooledSQLDBCon<DBImpl>>( pPoolLock, jPooledConn ) );
 
         // Create an initialize all workers.
         for( size_t uiThreadId = 0; uiThreadId < uiPoolSize; ++uiThreadId )

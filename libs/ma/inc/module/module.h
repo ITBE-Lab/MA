@@ -241,34 +241,34 @@ class BasePledge
      */
     virtual void reset( )
     {
-        throw AnnotatedException( type_name( this ) + " did not implement reset" );
+        throw std::runtime_error( type_name( this ) + " did not implement reset" );
     } // method
 
     virtual std::shared_ptr<Container> getAsBaseType( )
     {
-        throw AnnotatedException( type_name( this ) + " did not implement getAsBaseType" );
+        throw std::runtime_error( type_name( this ) + " did not implement getAsBaseType" );
         return nullptr;
     } // method
 
     virtual void addSuccessor( BasePledge* pX )
     {
-        throw AnnotatedException( type_name( this ) + " did not implement addSuccessor" );
+        throw std::runtime_error( type_name( this ) + " did not implement addSuccessor" );
     } // method
 
     virtual void removeSuccessor( BasePledge* pX )
     {
-        throw AnnotatedException( type_name( this ) + " did not implement removeSuccessor" );
+        throw std::runtime_error( type_name( this ) + " did not implement removeSuccessor" );
     } // method
 
     virtual bool hasVolatile( ) const
     {
-        throw AnnotatedException( type_name( this ) + " did not implement hasVolatile" );
+        throw std::runtime_error( type_name( this ) + " did not implement hasVolatile" );
         return false;
     } // method
 
     virtual bool isFinished( ) const
     {
-        throw AnnotatedException( type_name( this ) + " did not implement isFinished" );
+        throw std::runtime_error( type_name( this ) + " did not implement isFinished" );
         return false;
     } // method
 
@@ -861,7 +861,7 @@ class PyPledgeVector : public Pledge<PyContainerVector>
     void append( std::shared_ptr<BasePledge> pX )
     {
         if( pX == nullptr )
-            throw AnnotatedException( "Cannot use a nullpointer as pledge" );
+            throw std::runtime_error( "Cannot use a nullpointer as pledge" );
         vPledges.emplace_back( pX );
         pX->addSuccessor( this );
     } // method
@@ -916,6 +916,11 @@ class PyPledgeVector : public Pledge<PyContainerVector>
     {
         BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
     } // method
+
+    inline void clear()
+    {
+        vPledges.clear();
+    } // method
 }; // class
 
 template <class TP_MODULE, typename... TP_CONSTR_PARAMS>
@@ -930,7 +935,7 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
         bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn )
         {
             if( vIn[ IDX ] == nullptr )
-                throw AnnotatedException( "Wrong type for module (" + type_name<TP_MODULE>( ) +
+                throw std::runtime_error( "Wrong type for module (" + type_name<TP_MODULE>( ) +
                                           ") input (parameter index: " + std::to_string( IDX ) +
                                           "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
                                           " but got: nullptr of type " + type_name( vIn[ IDX ] ) );
@@ -939,7 +944,7 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
                 typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>( vIn[ IDX ] );
             // if the cast is not possible we get a nullptr here
             if( pCasted == nullptr )
-                throw AnnotatedException( "Wrong type for module (" + type_name<TP_MODULE>( ) +
+                throw std::runtime_error( "Wrong type for module (" + type_name<TP_MODULE>( ) +
                                           ") input (parameter index: " + std::to_string( IDX ) + "). Expected: " +
                                           type_name( std::get<IDX>( tTup ) ) + " but got: " + type_name( vIn[ IDX ] ) );
             // if the cast is successfull we assign the tuple element
@@ -955,7 +960,7 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
     virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<PyContainerVector> pIn )
     {
         if( pIn->size( ) != TP_MODULE::NUM_ARGUMENTS )
-            throw AnnotatedException(
+            throw std::runtime_error(
                 type_name<TP_MODULE>( ) + "'s pyExecute was called with the wrong amount of parameters. Expected: " +
                 std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->size( ) ) );
 

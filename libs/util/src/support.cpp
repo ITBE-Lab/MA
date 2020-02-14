@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <vector>
 
-#include "exception.h"
+#include <stdexcept>
 #include "support.h"
 /* Constructs the full file name for some prefix, suffix combination.
  * Returns by value for convenience purposes.
@@ -70,7 +70,7 @@ void makeDir( const std::string& rsFile )
         // 17 == file exists we want to ignore this error
         if( errno != 17 )
         {
-            throw AnnotatedException( std::string( "Could not create Dir: " )
+            throw std::runtime_error( std::string( "Could not create Dir: " )
                                           .append( rsFile )
                                           .append( " errno: " )
                                           .append( std::strerror( errno ) )

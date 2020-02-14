@@ -74,7 +74,7 @@ void compressedNucSeqTest( size_t uiLenStart, // start length sequence
 void databaseTest( )
 {
     std::shared_ptr<SQLDB<MySQLConDB>> pDBCon = std::make_shared<SQLDB<MySQLConDB>>(
-        json{{SCHEMA, "nucseq_test"},
+        json{{SCHEMA, "nucseq_test"}, {TEMPORARY, true},
              {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}} );
 
     json xCompNucSeqTableDef =
@@ -87,7 +87,7 @@ void databaseTest( )
     using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
 
     std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs;
-    for( size_t uiItr = 0; uiItr < 10000; uiItr++ )
+    for( size_t uiItr = 0; uiItr < 1000; uiItr++ )
     {
         auto pNucSeq = randomNucSeq( 250, 50, 10 );
         vCompNucSeqs.emplace_back( pNucSeq );

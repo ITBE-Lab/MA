@@ -166,11 +166,14 @@ template <typename DBImpl> class SQLDB : public DBImpl
     std::shared_ptr<bool> pTombStone; // So long the database connection is alive the stone says false.
                                       // As soon as the DB is gone, the stone says true.
 
+
   public:
     typedef std::unique_ptr<GuardedTransaction> uniqueGuardedTrxnType;
     typedef std::shared_ptr<GuardedTransaction> sharedGuardedTrxnType;
     typedef DBImpl DBImplForward; // Forwarding of the template parameter type
     const std::string sConId; // unique connection ID with respect to the current machine
+    const std::string sSchemaName; // unique connection ID with respect to the current machine
+    const bool bTemporary; // this is true the schema shall self delete in its destructor
 
     SQLDB( const SQLDB& ) = delete; // no DB connection copies
 
@@ -182,7 +185,9 @@ template <typename DBImpl> class SQLDB : public DBImpl
     SQLDB( const json& jDBConData = json{ } )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
-          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ) // use the address for id creation
+          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
+          sSchemaName( jDBConData.count( "SCHEMA" ) ? jDBConData[ "SCHEMA" ] : "" ),
+          bTemporary( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>( ) )
     {} // constructor
 
     /**
@@ -195,6 +200,8 @@ template <typename DBImpl> class SQLDB : public DBImpl
 
     ~SQLDB( )
     {
+        if( bTemporary && !sSchemaName.empty( ) )
+            dropSchema( sSchemaName );
         // Inform about the "death" of the database connection.
         *pTombStone = true;
         // Now the destructor of the DB implementor is called ...
@@ -219,9 +226,9 @@ template <typename DBImpl> class SQLDB : public DBImpl
         return std::make_unique<GuardedTransaction>( *this, pTombStone );
     } // method
 
-    std::unique_ptr<GuardedTransaction> sharedGuardedTrxn( )
+    std::shared_ptr<GuardedTransaction> sharedGuardedTrxn( )
     {
-        return std::make_unique<GuardedTransaction>( *this, pTombStone );
+        return std::make_shared<GuardedTransaction>( *this, pTombStone );
     } // method
 
     // WARNING: If indexExists is coupled with an index creation, it should be executed "pool safe".
@@ -449,6 +456,18 @@ const std::string REFERENCES = "REFERENCES";
 const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
+
+// generated columns; see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+// @todo talk with arne about design here
+// part of ColTypes?:
+// yes: problem with inserters
+// no: TYPE keyword required... (currently this is implemented)
+const std::string GENERATED_COLUMNS = "GENERATED_COLUMNS";
+// the following keywords do only have an effect on generated columns
+const std::string TYPE = "TYPE";
+const std::string AS = "AS";
+const std::string STORED = "STORED";
+
 
 /** @brief Serializes a value for CSV representation.
  *  The translation is required by the SQLFileBulkInserter.
@@ -962,6 +981,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     std::string makeTableCreateStmt( )
     {
         std::string sStmt = "CREATE TABLE " + getTableName( ) + " (";
+        // deal with regular columns
         for( size_t iItr = 0; iItr < this->rjTableCols.size( ); )
         {
             auto& rjCol = this->rjTableCols[ iItr ]; // current column in jTableDef
@@ -976,6 +996,53 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             if( ++iItr < this->rjTableCols.size( ) )
                 sStmt.append( ", " );
         } // for
+        // deal with generated columns if there are any defined
+        if( this->jTableDef.count( GENERATED_COLUMNS ) )
+            for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
+            {
+                // get the json column enty
+                auto& rjCol = this->jTableDef[ GENERATED_COLUMNS ][ iItr ]; // current column in jTableDef
+
+                // check that each colum is complete
+                if( rjCol.count( COLUMN_NAME ) == 0 )
+                    throw std::runtime_error(
+                        std::string( "COLUMN_NAME is missing for a GENERATED_COLUMNS in the table " )
+                            .append( getTableName( ) ) );
+                if( rjCol.count( TYPE ) == 0 )
+                    throw std::runtime_error( std::string( "TYPE is missing for the generated column: " )
+                                                  .append( rjCol[ COLUMN_NAME ] )
+                                                  .append( " in the table " )
+                                                  .append( getTableName( ) ) );
+                if( rjCol.count( AS ) == 0 )
+                    throw std::runtime_error( std::string( "AS is missing for the generated column: " )
+                                                  .append( rjCol[ COLUMN_NAME ] )
+                                                  .append( " in the table " )
+                                                  .append( getTableName( ) ) );
+                // append to the SQL statemnt
+                sStmt
+                    // insert separating comma. since the last regular colum does not have a comma we can always saveley
+                    // insert a seperating comma
+                    .append( ", " )
+                    .append( rjCol[ COLUMN_NAME ] ) // column name
+                    .append( " " )
+                    .append( rjCol[ TYPE ] ) // column type
+                    /* Generated columns are columns that are computed from other columns
+                     * InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
+                     * the STORED variant. -> actually it doesn't...
+                     * The user is supposed to supply an expression that computes the generated column
+                     * see:
+                     * https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+                     * https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
+                     */
+                    .append( " AS ( " )
+                    .append( rjCol[ AS ] )
+                    .append( " ) " )
+                    .append( rjCol.count( STORED ) == 0 || rjCol[ STORED ] ? "STORED" : "VIRTUAL" );
+                // generated columns can have constraints as well
+                if( rjCol.count( CONSTRAINTS ) )
+                    // CONSTRAINTS must be plain text describing all constraints
+                    sStmt.append( " " ).append( rjCol[ CONSTRAINTS ] );
+            } // for
 
         // Primary Key (for composite form of primary key)
         if( jTableDef.count( PRIMARY_KEY ) )
@@ -1016,7 +1083,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     inline std::string getValuesStmt( ) const
     {
         std::string sStmtText( "(" );
-        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{} );
+        // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated explicitly, the
+        // only permitted value is DEFAULT.
+        // this assumes that the create table statement always appends all generated columns at the end
+        if( this->jTableDef.count( GENERATED_COLUMNS ) )
+            for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
+                sStmtText.append( ", DEFAULT" );
         return sStmtText.append( ")" );
     } // method
 

@@ -35,18 +35,6 @@ using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
 
 template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
-  public:
-    /**
-     * @brief SQL code for score computation of sv call
-     */
-    static std::string getSqlForCallScore( std::string sTableName = "" )
-    {
-        if( !sTableName.empty( ) )
-            sTableName.append( "." );
-        return " ( " + sTableName + "supporting_reads * 1.0 ) / " + sTableName + "reference_ambiguity ";
-    } // method
-
-  private:
     class OverlapCache
     {
         typedef SQLTable<DBCon, // DB connector type
@@ -91,13 +79,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                               std::to_string( iCallerRunIdB ) ),
                   xNumOverlaps( pDatabase,
                                 // each inner call can overlap an outer call at most once
-                                "SELECT id, " + SvCallTable::getSqlForCallScore( ) +
-                                    ", from_pos, from_size, "
-                                    "       to_pos, to_size, switch_strand "
-                                    "FROM sv_call_table "
-                                    "WHERE sv_caller_run_id = ? "
-                                    "AND " +
-                                    SvCallTable::getSqlForCallScore( ) + " >= ? " ),
+                                "SELECT id, score, from_pos, from_size, "
+                                "       to_pos, to_size, switch_strand "
+                                "FROM sv_call_table "
+                                "WHERE sv_caller_run_id = ? "
+                                "AND score >= ? " ),
                   xNumOverlapsCache( pDatabase,
                                      "SELECT COUNT(*) "
                                      "FROM " +
@@ -202,13 +188,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                 "WHERE id != ? "
                                 // tuple comparison here, so that overlapping calls with equal score always have
                                 // one call take priority (in this case always the one inserted after)
-                                "AND (" +
-                                    SvCallTable::getSqlForCallScore( ) +
-                                    ", id) > (?, ?) "
-                                    "AND run_id_b = ? " // dim 1
-                                    "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
-                                    "AND switch_strand = ? "
-                                    "LIMIT 1 " );
+                                "AND (score, id) > (?, ?) "
+                                "AND run_id_b = ? " // dim 1
+                                "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                                "AND switch_strand = ? "
+                                "LIMIT 1 " );
                             for( size_t uiTupId = uiJobId_; uiTupId < vResults.size( ); uiTupId += uiNumThreads )
                             {
                                 auto& rTup = vResults[ uiTupId ];
@@ -322,13 +306,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         } // method
     }; // class
 
+    std::shared_ptr<DBCon> pConnection;
     SQLQuery<DBCon, uint32_t> xQuerySize;
     SQLQuery<DBCon, uint32_t> xQuerySizeSpecific;
     SQLQuery<DBCon, int64_t> xCallArea;
     SQLQuery<DBCon, double> xMaxScore;
     SQLQuery<DBCon, double> xMinScore;
-    SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallForwardContext;
-    SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t> xNextCallBackwardContext;
     SQLStatement<DBCon> xSetCoverageForCall;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
@@ -352,6 +335,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
               {{COLUMN_NAME, "rectangle"}}}},
+            // @todo show arne generated columns
+            {GENERATED_COLUMNS,
+             {{{COLUMN_NAME, "score"},
+               {TYPE, "DOUBLE"},
+               {AS, "(supporting_reads * 1.0) / reference_ambiguity"},
+               // stored true raises errors... :(
+               {STORED, false}}}},
             {FOREIGN_KEY,
              {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},
             {FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}};
@@ -360,59 +350,26 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SvCallTable( std::shared_ptr<DBCon> pConnection )
         : SvCallTableType<DBCon>( pConnection, // the database where the table resides
                                   jSvCallTableDef( ) ), // table definition
+          pConnection( pConnection ),
           xQuerySize( pConnection, "SELECT COUNT(*) FROM sv_call_table" ),
 
           xQuerySizeSpecific( pConnection, "SELECT COUNT(*) FROM sv_call_table "
                                            "WHERE sv_caller_run_id = ? "
-                                           "AND " +
-                                               getSqlForCallScore( ) + " >= ? " ),
+                                           "AND score >= ? " ),
           xCallArea( pConnection,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
-                     "AND " +
-                         getSqlForCallScore( ) + " >= ? " ),
+                     "AND score >= ? " ),
           xMaxScore( pConnection,
-                     "SELECT " + getSqlForCallScore( ) +
-                         " FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? "
-                         "ORDER BY " +
-                         getSqlForCallScore( ) + " DESC LIMIT 1 " ),
+                     "SELECT score "
+                     " FROM sv_call_table "
+                     "WHERE sv_caller_run_id = ? "
+                     "ORDER BY score DESC LIMIT 1 " ),
           xMinScore( pConnection,
-                     "SELECT " + getSqlForCallScore( ) +
-                         " FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? "
-                         "ORDER BY " +
-                         getSqlForCallScore( ) + " ASC LIMIT 1 " ),
-          xNextCallForwardContext(
-              pConnection,
-              "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
-              "FROM sv_call_table "
-              "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
-              "AND sv_call_table.from_pos >= ? " // dim 2
-#if 0
-                  "AND NOT EXISTS ( "
-                  "  SELECT * "
-                  "  FROM reconstruction_table "
-                  "  WHERE sv_call_table.id == reconstruction_table.call_id "
-                  ") "
-#endif
-              "ORDER BY sv_call_table.from_pos ASC "
-              "LIMIT 1 " ),
-          xNextCallBackwardContext( pConnection,
-                                    "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
-                                    "       inserted_sequence, to_pos "
-                                    "FROM sv_call_table "
-                                    "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
-                                    "AND sv_call_table.to_pos <= ? " // dim 2
-#if 0
-                                        "AND NOT EXISTS ( "
-                                        "  SELECT * "
-                                        "  FROM reconstruction_table "
-                                        "  WHERE sv_call_table.id == reconstruction_table.call_id "
-                                        ") "
-#endif
-                                    "ORDER BY sv_call_table.to_pos DESC "
-                                    "LIMIT 1 " ),
+                     "SELECT score "
+                     " FROM sv_call_table "
+                     "WHERE sv_caller_run_id = ? "
+                     "ORDER BY score ASC LIMIT 1 " ),
           xSetCoverageForCall( pConnection,
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
@@ -435,22 +392,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo reenable this..
     {} // default constructor
 
-    // @todo use a Generated Column here. see:
-    // https://dev.mysql.com/doc/refman/8.0/en/generated-column-index-optimizations.html
     inline void addScoreIndex( int64_t iCallerRunId )
     {
-        // Discuss Markus: This index definition is somehow defect ...
-        // DEL:SQLStatement<DBCon>( pDatabase,
-        // DEL:                     ( "CREATE INDEX IF NOT EXISTS sv_call_table_score_index_" +
-        // DEL:                       std::to_string( iCallerRunId ) + " ON sv_call_table ( " + getSqlForCallScore( ) +
-        // DEL:                       " )                         " +
-        // DEL:                       " WHERE sv_caller_run_id = " + std::to_string( iCallerRunId ) ) DEL
-        // DEL:                     :.c_str( ) )
-        // DEL:    .exec( );
-#if 0 // Must be fixed together with Markus
-        this->addIndex( json{ { INDEX_NAME, "sv_call_table_score_index_" + std::to_string(iCallerRunId) },
-                              { INDEX_COLUMNS, getSqlForCallScore( ) },
-                              { WHERE, "sv_caller_run_id = " + std::to_string( iCallerRunId ) } } );
+#if 0 // @todo apparently the mysql docs are lying? get errors doing this...
+    // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+    // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
+        this->addIndex( json{{INDEX_NAME, "sv_call_table_score_index_" + std::to_string( iCallerRunId )},
+                             {INDEX_COLUMNS, "score"},
+                             {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRunId )}} );
 #endif
     } // method
 
@@ -562,193 +511,213 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return pOverlapCache->numInvalidCalls( iCallerRunIdA, dMinScore, iAllowedDist );
     } // method
 
-    /// @brief returns call id, jump start pos, next context, next from position, jump end position
-    inline std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> getNextCall( int64_t iCallerRun, //
-                                                                                 uint32_t uiFrom, //
-                                                                                 bool bForwardContext )
+    using NextCallType = SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
+
+    /** @brief returns call id, jump start pos, next context, next from position, jump end position
+     *  @details helper function for reconstructSequencedGenome */
+    inline std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t>
+    getNextCall( int64_t iCallerRun, //
+                 uint32_t uiFrom, //
+                 bool bForwardContext,
+                 NextCallType& xNextCallForwardContext,
+                 NextCallType& xNextCallBackwardContext )
     {
         std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> xRet;
         std::get<0>( xRet ) = -1;
         std::get<2>( xRet ) = bForwardContext; // does nothing...
-        if( bForwardContext )
+        if( bForwardContext && xNextCallForwardContext.execAndFetch( iCallerRun, uiFrom ) )
         {
-            xNextCallForwardContext.execAndFetch( iCallerRun, uiFrom );
-            if( !xNextCallForwardContext.eof( ) )
-            {
-                auto xQ = xNextCallForwardContext.get( );
-                std::get<0>( xRet ) = std::get<0>( xQ );
-                std::get<1>( xRet ) = std::get<5>( xQ );
-                std::get<2>( xRet ) = !std::get<1>( xQ );
-                std::get<3>( xRet ) = std::get<4>( xQ );
-                std::get<4>( xRet ) = std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
-            } // if
+            auto xQ = xNextCallForwardContext.get( );
+            std::get<0>( xRet ) = std::get<0>( xQ );
+            std::get<1>( xRet ) = std::get<5>( xQ );
+            std::get<2>( xRet ) = !std::get<1>( xQ );
+            std::get<3>( xRet ) = std::get<4>( xQ );
+            std::get<4>( xRet ) = std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
         } // if
-        else
+        else if( !bForwardContext && xNextCallBackwardContext.execAndFetch( iCallerRun, uiFrom ) )
         {
-            xNextCallBackwardContext.execAndFetch( iCallerRun, uiFrom );
-            if( !xNextCallForwardContext.eof( ) )
-            {
-                auto xQ = xNextCallForwardContext.get( );
-                std::get<0>( xRet ) = std::get<0>( xQ );
-                std::get<1>( xRet ) = std::get<5>( xQ );
-                std::get<2>( xRet ) = std::get<1>( xQ );
-                std::get<3>( xRet ) = std::get<4>( xQ );
-                std::get<4>( xRet ) = !std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
-            } // if
-        } // else
+            auto xQ = xNextCallBackwardContext.get( );
+            std::get<0>( xRet ) = std::get<0>( xQ );
+            std::get<1>( xRet ) = std::get<5>( xQ );
+            std::get<2>( xRet ) = std::get<1>( xQ );
+            std::get<3>( xRet ) = std::get<4>( xQ );
+            std::get<4>( xRet ) = !std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
+        } // if
         return xRet;
     } // method
 
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
-        {
-            // Discuss Markus: Why from_pos + from_size -> Results in SQL error
-            // DEL:SQLStatement<DBCon>( pDatabase,
-            // DEL:                     ( "CREATE INDEX IF NOT EXISTS tmp_reconstruct_seq_index_1_" +
-            // DEL:                       std::to_string( iCallerRun ) +
-            // DEL:                       " ON sv_call_table (from_pos, id, switch_strand, to_pos, to_size, "
-            // DEL:                       "                  inserted_sequence, from_pos + from_size) "
-            // DEL:                       "WHERE sv_caller_run_id = " +
-            // DEL:                       std::to_string( iCallerRun ) )
-            // DEL:                         .c_str( ) )
-            // DEL:    .exec( );
-
-            // Discuss Markus: inserted_sequence is of type NucSeqSql and so a LONGBLOB. This kind of unlimited
-            // BLOB's or text can not be used as part of an index in MySQL. See:
-            // https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
-            this->addIndex( json{{INDEX_NAME, "tmp_reconstruct_seq_index_1_" + std::to_string( iCallerRun )},
-                                 {INDEX_COLUMNS, "from_pos, id, switch_strand, to_pos, to_size, "
-                                                 "from_size"},
-                                 {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRun )}} );
-
-            // DEL:SQLStatement<DBCon>( pDatabase,
-            // DEL:                     ( "CREATE INDEX IF NOT EXISTS tmp_reconstruct_seq_index_2_" +
-            // DEL:                       std::to_string( iCallerRun ) +
-            // DEL:                       " ON sv_call_table (to_pos, id, switch_strand, from_pos, from_size, "
-            // DEL:                       "                  inserted_sequence) "
-            // DEL:                       "WHERE sv_caller_run_id = " +
-            // DEL:                       std::to_string( iCallerRun ) )
-            // DEL:                         .c_str( ) )
-            // DEL:    .exec( );
-            this->addIndex( json{{INDEX_NAME, "tmp_reconstruct_seq_index_2_" + std::to_string( iCallerRun )},
-                                 {INDEX_COLUMNS, "to_pos, id, switch_strand, from_pos, from_size"},
-                                 {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRun )}} );
-        } // scope for CppSQLiteExtStatement
-
-        // @todo at the moment this does not deal with jumped over sequences
-        // @todo at the moment this does not check the regex (?)
         auto pRet = std::make_shared<Pack>( );
-
-        std::set<int64_t> xVisitedCalls;
-
-        NucSeq xCurrChrom;
-        uint32_t uiCurrPos = 0;
-        uint32_t uiContigCnt = 1;
-        bool bForwContext = true;
-        while( true )
         {
-            // get the next call
-            std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> tNextCall;
-            uint32_t uiIntermediatePos = uiCurrPos;
-            do
-            {
-                // search for the next call that we have not visited yet...
-                metaMeasureAndLogDuration<false>(
-                    "SQL", [&]( ) { tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext ); } );
-                if( std::get<0>( tNextCall ) == -1 || // there is no next call
-                                                      // we have not visited the next call
-                    xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
-                    break;
-                // we have visited the next call and need to search again
+            // auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
+            SQLTable<DBCon, int64_t> xReconstructionTable( this->pConnection,
+                                                           json{{TABLE_NAME, "reconstruction_table"},
+                                                                {CPP_EXTRA, "DROP ON DESTRUCTION"},
+                                                                {TABLE_COLUMNS,
+                                                                 {{{COLUMN_NAME, "call_id"},
+                                                                   {REFERENCES, "sv_call_table(id) ON DELETE CASCADE"},
+                                                                   {CONSTRAINTS, "NOT NULL PRIMARY KEY"}}}}} );
 
-                // @todo this is extremely inefficient (if we have cylces in our graph which we do not at the moment)
-                uiIntermediatePos += bForwContext ? 1 : -1;
-            } while( true );
-#if 0
-            std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
-                      << " to: " << std::get<4>( tNextCall ) << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" )
-                      << std::endl;
+            // this->addIndex(
+            //    json{{INDEX_NAME, "tmp_reconstruct_seq_index_1"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
+            //
+            // this->addIndex(
+            //    json{{INDEX_NAME, "tmp_reconstruct_seq_index_2"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
+
+            NextCallType xNextCallForwardContext(
+                this->pConnection,
+                "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
+                "FROM sv_call_table "
+                "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
+                "AND sv_call_table.from_pos >= ? " // dim 2
+                "AND id NOT IN ( "
+                "  SELECT call_id "
+                "  FROM reconstruction_table "
+                ") "
+                "ORDER BY sv_call_table.from_pos ASC "
+                "LIMIT 1 " );
+            NextCallType xNextCallBackwardContext( this->pConnection,
+                                                   "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
+                                                   "       inserted_sequence, to_pos "
+                                                   "FROM sv_call_table "
+                                                   "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
+                                                   "AND sv_call_table.to_pos <= ? " // dim 2
+                                                   "AND id NOT IN ( "
+                                                   "  SELECT call_id "
+                                                   "  FROM reconstruction_table "
+                                                   ") "
+                                                   "ORDER BY sv_call_table.to_pos DESC "
+                                                   "LIMIT 1 " );
+
+
+            // @todo at the moment this does not deal with jumped over sequences
+            // @todo at the moment this does not check the regex (?)
+
+            std::set<int64_t> xVisitedCalls;
+
+            NucSeq xCurrChrom;
+            uint32_t uiCurrPos = 0;
+            uint32_t uiContigCnt = 1;
+            bool bForwContext = true;
+            while( true )
+            {
+                // get the next call
+                std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> tNextCall;
+                uint32_t uiIntermediatePos = uiCurrPos;
+                do
+                {
+                    // search for the next call that we have not visited yet...
+                    metaMeasureAndLogDuration<false>( "SQL", [&]( ) {
+                        tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext,
+                                                       xNextCallForwardContext, xNextCallBackwardContext );
+                    } );
+                    if( std::get<0>( tNextCall ) == -1 || // there is no next call
+                                                          // we have not visited the next call
+                        xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
+                        break;
+                    // we have visited the next call and need to search again
+                    std::cout << "XXX" << std::endl;
+
+                    // @todo this is extremely inefficient (if we have cylces in our graph which we do not at the
+                    // moment)
+                    uiIntermediatePos += bForwContext ? 1 : -1;
+                } while( true );
+#if 1
+                std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
+                          << " to: " << std::get<4>( tNextCall )
+                          << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << " inserted_seq: "
+                          << ( std::get<3>( tNextCall ).pNucSeq == nullptr
+                                   ? "nullptr"
+                                   : ( std::get<3>( tNextCall ).pNucSeq->uiSize == 0
+                                           ? "empty"
+                                           : std::get<3>( tNextCall ).pNucSeq->toString( ) ) )
+                          << std::endl;
 #endif
-            if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
-            {
-                metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
-                    // for jumps to the end of the genome we do not want to extract the last contig...
-                    // this check becomes necessary since the with the current index system,
-                    // we would either extract the last nucleotide of the genome twice or extract the
-                    // reverse complement of the last contig...
-                    if( pRef->uiUnpackedSizeForwardStrand != uiCurrPos )
-                        pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
+                {
+                    metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
+                        // for jumps to the end of the genome we do not want to extract the last contig...
+                        // this check becomes necessary since the with the current index system,
+                        // we would either extract the last nucleotide of the genome twice or extract the
+                        // reverse complement of the last contig...
+                        if( pRef->uiUnpackedSizeForwardStrand != uiCurrPos )
+                            pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
 
-                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                                           xCurrChrom );
-                    xCurrChrom.vClear( );
-
-                    // part of the if above...
-                    if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
-                        return;
-
-                    /*
-                     * for this we make use of the id system of contigs.
-                     * the n forwards contigs have the ids: x*2 | 0 <= x <= n
-                     * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
-                     */
-                    for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
-                         uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
-                         uiI += ( bForwContext ? 2 : -2 ) )
-                    {
-                        pRef->vExtractContig( uiI, xCurrChrom, true );
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
+                        std::cout << "bleh 1: " << pRet->vColletionWithoutReverseStrandAsNucSeq( )->toString( )
+                                  << std::endl;
                         xCurrChrom.vClear( );
-                    } // for
+
+                        // part of the if above...
+                        if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
+                            return;
+
+                        /*
+                         * for this we make use of the id system of contigs.
+                         * the n forwards contigs have the ids: x*2 | 0 <= x <= n
+                         * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
+                         */
+                        for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
+                             uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
+                             uiI += ( bForwContext ? 2 : -2 ) )
+                        {
+                            pRef->vExtractContig( uiI, xCurrChrom, true );
+                            pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
+                                                   "no_description_given", xCurrChrom );
+                            xCurrChrom.vClear( );
+                        } // for
+                    } );
+                    break;
+                } // if
+
+                // we reach this point if there are more calls, so tNextCall is set properly here
+                metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
+                    // if the next call is in a different chromosome
+                    while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                    {
+                        // extract the remaining chromosome into xCurrChrom
+                        uiCurrPos = (uint32_t)pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                        // append xCurrChrom to the pack
+                        pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
+                                               "no_description_given", xCurrChrom );
+                        std::cout << "bleh 2: " << pRet->vColletionWithoutReverseStrandAsNucSeq( )->toString( )
+                                  << std::endl;
+                        // clear xCurrChrom
+                        xCurrChrom.vClear( );
+                        // if the next call is several chromosomes over this loops keeps going
+                    } // while
+                    // the call is in the current chromosome / we have appended all skipped chromosomes
+                    if( bForwContext )
+                        pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ) + 1, xCurrChrom, true );
+                    else
+                        pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
+                                                   pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
+                                                   xCurrChrom,
+                                                   true );
+                    // append the skipped over sequence
+                    if( std::get<3>( tNextCall ).pNucSeq != nullptr && std::get<3>( tNextCall ).pNucSeq->uiSize > 0 )
+                    {
+                        std::cout << "bleh 3: " << xCurrChrom.toString( ) << std::endl;
+                        xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
+                                            std::get<3>( tNextCall ).pNucSeq->length( ) );
+                    }
+                    std::cout << "bleh 4: " << xCurrChrom.toString( ) << std::endl;
+
+                    metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
+                        // remember that we used this call
+                        xReconstructionTable.insert( std::get<0>( tNextCall ) );
+                        xVisitedCalls.insert( std::get<0>( tNextCall ) );
+                        bForwContext = std::get<2>( tNextCall );
+                        uiCurrPos = std::get<4>( tNextCall );
+                    } );
                 } );
-                break;
-            } // if
+            } // while
+        } // scope xReconstructionTable
 
-            // we reach this point if there are more calls, so tNextCall is set properly here
-            metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
-                // if the next call is in a different chromosome
-                while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
-                {
-                    // extract the remaining chromosome into xCurrChrom
-                    uiCurrPos = (uint32_t)pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
-                    // append xCurrChrom to the pack
-                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                                           xCurrChrom );
-                    // clear xCurrChrom
-                    xCurrChrom.vClear( );
-                    // if the next call is several chromosomes over this loops keeps going
-                } // while
-                // the call is in the current chromosome / we have appended all skipped chromosomes
-                if( bForwContext )
-                    pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ) + 1, xCurrChrom, true );
-                else
-                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
-                                               pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
-                                               xCurrChrom,
-                                               true );
-                // append the skipped over sequence
-                if( std::get<3>( tNextCall ).pNucSeq != nullptr )
-                    xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
-                                        std::get<3>( tNextCall ).pNucSeq->length( ) );
-
-                metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
-                    // remember that we used this call
-                    // pReconstructionTable->xInsertRow( std::get<0>( tNextCall ) );
-                    xVisitedCalls.insert( std::get<0>( tNextCall ) );
-                    bForwContext = std::get<2>( tNextCall );
-                    uiCurrPos = std::get<4>( tNextCall );
-                } );
-            } );
-        } // while
-
-        // clear up the temp table
-        // pReconstructionTable->clearTable( );
-        // @todo hmm eventually the extra indices should be cleared up?
-        //       however, these do only exist for call sets where we reconstruct the genome
-        //       i.e. the ground truth data set
-        // CppSQLiteExtStatement( *pDatabase, "DROP INDEX tmp_reconstruct_seq_index_1 " ).execDML( );
-        // CppSQLiteExtStatement( *pDatabase, "DROP INDEX tmp_reconstruct_seq_index_2 " ).execDML( );
+        // this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
+        // this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
 
         return pRet;
     } // method

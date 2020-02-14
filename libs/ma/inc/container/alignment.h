@@ -472,7 +472,7 @@ class Alignment : public Container
             sRet = rQuery.fromTo( uiBeginOnQuery, uiEndOnQuery );
         int64_t iOff = sRet.length( ) - static_cast<int64_t>( this->uiEndOnQuery - this->uiBeginOnQuery );
         if( iOff != 0 )
-            throw AnnotatedException(
+            throw std::runtime_error(
                 "Query length is off by " + std::to_string( iOff ) + ". Query is on " +
                 ( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) ? "refstrand" : "forwstrand" ) +
                 ". Alignment name:" + xStats.sName + " " + this->toString( ) + ". Expected length: " +

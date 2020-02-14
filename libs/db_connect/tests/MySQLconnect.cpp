@@ -541,6 +541,7 @@ int main( int argc, char** argv )
 
         // definition of database connection in json:
         auto jDBConfig = json{{SCHEMA, "sv_db"},
+                              {TEMPORARY, true},
                               {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}};
 
         std::vector<std::future<void>> vFutures;
@@ -577,7 +578,7 @@ int main( int argc, char** argv )
         std::vector<std::shared_ptr<SQLDB<MySQLConDB>>> vec;
         for( unsigned int uiCount = 0; uiCount < uiPoolSize; uiCount++ )
         {
-            vec.push_back( std::make_shared<SQLDB<MySQLConDB>>( ) );
+            vec.push_back( std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, "sv_db_2"}, {TEMPORARY, true}} ) );
         } // for
 
         {

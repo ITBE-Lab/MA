@@ -317,7 +317,7 @@ int main( int argc, char* argv[] )
                         ->setByText( sOptionValue );
 
                 else
-                    throw AnnotatedException(
+                    throw std::runtime_error(
                         std::string( "unknown option type: " )
                             .append( sOptionName )
                             .append( ". Did you forget to add the '-' or '--' at the beginning?" ) );
@@ -330,7 +330,7 @@ int main( int argc, char* argv[] )
                         xExecutionContext.xParameterSetManager.byShort( sOptionName[ 1 ] ) );
 
                     if( pX == nullptr )
-                        throw AnnotatedException( "Parameters need to be provided as key value pairs" );
+                        throw std::runtime_error( "Parameters need to be provided as key value pairs" );
                     pX->set( true );
                 } // if
                 else if( sOptionName[ 0 ] == '-' && sOptionName[ 1 ] == '-' && sOptionName.size( ) > 2 )
@@ -339,11 +339,11 @@ int main( int argc, char* argv[] )
                         xExecutionContext.xParameterSetManager.byName(
                             sOptionName.substr( 2, sOptionName.size( ) - 2 ) ) );
                     if( pX == nullptr )
-                        throw AnnotatedException( "Parameters need to be provided as key value pairs" );
+                        throw std::runtime_error( "Parameters need to be provided as key value pairs" );
                     pX->set( true );
                 } // else if
                 else
-                    throw AnnotatedException(
+                    throw std::runtime_error(
                         std::string( "unknown option type: " )
                             .append( sOptionName )
                             .append( ". Did you forget to add the '-' or '--' at the beginning?" ) );
@@ -375,10 +375,6 @@ int main( int argc, char* argv[] )
         );
         std::cerr << "\rdone.                         " << std::endl;
     } // try
-    catch( const AnnotatedException& ex )
-    {
-        std::cerr << "Error:\n" << ex.what( ) << std::endl;
-    } // catch
     catch( std::runtime_error& ex )
     {
         std::cerr << "Error:\n" << ex.what( ) << std::endl;

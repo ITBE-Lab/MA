@@ -1438,6 +1438,8 @@ class Pack : public Container
     std::shared_ptr<NucSeq> vColletionWithoutReverseStrandAsNucSeq( ) const
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
+        if(this->uiUnpackedSizeForwardStrand == 0)
+            return pRet;
         vExtractSubsection( 0, uiStartOfReverseStrand( ),
                             *pRet ); // get the forward strand
         return pRet;

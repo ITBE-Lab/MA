@@ -5,11 +5,15 @@ import datetime
 
 def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequencer_ids, pack,
                        out_file=None):
-    analyze = AnalyzeRuntimes()
+    #parameter_set_manager.by_name("Number of Threads").set(2)
+    #parameter_set_manager.by_name("Use all Processor Cores").set(False)
+    #assert parameter_set_manager.get_num_threads() == 2
+
     # creates scope so that deconstructor of call inserter is triggered (commits insert transaction)
     def graph():
+        analyze = AnalyzeRuntimes()
         print("\tsetting up graph...")
-        
+
         pack_pledge = Pledge()
         pack_pledge.set(pack)
         pool_pledge = Pledge()
@@ -18,6 +22,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         assert len(sequencer_ids) == 1
 
         section_fac = libMA.GenomeSectionFactory(parameter_set_manager, pack)
+        lock_module = Lock(parameter_set_manager)
         sweep1 = libMA.CompleteBipartiteSubgraphSweep(parameter_set_manager, sequencer_ids[0])
         sweep2 = libMA.ExactCompleteBipartiteSubgraphSweep(parameter_set_manager)
 
@@ -34,7 +39,9 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         sections_pledge = promise_me(section_fac) # @note this cannot be in the loop (synchronization!)
         # graph for single reads
         for _ in range(parameter_set_manager.get_num_threads()):
-            sweep1_pledge = promise_me(sweep1, pool_pledge, sections_pledge, pack_pledge)
+            section_pledge = promise_me(lock_module, sections_pledge)
+
+            sweep1_pledge = promise_me(sweep1, pool_pledge, section_pledge, pack_pledge)
             #analyze.register("CompleteBipartiteSubgraphSweep", sweep1_pledge) this would cause duplicate time
             analyze.register("CompleteBipartiteSubgraphSweep::init", sweep1, True, lambda x: x.cpp_module.time_init)
             analyze.register("CompleteBipartiteSubgraphSweep::outer_while", sweep1, True,
@@ -68,17 +75,22 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
             write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, filter6_pledge)
             analyze.register("CallInserterModule", write_to_db_pledge, True)
-            res.append(write_to_db_pledge)
+
+            unlock_pledge = promise_me(UnLock(parameter_set_manager, section_pledge), write_to_db_pledge)
+            analyze.register("UnLock", unlock_pledge, True)
+            res.append(unlock_pledge)
 
         # drain all sources
         print("\texecuting graph...")
         res.simultaneous_get( parameter_set_manager.get_num_threads() )
         print("\tdone executing")
+        analyze.analyze(out_file)
 
         return get_call_inserter.cpp_module.id
 
     sv_caller_run_id = graph()
     print("done sweeping")
+    analyze = AnalyzeRuntimes()
 
     conn = DbConn(dataset_name)
     call_table = SvCallTable(conn)
