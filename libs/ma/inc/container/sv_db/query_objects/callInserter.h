@@ -21,15 +21,15 @@ namespace libMA
  * @todo ask arne if we can somehow use a bulk inserter here
  */
 template <typename CallOrVector, typename DBCon>
-class SvCallInserterContainerTmpl : public InserterContainer<DBCon, SvCallTable, CallOrVector>
+class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTable, CallOrVector>
 {
   public:
-    using ParentType = InserterContainer<DBCon, SvCallTable, CallOrVector>;
+    using ParentType = BulkInserterContainer<DBCon, SvCallTable, CallOrVector>;
     std::shared_ptr<BulkInserterType<SvCallSupportTable<DBCon>>> pSupportInserter;
 
 
     SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        : ParentType::InserterContainer( pPool, iId ),
+        : ParentType::BulkInserterContainer( pPool, iId ),
           pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
               return std::make_shared<BulkInserterType<SvCallSupportTable<DBCon>>>(
                   SvCallSupportTable<DBCon>( pConnection ) );

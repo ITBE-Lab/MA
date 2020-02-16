@@ -13,8 +13,8 @@ namespace libMA
 {
 template <typename DBCon>
 using SvCallSupportTableType = SQLTable<DBCon,
-                                        int64_t, // call_id (foreign key)
-                                        int64_t>; // jump_id (foreign key)
+                                        PriKeyDefaultType, // call_id (foreign key)
+                                        PriKeyDefaultType>; // jump_id (foreign key)
 
 const json jSvCallSupportTableDef = {
     {TABLE_NAME, "sv_call_support_table"},

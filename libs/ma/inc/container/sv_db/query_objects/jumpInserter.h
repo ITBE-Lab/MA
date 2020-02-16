@@ -33,10 +33,11 @@ class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, C
             else // otherwise assert it matches
                 assert( rJump.iReadId == iReadId );
 
+            assert( rJump.iReadId != -1 );
+
             if( rJump.does_switch_strand( ) )
                 assert( rJump.from_start( ) >= std::numeric_limits<int64_t>::max( ) / 2 );
-            /*rJump.iId =*/ // @note functionality change: cannot assign the id of the row
-            ParentType::pInserter->insert( nullptr, ParentType::iId /* <- id of the sv jump run */, rJump.iReadId,
+            rJump.iId = ParentType::pInserter->insert( ParentType::iId /* <- id of the sv jump run */, rJump.iReadId,
                                            rJump.from_start( ), rJump.from_end( ), (uint32_t)rJump.uiFrom,
                                            (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
                                            (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward,

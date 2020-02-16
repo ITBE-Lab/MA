@@ -16,7 +16,7 @@ using SvCallerRunTableType = SQLTableWithAutoPriKey<DBCon,
                                                     std::string, // name
                                                     std::string, // desc
                                                     int64_t, // timestamp
-                                                    int64_t // sv_jump_run_id
+                                                    PriKeyDefaultType // sv_jump_run_id
                                                     >;
 
 const json jSvCallerRunTableDef = {

@@ -40,14 +40,17 @@ class AbstractInserterContainer : public Container
   private:
     // needs to be below pTable, so that the transactions destructor is called first
     typename DBCon::sharedGuardedTrxnType pTransaction;
+    // needs to be below pTransaction @todo discuss arne: sharedGuardedTrxnType does not keep DB connection alive
+    std::shared_ptr<DBCon> pConnection;
 
   public:
     AbstractInserterContainer(
-        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType>> xFromRun, int64_t iId )
+        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType>, std::shared_ptr<DBCon>> xFromRun, int64_t iId )
         : iConnectionId( std::get<1>( xFromRun ) ),
           iId( iId ),
           pInserter( std::get<2>( xFromRun ) ),
-          pTransaction( std::get<0>( xFromRun ) )
+          pTransaction( std::get<0>( xFromRun ) ),
+          pConnection( std::get<3>( xFromRun ) )
     {}
 
     /**
@@ -85,6 +88,7 @@ class AbstractInserterContainer : public Container
     {
         pInserter.reset( );
         pTransaction.reset( );
+        pConnection.reset();
     } // method
 }; // class
 
@@ -105,7 +109,8 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
                                 {
                                     return std::make_tuple( pConnection->sharedGuardedTrxn( ),
                                                             (int)pConnection->getTaskId( ),
-                                                            std::make_shared<TableType<DBCon>>( pConnection ) );
+                                                            std::make_shared<TableType<DBCon>>( pConnection ),
+                                                            pConnection );
                                 } ),
               iId )
     {} // constructor
@@ -133,10 +138,11 @@ class BulkInserterContainer
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
-                                    return std::make_tuple( pConnection->sharedGuardedTrxn( ),
-                                                            (int)pConnection->getTaskId( ),
-                                                            std::make_shared<BulkInserterType<TableType<DBCon>>>(
-                                                                TableType<DBCon>( pConnection ) ) );
+                                    return std::make_tuple(
+                                        pConnection->sharedGuardedTrxn( ),
+                                        (int)pConnection->getTaskId( ),
+                                        TableType<DBCon>( pConnection ).template getBulkInserter<500>( ),
+                                        pConnection );
                                 } ),
               iId )
     {} // constructor

@@ -65,9 +65,14 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
     jump_id = scope()
 
     analyze = AnalyzeRuntimes()
+
+    jump_table = SvJumpTable(DbConn(dataset_name))
+
+    print("num jumps:", jump_table.num_jumps(jump_id))
+
     print("creating index...")
     start = datetime.datetime.now()
-    SvJumpTable( DbConn(dataset_name) ).create_indices( jump_id )
+    jump_table.create_indices( jump_id )
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("create_indices", delta.total_seconds(), False, lambda x: x)

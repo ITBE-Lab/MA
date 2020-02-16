@@ -84,7 +84,7 @@ void databaseTest( )
         pDBCon,
         xCompNucSeqTableDef ); //
     xTestTable.deleteAllRows( ); // clear the table
-    using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
+    //using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
 
     std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs;
     for( size_t uiItr = 0; uiItr < 1000; uiItr++ )
@@ -142,11 +142,11 @@ void bulkInsertTest()
                                           {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "read"}}}},
                                           /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
 
-            int numValues = 100000;
+            int numValues = 1000;
 
             std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs1;
             std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs2;
-            for( size_t uiItr = 0; uiItr < numValues; uiItr++ )
+            for( size_t uiItr = 0; uiItr < (size_t)numValues; uiItr++ )
             {
                 vCompNucSeqs1.emplace_back( randomNucSeq( 250, 0, 0 ) );
                 vCompNucSeqs2.emplace_back( randomNucSeq( 250, 0, 0 ) );

@@ -30,9 +30,11 @@ template <typename DBCon> class SortedSvJumpFromSql
     // table object is not used. However its constructor guarantees its existence and the correctness of rows
     std::shared_ptr<SvJumpTable<DBCon>> pSvJumpTable;
 
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t>
+    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
+             PriKeyDefaultType>
         xQueryStart;
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t>
+    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
+             PriKeyDefaultType>
         xQueryEnd;
 
     /// @brief called from the other constructors of this class only

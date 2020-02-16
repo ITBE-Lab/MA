@@ -11,20 +11,20 @@ namespace libMA
 {
 
 template <typename DBCon>
-using SvJumpTableType = SQLTableWithAutoPriKey<DBCon,
-                                               int64_t, // sv_jump_run_id (foreign key)
-                                               int64_t, // read_id (foreign key)
-                                               int64_t, // sort_pos_start
-                                               int64_t, // sort_pos_end
-                                               uint32_t, // from_pos
-                                               uint32_t, // to_pos
-                                               uint32_t, // query_from
-                                               uint32_t, // query_to
-                                               uint32_t, // num_supporting_nt
-                                               bool, // from_forward
-                                               bool, // to_forward
-                                               bool // from_seed_start
-                                               >;
+using SvJumpTableType = SQLTableWithLibIncrPriKey<DBCon,
+                                                  PriKeyDefaultType, // sv_jump_run_id (foreign key)
+                                                  PriKeyDefaultType, // read_id (foreign key)
+                                                  int64_t, // sort_pos_start
+                                                  int64_t, // sort_pos_end
+                                                  uint32_t, // from_pos
+                                                  uint32_t, // to_pos
+                                                  uint32_t, // query_from
+                                                  uint32_t, // query_to
+                                                  uint32_t, // num_supporting_nt
+                                                  bool, // from_forward
+                                                  bool, // to_forward
+                                                  bool // from_seed_start
+                                                  >;
 
 const json jSvJumpTableDef = {
     {TABLE_NAME, "sv_jump_table"},
@@ -56,7 +56,7 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
         : SvJumpTableType<DBCon>( pDatabase, // the database where the table resides
                                   jSvJumpTableDef ),
           pDatabase( pDatabase ),
-          xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_jump_table" ),
+          xQuerySize( pDatabase, "SELECT COUNT(*) FROM sv_jump_table WHERE sv_jump_run_id = ?" ),
           xDeleteRun( pDatabase, "DELETE FROM sv_jump_table WHERE sv_jump_run_id IN ( SELECT id FROM "
                                  "sv_jump_run_table WHERE name = ?)" )
     {} // default constructor
@@ -82,9 +82,9 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
                  {WHERE, "sv_jump_run_id = " + std::to_string( uiRun )}} );
     } // method
 
-    inline uint32_t numJumps( )
+    inline uint32_t numJumps( int64_t jump_run_id )
     {
-        return xQuerySize.scalar( );
+        return xQuerySize.scalar( jump_run_id );
     } // method
 
     inline void deleteRun( std::string& rS )

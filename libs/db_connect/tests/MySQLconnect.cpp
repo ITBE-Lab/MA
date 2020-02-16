@@ -424,6 +424,7 @@ void excptTest( )
 
 int main( int argc, char** argv )
 {
+    return 0;
     {
         std::shared_ptr<SQLDB<MySQLConDB>> xDBCon(
             std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, "test_pri_key"}} ) );

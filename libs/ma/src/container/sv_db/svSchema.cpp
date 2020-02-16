@@ -157,7 +157,8 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
 
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( rxPyModuleId, "SvJumpTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "create_indices", &SvJumpTable<DBConSingle>::createIndices );
+        .def( "create_indices", &SvJumpTable<DBConSingle>::createIndices )
+        .def( "num_jumps", &SvJumpTable<DBConSingle>::numJumps );
 
     py::class_<ReadTable<DBConSingle>, std::shared_ptr<ReadTable<DBConSingle>>>( rxPyModuleId, "ReadTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )

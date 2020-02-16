@@ -106,6 +106,7 @@ template <typename F> inline bool doNoExcept( F&& func, std::string sInfo = "" )
     } // catch
 } // method
 
+// @todo discuss with arne
 using PriKeyDefaultType = uint64_t; // Default type of a primary key column
 
 /** @brief An instance represents a connection to DB-system like MySQL etc.
@@ -727,6 +728,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             static_assert( ( std::is_same<FstType, std::nullptr_t>::value ) ||
                                ( std::is_same<FstType, PriKeyDefaultType>::value ),
                            "FstType must be either std::nullptr_t or PriKeyDefaultType" );
+            // pAutoIncrCounter must be initialized if FstType is PriKeyDefaultType
             assert( !( std::is_same<FstType, PriKeyDefaultType>::value && ( pAutoIncrCounter == nullptr ) ) );
 
             FstType uiRetVal = storeInBuf( Identity<FstType>( ), args... );
@@ -1363,9 +1365,9 @@ template <typename DBCon, typename... ColTypes> class SQLTable
  */
 template <typename DBCon, typename... ColTypes>
 #ifdef PRIMARY_KEY_ON_LAST_ROW
-class SQLTableWithAutoPriKey : public SQLTable<DBCon, ColTypes..., int64_t>
+class SQLTableWithAutoPriKey : public SQLTable<DBCon, ColTypes..., PriKeyDefaultType>
 #else
-class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
+class SQLTableWithAutoPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...>
 #endif
 {
     /* Inject primary key column definition into table definition */
@@ -1602,13 +1604,12 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
   public:
     /** @brief holds the columns types.
      *  @details
-     *  since a parameter pack cannot be held in a using, we hold the type pack<ColTypes...>.
+     *  since a parameter pack cannot be held in a using, we hold the type TypePack<ColTypes...>.
      *  pack is a completely empty struct.
      *  @see get_inserter_container_module.h, there this is used to extract the types of all column from a tabletype
-     * that is given as a template parameter. columnTypes -> ForwardedColTypes
-     *  @todo Rename pack to Pack and columnTypes to ColumnTypes
+     * that is given as a template parameter.
      */
-    using columnTypes = pack<ColTypes...>;
+    using ColTypesForw = TypePack<ColTypes...>;
 
     SQLTableWithPriKey( const SQLTableWithPriKey& ) = delete; // no table copies
 

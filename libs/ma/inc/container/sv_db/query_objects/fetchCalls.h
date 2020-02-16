@@ -27,8 +27,11 @@ template <typename DBCon> class SvCallsFromDb
     std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable;
     // rectangle for xQuery; stays uninitialized if unused
     WKBUint64Rectangle xWkb;
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t> xQuery;
-    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, int64_t, int64_t> xQuerySupport;
+    SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
+        xQuery;
+    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
+             PriKeyDefaultType>
+        xQuerySupport;
 
     /// @brief called from the other constructors of this class only
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, std::string sQueryString,

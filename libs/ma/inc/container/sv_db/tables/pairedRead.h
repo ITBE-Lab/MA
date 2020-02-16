@@ -14,8 +14,8 @@ namespace libMA
 
 template <typename DBCon>
 using PairedReadTableType = SQLTable<DBCon, // DB connector type
-                                     int64_t, // first read (foreign key)
-                                     int64_t // second read (foreign key)
+                                     PriKeyDefaultType, // first read (foreign key)
+                                     PriKeyDefaultType // second read (foreign key)
                                      >;
 
 const json jPairedReadTableDef = {{TABLE_NAME, "paired_read_table"},

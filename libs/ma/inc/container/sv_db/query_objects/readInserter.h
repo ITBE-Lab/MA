@@ -25,7 +25,7 @@ template <typename DBCon> class ReadInserterContainer : public BulkInserterConta
 
     virtual void EXPORTED insert( std::shared_ptr<NucSeq> pRead )
     {
-        ParentType::pInserter->insert( nullptr, ParentType::iId, pRead->sName, NucSeqSql( pRead ) );
+        ParentType::pInserter->insert( ParentType::iId, pRead->sName, makeSharedCompNucSeq( *pRead ) );
     } // method
 }; // class
 
@@ -39,16 +39,17 @@ template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserter
  * @details
  * @todo ask arne if we can somehow use a bulk inserter here
  */
-template <typename DBCon> class PairedReadInserterContainer : public InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
+template <typename DBCon>
+class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
 {
   public:
-    using ParentType = InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
+    using ParentType = BulkInserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
 
     const static size_t BUFFER_SIZE = 500;
     std::shared_ptr<BulkInserterType<PairedReadTable<DBCon>>> pPairedReadInserter;
 
     PairedReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        : ParentType::InserterContainer( pPool, iId ),
+        : ParentType::BulkInserterContainer( pPool, iId ),
           pPairedReadInserter( pPool->xPool.run(
               ParentType::iConnectionId,
               []( auto pConnection ) //
@@ -60,8 +61,10 @@ template <typename DBCon> class PairedReadInserterContainer : public InserterCon
 
     virtual void EXPORTED insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
-        int64_t iReadIdA = ParentType::pInserter->insert( ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
-        int64_t iReadIdB = ParentType::pInserter->insert( ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );
+        auto iReadIdA =
+            ParentType::pInserter->insert( ParentType::iId, pReadA->sName, makeSharedCompNucSeq( *pReadA ) );
+        auto iReadIdB =
+            ParentType::pInserter->insert( ParentType::iId, pReadB->sName, makeSharedCompNucSeq( *pReadB ) );
         pPairedReadInserter->insert( iReadIdA, iReadIdB );
     } // method
 }; // class

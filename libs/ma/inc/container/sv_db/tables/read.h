@@ -15,10 +15,10 @@ namespace libMA
 
 
 template <typename DBCon>
-using ReadTableType = SQLTableWithAutoPriKey<DBCon,
-                                             int64_t, // sequencer id (foreign key)
+using ReadTableType = SQLTableWithLibIncrPriKey<DBCon,
+                                             PriKeyDefaultType, // sequencer id (foreign key)
                                              std::string, // read name
-                                             NucSeqSql // read sequence
+                                             std::shared_ptr<CompressedNucSeq> // read sequence
                                              >;
 const json jReadTableDef = {
     {TABLE_NAME, "read_table"},
@@ -33,7 +33,7 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
 
   public:
     SQLQuery<DBCon, int32_t> xGetReadId;
-    SQLQuery<DBCon, NucSeqSql, std::string> xGetRead;
+    SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetRead;
 
     ReadTable( std::shared_ptr<DBCon> pDB )
         : ReadTableType<DBCon>( pDB, jReadTableDef ),
@@ -44,7 +44,7 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
 
     inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
     {
-        return ReadTableType<DBCon>::insert( uiSequencerId, pRead->sName, NucSeqSql( pRead ) );
+        return ReadTableType<DBCon>::insert( uiSequencerId, pRead->sName, makeSharedCompNucSeq( *pRead ) );
     } // method
 
     inline std::shared_ptr<NucSeq> getRead( int64_t iId )
@@ -53,10 +53,10 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
             throw std::runtime_error( "Read with id " + std::to_string( iId ) +
                                       " could not be found in the database." );
         auto xTuple = xGetRead.get( );
-        std::get<0>( xTuple ).pNucSeq->iId = iId;
-        std::get<0>( xTuple ).pNucSeq->sName = std::get<1>( xTuple );
+        std::get<0>( xTuple )->pUncomNucSeq->iId = iId;
+        std::get<0>( xTuple )->pUncomNucSeq->sName = std::get<1>( xTuple );
         assert( !xGetRead.next( ) );
-        return std::get<0>( xTuple ).pNucSeq;
+        return std::get<0>( xTuple )->pUncomNucSeq;
     } // method
 }; // class
 

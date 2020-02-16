@@ -16,14 +16,11 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 {
     // seeds are overlapping on query -> rectange size zero
     if( &rLast != &xDummySeed && &rNext != &xDummySeed && rNext.start( ) < rLast.end( ) )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     if( &rLast != &xDummySeed && rLast.end( ) >= uiQEnd )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     if( &rNext != &xDummySeed && rNext.start( ) <= uiQStart )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
     int64_t iLastRef; // inclusive
     int64_t iNextRef; // exclusive
@@ -90,8 +87,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
         iNextRef = (int64_t)rNext.start_ref( ) + 1;
 
     if( iLastRef == iNextRef )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     if( &rLast != &xDummySeed && &rNext != &xDummySeed )
     {
         int64_t iRefSize;
@@ -118,8 +114,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
     return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
-                                                          (nucSeqIndex)iRefSize,
-                                                          ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
+                                                         (nucSeqIndex)iRefSize,
+                                                         ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
                            geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 } // method
 
@@ -483,8 +479,8 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( rxPyModuleId, "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );
-    exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>(
-        rxPyModuleId, "SvJumpsFromSeeds",
-        []( auto&& x ) { x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py ); } );
+    exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
+        x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
+    } );
 } // function
 #endif

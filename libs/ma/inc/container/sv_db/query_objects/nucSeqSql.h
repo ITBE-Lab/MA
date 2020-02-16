@@ -15,14 +15,16 @@
 namespace libMA
 {
 
-template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, NucSeqSql, int64_t>, public Container
+template <typename DBCon>
+class NucSeqQueryContainer : public SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, PriKeyDefaultType>,
+                             public Container
 {
   public:
     int iConnectionId;
 
     NucSeqQueryContainer( int iConnectionId, std::shared_ptr<DBCon> pConnection, bool bDoSequencerId, bool bDoModulo,
                           bool bUnpairedOnly )
-        : SQLQuery<DBCon, NucSeqSql, int64_t>(
+        : SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, PriKeyDefaultType>(
               pConnection,
               std::string( "SELECT read_table.sequence, read_table.id "
                            "FROM read_table " )
@@ -124,11 +126,12 @@ template <typename DBCon> class NucSeqFetcher : public Module<NucSeq, true, NucS
             throw std::runtime_error( "No more NucSeqs" );
 
         auto xTup = pQuery->get( );
-        std::get<0>( xTup ).pNucSeq->iId = std::get<1>( xTup );
-        pQuery->next( );
-        if( pQuery->eof( ) )
+        auto pRet = std::get<0>( xTup )->pUncomNucSeq;
+        pRet->iId = (int64_t)std::get<1>( xTup );
+        if( !pQuery->next( ) )
             this->setFinished( );
-        return std::get<0>( xTup ).pNucSeq;
+        assert( pRet->iId != -1 );
+        return pRet;
     } // method
 }; // class
 

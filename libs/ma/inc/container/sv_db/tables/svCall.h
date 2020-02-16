@@ -19,8 +19,8 @@
 namespace libMA
 {
 template <typename DBCon>
-using SvCallTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
-                                               int64_t, // sv_caller_run_id (foreign key)
+using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
+                                               PriKeyDefaultType, // sv_caller_run_id (foreign key)
                                                uint32_t, // from_pos (geometry)
                                                uint32_t, // to_pos (geometry)
                                                uint32_t, // from_size (geometry)
@@ -335,7 +335,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
               {{COLUMN_NAME, "rectangle"}}}},
-            // @todo show arne generated columns
             {GENERATED_COLUMNS,
              {{{COLUMN_NAME, "score"},
                {TYPE, "DOUBLE"},
