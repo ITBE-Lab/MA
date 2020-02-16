@@ -44,21 +44,18 @@ template <typename DBCon> class PairedReadInserterContainer : public InserterCon
   public:
     using ParentType = InserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
 
-
     const static size_t BUFFER_SIZE = 500;
-    using PairedReadInserterType = typename PairedReadTable<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
-    std::shared_ptr<PairedReadInserterType> pPairedReadInserter;
-
+    std::shared_ptr<BulkInserterType<PairedReadTable<DBCon>>> pPairedReadInserter;
 
     PairedReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
         : ParentType::InserterContainer( pPool, iId ),
-          pPairedReadInserter(
-              pPool->xPool.run( ParentType::iConnectionId,
-                          []( auto pConnection ) //
-                          {
-                              return std::make_shared<PairedReadInserterType>( PairedReadTable<DBCon>(
-                                  pConnection, nullptr /* @todo nullptr is bad practice but save in this context */ ) );
-                          } ) )
+          pPairedReadInserter( pPool->xPool.run(
+              ParentType::iConnectionId,
+              []( auto pConnection ) //
+              {
+                  return std::make_shared<BulkInserterType<PairedReadTable<DBCon>>>( PairedReadTable<DBCon>(
+                      pConnection, nullptr /* @todo nullptr is bad practice but save in this context */ ) );
+              } ) )
     {} // constructor
 
     virtual void EXPORTED insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )

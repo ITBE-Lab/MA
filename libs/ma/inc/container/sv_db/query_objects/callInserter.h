@@ -25,16 +25,14 @@ class SvCallInserterContainerTmpl : public InserterContainer<DBCon, SvCallTable,
 {
   public:
     using ParentType = InserterContainer<DBCon, SvCallTable, CallOrVector>;
-
-    const static size_t BUFFER_SIZE = 500;
-    using SupportInserterType = typename SvCallSupportTable<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
-    std::shared_ptr<SupportInserterType> pSupportInserter;
+    std::shared_ptr<BulkInserterType<SvCallSupportTable<DBCon>>> pSupportInserter;
 
 
     SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
         : ParentType::InserterContainer( pPool, iId ),
           pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
-              return std::make_shared<SupportInserterType>( SvCallSupportTable<DBCon>( pConnection ) );
+              return std::make_shared<BulkInserterType<SvCallSupportTable<DBCon>>>(
+                  SvCallSupportTable<DBCon>( pConnection ) );
           } ) )
     {} // constructor
 
@@ -48,17 +46,17 @@ class SvCallInserterContainerTmpl : public InserterContainer<DBCon, SvCallTable,
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
         int64_t iCallId = ParentType::pInserter->insert( ParentType::iId, //
-                                                      (uint32_t)rCall.xXAxis.start( ), //
-                                                      (uint32_t)rCall.xYAxis.start( ), //
-                                                      (uint32_t)rCall.xXAxis.size( ), //
-                                                      (uint32_t)rCall.xYAxis.size( ), //
-                                                      rCall.bSwitchStrand, //
-                                                      // NucSeqSql can deal with nullpointers
-                                                      NucSeqSql( rCall.pInsertedSequence ), //
-                                                      (uint32_t)rCall.uiNumSuppReads, //
-                                                      (uint32_t)rCall.uiReferenceAmbiguity, //
-                                                      -1, //
-                                                      xRectangle );
+                                                         (uint32_t)rCall.xXAxis.start( ), //
+                                                         (uint32_t)rCall.xYAxis.start( ), //
+                                                         (uint32_t)rCall.xXAxis.size( ), //
+                                                         (uint32_t)rCall.xYAxis.size( ), //
+                                                         rCall.bSwitchStrand, //
+                                                         // NucSeqSql can deal with nullpointers
+                                                         NucSeqSql( rCall.pInsertedSequence ), //
+                                                         (uint32_t)rCall.uiNumSuppReads, //
+                                                         (uint32_t)rCall.uiReferenceAmbiguity, //
+                                                         -1, //
+                                                         xRectangle );
         rCall.iId = iCallId;
         for( int64_t iId : rCall.vSupportingJumpIds )
             pSupportInserter->insert( iCallId, iId );

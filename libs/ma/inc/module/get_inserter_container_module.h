@@ -112,6 +112,8 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
 
 }; // class
 
+/// @brief a short typename for the bulk inserter type
+template <typename TableType> using BulkInserterType = typename TableType::template SQLBulkInserterType<500>;
 /**
  * @brief container that holds a bulk inserter for a table
  * @details
@@ -121,24 +123,20 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
  */
 template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
 class BulkInserterContainer
-    : public AbstractInserterContainer<DBCon, typename TableType<DBCon>::template SQLBulkInserterType<500>,
-                                       InsertTypes...>
+    : public AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>
 {
   public:
-    const static size_t BUFFER_SIZE = 500;
-    using InserterType = typename TableType<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
-
     BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
         // This construction makes sure that the table exists in the database.
-        : AbstractInserterContainer<DBCon, InserterType, InsertTypes...>(
+        : AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
-                                    return std::make_tuple(
-                                        pConnection->sharedGuardedTrxn( ),
-                                        (int)pConnection->getTaskId( ),
-                                        std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ) );
+                                    return std::make_tuple( pConnection->sharedGuardedTrxn( ),
+                                                            (int)pConnection->getTaskId( ),
+                                                            std::make_shared<BulkInserterType<TableType<DBCon>>>(
+                                                                TableType<DBCon>( pConnection ) ) );
                                 } ),
               iId )
     {} // constructor
