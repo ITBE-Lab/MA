@@ -433,6 +433,18 @@ class NucSeqSplitter(libMA.NucSeqSplitter):
 
 
 ##
+# @brief The StaticNucSeqSplitter Module.
+# @ingroup module
+#
+class StaticNucSeqSplitter(libMA.StaticNucSeqSplitter):
+    def execute(self, *args):
+        vec = libMA.ContainerVector()
+        for arg in args:
+            vec.append(arg)
+        return super(StaticNucSeqSplitter, self).execute(vec)
+
+
+##
 # @brief The FillSeedSet Module.
 # @ingroup module
 #

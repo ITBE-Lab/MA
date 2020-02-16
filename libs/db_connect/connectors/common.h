@@ -465,10 +465,9 @@ template <typename DBCon> inline std::string csvPrint( DBCon& rxDBCon, const std
 /**
  * @brief completely empty struct
  * @details
- * can be used to hold and then extract a parameter pack from a variable.
- * @todo pack -> Pack
+ * can be used to hold and then extract a parameter TypePack from a variable.
  */
-template <typename... Args> struct pack
+template <typename... Args> struct TypePack
 {};
 
 /* Tips: https://stackoverflow.com/questions/667643/mysql-batch-updates-in-c
@@ -675,7 +674,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             // Throwing an exception in a destructor results in undefined behavior.
             // Therefore, we swallow these exceptions and report them via std:cerr.
-            doNoExcept( [this] { this->flush( ); } );
+            doNoExcept( [this] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
         } // destructor
     }; // class
 
@@ -1305,13 +1304,12 @@ class SQLTableWithAutoPriKey : public SQLTable<DBCon, int64_t, ColTypes...>
     /**
      * @brief holds the columns types.
      * @details
-     * since a parameter pack cannot be held in a using, we hold the type pack<ColTypes...>.
+     * since a parameter pack cannot be held in a using, we hold the type TypePack<ColTypes...>.
      * pack is a completely empty struct.
      * @see get_inserter_container_module.h, there this is used to extract the types of all column from a tabletype that
      * is given as a template parameter.
-     * columnTypes -> ForwardedColTypes
      */
-    using columnTypes = pack<ColTypes...>;
+    using ColTypesForw = TypePack<ColTypes...>;
 
     SQLTableWithAutoPriKey( const SQLTableWithAutoPriKey& ) = delete; // no table copies
 

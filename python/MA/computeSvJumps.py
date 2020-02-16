@@ -25,6 +25,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         analyze = AnalyzeRuntimes()
 
         res = VectorPledge()
+        inserter_vec = []
         # graph for single reads
         jobs = parameter_set_manager.get_num_threads()
         for idx in range(jobs):
@@ -43,6 +44,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
             analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
 
             jump_inserter = promise_me(get_jump_inserter, pool_pledge)
+            inserter_vec.append(jump_inserter)
             analyze.register("GetJumpInserter", jump_inserter, True)
             write_to_db_pledge = promise_me(jump_inserter_module, jump_inserter, pool_pledge, jumps_pledge,
                                             query_pledge)
@@ -53,6 +55,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
 
         # drain all sources
         res.simultaneous_get(parameter_set_manager.get_num_threads())
+        for inserter in inserter_vec:
+            inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
 
         analyze.analyze(runtime_file)
 

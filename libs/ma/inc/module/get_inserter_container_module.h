@@ -29,7 +29,7 @@ template <typename DBCon, template <typename T> typename TableType, typename... 
 class InserterContainer : public Container
 {
   public:
-    using insertTypes_ = pack<InsertTypes...>;
+    using InsertTypesForw = TypePack<InsertTypes...>;
     using DBConForwarded = DBCon;
 
     const int iConnectionId;
@@ -113,7 +113,7 @@ class BulkInserterContainer : public Container
 {
 
   public:
-    using insertTypes_ = pack<InsertTypes...>;
+    using InsertTypesForw = TypePack<InsertTypes...>;
     using DBConForwarded = DBCon;
 
     const int iConnectionId;
@@ -139,15 +139,16 @@ class BulkInserterContainer : public Container
     BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
         // This construction makes sure that the table exists in the database.
-        : BulkInserterContainer( pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
-                                                   []( auto pConnection ) //
-                                                   {
-                                                       return std::make_tuple( pConnection->sharedGuardedTrxn( ),
-                                                                               (int)pConnection->getTaskId( ),
-                                                                               std::make_shared<InserterType>(
-                                                                                   TableType<DBCon>( pConnection ) ) );
-                                                   } ),
-                                 iId )
+        : BulkInserterContainer(
+              pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
+                                []( auto pConnection ) //
+                                {
+                                    return std::make_tuple(
+                                        pConnection->sharedGuardedTrxn( ),
+                                        (int)pConnection->getTaskId( ),
+                                        std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ) );
+                                } ),
+              iId )
     {} // constructor
 
     /**
@@ -204,16 +205,16 @@ class BulkInserterContainer : public Container
  * The other inserts a new row and therefore creates a new value for the foreign key.
  */
 template <template <typename T> typename InserterContainerType, typename DBCon, typename DBConInit,
-          template <typename T> typename TableType, typename = typename TableType<DBConInit>::columnTypes>
+          template <typename T> typename TableType, typename = typename TableType<DBConInit>::ColTypesForw>
 class GetInserterContainerModule
 {}; // class
 
 template <template <typename T> typename InserterContainerType, typename DBCon, typename DBConInit,
-          // we want to extract ColumnTypes from TableType::columnTypes
-          // in order to achieve this we use pack<ColumnTypes...> in combination with the template above
+          // we want to extract ColumnTypes from TableType::ColTypesForw
+          // in order to achieve this we use TypePack<ColumnTypes...> in combination with the template above
           // the above template makes it so, that the compiler can infer ColumnTypes on it's own.
           template <typename T> typename TableType, typename... ColumnTypes>
-class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableType, pack<ColumnTypes...>>
+class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableType, TypePack<ColumnTypes...>>
     : public Module<InserterContainerType<DBCon>, false, PoolContainer<DBCon>>
 {
   public:
@@ -221,11 +222,11 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
 
     // export the template types so we can access them from outside
     // there really should be a way to just get a template parameter from a type in standard c++.   -.-
-    // @todo InserterContainerType_ -> ForwardedInserterContainerType
-    using InserterContainerType_ = InserterContainerType<DBCon>;
-    using DBCon_ = DBCon;
-    using DBConInit_ = DBConInit;
-    using TableType_ = TableType<DBConInit>;
+    // @todo InserterContainerTypeForw -> ForwardedInserterContainerType
+    using InserterContainerTypeForw = InserterContainerType<DBCon>;
+    using DBConForw = DBCon;
+    using DBConInitForw = DBConInit;
+    using TableTypeForw = TableType<DBConInit>;
 
     ///@brief creates a new inserter from given arguments
     GetInserterContainerModule( const ParameterSetManager& rParameters, std::shared_ptr<DBConInit> pConnection,
@@ -253,20 +254,21 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
  * The actual insertion into a table is done via InserterContainer/BulkInserterContainer. However, both these
  * classes are containers. In order to use them in a comp. graph, we need a module to call them.
  * This template provides a module that does nothing else than calling the insert function of the inserter containers.
- * In order to do so it extracts the parameters of the insert function from InserterContainerType::insertTypes_.
+ * In order to do so it extracts the parameters of the insert function from InserterContainerType::InsertTypesForw.
  * When using this in a computational graph, supply the inserter container pledge as first container, followed by all
  * containers, you specified in the InserterContainer::InsertTypes... template.
  */
-template <typename InserterContainerType, typename = typename InserterContainerType::insertTypes_> class InserterModule
+template <typename InserterContainerType, typename = typename InserterContainerType::InsertTypesForw>
+class InserterModule
 {}; // class
 
 /**
  * @brief Wraps a jump inserter, so that it can become part of a computational graph.
  */
 template <typename InserterContainerType, typename... InsertTypes>
-class InserterModule<InserterContainerType, pack<InsertTypes...>>
-    // we want to extract InsertTypes from InserterContainerType::insertTypes_
-    // in order to achieve this we use pack<InsertTypes...> in combination with the template above
+class InserterModule<InserterContainerType, TypePack<InsertTypes...>>
+    // we want to extract InsertTypes from InserterContainerType::InsertTypesForw
+    // in order to achieve this we use TypePack<InsertTypes...> in combination with the template above
     // the above template makes it so, that the compiler can inferr InsertTypes on it's own.
     : public Module<Container, false, InserterContainerType,
                     PoolContainer<typename InserterContainerType::DBConForwarded>, InsertTypes...>
@@ -300,14 +302,14 @@ class ModuleWrapperCppToPy2 : public ModuleWrapperCppToPy<TP_MODULE, const Param
 {
   public:
     ModuleWrapperCppToPy2( const ParameterSetManager& xParams,
-                           std::shared_ptr<typename TP_MODULE::DBConInit_> pConnection, TP_CONSTR_PARAMS... args )
+                           std::shared_ptr<typename TP_MODULE::DBConInitForw> pConnection, TP_CONSTR_PARAMS... args )
         : ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, int64_t>(
               xParams,
               // in order to reuse the code from ModuleWrapperCppToPy (<- no 2 at the end) we need to reduce both
               // constructors down to a single one. This can be done by reducing the row insert constructor to the one
               // that simply takes the foreign key.
               // However, in order to preserve functionality we need to insert the the row here.
-              typename TP_MODULE::TableType_( pConnection ).insert( args... ) )
+              typename TP_MODULE::TableTypeForw( pConnection ).insert( args... ) )
     {} // constructor
 
     ModuleWrapperCppToPy2( const ParameterSetManager& xParams, int64_t iId )
@@ -323,7 +325,7 @@ class ModuleWrapperCppToPy2 : public ModuleWrapperCppToPy<TP_MODULE, const Param
 template <class TP_MODULE, typename... TP_CONSTR_PARAMS>
 void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
                     const std::string& sName, // module name
-                    pack<TP_CONSTR_PARAMS...> // empty struct just to transport TP_CONSTR_PARAMS type
+                    TypePack<TP_CONSTR_PARAMS...> // empty struct just to transport TP_CONSTR_PARAMS type
 )
 {
     // export the GetInserterContainerModule
@@ -336,7 +338,7 @@ void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
     py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>(
         xPyModuleId, ( std::string( "Get" ) + sName ).c_str( ) )
         // export the constructor that generates the foreign key by creating a new row
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<typename TP_MODULE::DBConInit_>,
+        .def( py::init<const ParameterSetManager&, std::shared_ptr<typename TP_MODULE::DBConInitForw>,
                        TP_CONSTR_PARAMS...>( ) )
         // export the constructor that simply takes the foreign key as argument
         .def( py::init<const ParameterSetManager&, int64_t>( ) )
@@ -352,7 +354,7 @@ void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
 template <typename InserterContainerType, typename DBCon, typename... InsertTypes>
 void exportHelper( pybind11::module& xPyModuleId, // pybind module variable
                    const std::string& sName, // module name
-                   pack<InsertTypes...> // empty struct just to transport InsertTypes type
+                   TypePack<InsertTypes...> // empty struct just to transport InsertTypes type
 )
 {
     py::class_<InserterContainerType, Container, std::shared_ptr<InserterContainerType>>( xPyModuleId, sName.c_str( ) )
@@ -375,14 +377,14 @@ template <typename GetInserterContainerModuleType>
 inline void exportInserterContainer( py::module& rxPyModuleId, const std::string& rName )
 {
     // export the templated class
-    exportHelper<typename GetInserterContainerModuleType::InserterContainerType_,
-                 typename GetInserterContainerModuleType::DBCon_>(
-        rxPyModuleId, rName, typename GetInserterContainerModuleType::InserterContainerType_::insertTypes_( ) );
+    exportHelper<typename GetInserterContainerModuleType::InserterContainerTypeForw,
+                 typename GetInserterContainerModuleType::DBConForw>(
+        rxPyModuleId, rName, typename GetInserterContainerModuleType::InserterContainerTypeForw::InsertTypesForw( ) );
 
-    // TP_MODULE::TableType_::columnTypes( ) is passed as last argument in order to transprot the constructor parameters
-    // columnTypes is a completely empty structure
+    // TP_MODULE::TableTypeForw::ColTypesForw( ) is passed as last argument in order to transprot the constructor
+    // parameters ColTypesForw is a completely empty structure
     exportModule2<GetInserterContainerModuleType>(
-        rxPyModuleId, rName, typename GetInserterContainerModuleType::TableType_::columnTypes( ) );
+        rxPyModuleId, rName, typename GetInserterContainerModuleType::TableTypeForw::ColTypesForw( ) );
 } // function
 
 #endif

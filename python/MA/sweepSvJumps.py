@@ -36,6 +36,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         call_inserter_module = CallVectorInserterModule(parameter_set_manager)
 
         res = VectorPledge()
+        inserter_vec = []
         sections_pledge = promise_me(section_fac) # @note this cannot be in the loop (synchronization!)
         # graph for single reads
         for _ in range(parameter_set_manager.get_num_threads()):
@@ -72,6 +73,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             analyze.register("FilterLowScoreCalls", filter6_pledge, True)
 
             call_inserter = promise_me(get_call_inserter, pool_pledge)
+            inserter_vec.append(call_inserter)
 
             write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, filter6_pledge)
             analyze.register("CallInserterModule", write_to_db_pledge, True)
@@ -83,6 +85,8 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         # drain all sources
         print("\texecuting graph...")
         res.simultaneous_get( parameter_set_manager.get_num_threads() )
+        for inserter in inserter_vec:
+            inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
         print("\tdone executing")
         analyze.analyze(out_file)
 

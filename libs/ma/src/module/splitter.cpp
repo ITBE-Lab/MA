@@ -20,6 +20,9 @@ void exportSplitter( py::module& rxPyModuleId )
 
     // export the Splitter<NucSeq> class
     exportModule<Splitter<NucSeq>>( rxPyModuleId, "NucSeqSplitter" );
+    // export the StaticSplitter<NucSeq> class
+    exportModule<StaticSplitter<NucSeq>, std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>>>(
+        rxPyModuleId, "StaticNucSeqSplitter" );
 
     // exported in fileReader.cpp
     // py::bind_vector_ext<ContainerVector<std::shared_ptr<NucSeq>>, Container,
@@ -63,9 +66,8 @@ void exportSplitter( py::module& rxPyModuleId )
         } );
 
     exportModule<FilterSeedsByArea, nucSeqIndex, nucSeqIndex>( rxPyModuleId, "FilterSeedsByArea" );
-    exportModule<VectorCollector<Seeds>>(
-        rxPyModuleId, "SeedsCollector", []( auto&& x ) {
-            x.def_readwrite( "collection", &VectorCollector<Seeds>::pCollection );
-        } );
+    exportModule<VectorCollector<Seeds>>( rxPyModuleId, "SeedsCollector", []( auto&& x ) {
+        x.def_readwrite( "collection", &VectorCollector<Seeds>::pCollection );
+    } );
 } // function
 #endif

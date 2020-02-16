@@ -115,7 +115,7 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
         return xNum.scalar( );
     } // method
 
-    using columnTypes = pack<std::string, std::string>; // redefine this to match the insert function
+    using ColTypesForw = TypePack<std::string, std::string>; // redefine this to match the insert function
     inline int64_t insert( std::string sName, std::string sDesc )
     {
         // return this->xInsertRow(

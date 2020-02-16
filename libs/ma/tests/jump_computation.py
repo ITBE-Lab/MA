@@ -17,7 +17,7 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
 
     print("inserting reads...")
     reconstr_nuc_seq = reconstr.extract_forward_strand_n()
-    reads = libMA.VecRetNuc()
+    reads = libMA.ContainerVectorNucSeq()
     # create 10x coverage
     for x in range(5):
         reads.append(reconstr_nuc_seq)
@@ -26,6 +26,7 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
     reconstr_nuc_seq.reverse()
     for x in range(5):
         reads.append(reconstr_nuc_seq)
+    print(reads)
     sequencer_id = insert_reads_vec(parameter_set, "tmp_3", "perfect whole genome read", reads)
     print("done")
 
@@ -64,13 +65,18 @@ if __name__ == "__main__":
     # @todo create example where there are only unique seeds...
     parameter_set.by_name("Minimal Seed Size SV").set(2)
 
+    # @note this is necessary for the example to work
+    parameter_set.by_name("Number of Threads").set(1)
+    parameter_set.by_name("Use all Processor Cores").set(False)
+    assert parameter_set.get_num_threads() == 1
+
     reference = get_reference()
     db_conn = DbConn({"SCHEMA": "tmp_3", "TEMPORARY": True})
 
     ground_truth_id, fm_index, sequencer_id = insert_reads(db_conn, reference, parameter_set, "tmp_3")
 
     print("computing jumps...")
-    jump_id = compute_sv_jumps(parameter_set, fm_index, reference, db_conn, sequencer_id)
+    jump_id = compute_sv_jumps(parameter_set, fm_index, reference, "tmp_3", sequencer_id)
     print("done")
 
     call_rectangles = fetch_call_rectangles(db_conn, parameter_set, ground_truth_id)

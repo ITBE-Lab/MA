@@ -617,7 +617,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                         xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
                         break;
                     // we have visited the next call and need to search again
-                    std::cout << "XXX" << std::endl;
+                    std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl; // @todo
+                    assert(false);
 
                     // @todo this is extremely inefficient (if we have cylces in our graph which we do not at the
                     // moment)
@@ -646,8 +647,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
-                        std::cout << "bleh 1: " << pRet->vColletionWithoutReverseStrandAsNucSeq( )->toString( )
-                                  << std::endl;
                         xCurrChrom.vClear( );
 
                         // part of the if above...
@@ -682,8 +681,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                         // append xCurrChrom to the pack
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
-                        std::cout << "bleh 2: " << pRet->vColletionWithoutReverseStrandAsNucSeq( )->toString( )
-                                  << std::endl;
                         // clear xCurrChrom
                         xCurrChrom.vClear( );
                         // if the next call is several chromosomes over this loops keeps going
@@ -698,12 +695,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                                    true );
                     // append the skipped over sequence
                     if( std::get<3>( tNextCall ).pNucSeq != nullptr && std::get<3>( tNextCall ).pNucSeq->uiSize > 0 )
-                    {
-                        std::cout << "bleh 3: " << xCurrChrom.toString( ) << std::endl;
                         xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
                                             std::get<3>( tNextCall ).pNucSeq->length( ) );
-                    }
-                    std::cout << "bleh 4: " << xCurrChrom.toString( ) << std::endl;
 
                     metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
                         // remember that we used this call

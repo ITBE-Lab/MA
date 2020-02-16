@@ -20,15 +20,15 @@ template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, Nu
   public:
     int iConnectionId;
 
-    NucSeqQueryContainer( int iConnectionId, std::shared_ptr<DBCon> pConnection, bool bDoModulo, bool bUnpairedOnly )
+    NucSeqQueryContainer( int iConnectionId, std::shared_ptr<DBCon> pConnection, bool bDoSequencerId, bool bDoModulo,
+                          bool bUnpairedOnly )
         : SQLQuery<DBCon, NucSeqSql, int64_t>(
               pConnection,
               std::string( "SELECT read_table.sequence, read_table.id "
                            "FROM read_table " )
-                  .append( bDoModulo ? "WHERE sequencer_id = ? "
-                                       "AND read_table.id % ? = ? "
-                                     : "" )
-                  .append( bUnpairedOnly && bDoModulo ? "AND " : bUnpairedOnly ? "WHERE " : "" )
+                  .append( bDoSequencerId ? "WHERE sequencer_id = ? " : "" )
+                  .append( bDoModulo ? "AND read_table.id % ? = ? " : "" )
+                  .append( bUnpairedOnly && bDoSequencerId ? "AND " : bUnpairedOnly ? "WHERE " : "" )
                   .append( bUnpairedOnly ? "read_table.id NOT IN ( "
                                            "   SELECT paired_read_table.first_read FROM paired_read_table "
                                            "   UNION "
@@ -36,7 +36,10 @@ template <typename DBCon> class NucSeqQueryContainer : public SQLQuery<DBCon, Nu
                                            ") "
                                          : "" ) ),
           iConnectionId( iConnectionId )
-    {} // constructor
+    {
+        // we do not allow bDoModulo=true while bDoSequencerId=false
+        assert( !bDoModulo || bDoSequencerId );
+    } // constructor
 }; // class
 
 template <typename DBCon>
@@ -65,30 +68,42 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
     virtual std::shared_ptr<NucSeqQueryContainer<DBCon>> EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
         int iConnectionId = pPool->xPool.getDedicatedConId( );
-        return pPool->xPool.run( iConnectionId,
-                                 []( auto pConnection,
-                                     int iConnectionId,
-                                     int64_t iSequencerId,
-                                     uint32_t uiRes,
-                                     uint32_t uiModulo,
-                                     bool bAll ) //
-                                 {
-                                     auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>(
-                                         iConnectionId, pConnection, iSequencerId != -1 && uiModulo != 1, !bAll );
+        return pPool->xPool.run(
+            iConnectionId,
+            []( auto pConnection,
+                int iConnectionId,
+                int64_t iSequencerId,
+                uint32_t uiRes,
+                uint32_t uiModulo,
+                bool bAll ) //
+            {
+                auto pQuery = std::make_shared<NucSeqQueryContainer<DBCon>>(
+                    iConnectionId, pConnection, iSequencerId != -1, iSequencerId != -1 && uiModulo != 1, !bAll );
 
-                                     if( iSequencerId != -1 && uiModulo != 1 )
-                                         pQuery->execAndFetch( iSequencerId, uiModulo, uiRes );
-                                     else if( iSequencerId != -1 )
-                                         pQuery->execAndFetch( iSequencerId );
-                                     else
-                                         pQuery->execAndFetch( );
+                if( iSequencerId != -1 && uiModulo != 1 )
+                    pQuery->execAndFetch( iSequencerId, uiModulo, uiRes );
+                else if( iSequencerId != -1 )
+                    pQuery->execAndFetch( iSequencerId );
+                else
+                    pQuery->execAndFetch( );
 
-                                     if( pQuery->eof( ) )
-                                         throw std::runtime_error( "No NucSeqs in database" );
+                /* @note: this expects there to be at least as may reads as there are threads.
+                 * This is necessary due to the comp. graph, where a volatile module cannot be
+                 * dry on initialization.
+                 */
+                if( pQuery->eof( ) )
+                    throw std::runtime_error( std::string( "No NucSeqs in database for iSequencerId=" )
+                                                  .append( std::to_string( iSequencerId ) )
+                                                  .append( " uiModulo=" )
+                                                  .append( std::to_string( uiModulo ) )
+                                                  .append( " uiRes=" )
+                                                  .append( std::to_string( uiRes ) )
+                                                  .append( " bAll=" )
+                                                  .append( bAll ? "true" : "false" ) );
 
-                                     return pQuery;
-                                 },
-                                 iConnectionId, iSequencerId, uiRes, uiModulo, bAll );
+                return pQuery;
+            },
+            iConnectionId, iSequencerId, uiRes, uiModulo, bAll );
     } // method
 }; // class
 
