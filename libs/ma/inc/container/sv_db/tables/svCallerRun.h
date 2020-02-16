@@ -121,7 +121,8 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
     } // method
 
     using ColTypesForw = TypePack<std::string, std::string, int64_t>; // redefine this to match the insert function
-    inline int64_t insert( std::string sName, std::string sDesc, int64_t uiJumpRunId )
+
+    inline PriKeyDefaultType insert( std::string sName, std::string sDesc, int64_t uiJumpRunId )
     {
         auto iTimeNow = (int64_t)std::chrono::system_clock::to_time_t( std::chrono::system_clock::now( ) );
         if( uiJumpRunId < 0 )

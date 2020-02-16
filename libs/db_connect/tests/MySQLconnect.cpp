@@ -168,7 +168,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
                               { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
                                   /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
         // {CPP_EXTRA, "DROP ON DESTRUCTION"}};
-        // std::cout << std::setw( 2 ) << xTestTableDef << std::endl;
+        // std::cout << std::setw( 2 ) << xTestTableLibIncrDef << std::endl;
         SQLTableWithAutoPriKey<DBConnector, int, int, int, std::string, uint32_t> xTestTable( pMySQLDB, xTestTableDef );
         // xTestTable.deleteAllRows( );
 
@@ -236,12 +236,12 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
 #if 1
             SomeBlobType blob;
             {
-                metaMeasureAndLogDuration<true>( "FileBulkInserter required time:", [&]( ) {
-                    auto xBulkInserter = xTestTable.template getFileBulkInserter<500>( );
-                    for( int i = 0; i < numValues; i++ )
-                        xBulkInserter->insert( nullptr, i, 4, i, text, std::numeric_limits<uint32_t>::max( ) );
-                    std::cout << "Finished inserting .... " << std::endl;
-                } );
+                // metaMeasureAndLogDuration<true>( "FileBulkInserter required time:", [ & ]( ) {
+                //     auto xBulkInserter = xTestTable.template getFileBulkInserter<500>( );
+                //     for( int i = 0; i < numValues; i++ )
+                //         xBulkInserter->insert( nullptr, i, 4, i, text, std::numeric_limits<uint32_t>::max( ) );
+                //     std::cout << "Finished inserting .... " << std::endl;
+                // } );
             } // release of the bulk inserter
 #endif
             //-- SQLQuery<DBConnector, int> xQueryScalar(pMySQLDB, "SELECT COUNT(*) FROM TEST_TABLE");
@@ -412,10 +412,133 @@ void excptTest( )
     doSwallowingExcpt( [&]( ) { xFuture.get( ); } ); // catch via future
 } // method
 
+// /** @brief Master object the exists only once and manages global concurrent access. */
+// class SQLDBGlobal
+// {
+//     std::map<std::string, std::atomic<int>> mPriKeyCounter;
+// public:
+//
+//
+// };
+
+
 int main( int argc, char** argv )
 {
+    {
+        std::shared_ptr<SQLDB<MySQLConDB>> xDBCon(
+            std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, "test_pri_key"}} ) );
+        auto xDBInformer = SQLDBInformer<SQLDB<MySQLConDB>>( xDBCon );
+        for( auto& sSchema : xDBInformer.getAllSchemas( ) )
+            std::cout << "Schema: " << sSchema << std::endl;
+    } // scope
+
+    double dLibIncrTotalTime = 0;
+    double dAutoTotalTime = 0;
+    for( int a = 0; a < 10; a++ )
+        doNoExcept( [&] {
+            json xTestTableLibIncrDef =
+                json{{TABLE_NAME, "TEST_TABLE_LIB_INCR"},
+                     {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "int_col_2"}}}},
+                     /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+
+            json xTestTableAutoDef = json{{TABLE_NAME, "TEST_TABLE_AUTO"},
+                                          {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "int_col_2"}}}},
+                                          /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+
+            int numValues = 100000;
+
+            double dLibIncrMaxTime = 0;
+            double dAutoMaxTime = 0;
+            std::vector<std::future<void>> vFutures;
+            // std::mutex xLock;
+            {
+                {
+                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, "test_pri_key"}} );
+                    for( int i = 0; i < 10; i++ )
+                        // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
+                        vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
+                            doNoExcept(
+                                [&] {
+                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<MySQLConDB>, int, int> xPoolTable(
+                                        pDBCon, xTestTableLibIncrDef );
+                                    auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
+                                    std::map<int, int> xVerificationMap;
+                                    double dTime =
+                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
+                                            auto xBulkInserter = xPoolTable.template getBulkInserter<500>( );
+                                            // std::lock_guard<std::mutex> xGuard( xLock );
+                                            for( int i = 0; i < numValues; i++ )
+                                            {
+                                                auto uiPriKey = xBulkInserter->insert( i * 2, 10 );
+                                                // xVerificationMap[ uiPriKey ] = i * 2;
+                                            }
+                                            std::cout << "Finished inserting via BulkInserter LibIncr .... "
+                                                      << std::endl;
+                                        } );
+                                    pDBCon->doPoolSafe( [&] { dLibIncrMaxTime = std::max( dLibIncrMaxTime, dTime ); } );
+
+                                    // Verify the xVerificationMap
+                                    // SQLQuery<PooledSQLDBCon<MySQLConDB>, int> xQuery(
+                                    //     pDBCon, "SELECT int_col_1 FROM TEST_TABLE_LIB_INCR WHERE id = ?" );
+                                    // for( auto rKeyValue : xVerificationMap )
+                                    // {
+                                    //     if( xQuery.scalar( rKeyValue.first ) != rKeyValue.second )
+                                    //     {
+                                    //         std::cout << "PANIC: Check failed" << std::endl;
+                                    //         exit( 1 );
+                                    //     } // if
+                                    // } // for
+                                },
+                                "Problem during thread execution" );
+                        } ) );
+                }
+
+                {
+                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, "test_pri_key"}} );
+                    for( int i = 0; i < 10; i++ )
+                        // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
+                        vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
+                            doNoExcept(
+                                [&] {
+                                    SQLTableWithAutoPriKey<PooledSQLDBCon<MySQLConDB>, int, int> xPoolTable(
+                                        pDBCon, xTestTableAutoDef );
+                                    auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
+
+                                    // xPoolTable.insertNonSafe( 2, nullptr );
+                                    // xPoolTable.insert( 2, 4 );
+                                    double dTime =
+                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
+                                            auto xBulkInserter = xPoolTable.template getBulkInserter<500>( );
+                                            // std::lock_guard<std::mutex> xGuard( xLock );
+                                            for( int i = 0; i < numValues; i++ )
+                                                xBulkInserter->insert( i * 2, 10 );
+                                            std::cout << "Finished inserting via BulkInserter Auto .... " << std::endl;
+                                        } );
+                                    pDBCon->doPoolSafe( [&] { dAutoMaxTime = std::max( dAutoMaxTime, dTime ); } );
+                                },
+                                "Problem during thread execution" );
+                        } ) );
+                }
+            } // close the pool
+            dLibIncrTotalTime += dLibIncrMaxTime;
+            dAutoTotalTime += dAutoMaxTime;
+
+            std::cout << "Finished one iteration .... " << std::endl;
+        } ); // doNoExcept
+    std::cout << "Libary increase: " << (int)( dLibIncrTotalTime / 10 ) << std::endl;
+    std::cout << "MySQL increase: " << (int)( dAutoTotalTime / 10 ) << std::endl;
+    // std::shared_ptr<SQLDB<MySQLConDB>> pDBCon =
+    //     std::make_shared<SQLDB<MySQLConDB>>( json{ { SCHEMA, "test_pri_key" } } );
+    // pDBCon->execSQL( "DROP TABLE TEST_TABLE" );
+
+    return 0;
     try
     {
+        {
+            SQLDB<MySQLConDB> xDBCon( json{{SCHEMA, "sv_db"}} );
+            xDBCon.dropSchema( "sv_db " );
+        } // scope
+
         // definition of database connection in json:
         auto jDBConfig = json{{SCHEMA, "sv_db"},
                               {TEMPORARY, true},
