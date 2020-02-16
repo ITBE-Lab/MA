@@ -137,7 +137,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
          * It makes use of https://github.com/pybind/pybind11_json
          * For some reason the nlohmann::json object can not be passed directly to py::init,
          * however the py::object is converted automatically since the header pybind11_json.hpp is included here.
-         * @todo we drop the guy an issue asking/suggesting to make it possible of putting the json directly,
+         * @todo we could drop the guy an issue asking/suggesting to make it possible to putt in the json directly,
          * which would make the code more readable
          */
         .def( py::init<py::object /* = json */>( ) )
