@@ -23,133 +23,32 @@ namespace libMA
  * This class holds the table pTable for this purpose.
  * This inserter is intended for e.g. inserting reads, where each inserted row has a foreign key if belongs to.
  * E.g. the sequencer id for the read. This foreign key is saved in iId and available to the extending class.
- * @todo BulkInserterContainer and InserterContainer have duplicate code -> make AbstractInserterContainer
  */
-template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
-class InserterContainer : public Container
+template <typename DBCon, typename TableType, typename... InsertTypes>
+class AbstractInserterContainer : public Container
 {
   public:
     using InsertTypesForw = TypePack<InsertTypes...>;
     using DBConForwarded = DBCon;
 
     const int iConnectionId;
-    std::shared_ptr<TableType<DBCon>> pTable;
 
     const int64_t iId;
+
+    std::shared_ptr<TableType> pInserter;
 
   private:
     // needs to be below pTable, so that the transactions destructor is called first
     typename DBCon::sharedGuardedTrxnType pTransaction;
 
-    InserterContainer(
-        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType<DBCon>>> xFromRun,
-        int64_t iId )
+  public:
+    AbstractInserterContainer(
+        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType>> xFromRun, int64_t iId )
         : iConnectionId( std::get<1>( xFromRun ) ),
-          pTable( std::get<2>( xFromRun ) ),
           iId( iId ),
-          pTransaction( std::get<0>( xFromRun ) )
-    {}
-
-  public:
-    InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        : InserterContainer( pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
-                                               []( auto pConnection ) //
-                                               {
-                                                   return std::make_tuple(
-                                                       pConnection->sharedGuardedTrxn( ),
-                                                       (int)pConnection->getTaskId( ),
-                                                       std::make_shared<TableType<DBCon>>( pConnection ) );
-                                               } ),
-                             iId )
-    {} // constructor
-
-    /**
-     * @brief insert an element into the table TableType
-     * @details
-     * Whenever you inherit from this class your job is to implement this function.
-     */
-    virtual void EXPORTED insert( std::shared_ptr<InsertTypes>... pArgs )
-    {
-        throw std::runtime_error( "insert function of InserterContainer was not defined." );
-    } // method
-
-  private:
-    static void insert_helper( std::shared_ptr<DBCon> pConnection, InserterContainer* pThis,
-                               std::shared_ptr<InsertTypes>... pArgs )
-    {
-        pThis->insert( pArgs... );
-    } // method
-
-  public:
-    void pool_save_insert( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<InsertTypes>... pArgs )
-    {
-        pPool->xPool.run( iConnectionId, &InserterContainer::insert_helper, this, pArgs... );
-    } // method
-
-    /**
-     * @brief destruct the table
-     * @details
-     * Once this is called any following calls to insert result in undefined behaviour.
-     * In a c++ application this should never be called, since the deconstructor of this class fullfills the same
-     * purpose.
-     * Use this from python in order to make sure all elements are inserted.
-     */
-    virtual void close( )
-    {
-        pTable.reset( );
-        pTransaction.reset( );
-    } // method
-}; // class
-
-/**
- * @brief container that holds a bulk inserter for a table
- * @details
- * @see InserterContainer
- * This class does the same thing as InserterContainer. But instead of supplying the table it supplies a bulk inserter
- * to the table via pInserter.
- */
-template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
-class BulkInserterContainer : public Container
-{
-
-  public:
-    using InsertTypesForw = TypePack<InsertTypes...>;
-    using DBConForwarded = DBCon;
-
-    const int iConnectionId;
-    const static size_t BUFFER_SIZE = 500;
-    using InserterType = typename TableType<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
-    std::shared_ptr<InserterType> pInserter;
-
-    const int64_t iId;
-
-  private:
-    // needs to be below pInserter, so that the transactions destructor is called first
-    typename DBCon::sharedGuardedTrxnType pTransaction;
-
-    BulkInserterContainer(
-        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<InserterType>> xFromRun, int64_t iId )
-        : iConnectionId( std::get<1>( xFromRun ) ),
           pInserter( std::get<2>( xFromRun ) ),
-          iId( iId ),
           pTransaction( std::get<0>( xFromRun ) )
     {}
-
-  public:
-    BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
-        // This construction makes sure that the table exists in the database.
-        : BulkInserterContainer(
-              pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
-                                []( auto pConnection ) //
-                                {
-                                    return std::make_tuple(
-                                        pConnection->sharedGuardedTrxn( ),
-                                        (int)pConnection->getTaskId( ),
-                                        std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ) );
-                                } ),
-              iId )
-    {} // constructor
 
     /**
      * @brief insert an element into the table TableType
@@ -158,11 +57,11 @@ class BulkInserterContainer : public Container
      */
     virtual void EXPORTED insert( std::shared_ptr<InsertTypes>... pArgs )
     {
-        throw std::runtime_error( "insert function of BulkInserterContainer was not defined." );
+        throw std::runtime_error( "insert function of AbstractInserterContainer was not defined." );
     } // method
 
   private:
-    static void insert_helper( std::shared_ptr<DBCon> pConnection, BulkInserterContainer* pThis,
+    static void insert_helper( std::shared_ptr<DBCon> pConnection, AbstractInserterContainer* pThis,
                                std::shared_ptr<InsertTypes>... pArgs )
     {
         pThis->insert( pArgs... );
@@ -171,11 +70,11 @@ class BulkInserterContainer : public Container
   public:
     void pool_save_insert( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<InsertTypes>... pArgs )
     {
-        pPool->xPool.run( iConnectionId, &BulkInserterContainer::insert_helper, this, pArgs... );
+        pPool->xPool.run( iConnectionId, &AbstractInserterContainer::insert_helper, this, pArgs... );
     } // method
 
     /**
-     * @brief close the bulk inserter
+     * @brief destruct the table / close the bulk inserter
      * @details
      * Once this is called any following calls to insert result in undefined behaviour.
      * In a c++ application this should never be called, since the deconstructor of this class fullfills the same
@@ -187,6 +86,63 @@ class BulkInserterContainer : public Container
         pInserter.reset( );
         pTransaction.reset( );
     } // method
+}; // class
+
+
+/**
+ * @brief container that holds a regular inserter for a table
+ * @details
+ * @see AbstractInserterContainer for docu
+ */
+template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
+class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>
+{
+  public:
+    InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
+        : AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>(
+              pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
+                                [this]( auto pConnection ) //
+                                {
+                                    return std::make_tuple( pConnection->sharedGuardedTrxn( ),
+                                                            (int)pConnection->getTaskId( ),
+                                                            std::make_shared<TableType<DBCon>>( pConnection ) );
+                                } ),
+              iId )
+    {} // constructor
+
+}; // class
+
+/**
+ * @brief container that holds a bulk inserter for a table
+ * @details
+ * @see AbstractInserterContainer
+ * This class does the same thing as InserterContainer. But instead of supplying the table it supplies a bulk inserter
+ * to the table via pInserter.
+ */
+template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
+class BulkInserterContainer
+    : public AbstractInserterContainer<DBCon, typename TableType<DBCon>::template SQLBulkInserterType<500>,
+                                       InsertTypes...>
+{
+  public:
+    const static size_t BUFFER_SIZE = 500;
+    using InserterType = typename TableType<DBCon>::template SQLBulkInserterType<BUFFER_SIZE>;
+
+    BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
+        // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
+        // This construction makes sure that the table exists in the database.
+        : AbstractInserterContainer<DBCon, InserterType, InsertTypes...>(
+              pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
+                                [this]( auto pConnection ) //
+                                {
+                                    return std::make_tuple(
+                                        pConnection->sharedGuardedTrxn( ),
+                                        (int)pConnection->getTaskId( ),
+                                        std::make_shared<InserterType>( TableType<DBCon>( pConnection ) ) );
+                                } ),
+              iId )
+    {} // constructor
+
 }; // class
 
 

@@ -47,7 +47,7 @@ class SvCallInserterContainerTmpl : public InserterContainer<DBCon, SvCallTable,
     inline void insertCall( SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId = ParentType::pTable->insert( ParentType::iId, //
+        int64_t iCallId = ParentType::pInserter->insert( ParentType::iId, //
                                                       (uint32_t)rCall.xXAxis.start( ), //
                                                       (uint32_t)rCall.xYAxis.start( ), //
                                                       (uint32_t)rCall.xXAxis.size( ), //

@@ -638,6 +638,14 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             static_assert( sizeof...( InsTypes ) == sizeof...( ColTypes ) );
         } // constructor
 
+        /**
+         * @brief get a bulk inserter directly from a connection
+         * @details
+         * This constructs the respective table and then immediately destructs it again.
+         * That way we make sure the table exists in the DB.
+         */
+        SQLBulkInserter( std::shared_ptr<DBCon> pConnection );
+
         /** @brief Inserts a row into the table via a bulk-insert approach.
          * Reasonable addition: insert using moves.
          */
@@ -1254,6 +1262,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                 this->drop( );
         } );
     } // destructor
+
 }; // class (SQLTable)
 
 

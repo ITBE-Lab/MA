@@ -63,8 +63,8 @@ template <typename DBCon> class PairedReadInserterContainer : public InserterCon
 
     virtual void EXPORTED insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
-        int64_t iReadIdA = ParentType::pTable->insert( ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
-        int64_t iReadIdB = ParentType::pTable->insert( ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );
+        int64_t iReadIdA = ParentType::pInserter->insert( ParentType::iId, pReadA->sName, NucSeqSql( pReadA ) );
+        int64_t iReadIdB = ParentType::pInserter->insert( ParentType::iId, pReadB->sName, NucSeqSql( pReadB ) );
         pPairedReadInserter->insert( iReadIdA, iReadIdB );
     } // method
 }; // class
