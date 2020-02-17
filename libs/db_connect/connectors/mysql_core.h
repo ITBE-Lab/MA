@@ -60,17 +60,17 @@ namespace fs = std::filesystem;
 using nlohmann::json;
 
 // Constants for definitions via json
-const std::string SCHEMA = "SCHEMA";
 const std::string CONNECTION = "CONNECTION";
 const std::string HOSTNAME = "HOSTNAME";
 const std::string USER = "USER";
 const std::string PASSWORD = "PASSWORD";
 const std::string PORT = "PORT";
-// indicated that the connection shall drop the DB on its destruction
-const std::string TEMPORARY = "TEMPORARY";
+const std::string MYSQL_EXTRA = "MYSQL_EXTRA";
+const std::string NO_RESULT_STORAGE_ON_CLIENT = "NO_RESULT_STORAGE_ON_CLIENT";
+const std::string FLAGS = "FLAGS";
 
 /* Example for definition of database connection in json:
- * auto jDBConfig = json{ { SCHEMA, "sv_db" },
+ * auto jDBConfig = json{ { SCHEMA, { { NAME, "used_schema" }, { FLAGS, { DROP_ON_CLOSURE } } } },
  *                        { CONNECTION,
  *                          { { HOSTNAME, "localhost" },
  *                            { USER, "root" }, //
@@ -122,7 +122,7 @@ typedef bool my_bool;
 template <class F, class... Ts, std::size_t... Is>
 void for_each_in_tuple( std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ) ), 0 )...};
+    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ) ), 0 )... };
 } // meta
 
 template <class F, class... Ts> void for_each_in_tuple( std::tuple<Ts...>& tuple, F&& func )
@@ -137,7 +137,7 @@ template <class F, class... Ts, std::size_t... Is, class... Tss>
 void for_each_in_tuple_pairwise( std::tuple<Ts...>& tuple, F func, std::tuple<Tss...>& tuple1,
                                  std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )...};
+    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )... };
 } // meta
 
 template <class F, class... Ts, class... Tss>
@@ -253,7 +253,7 @@ class ByteBuffer
     {
         if( uiReq > uiBufSize )
         {
-            // uiReq is guaranteed to be one at least
+            // uiReq is guaranteed to be greater equal one
             // allocate multiple of SEG_SIZE
             uiBufSize = ( ( ( uiReq - 1 ) / SEG_SIZE ) + 1 ) * SEG_SIZE;
 
@@ -292,7 +292,7 @@ template <typename CellType> class RowCellBase
     bool bIsVarSizeCell; // indicates if cell comprises variable sized data
 
   public:
-    /* Initialization of a cell must happen via this init */
+    /** &brief Initialization of a cell must be done via this init method. */
     inline void
     init( MYSQL_BIND* pMySQLBind, // pointer to MySQL bind
           CellType* pCellValue, // pointer to actual cell value
@@ -629,7 +629,7 @@ class MySQLConDB
         } // variadic method
 
       public:
-        /* Constructor */
+        /** @brief Constructs a prepared statement using the SQL in rsStmtText */
         PreparedStmtTmpl( DBPtrType const pMySQLDB, const std::string& rsStmtText )
             : pMySQLDB( pMySQLDB ), sStmtText( rsStmtText )
         {
@@ -711,7 +711,13 @@ class MySQLConDB
     // Standard form of prepared statement, which uses a shared pointer.
     using PreparedStmt = PreparedStmtTmpl<std::shared_ptr<MySQLConDB>>;
 
-    // HOWTO: https://dev.mysql.com/doc/refman/5.7/en/mysql-stmt-fetch.html
+    /** @brief Prepared MySQL query.
+     *  @details
+     *  Query can be controlled via an optional JSON object:
+     *  json{ { MYSQL_EXTRA, { { FLAGS, { NO_RESULT_STORAGE_ON_CLIENT } } } } }
+     *  Implementation details can be found at:
+     *  https://dev.mysql.com/doc/refman/5.7/en/mysql-stmt-fetch.html
+     */
     template <typename DBPtrType, typename... ColTypes> // types of query columns
     class PreparedQueryTmpl : public PreparedStmtTmpl<DBPtrType>
     {
@@ -722,9 +728,11 @@ class MySQLConDB
         std::tuple<RowCell<ColTypes>...> tCellWrappers; // C++ Wrappers for managing the MYSQL
                                                         // binding C-structs (Connection via pointer)
         MYSQL_RES* pPrepareMetaResult; // Pointer to auxiliary C-struct of MySQL
-        my_ulonglong uiRowCount; // Internal counter the counts the number of rows fetched so far
-        // bool bClientKeepsResult; // true if mysql_stmt_store_result() fetched the result of a query, false otherwise.
-        bool doStoreResult; // Use mysql_stmt_store_result() to store the outcome of the query in the client
+        my_ulonglong uiRowCount; // Internal counter that counts the number of rows fetched so far
+        bool doStoreResult; // If true (default):
+                            // Use mysql_stmt_store_result() to store the outcome of the query in client's memory
+                            // instead of fetching each row using a separated request from server.
+                            
         int iStatus; // informs about the outcome of the last fetch; initially -1 representing unknown
 
         /** @brief Performs: 1. Query execution, 2. binding of results.
@@ -744,17 +752,29 @@ class MySQLConDB
             this->execBind( std::forward<ArgTypes>( args )... );
             return this->fetchNextRow( );
         } // method
+
+        /** @brief Parses the JSON configuration of he query. */
+        void parseJsonConfig( const json& jQueryConfig )
+        {
+            // Check for the NO_RESULT_STORAGE_ON_CLIENT flag.
+            if( jQueryConfig.count( MYSQL_EXTRA ) && jQueryConfig[ MYSQL_EXTRA ].count( FLAGS ) )
+                for( auto rsString : jQueryConfig[ MYSQL_EXTRA ][ FLAGS ] )
+                    if( rsString == NO_RESULT_STORAGE_ON_CLIENT )
+                        this->doStoreResult = false;
+        } // method
+
         friend MySQLConDB; // give MySQLConDB access to execBindFetch( )
 
       public:
         std::tuple<ColTypes...> tCellValues; // tuple that keeps the values of current query row
 
-        /* Constructor */
-        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText )
+        /** @brief Constructs a predefined query using the passed SQL statement.
+         *  The behavior of the query can be additionally controlled by an optionally passed JSON object.
+         */
+        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{ } )
             : PreparedStmtTmpl<DBPtrType>( pMySQLDB,
                                            rsStmtText ), // class superclass constructor
               tCellWrappers( ), // initialized via default constructors (couldn't find better way :-( )
-              // bClientKeepsResult( false ) // mysql_stmt_store_result() not called so far
               doStoreResult( true ),
               iStatus( -1 ) // initially unknown
         {
@@ -775,12 +795,16 @@ class MySQLConDB
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
-            for_each_in_tuple_pairwise( tCellWrappers,
-                                        [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
-                                            // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
-                                            rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
-                                        },
-                                        tCellValues );
+            for_each_in_tuple_pairwise(
+                tCellWrappers,
+                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                    // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
+                    rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
+                },
+                tCellValues );
+
+            // Parse the JSON configuration of the query.
+            parseJsonConfig( rjConfig );
         } // constructor
 
         /** @brief Performs argument binding before fetching. Has to called after statement execution and
@@ -799,6 +823,7 @@ class MySQLConDB
             // the query outcome does not fit into clients memory.
             if( this->doStoreResult )
             {
+                // DEBUG: std::cout << "Execute mysql_stmt_store_result ..." << std::endl;
                 if( mysql_stmt_store_result( this->pStmt ) )
                     throw std::runtime_error( "mysql_stmt_store_result() failed\n" + this->stmtErrMsg( ) );
             } // if
@@ -822,7 +847,7 @@ class MySQLConDB
 #ifdef REPORT_ROWS_WITH_NULL_VALUES
             // Check for possible NULL values
             // Currently, there is no solution for these cases.
-            for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+            for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                 if( rCell.is_null )
                     throw std::runtime_error( "fetchNextRow reports a cell with NULL value." );
             } ); // for each tuple
@@ -831,7 +856,7 @@ class MySQLConDB
             if( this->iStatus == MYSQL_DATA_TRUNCATED )
             {
                 // Find the column(s) responsible and resize the buffer appropriately.
-                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                     if( rCell.error ) // error identifies the cell(s), where we have truncation
                     {
                         // Truncation can occur for variable size data only.
@@ -860,7 +885,7 @@ class MySQLConDB
             // Pick variable size data (Text or Blob) from cell buffers.
             if( this->iStatus == 0 )
             {
-                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                     if( rCell.bIsVarSizeCell )
                         rCell.storeVarSizeCell( );
                 } ); // for each tuple
@@ -1013,14 +1038,15 @@ class MySQLConDB
     std::map<std::string, std::string> mMySQLVars; // local mirror of all MySQL client variables
     unsigned long uiCLientVersion; // version of current client
     std::unique_ptr<fs::path> pServerDataUploadDir; // If null, server upload is not allowed.
-    std::string sSchemaInUse; // Name of the current schema (managed by useSchema)
+    // DEL: std::string sSchemaInUse; // Name of the current schema (managed by useSchema)
 
   public:
     MySQLConDB( const MySQLConDB& db ) = delete; // no object copies
     MySQLConDB& operator=( const MySQLConDB& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    MySQLConDB( const json& jDBConfig = {} )
+    MySQLConDB( // DEL: const std::string& sSchemaName,
+        const json& jDBConfig = { } )
         : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
@@ -1028,14 +1054,16 @@ class MySQLConDB
             throw MySQLConException( "Initialization of MySQL connection failed" );
 
         // Establish connection to database
-        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
+        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
 
-        // Set the used database. If it does not exist, create it.
-        this->useSchema( jDBConfig.count( SCHEMA ) > 0 ? std::string( jDBConfig[ SCHEMA ] ) : DEFAULT_DBNAME,
-                         // if jDBConfig is configured, so that this connection is to a TEMPORARY DB,
-                         // and we are the first connection (in case this is via a conn pool)
-                         // we have to throw an exception if this schema already exists
-                         jDBConfig.count( TEMPORARY ) > 0 && jDBConfig[ TEMPORARY ].get<bool>() );
+        // DEL: Set the used database. If it does not exist, create it.
+        // DEL: this->useSchema( sSchemaName );
+
+        // DEL: jDBConfig.count( SCHEMA ) > 0 ? std::string( jDBConfig[ SCHEMA ] ) : DEFAULT_DBNAME,
+        // DEL: if jDBConfig is configured, so that this connection is to a TEMPORARY DB,
+        // DEL: and we are the first connection (in case this is via a conn pool)
+        // DEL: we have to throw an exception if this schema already exists
+        // DEL: jDBConfig.count( TEMPORARY ) > 0 && jDBConfig[ TEMPORARY ].get<bool>( ) );
 
         // Compile the statement that checks for the existence of an index.
         // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
@@ -1057,7 +1085,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [&]( ) { this->close( ); } );
+        do_exception_safe( [ & ]( ) { this->close( ); } );
     } // destructor
 
     /** @brief: Immediately execute the SQL statement giver as argument.
@@ -1085,23 +1113,21 @@ class MySQLConDB
 
     /** @brief Informs the connection about the schema that has to used.
      *  If the schema does not exist already, it is created.
-     * @details
-     * if bTemporaryDb is true useSchema throws an exception if the schema already exists
      */
-    void useSchema( const std::string& rsSchemaName, bool bTemporaryDb )
+    void useSchema( const std::string& rsSchemaName ) //, bool bTemporaryDb )
     {
         checkDBCon( );
-        // std::cout << "MySQL::Used Schema: " << rsSchemaName << std::endl;
+        std::cout << "MySQL::Use Schema: " << rsSchemaName << std::endl;
         if( mysql_select_db( pMySQLHandler, rsSchemaName.c_str( ) ) )
         {
             // Create the database if not existing.
             execSQL( "CREATE DATABASE " + rsSchemaName );
         } // if
-        else if( bTemporaryDb )
-            throw std::runtime_error( "Tried to open a temporary schema that already exists" );
+        // DEL: else if( bTemporaryDb )
+        // DEL:     throw std::runtime_error( "Tried to open a temporary schema that already exists" );
 
-        // Tell MySQL to USE this database
-        sSchemaInUse = rsSchemaName;
+        // DEL: Tell MySQL to USE this database
+        // DEL: sSchemaInUse = rsSchemaName;
         execSQL( "USE " + rsSchemaName );
     } // method
 

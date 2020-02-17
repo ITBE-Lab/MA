@@ -39,8 +39,7 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
         : SQLDB<DBImpl>( jDBConData ), pPoolLock( pPoolLock )
     {} // constructor
 
-    /** @brief The function func is executed protected by a global lock.
-     */
+    /** @brief The function func is executed protected by a global lock. */
     template <typename F> void doPoolSafe( F&& func )
     {
         std::lock_guard<std::mutex> lock( *pPoolLock );
