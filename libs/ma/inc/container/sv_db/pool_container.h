@@ -25,7 +25,7 @@ template <class DBCon> class PoolContainer : public Container
     {} // constructor
 
     PoolContainer( size_t uiPoolSize, std::string sSchemaName )
-        : PoolContainer( uiPoolSize, json{{"SCHEMA", sSchemaName}} )
+        : PoolContainer( uiPoolSize, json{ { SCHEMA, {{ NAME, sSchemaName }} } } )
     {} // constructor
 
 }; // class

@@ -27,7 +27,7 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
     for x in range(5):
         reads.append(reconstr_nuc_seq)
     print(reads)
-    sequencer_id = insert_reads_vec(parameter_set, "tmp_3", "perfect whole genome read", reads)
+    sequencer_id = insert_reads_vec(parameter_set, dataset_name, "perfect whole genome read", reads)
     print("done")
 
     return ground_truth_id, fm_index, sequencer_id
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     assert parameter_set.get_num_threads() == 1
 
     reference = get_reference()
-    db_conn = DbConn({"SCHEMA": "tmp_3", "TEMPORARY": True})
+    db_conn = DbConn({"SCHEMA": {"NAME": "tmp_3", "FLAGS": ["DROP_ON_CLOSURE"]}})
 
     ground_truth_id, fm_index, sequencer_id = insert_reads(db_conn, reference, parameter_set, "tmp_3")
 

@@ -1667,6 +1667,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
           sSchemaName( getSchemaName( jDBConData ) ),
           bDropOnClosure( getDropOnClosureFlag( jDBConData ) )
     {
+        // std::cout << jDBConData << std::endl;
         // Register the selected schema with global warden and select it for use.
         xSQLDBGlobalSync.registerSchema( sSchemaName );
         DBImpl::useSchema( sSchemaName );
@@ -1675,7 +1676,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     /** @brief Initialize DB connection using a given schema name.
      *  @details This constructor is exported to python.
      */
-    SQLDB( std::string sSchemaName ) : SQLDB( json{ { SCHEMA, { NAME, sSchemaName } } } )
+    SQLDB( std::string sSchemaName ) : SQLDB( json{ { SCHEMA, {{ NAME, sSchemaName }} } } )
     {}
 
     /** @brief Destructs connection in an exception safe way ... */

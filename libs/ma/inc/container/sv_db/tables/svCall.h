@@ -561,9 +561,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                                                    {REFERENCES, "sv_call_table(id)"},
                                                                    {CONSTRAINTS, "NOT NULL PRIMARY KEY"}}}}} );
 
-            this->addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
+            //this->addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
 
-            this->addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
+            //this->addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
 
             //this->pConnection->execSQL( "ANALYZE TABLE sv_call_table" );
             //this->pConnection->execSQL( "ANALYZE TABLE reconstruction_table" );
@@ -716,8 +716,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             } // while
         } // scope xReconstructionTable
 
-        this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
-        this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
+        //this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
+        //this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
 
         return pRet;
     } // method

@@ -40,7 +40,7 @@ def get_reference():
     return reference
 
 if __name__ == "__main__":
-    db_conn = DbConn({"SCHEMA": "tmp_2", "TEMPORARY": True})
+    db_conn = DbConn({"SCHEMA": {"NAME": "tmp_2", "FLAGS": ["DROP_ON_CLOSURE"]}})
 
     run_id = insert_calls(db_conn, "tmp_2")
     reference = get_reference()
