@@ -40,7 +40,7 @@ class AbstractInserterContainer : public Container
   private:
     // needs to be below pTable, so that the transactions destructor is called first
     typename DBCon::sharedGuardedTrxnType pTransaction;
-    // needs to be below pTransaction @todo discuss arne: sharedGuardedTrxnType does not keep DB connection alive
+    // needs to be below pTransaction to keep the connection alive until the transaction is destructed
     std::shared_ptr<DBCon> pConnection;
 
   public:

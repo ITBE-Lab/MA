@@ -154,7 +154,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "for index storage. 'index_name' is the name used for identifying the new FMD-Index. In the context "
                  "of alignments, the genome-name is used for FMD-index selection.",
                  sIndentDesc );
-    for( auto xPair : rManager.pGlobalParameterSet->xpParametersByCategory )
+    for( auto xPair : rManager.pGeneralParameterSet->xpParametersByCategory )
     {
         for( auto pParameter : xPair.second )
             printOption( pParameter->sName,
@@ -220,19 +220,19 @@ int main( int argc, char* argv[] )
     ExecutionContext xExecutionContext;
     // change the way output works to a simple -o for the command line aligner.
     // Also disable Use Max Hardware concurrency parameter and set -t to max hardware_concurrency by default.
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputTypeChoice->uiSelection = 2;
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency->set( false );
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->set(
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->xSAMOutputTypeChoice->uiSelection = 2;
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->pbUseMaxHardareConcurrency->set( false );
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->piNumberOfThreads->set(
         std::thread::hardware_concurrency( ) );
     // remove not with respect to pbUseMaxHardareConcurrency in description...
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->piNumberOfThreads->sDescription =
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->piNumberOfThreads->sDescription =
         "Number of threads used in the context of alignments.";
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
-        xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputTypeChoice.pContent );
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
-        xExecutionContext.xParameterSetManager.pGlobalParameterSet->xSAMOutputPath.pContent );
-    xExecutionContext.xParameterSetManager.pGlobalParameterSet->unregisterParameter(
-        xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbUseMaxHardareConcurrency.pContent );
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->unregisterParameter(
+        xExecutionContext.xParameterSetManager.pGeneralParameterSet->xSAMOutputTypeChoice.pContent );
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->unregisterParameter(
+        xExecutionContext.xParameterSetManager.pGeneralParameterSet->xSAMOutputPath.pContent );
+    xExecutionContext.xParameterSetManager.pGeneralParameterSet->unregisterParameter(
+        xExecutionContext.xParameterSetManager.pGeneralParameterSet->pbUseMaxHardareConcurrency.pContent );
 
     // set the mode...
     for( int iI = 2; iI < argc; iI += 2 )
@@ -349,7 +349,7 @@ int main( int argc, char* argv[] )
                             .append( ". Did you forget to add the '-' or '--' at the beginning?" ) );
             } // else
         } // for
-        if( xExecutionContext.xParameterSetManager.pGlobalParameterSet->pbPrintHelpMessage->get( ) )
+        if( xExecutionContext.xParameterSetManager.pGeneralParameterSet->pbPrintHelpMessage->get( ) )
         {
             generateHelpMessage( xExecutionContext.xParameterSetManager );
             return 0;

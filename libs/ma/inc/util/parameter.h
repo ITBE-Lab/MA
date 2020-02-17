@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdexcept>
 #include "exported.h"
 #include "support.h"
+#include <stdexcept>
 
 #if defined( __GNUC__ ) && ( __GNUC__ < 8 )
 #include <experimental/filesystem>
@@ -556,11 +556,6 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxDistDummy; // minimal distance for seeds from read edge for dummy jumps
     AlignerParameterPointer<bool> xRevCompPairedReadMates; // reverse complement all paried read mates
     AlignerParameterPointer<bool> xDoMateJumps; // compute jumps between paired reads
-    AlignerParameterPointer<double> xJumpS; // s parameter for fuzziness of jumps
-    AlignerParameterPointer<double> xJumpSNeg; // s parameter for fuzziness of jumps in negative direciton
-    AlignerParameterPointer<double> xJumpM; // m parameter for fuzziness of jumps
-    AlignerParameterPointer<double> xJumpH; // h parameter for fuzziness of jumps
-    AlignerParameterPointer<int> xSeedDirFuzziness; // m parameter for fuzziness of jumps
     AlignerParameterPointer<int> xMaxSizeReseed; // minimal edge size for which we reseed
     AlignerParameterPointer<int> xMinSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
     AlignerParameterPointer<int> xMaxFuzzinessFilter; // maximal fuzziness for sv calls
@@ -758,11 +753,6 @@ class Presetting : public ParameterSetBase
           xMaxDistDummy( this, "Maximal Dummy Distance", "@todo", SV_PARAMETERS, 60, checkPositiveValue ),
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
-          xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),
-          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
-          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
-          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 500, checkPositiveValue ),
           xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
@@ -927,6 +917,37 @@ class GeneralParameter : public ParameterSetBase
 }; // class
 
 
+/** @brief master class for Global Parameters.
+ *  @details
+ *  there will only ever be one instance of this class.
+ *  @todo move remaining GlobalParameters
+ */
+class GlobalParameter : public ParameterSetBase
+{
+  public:
+    AlignerParameterPointer<double> xJumpS; // s parameter for fuzziness of jumps
+    AlignerParameterPointer<double> xJumpSNeg; // s parameter for fuzziness of jumps in negative direciton
+    AlignerParameterPointer<double> xJumpM; // m parameter for fuzziness of jumps
+    AlignerParameterPointer<double> xJumpH; // h parameter for fuzziness of jumps
+    AlignerParameterPointer<int> xSeedDirFuzziness; // m parameter for fuzziness of jumps
+
+    /* Constructor */
+    GlobalParameter( )
+        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
+          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
+          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
+          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue )
+    {} // constructor
+
+    /* Named copy Constructor */
+    GlobalParameter( const GlobalParameter& rxOtherSet ) = delete;
+}; // class
+
+
+/** @brief Single master object for Global Parameters. */
+const std::shared_ptr<GlobalParameter> pGlobalParams = std::make_shared<GlobalParameter>( );
+
 /* Management of single global parameter-set and all config (preset) parameter-sets */
 class ParameterSetManager
 {
@@ -935,12 +956,12 @@ class ParameterSetManager
     std::shared_ptr<Presetting> pSelectedParamSet = NULL;
 
   public:
-    std::shared_ptr<GeneralParameter> pGlobalParameterSet;
+    std::shared_ptr<GeneralParameter> pGeneralParameterSet;
 
     // Presets for aligner configuration
     std::map<std::string, std::shared_ptr<Presetting>> xParametersSets;
 
-    ParameterSetManager( ) : pGlobalParameterSet( std::make_shared<GeneralParameter>( ) )
+    ParameterSetManager( ) : pGeneralParameterSet( std::make_shared<GeneralParameter>( ) )
     {
         xParametersSets.emplace( "default", std::make_shared<Presetting>( "Default" ) );
 
@@ -1027,8 +1048,10 @@ class ParameterSetManager
 
     std::shared_ptr<AlignerParameterBase> byName( const std::string& rParameterName )
     {
-        if( pGlobalParameterSet->hasName( rParameterName ) )
-            return pGlobalParameterSet->byName( rParameterName );
+        if( pGlobalParams->hasName( rParameterName ) )
+            return pGlobalParams->byName( rParameterName );
+        if( pGeneralParameterSet->hasName( rParameterName ) )
+            return pGeneralParameterSet->byName( rParameterName );
         if( this->getSelected( )->hasName( rParameterName ) )
             return this->getSelected( )->byName( rParameterName );
         throw std::runtime_error( std::string( "Could not find parameter: " ).append( rParameterName ) );
@@ -1036,8 +1059,10 @@ class ParameterSetManager
 
     std::shared_ptr<AlignerParameterBase> byShort( const char cX )
     {
-        if( pGlobalParameterSet->hasShort( cX ) )
-            return pGlobalParameterSet->byShort( cX );
+        if( pGlobalParams->hasShort( cX ) )
+            return pGlobalParams->byShort( cX );
+        if( pGeneralParameterSet->hasShort( cX ) )
+            return pGeneralParameterSet->byShort( cX );
         if( this->getSelected( )->hasShort( cX ) )
             return this->getSelected( )->byShort( cX );
         throw std::runtime_error( "Could not find parameter: " + cX );
@@ -1045,7 +1070,7 @@ class ParameterSetManager
 
     size_t getNumThreads( ) const
     {
-        return pGlobalParameterSet->getNumThreads( );
+        return pGeneralParameterSet->getNumThreads( );
     } // method
 
     void addSetting( const std::string& rsName )

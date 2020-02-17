@@ -510,7 +510,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return pOverlapCache->numInvalidCalls( iCallerRunIdA, dMinScore, iAllowedDist );
     } // method
 
-    using NextCallType = ExplainedSQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
+    using NextCallType = SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
 
     /** @brief returns call id, jump start pos, next context, next from position, jump end position
      *  @details helper function for reconstructSequencedGenome */

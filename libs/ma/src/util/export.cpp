@@ -73,7 +73,7 @@ void exportParameter( py::module& rxPyModuleId )
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
-        .def_readwrite( "global_settings", &ParameterSetManager::pGlobalParameterSet ) //
+        .def_readwrite( "global_settings", &ParameterSetManager::pGeneralParameterSet ) //
         .def( "get", &ParameterSetManager::get )
         .def( "add_setting", &ParameterSetManager::addSetting )
         .def( "get_num_threads", &ParameterSetManager::getNumThreads )

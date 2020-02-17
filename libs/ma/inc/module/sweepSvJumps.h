@@ -82,7 +82,6 @@ class CompleteBipartiteSubgraphSweep
     : public Module<CompleteBipartiteSubgraphClusterVector, false, PoolContainer<DBCon>, GenomeSection, Pack>
 {
   public:
-    const ParameterSetManager& rParameters;
     int64_t iSvCallerRunId;
     int64_t iMaxFuzziness;
     size_t uiSqueezeFactor;
@@ -99,12 +98,11 @@ class CompleteBipartiteSubgraphSweep
      * @details
      */
     CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, int64_t iSvCallerRunId )
-        : rParameters( rParameters ), // @todo rParameters should never be saved within a object
-          iSvCallerRunId( iSvCallerRunId ),
+        : iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
           // max of both limits)
           // also this should be the maximal cluster width not the maximal CBSG width
-          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( ) * 10 ),
+          iMaxFuzziness( (int64_t)pGlobalParams->xJumpH->get( ) * 10 ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
           uiCenterStripDown( 1000 )
@@ -122,7 +120,7 @@ class CompleteBipartiteSubgraphSweep
                 auto xInitStart = std::chrono::high_resolution_clock::now( );
                 // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
                 SortedSvJumpFromSql<DBCon> xEdges(
-                    rParameters, pConnection, iSvCallerRunId,
+                    pConnection, iSvCallerRunId,
                     // make sure we overlap the start of the next interval, so that clusters that span over two
                     // intervals are being collected. -> for this we just keep going after the end of the interval
                     pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,

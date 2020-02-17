@@ -756,7 +756,7 @@ class mwxPropertyPanel : public wxPanel
         {
             fs::path sFile( std::string( this->pxFilePickerCtrl->GetFileName( ).GetFullPath( ).c_str( ) ) );
 
-            // @todo Markus: here should be a check on wether the extension fo the selected/written file matches...
+            // @todo here should be a check on wether the extension of the selected/written file matches...
             pxParameter->set( sFile );
 
             pxHost->updateEnabledDisabled( );

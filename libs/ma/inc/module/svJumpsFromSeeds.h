@@ -29,10 +29,9 @@ class PerfectMatch;
 class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
   public:
-    // @todo this should not be here...
-    const std::shared_ptr<Presetting> pSelectedSetting;
     const size_t uiMinSeedSizeSV;
     const size_t uiMaxAmbiguitySv;
+    const int64_t iMaxSizeReseed;
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
     const size_t uiMaxDistDummy;
@@ -58,12 +57,12 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * @brief Initialize a SvJumpsFromSeeds Module
      */
     SvJumpsFromSeeds( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
-        : pSelectedSetting( rParameters.getSelected( ) ),
-          uiMinSeedSizeSV( pSelectedSetting->xMinSeedSizeSV->get( ) ),
-          uiMaxAmbiguitySv( pSelectedSetting->xMaxAmbiguitySv->get( ) ),
-          bDoDummyJumps( pSelectedSetting->xDoDummyJumps->get( ) ),
-          uiMinDistDummy( pSelectedSetting->xMinDistDummy->get( ) ),
-          uiMaxDistDummy( pSelectedSetting->xMaxDistDummy->get( ) ),
+        : uiMinSeedSizeSV( rParameters.getSelected( )->xMinSeedSizeSV->get( ) ),
+          uiMaxAmbiguitySv( rParameters.getSelected( )->xMaxAmbiguitySv->get( ) ),
+          iMaxSizeReseed( (int64_t)rParameters.getSelected( )->xMaxSizeReseed->get( ) ),
+          bDoDummyJumps( rParameters.getSelected( )->xDoDummyJumps->get( ) ),
+          uiMinDistDummy( rParameters.getSelected( )->xMinDistDummy->get( ) ),
+          uiMaxDistDummy( rParameters.getSelected( )->xMaxDistDummy->get( ) ),
           xSeedLumper( rParameters ),
           xNW( rParameters ),
           xParlindromeFilter( rParameters )
@@ -102,8 +101,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * Assumes that the seeds are completeley within the rectangles.
      */
     float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>
-                                  xRects )
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -146,9 +144,9 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * computes all seeds larger equal to SvJumpsFromSeeds::getKMerSizeForRectangle( xArea ) within xAreas.first and
      * xAreas.second seperately.
      */
-    std::shared_ptr<Seeds>
-    computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>& xAreas,
-                  std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq, HelperRetVal* pOutExtra );
+    std::shared_ptr<Seeds> computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>& xAreas,
+                                         std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
+                                         HelperRetVal* pOutExtra );
 
     /**
      * @brief computes the SV jumps between the two given seeds.

@@ -4,9 +4,7 @@
 namespace libMA
 {
 // @todo this can be done via a linesweep...
-template <typename DBCon>
-size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
-                                int64_t iSvCallerId )
+template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
 {
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
         pConnection,
@@ -76,10 +74,9 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                 {
                     auto xTup = xQuerySupport.get( );
                     xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                    auto pNewJump =
-                        std::make_shared<SvJump>( rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ),
-                                                  std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                                                  std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
+                    auto pNewJump = std::make_shared<SvJump>(
+                        std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                        std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
                     xPrim.vSupportingJumps.push_back( pNewJump );
                     xPrim.addJumpToEstimateClusterSize( pNewJump );
                     uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( )->query_distance( );
@@ -116,9 +113,8 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                         auto xTup = xQuerySupport.get( );
                         xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
                         auto pNewJump = std::make_shared<SvJump>(
-                            rParameters.getSelected( ), std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ),
-                            std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ),
-                            std::get<7>( xTup ) );
+                            std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                            std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
                         xSec.vSupportingJumps.push_back( pNewJump );
                         xSec.addJumpToEstimateClusterSize( pNewJump );
                         uiSecInsertSizeAvg += xSec.vSupportingJumps.back( )->query_distance( );

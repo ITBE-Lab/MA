@@ -18,7 +18,6 @@ namespace libMA
  * @brief A transaction based structural variant call inserter
  * @details
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
- * @todo ask arne if we can somehow use a bulk inserter here
  */
 template <typename CallOrVector, typename DBCon>
 class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTable, CallOrVector>

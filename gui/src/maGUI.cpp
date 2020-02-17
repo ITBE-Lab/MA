@@ -807,13 +807,13 @@ class MA_MainFrame : public wxFrame
     void doOptionsDialog( wxCommandEvent& WXUNUSED( event ) )
     {
         // Create a copy of the global parameter-set for editing
-        GeneralParameter xGeneralParameter( *xExecutionContext.xParameterSetManager.pGlobalParameterSet );
+        GeneralParameter xGeneralParameter( *xExecutionContext.xParameterSetManager.pGeneralParameterSet );
         auto xSettingsDialog = new mwxGlobalSettingsDialog( this, xGeneralParameter );
         auto iReturnedChoice = xSettingsDialog->ShowModal( );
         if( iReturnedChoice == wxID_OK )
         {
             // save the changed parameter into the selected parameter-set
-            xExecutionContext.xParameterSetManager.pGlobalParameterSet->mirror( xGeneralParameter );
+            xExecutionContext.xParameterSetManager.pGeneralParameterSet->mirror( xGeneralParameter );
         } // if
 
         xSettingsDialog->Destroy( );
@@ -831,11 +831,11 @@ class MA_MainFrame : public wxFrame
     /* opens outputs settings window; returns true if OK is hit false otherwise */
     bool openSAMSettings( )
     {
-        GeneralParameter xGlobalParameterSet( *xExecutionContext.xParameterSetManager.pGlobalParameterSet );
+        GeneralParameter xGlobalParameterSet( *xExecutionContext.xParameterSetManager.pGeneralParameterSet );
         mwxSAMSettingsDialog xSettingsDialog( nullptr, xGlobalParameterSet );
         if( xSettingsDialog.ShowModal( ) == wxID_OK )
         {
-            xExecutionContext.xParameterSetManager.pGlobalParameterSet->mirror( xGlobalParameterSet );
+            xExecutionContext.xParameterSetManager.pGeneralParameterSet->mirror( xGlobalParameterSet );
             return true;
         } // if
         return false;

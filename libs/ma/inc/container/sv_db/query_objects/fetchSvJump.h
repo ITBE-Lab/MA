@@ -24,7 +24,6 @@ namespace libMA
  */
 template <typename DBCon> class SortedSvJumpFromSql
 {
-    const std::shared_ptr<Presetting> pSelectedSetting;
 
     std::shared_ptr<DBCon> pConnection;
     // table object is not used. However its constructor guarantees its existence and the correctness of rows
@@ -38,10 +37,8 @@ template <typename DBCon> class SortedSvJumpFromSql
         xQueryEnd;
 
     /// @brief called from the other constructors of this class only
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
-                         std::string sQueryStart, std::string sQueryEnd )
-        : pSelectedSetting( rParameters.getSelected( ) ),
-          pConnection( pConnection ),
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, std::string sQueryStart, std::string sQueryEnd )
+        : pConnection( pConnection ),
           pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
           xQueryStart( pConnection, sQueryStart ),
           xQueryEnd( pConnection, sQueryEnd )
@@ -49,10 +46,10 @@ template <typename DBCon> class SortedSvJumpFromSql
 
   public:
     /// @brief fetches libMA::SvJump objects from the run with id = iSvCallerRunId sorted by their start/end positions.
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection,
                          int64_t iSvCallerRunId )
         : SortedSvJumpFromSql(
-              rParameters, pConnection,
+              pConnection,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
               "FROM sv_jump_table "
@@ -76,10 +73,10 @@ template <typename DBCon> class SortedSvJumpFromSql
      * - are sorted by their start/end position
      * - are within the rectangle iX,iY,uiW,uiH
      */
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection,
                          int64_t iSvCallerRunId, int64_t iX, int64_t iY, uint32_t uiW, uint32_t uiH )
         : SortedSvJumpFromSql(
-              rParameters, pConnection,
+              pConnection,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
               "FROM sv_jump_table "
@@ -109,10 +106,10 @@ template <typename DBCon> class SortedSvJumpFromSql
      * - start after iS (on ref)
      * - end after iE (on ref)
      */
-    SortedSvJumpFromSql( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection,
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection,
                          int64_t iSvCallerRunId, int64_t iS, int64_t iE )
         : SortedSvJumpFromSql(
-              rParameters, pConnection,
+              pConnection,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
               "FROM sv_jump_table "
@@ -165,10 +162,9 @@ template <typename DBCon> class SortedSvJumpFromSql
 
         auto xTup = xQueryStart.get( );
         xQueryStart.next( );
-        return std::make_shared<SvJump>( pSelectedSetting, std::get<1>( xTup ), std::get<2>( xTup ),
-                                         std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
-                                         std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
-                                         std::get<9>( xTup ), std::get<10>( xTup ) );
+        return std::make_shared<SvJump>(
+            std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
+            std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ), std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 
     /// @brief returns the next end-sorted jump and increases the iterator
@@ -178,10 +174,9 @@ template <typename DBCon> class SortedSvJumpFromSql
 
         auto xTup = xQueryEnd.get( );
         xQueryEnd.next( );
-        return std::make_shared<SvJump>( pSelectedSetting, std::get<1>( xTup ), std::get<2>( xTup ),
-                                         std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
-                                         std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
-                                         std::get<9>( xTup ), std::get<10>( xTup ) );
+        return std::make_shared<SvJump>(
+            std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ), std::get<5>( xTup ),
+            std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ), std::get<9>( xTup ), std::get<10>( xTup ) );
     } // method
 }; // class
 

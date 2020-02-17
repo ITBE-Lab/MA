@@ -37,7 +37,6 @@ template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserter
 /**
  * @brief inserts reads into a DB
  * @details
- * @todo ask arne if we can somehow use a bulk inserter here
  */
 template <typename DBCon>
 class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
@@ -54,8 +53,11 @@ class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTabl
               ParentType::iConnectionId,
               []( auto pConnection ) //
               {
-                  return std::make_shared<BulkInserterType<PairedReadTable<DBCon>>>( PairedReadTable<DBCon>(
-                      pConnection, nullptr /* @todo nullptr is bad practice but save in this context */ ) );
+                  return std::make_shared<BulkInserterType<PairedReadTable<DBCon>>>(
+                      PairedReadTable<DBCon>( pConnection,
+                                              /* nullptr is save in this context since PairedReadTable only uses it's
+                                                 second constructor argument if insert is called. */
+                                              nullptr ) );
               } ) )
     {} // constructor
 

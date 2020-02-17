@@ -107,7 +107,6 @@ template <typename F> inline bool doNoExcept( F&& func, std::string sInfo = "" )
     } // catch
 } // method
 
-// @todo discuss with arne
 using PriKeyDefaultType = uint64_t; // Default type of a primary key column
 
 /** @brief Class definition for single master sync object managing concurrent access and primary key counters. */
@@ -481,10 +480,6 @@ const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
 
 // generated columns; see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
-// @todo talk with arne about design here
-// part of ColTypes?:
-// yes: problem with inserters
-// no: TYPE keyword required... (currently this is implemented)
 const std::string GENERATED_COLUMNS = "GENERATED_COLUMNS";
 // the following keywords do only have an effect on generated columns
 const std::string TYPE = "TYPE";

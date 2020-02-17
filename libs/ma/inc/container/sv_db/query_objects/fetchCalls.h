@@ -19,7 +19,6 @@ namespace libMA
  */
 template <typename DBCon> class SvCallsFromDb
 {
-    const std::shared_ptr<Presetting> pSelectedSetting;
     std::shared_ptr<DBCon> pConnection;
     // the following two tables are not used. However their constructors guarantee their existence and the correctness
     // of rows
@@ -34,10 +33,9 @@ template <typename DBCon> class SvCallsFromDb
         xQuerySupport;
 
     /// @brief called from the other constructors of this class only
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, std::string sQueryString,
-                   std::string sSupportString, WKBUint64Rectangle xWkb )
-        : pSelectedSetting( rParameters.getSelected( ) ),
-          pConnection( pConnection ),
+    SvCallsFromDb( std::shared_ptr<DBCon> pConnection, std::string sQueryString, std::string sSupportString,
+                   WKBUint64Rectangle xWkb )
+        : pConnection( pConnection ),
           pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pConnection ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
           xWkb( xWkb ),
@@ -51,7 +49,7 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
         : SvCallsFromDb(
-              rParameters, pConnection,
+              pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
               "       reference_ambiguity "
               "FROM sv_call_table "
@@ -78,7 +76,7 @@ template <typename DBCon> class SvCallsFromDb
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerIdA,
                    int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
         : SvCallsFromDb(
-              rParameters, pConnection,
+              pConnection,
               std::string( "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
                            "supporting_reads, "
                            "       reference_ambiguity "
@@ -121,7 +119,7 @@ template <typename DBCon> class SvCallsFromDb
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    double dMinScore )
         : SvCallsFromDb(
-              rParameters, pConnection,
+              pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
               "       reference_ambiguity "
               "FROM sv_call_table "
@@ -143,7 +141,7 @@ template <typename DBCon> class SvCallsFromDb
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    uint32_t uiX, uint32_t uiY, uint32_t uiW, uint32_t uiH )
         : SvCallsFromDb(
-              rParameters, pConnection,
+              pConnection,
               "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads, "
               "       reference_ambiguity "
               "FROM sv_call_table "
@@ -164,7 +162,7 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
                    int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore )
-        : SvCallsFromDb( rParameters, pConnection,
+        : SvCallsFromDb( pConnection,
                          "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
                          "       supporting_reads, reference_ambiguity "
                          "FROM sv_call_table "
@@ -207,8 +205,8 @@ template <typename DBCon> class SvCallsFromDb
             auto xTup = xQuerySupport.get( );
             xRet.vSupportingJumpIds.push_back( std::get<8>( xTup ) );
             xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
-                pSelectedSetting, std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
+                std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
+                std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
                 std::get<9>( xTup ) ) );
             xQuerySupport.next( );
         } // while
