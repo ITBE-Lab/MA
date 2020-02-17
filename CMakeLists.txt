@@ -86,7 +86,8 @@ if( NOT MSVC )
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options( "-stdlib=libc++" )
     endif()
-else()
+elseif( (CMAKE_BUILD_TYPE MATCHES "Debug") )
+    # For fixing the fatal error C1128 if using MSVC and debug builds
     add_compile_options( /bigobj )
 endif()
 

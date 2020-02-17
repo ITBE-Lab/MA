@@ -1635,10 +1635,11 @@ template <typename DBImpl> class SQLDB : public DBImpl
     } // method
 
     /** @brief Extracts the value of the DROP_ON_CLOSURE flag, if existing. Otherwise returns false. */
+    const std::string _FLAGS = "FLAGS"; // @todo fix flags
     bool getDropOnClosureFlag( const json& jDBConfig )
     {
-        if( jDBConfig.count( SCHEMA ) && jDBConfig[ SCHEMA ].count( FLAGS ) )
-            for( auto rsString : jDBConfig[ SCHEMA ][ FLAGS ] )
+        if( jDBConfig.count( SCHEMA ) && jDBConfig[ SCHEMA ].count( _FLAGS ) )
+            for( auto rsString : jDBConfig[ SCHEMA ][ _FLAGS ] )
                 if( rsString == DROP_ON_CLOSURE )
                     return true;
         return false;
