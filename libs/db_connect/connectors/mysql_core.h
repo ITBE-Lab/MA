@@ -121,7 +121,7 @@ typedef bool my_bool;
 template <class F, class... Ts, std::size_t... Is>
 void for_each_in_tuple( std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ) ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ) ), 0 )...};
 } // meta
 
 template <class F, class... Ts> void for_each_in_tuple( std::tuple<Ts...>& tuple, F&& func )
@@ -136,7 +136,7 @@ template <class F, class... Ts, std::size_t... Is, class... Tss>
 void for_each_in_tuple_pairwise( std::tuple<Ts...>& tuple, F func, std::tuple<Tss...>& tuple1,
                                  std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )...};
 } // meta
 
 template <class F, class... Ts, class... Tss>
@@ -731,7 +731,7 @@ class MySQLConDB
         bool doStoreResult; // If true (default):
                             // Use mysql_stmt_store_result() to store the outcome of the query in client's memory
                             // instead of fetching each row using a separated request from server.
-                            
+
         int iStatus; // informs about the outcome of the last fetch; initially -1 representing unknown
 
         /** @brief Performs: 1. Query execution, 2. binding of results.
@@ -770,7 +770,7 @@ class MySQLConDB
         /** @brief Constructs a predefined query using the passed SQL statement.
          *  The behavior of the query can be additionally controlled by an optionally passed JSON object.
          */
-        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{ } )
+        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{} )
             : PreparedStmtTmpl<DBPtrType>( pMySQLDB,
                                            rsStmtText ), // class superclass constructor
               tCellWrappers( ), // initialized via default constructors (couldn't find better way :-( )
@@ -794,13 +794,12 @@ class MySQLConDB
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
-            for_each_in_tuple_pairwise(
-                tCellWrappers,
-                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
-                    // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
-                    rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
-                },
-                tCellValues );
+            for_each_in_tuple_pairwise( tCellWrappers,
+                                        [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                                            // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
+                                            rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
+                                        },
+                                        tCellValues );
 
             // Parse the JSON configuration of the query.
             parseJsonConfig( rjConfig );
@@ -846,7 +845,7 @@ class MySQLConDB
 #ifdef REPORT_ROWS_WITH_NULL_VALUES
             // Check for possible NULL values
             // Currently, there is no solution for these cases.
-            for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+            for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                 if( rCell.is_null )
                     throw std::runtime_error( "fetchNextRow reports a cell with NULL value." );
             } ); // for each tuple
@@ -855,7 +854,7 @@ class MySQLConDB
             if( this->iStatus == MYSQL_DATA_TRUNCATED )
             {
                 // Find the column(s) responsible and resize the buffer appropriately.
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.error ) // error identifies the cell(s), where we have truncation
                     {
                         // Truncation can occur for variable size data only.
@@ -884,7 +883,7 @@ class MySQLConDB
             // Pick variable size data (Text or Blob) from cell buffers.
             if( this->iStatus == 0 )
             {
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.bIsVarSizeCell )
                         rCell.storeVarSizeCell( );
                 } ); // for each tuple
@@ -1044,31 +1043,22 @@ class MySQLConDB
     MySQLConDB& operator=( const MySQLConDB& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    MySQLConDB( // DEL: const std::string& sSchemaName,
-        const json& jDBConfig = { } )
-        : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
+    MySQLConDB( const json& jDBConfig = {} ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
         if( !( pMySQLHandler = mysql_init( NULL ) ) )
             throw MySQLConException( "Initialization of MySQL connection failed" );
 
         // Establish connection to database
-        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
-
-        // DEL: Set the used database. If it does not exist, create it.
-        // DEL: this->useSchema( sSchemaName );
-
-        // DEL: jDBConfig.count( SCHEMA ) > 0 ? std::string( jDBConfig[ SCHEMA ] ) : DEFAULT_DBNAME,
-        // DEL: if jDBConfig is configured, so that this connection is to a TEMPORARY DB,
-        // DEL: and we are the first connection (in case this is via a conn pool)
-        // DEL: we have to throw an exception if this schema already exists
-        // DEL: jDBConfig.count( TEMPORARY ) > 0 && jDBConfig[ TEMPORARY ].get<bool>( ) );
+        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
 
         // Compile the statement that checks for the existence of an index.
         // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
         this->pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, int64_t>>(
-            this, "SELECT COUNT( 1 ) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS "
-                  "WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?" );
+            this, std::string( "SELECT COUNT( 1 ) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS "
+                               "WHERE table_schema = \"" )
+                      .append( jDBConfig[ "SCHEMA" ][ "NAME" ].get<std::string>( ) )
+                      .append( "\" AND table_name = ? AND index_name = ?" ) );
 
         // Mirror all client side MySQL variables locally.
         this->mirrorMySQLVars( );
@@ -1084,7 +1074,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [ & ]( ) { this->close( ); } );
+        do_exception_safe( [&]( ) { this->close( ); } );
     } // destructor
 
     /** @brief: Immediately execute the SQL statement giver as argument.

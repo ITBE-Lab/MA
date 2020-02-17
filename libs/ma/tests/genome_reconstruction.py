@@ -9,7 +9,7 @@ def insert_calls(db_conn, dataset_name):
     JumpRunTable(db_conn)
     SvCallerRunTable(db_conn)
     get_inserter = GetCallInserter(ParameterSetManager(), db_conn, "simulated_sv",
-                                  "the sv's that were simulated", -1)
+                                   "the sv's that were simulated", -1)
     sv_inserter = get_inserter.execute(PoolContainer(1, dataset_name))
 
     # deletion

@@ -107,7 +107,7 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
-                                    return std::make_tuple( pConnection->sharedGuardedTrxn( ),
+                                    return std::make_tuple( nullptr /*pConnection->sharedGuardedTrxn( )*/,
                                                             (int)pConnection->getTaskId( ),
                                                             std::make_shared<TableType<DBCon>>( pConnection ),
                                                             pConnection );
@@ -139,7 +139,7 @@ class BulkInserterContainer
                                 [this]( auto pConnection ) //
                                 {
                                     return std::make_tuple(
-                                        pConnection->sharedGuardedTrxn( ),
+                                        nullptr /*pConnection->sharedGuardedTrxn( )*/,
                                         (int)pConnection->getTaskId( ),
                                         TableType<DBCon>( pConnection ).template getBulkInserter<500>( ),
                                         pConnection );

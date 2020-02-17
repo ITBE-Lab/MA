@@ -164,6 +164,10 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "get_read", &ReadTable<DBConSingle>::getRead );
 
+    py::class_<SvCallSupportTable<DBConSingle>, std::shared_ptr<SvCallSupportTable<DBConSingle>>>(
+        rxPyModuleId, "SvCallSupportTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) );
+
     py::class_<SvCallerRunTable<DBConSingle>, std::shared_ptr<SvCallerRunTable<DBConSingle>>>( rxPyModuleId,
                                                                                                "SvCallerRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
