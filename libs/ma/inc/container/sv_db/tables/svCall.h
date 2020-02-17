@@ -20,18 +20,18 @@ namespace libMA
 {
 template <typename DBCon>
 using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
-                                               PriKeyDefaultType, // sv_caller_run_id (foreign key)
-                                               uint32_t, // from_pos (geometry)
-                                               uint32_t, // to_pos (geometry)
-                                               uint32_t, // from_size (geometry)
-                                               uint32_t, // to_size (geometry)
-                                               bool, // switch_strand
-                                               NucSeqSql, // inserted_sequence
-                                               uint32_t, // supporting_reads
-                                               uint32_t, // reference_ambiguity
-                                               int64_t, // regex_id
-                                               WKBUint64Rectangle // rectangle (geometry)
-                                               >;
+                                                  PriKeyDefaultType, // sv_caller_run_id (foreign key)
+                                                  uint32_t, // from_pos (geometry)
+                                                  uint32_t, // to_pos (geometry)
+                                                  uint32_t, // from_size (geometry)
+                                                  uint32_t, // to_size (geometry)
+                                                  bool, // switch_strand
+                                                  NucSeqSql, // inserted_sequence
+                                                  uint32_t, // supporting_reads
+                                                  uint32_t, // reference_ambiguity
+                                                  int64_t, // regex_id
+                                                  WKBUint64Rectangle // rectangle (geometry)
+                                                  >;
 
 template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
@@ -510,7 +510,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return pOverlapCache->numInvalidCalls( iCallerRunIdA, dMinScore, iAllowedDist );
     } // method
 
-    using NextCallType = SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
+    using NextCallType = ExplainedSQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
 
     /** @brief returns call id, jump start pos, next context, next from position, jump end position
      *  @details helper function for reconstructSequencedGenome */
@@ -547,6 +547,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
+        // SQL for checking how much work remains:
+        // SELECT COUNT(*) FROM minimal2.sv_call_table WHERE id NOT IN (SELECT call_id FROM
+        // minimal2.reconstruction_table);
         auto pRet = std::make_shared<Pack>( );
         {
             // auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
@@ -555,14 +558,15 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                                                 {CPP_EXTRA, "DROP ON DESTRUCTION"},
                                                                 {TABLE_COLUMNS,
                                                                  {{{COLUMN_NAME, "call_id"},
-                                                                   {REFERENCES, "sv_call_table(id) ON DELETE CASCADE"},
+                                                                   {REFERENCES, "sv_call_table(id)"},
                                                                    {CONSTRAINTS, "NOT NULL PRIMARY KEY"}}}}} );
 
-            // this->addIndex(
-            //    json{{INDEX_NAME, "tmp_reconstruct_seq_index_1"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
-            //
-            // this->addIndex(
-            //    json{{INDEX_NAME, "tmp_reconstruct_seq_index_2"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
+            this->addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
+
+            this->addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
+
+            //this->pConnection->execSQL( "ANALYZE TABLE sv_call_table" );
+            //this->pConnection->execSQL( "ANALYZE TABLE reconstruction_table" );
 
             NextCallType xNextCallForwardContext(
                 this->pConnection,
@@ -589,11 +593,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                                    "ORDER BY sv_call_table.to_pos DESC "
                                                    "LIMIT 1 " );
 
-
             // @todo at the moment this does not deal with jumped over sequences
             // @todo at the moment this does not check the regex (?)
-
+#if DEBUG_LEVEL > 0
             std::set<int64_t> xVisitedCalls;
+#endif
 
             NucSeq xCurrChrom;
             uint32_t uiCurrPos = 0;
@@ -611,19 +615,21 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                         tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext,
                                                        xNextCallForwardContext, xNextCallBackwardContext );
                     } );
+#if DEBUG_LEVEL > 0
                     if( std::get<0>( tNextCall ) == -1 || // there is no next call
                                                           // we have not visited the next call
                         xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
+#endif
                         break;
                     // we have visited the next call and need to search again
-                    std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl; // @todo
-                    assert(false);
+                    std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl;
+                    assert( false );
 
-                    // @todo this is extremely inefficient (if we have cylces in our graph which we do not at the
+                    // this is extremely inefficient (if we have cylces in our graph which we do not at the
                     // moment)
                     uiIntermediatePos += bForwContext ? 1 : -1;
                 } while( true );
-#if 1
+#if 0
                 std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
                           << " to: " << std::get<4>( tNextCall )
                           << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << " inserted_seq: "
@@ -700,7 +706,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
                         // remember that we used this call
                         xReconstructionTable.insert( std::get<0>( tNextCall ) );
+#if DEBUG_LEVEL > 0
                         xVisitedCalls.insert( std::get<0>( tNextCall ) );
+#endif
                         bForwContext = std::get<2>( tNextCall );
                         uiCurrPos = std::get<4>( tNextCall );
                     } );
@@ -708,8 +716,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             } // while
         } // scope xReconstructionTable
 
-        // this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
-        // this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
+        this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
+        this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
 
         return pRet;
     } // method

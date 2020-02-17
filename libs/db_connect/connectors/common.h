@@ -12,6 +12,7 @@
 #pragma warning( disable : 4996 ) // suppress warnings regarding the use of strerror
 #endif
 
+#include "support.h"
 #include <atomic> // atomic fetch_add
 #include <cerrno> // error management for file I/O
 #include <cstring> // error management for file I/O
@@ -183,7 +184,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( const json& jDBConData = json{ } )
+    SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
@@ -196,7 +197,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
      * @details
      * this constructor is exported to python
      */
-    SQLDB( std::string sSchemaName ) : SQLDB( json{ { "SCHEMA", sSchemaName } } )
+    SQLDB( std::string sSchemaName ) : SQLDB( json{{"SCHEMA", sSchemaName}} )
     {}
 
     ~SQLDB( )
@@ -283,14 +284,49 @@ template <typename DBCon> class SQLStatement
 }; // class
 
 
-/** @brief An instance of this class models a single SQL query. */
-template <typename DBCon, typename... ColTypes> class SQLQuery
+/** @brief An instance of this class models a single SQL query
+ * @details
+ * @param bExplain wether the query shall explain itself on it's first execution
+ */
+template <bool bExplain, typename DBCon, typename... ColTypes> class SQLQueryTmpl
 {
   private:
     std::shared_ptr<DBCon> pDB; // Database connection //--
     std::unique_ptr<typename DBCon::template PreparedQuery<ColTypes...>> pQuery; // pointer to insert statement
     const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
-    /* Deprecated. Execute and bind the query args., but do not fetch the first row. */
+
+    // type of the explain query
+    using ExplainQType = typename DBCon::template PreparedQuery<int64_t, // id
+                                                                std::string, // select_type
+                                                                std::string, // table
+                                                                std::string, // type
+                                                                std::string, // possible_keys
+                                                                std::string, // key
+                                                                std::string, // key_len
+                                                                std::string, // ref
+                                                                uint64_t, // rows
+                                                                std::string // Extra
+                                                                >;
+    std::unique_ptr<ExplainQType> pExplainQuery; // pointer to explain statement
+    bool bIsExplained; // holds if the query explained itself already
+
+    /** @brief helper for printing the result rows of the explain query */
+    template <size_t IDX> struct PrintExplainResults
+    {
+        template <typename TupleType> bool operator( )( TupleType& xRow )
+        {
+            std::cout << std::get<IDX>( xRow ) << "\t"; // print the cell
+            return true; // continue the iteration
+        } // operator
+    }; // struct
+
+    /** @brief print the result rows of the explain query */
+    template <typename TupleType> void printExplainRow( TupleType& xRow )
+    {
+        // print cells
+        TemplateLoop<std::tuple_size<TupleType>::value, PrintExplainResults>::iterate( xRow );
+        std::cout << std::endl;
+    } // method
 
     template <typename F> void forAllRowsDo( F&& func )
     {
@@ -302,15 +338,34 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
 
   public:
     /** @brief Constructs a query instance using the statement rsStmtText */
-    SQLQuery( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText )
+    SQLQueryTmpl( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText )
         : pDB( pDB ),
           pQuery( std::make_unique<typename DBCon::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText ) ),
-          sStmtText( rsStmtText )
+          sStmtText( rsStmtText ),
+          pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText ) : nullptr ),
+          bIsExplained( false )
     {} // constructor
 
     /** @brief Execute the query */
     template <typename... ArgTypes> void exec( ArgTypes&&... args )
     {
+        // explain the query if requested
+        if( bExplain /* <- template parameter, so that whole if can be optimized out */ && !bIsExplained )
+        {
+            bIsExplained = true;
+            std::cout << "Explaining query:" << std::endl;
+            // print query
+            std::cout << sStmtText << std::endl;
+            // print header
+            std::cout << "id\tselect_type\ttable\ttype\tpossible_keys\tkey\tkey_len\tref\trows\tExtra\t" << std::endl;
+            // Execute statement
+            pExplainQuery->bindAndExec( std::forward<ArgTypes>( args )... );
+            // Bind outcome of statement execution for later fetching
+            pExplainQuery->bindResult( );
+            // Fetch all rows and print them
+            while( pExplainQuery->fetchNextRow( ) )
+                printExplainRow( pExplainQuery->tCellValues );
+        } // if
         // Execute statement
         pQuery->bindAndExec( std::forward<ArgTypes>( args )... );
         // Bind outcome of statement execution for later fetching
@@ -440,6 +495,12 @@ template <typename DBCon, typename... ColTypes> class SQLQuery
 }; // class
 
 
+/** @brief An instance of this class models a single SQL query. */
+template <typename DBCon, typename... ColTypes> using SQLQuery = SQLQueryTmpl<false, DBCon, ColTypes...>;
+
+/** @brief An instance of this class models a single SQL query that explains itself on the first usage. */
+template <typename DBCon, typename... ColTypes> using ExplainedSQLQuery = SQLQueryTmpl<true, DBCon, ColTypes...>;
+
 // Constants for table definitions via json
 const std::string TABLE_NAME = "TABLE_NAME";
 const std::string TABLE_COLUMNS = "TABLE_COLUMNS";
@@ -537,7 +598,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                                                                  : pTable->getTableName( ) + "_idx";
 
             // In a pooled environment the creation of indexes should be serialized.
-            pTable->pDB->doPoolSafe( [ & ] {
+            pTable->pDB->doPoolSafe( [&] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -587,7 +648,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
         {
-            return cat_arr_of_tpl_impl( a, Indices{ } );
+            return cat_arr_of_tpl_impl( a, Indices{} );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -603,7 +664,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
             // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum)
             // ...
-            STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
+            STD_APPLY( [&]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 #else // Iterating approach for parameter binding with bulk inserts. (Lacks beauty, but better manageable for compilers)
 
@@ -612,7 +673,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         template <int OFFSET, typename... Args> void doSingleBind( const std::tuple<Args...>& rTpl )
         {
-            STD_APPLY( [ & ]( auto&... args ) //
+            STD_APPLY( [&]( auto&... args ) //
                        { pBulkInsertStmt->template bind<OFFSET>( args... ); },
                        rTpl );
         } // method
@@ -628,7 +689,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row) */
         template <typename T, std::size_t N> void forAllDoBind( const std::array<T, N>& a )
         {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
+            forAllDoBindImpl( a, std::make_index_sequence<N>{} );
         } // meta
 
         // DEL: /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -747,7 +808,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
             for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
                 // Write the current tuple in the array to the DB
-                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
+                STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
         } // method
 
         /** @brief Destructor flushes the buffer.
@@ -788,7 +849,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <class Ch, class Tr, class... Args>
         void prtTpltoStream( std::basic_ostream<Ch, Tr>& os, const std::tuple<Args...>& t )
         {
-            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{ } );
+            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{} );
             os << "\n";
         } // meta
 
@@ -802,14 +863,14 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // FIXME: Move to library with meta programming
         template <typename F, typename T, std::size_t N> void for_all_do( F f, const std::array<T, N>& a )
         {
-            for_all_do_impl( f, a, std::make_index_sequence<N>{ } );
+            for_all_do_impl( f, a, std::make_index_sequence<N>{} );
         } // meta
 
         /** @brief Writes the content of the buffer aBuf to the output-stream using CSV.
          */
         inline void writeBufToStream( )
         {
-            for_all_do( [ & ]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
+            for_all_do( [&]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
         } // method
 
         /** @brief Creates a filename for the CSV-file to be uploaded using the directory given by the backend.
@@ -914,7 +975,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // Throwing an exception in a destructor results in undefined behavior. Therefore, we swallow these
             // exceptions and report them via std:cerr.
             doNoExcept(
-                [ this ] {
+                [this] {
                     this->release( true ); // true indicates that the release call is done by the destructor
                     // Delete the CSV-file if it exists.
                     if( fs::exists( this->sCSVFileName ) )
@@ -1215,7 +1276,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     void init( )
     {
         // Create table if not existing in DB guarantee
-        pDB->doPoolSafe( [ & ] {
+        pDB->doPoolSafe( [&] {
             if( !pDB->tableExistsInDB( getTableName( ) ) )
                 pDB->execSQL( makeTableCreateStmt( ) );
             else
@@ -1350,7 +1411,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Destructor */
     ~SQLTable( )
     {
-        do_exception_safe( [ & ]( ) {
+        do_exception_safe( [&]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
@@ -1564,10 +1625,10 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
                 json::object(
-                    { { COLUMN_NAME, "id" },
-                      { CONSTRAINTS, std::string( "NOT NULL " ) +
-                                         ( autoIncrRequired( Identity<PriKeyType>( ) ) ? " AUTO_INCREMENT " : "" ) +
-                                         " UNIQUE PRIMARY KEY" } } ) );
+                    {{COLUMN_NAME, "id"},
+                     {CONSTRAINTS, std::string( "NOT NULL " ) +
+                                       ( autoIncrRequired( Identity<PriKeyType>( ) ) ? " AUTO_INCREMENT " : "" ) +
+                                       " UNIQUE PRIMARY KEY"}} ) );
         return jTableDef;
     } // method
 
