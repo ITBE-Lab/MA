@@ -74,7 +74,7 @@ void compressedNucSeqTest( size_t uiLenStart, // start length sequence
 void databaseTest( )
 {
     std::shared_ptr<SQLDB<MySQLConDB>> pDBCon = std::make_shared<SQLDB<MySQLConDB>>(
-        json{{SCHEMA, "nucseq_test"}, {TEMPORARY, true},
+        json{{SCHEMA, {{NAME, "nucseq_test"}, {FLAGS, {DROP_ON_CLOSURE}}}},
              {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}} );
 
     json xCompNucSeqTableDef =

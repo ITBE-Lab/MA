@@ -42,6 +42,11 @@ if(BUILD_TESTING)
     file(GLOB MA_CPP_TEST_SRC
         "tests/*.cpp"
     ) # file
+    # For fixing the fatal error C1128 if using MSVC and debug builds
+    if( (CMAKE_BUILD_TYPE MATCHES "Debug") AND MSVC )
+        add_definitions(/bigobj)
+    endif()
+    
     foreach(file ${MA_CPP_TEST_SRC})
         get_filename_component(test_name ${file} NAME)
         message( "-- MA Database Connector: generating test " ${test_name} )

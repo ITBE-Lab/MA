@@ -110,171 +110,119 @@ template <typename F> inline bool doNoExcept( F&& func, std::string sInfo = "" )
 // @todo discuss with arne
 using PriKeyDefaultType = uint64_t; // Default type of a primary key column
 
-/** @brief An instance represents a connection to DB-system like MySQL etc.
- *   DBImpl must be a class that implements a database API.
- *  @detail A single connection is supposed not to be thread-safe. For multiple threads use a connection pool.
- */
-template <typename DBImpl> class SQLDB : public DBImpl
+/** @brief Class definition for single master sync object managing concurrent access and primary key counters. */
+class SQLDBGlobalSync
 {
-    /** brief The guard guarantees that the transaction commits of the object runs out of scope.
-     */
-    class GuardedTransaction
-    {
-        SQLDB<DBImpl>& rHost; // host DB connection
-        std::shared_ptr<bool> pHostTombStone; // for checking the aliveness of the host
-        bool bStateCommitted; // Is true if the transaction has been committed, false otherwise
+    using CntsMapType = std::map<std::string, std::shared_ptr<std::atomic<PriKeyDefaultType>>>;
 
-      public:
-        GuardedTransaction( const GuardedTransaction& ) = delete; // no transaction copies
+    std::shared_ptr<CntsMapType> pPriKeyCntsMap; // master map that keeps associations
+                                                 // between table names and primary key counters
+    std::unique_ptr<std::mutex> pMasterMutex; // top level mutex of SQL API.
 
-        GuardedTransaction( SQLDB<DBImpl>& rHost, std::shared_ptr<bool> pHostTombStone )
-            : rHost( rHost ), pHostTombStone( pHostTombStone ), bStateCommitted( true )
-        {
-            this->start( );
-        } // constructor
-
-        /** brief Commit the transaction */
-        void commit( )
-        {
-            if( bStateCommitted )
-                throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit after committing already." );
-            if( *pHostTombStone )
-                throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit although the database connection "
-                                          "has been gone already." );
-            rHost.commitTrxn( );
-            this->bStateCommitted = true;
-        } // method
-
-        /** brief Start the transaction */
-        void start( )
-        {
-            if( !bStateCommitted )
-                throw std::runtime_error( "SQL-DB Transaction:\nYou have to commit before starting a transaction." );
-            if( *pHostTombStone )
-                throw std::runtime_error(
-                    "SQL-DB Transaction:\nYou tried to start a transaction although the database connection "
-                    "has been gone already." );
-            rHost.startTrxn( );
-            this->bStateCommitted = false;
-        } // method
-
-        /* Commit the transaction if the corresponding about runs out of scope.*/
-        ~GuardedTransaction( )
-        {
-            this->commit( );
-        } // destructor
-    }; // class (GuardedTransaction)
-
-    std::shared_ptr<bool> pTombStone; // So long the database connection is alive the stone says false.
-                                      // As soon as the DB is gone, the stone says true.
-
+    // Map the counts for schema the number of connections to them
+    std::unique_ptr<std::map<std::string, uint32_t>> pSchemaCntsMap;
 
   public:
-    typedef std::unique_ptr<GuardedTransaction> uniqueGuardedTrxnType;
-    typedef std::shared_ptr<GuardedTransaction> sharedGuardedTrxnType;
-    typedef DBImpl DBImplForward; // Forwarding of the template parameter type
-    const std::string sConId; // unique connection ID with respect to the current machine
-    const std::string sSchemaName; // unique connection ID with respect to the current machine
-    const bool bTemporary; // this is true the schema shall self delete in its destructor
+    /** @brief Constructs and initializes the global sync object */
+    SQLDBGlobalSync( )
+        : pPriKeyCntsMap( std::make_shared<CntsMapType>( ) ),
+          pMasterMutex( std::make_unique<std::mutex>( ) ),
+          pSchemaCntsMap( std::make_unique<std::map<std::string, uint32_t>>( ) )
+    {
+        // DEBUG: std::cout << "Init SQLDBGlobal ..." << std::endl;
+    } // constructor
 
-    SQLDB( const SQLDB& ) = delete; // no DB connection copies
+    /** @brief Destructs the global sync object */
+    ~SQLDBGlobalSync( )
+    {
+        // DEBUG: std::cout << "Finish SQLDBGlobal ..." << std::endl;
+    } // destructor
 
-    // For serializing all table insertions with respect to the current DB-connection.
-    // Necessary for getting the correct last insertion ID in case of an auto-increment column. (e.g. with MySQL)
-    // FIXME: Remove the lock, because it is not necessary.
-    std::mutex pGlobalInsertLock;
+    /** @brief Registers a connection for the given schema with the visor. */
+    void registerSchema( const std::string& rsSchemaName ) const
+    {
+        // Make sure that the below code is exclusively executed by one thread.
+        std::lock_guard<std::mutex> xLock( *pMasterMutex );
 
-    SQLDB( const json& jDBConData = json{} )
-        : DBImpl( jDBConData ),
-          pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
-          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
-          sSchemaName( jDBConData.count( "SCHEMA" ) ? jDBConData[ "SCHEMA" ] : "" ),
-          bTemporary( jDBConData.count( "TEMPORARY" ) == 1 && jDBConData[ "TEMPORARY" ].get<bool>( ) )
-    {} // constructor
+        auto pItr = pSchemaCntsMap->find( rsSchemaName );
+        if( pItr == pSchemaCntsMap->end( ) )
+            // There is no primary key entry for rsSchemaName so far. Create one ...
+            pSchemaCntsMap->emplace( rsSchemaName, 1 );
+        else
+            // Increment counter
+            ( pItr->second )++;
+    } // method
 
-    /**
-     * @brief initialize DB connection from schema name
-     * @details
-     * this constructor is exported to python
+    /** @brief Unregisters a connection for the given schema with the visor.
+     *  Returns the number of remaining connections after unregistering.
      */
-    SQLDB( std::string sSchemaName ) : SQLDB( json{{"SCHEMA", sSchemaName}} )
-    {}
-
-    ~SQLDB( )
+    uint32_t unregisterSchema( const std::string& rsSchemaName ) const
     {
-        if( bTemporary && !sSchemaName.empty( ) )
-            dropSchema( sSchemaName );
-        // Inform about the "death" of the database connection.
-        *pTombStone = true;
-        // Now the destructor of the DB implementor is called ...
-    }; // destructor
+        // Make sure that the below code is exclusively executed by one thread.
+        std::lock_guard<std::mutex> xLock( *pMasterMutex );
 
-    int64_t lastRowId( )
-    {
-        throw std::runtime_error( "lastRowId of SQLDB is not implemented yet." );
+        // Decrement the counter and return the result.
+        assert( pSchemaCntsMap->at( rsSchemaName ) > 0 );
+        return --( pSchemaCntsMap->at( rsSchemaName ) );
     } // method
 
-    /** @brief Directly execute the statement in DB. */
-    void execStmt( const std::string& rsStmtTxt )
-    {
-        DBImpl::execSQL( rsStmtTxt );
-    } // method
-
-    /** @brief A commitGuard immediately starts a transaction and commits it, if it goes out of scope.
-     * Destructing the guard after destructing the database leads to a crash.
+    /** @brief Returns a shared pointer to the primary key counter for the table with name rsTblName. If there is no
+     *  such pointer, it is created and initialized using uiPriKeyCnt.
+     *  @details Design: All tables with an automatic primary key call this method in their constructor delivering the
+     *  maximum of the id column as suggestion.
      */
-    std::unique_ptr<GuardedTransaction> uniqueGuardedTrxn( )
+    std::shared_ptr<std::atomic<PriKeyDefaultType>> getPtrToPriKeyCnt( const std::string rsTblName,
+                                                                       PriKeyDefaultType uiPriKeyCnt ) const
     {
-        return std::make_unique<GuardedTransaction>( *this, pTombStone );
+        // Make sure that the below code is exclusively executed by one thread.
+        std::lock_guard<std::mutex> xLock( *pMasterMutex );
+
+        auto pItr = pPriKeyCntsMap->find( rsTblName );
+        if( pItr == pPriKeyCntsMap->end( ) )
+        {
+            // There is no primary key entry for rsTblName so far. Create one ...
+            // Use as starting value of the primary key the maximal value so far plus one.
+            // DEBUG: std::cout << "In getPtrToPriKeyCnt make new pointer ... " << uiPriKeyCnt << std::endl;
+            auto pAutoIncrCntPtr = std::make_shared<std::atomic<PriKeyDefaultType>>( uiPriKeyCnt + 1 );
+            pPriKeyCntsMap->emplace( rsTblName, pAutoIncrCntPtr );
+            return pAutoIncrCntPtr;
+        } // if
+
+        // DEBUG: std::cout << "In getPtrToPriKeyCnt use existing pointer ... " << uiPriKeyCnt << std::endl;
+        // There is already an entry for tables of name rsTblName. Deliver the stored pointer to the counter.
+        return pItr->second;
     } // method
 
-    std::shared_ptr<GuardedTransaction> sharedGuardedTrxn( )
+    /** @brief The function func is executed while protected by the master lock. */
+    template <typename F> inline void doSynchronized( F&& func ) const
     {
-        return std::make_shared<GuardedTransaction>( *this, pTombStone );
-    } // method
-
-    // WARNING: If indexExists is coupled with an index creation, it should be executed "pool safe".
-    bool indexExists( const std::string& rsTblName, const std::string& rsIdxName )
-    {
-        return DBImpl::indexExistsInDB( rsTblName, rsIdxName );
-    } // method
-
-    /** @brief Drop Database Schema */
-    void dropSchema( const std::string& rsSchemaName )
-    {
-        DBImpl::execSQL( "DROP DATABASE " + rsSchemaName );
-    } // method
-
-    /** @brief Use Database Schema */
-    void useSchema( const std::string& rsSchemaName )
-    {
-        DBImpl::execSQL( "USE DATABASE " + rsSchemaName );
-    } // method
-
-    /** @brief This function should be redefined in pooled SQL connections so that the function is executed in mutex
-     *  protected environment. In a single connection we simply execute the function.
-     *  TO DO: Get rid of doPoolSafe here by doing the locking via the master sync object.
-     */
-    template <typename F> void doPoolSafe( F&& func )
-    {
-        // DEBUG: std::cout << "doPoolSafe in SQLDB ..." << std::endl;
+        std::lock_guard<std::mutex> lock( *pMasterMutex );
         func( );
     } // method
-}; // SQLDB
+}; // class (SQLDBGlobalSync)
+
+/** @brief Single master object for concurrency synchronization. */
+const SQLDBGlobalSync xSQLDBGlobalSync;
+
+/** @brief GLobal literals */
+const std::string SCHEMA = "SCHEMA";
+const std::string NAME = "NAME";
+const std::string DROP_ON_CLOSURE = "DROP_ON_CLOSURE";
 
 
 /** @brief An instance of this class models a single SQL statement. */
-template <typename DBCon> class SQLStatement
+template <typename DBConPtrType> class _SQLStatement
 {
   protected:
-    std::shared_ptr<DBCon> pDB; // Database connection //--
-    std::unique_ptr<typename DBCon::PreparedStmt> pStmt; // pointer to insert statement
+    DBConPtrType pDB; // Database connection //--
+    using DBConType = typename std::remove_reference<decltype( *std::declval<DBConPtrType>( ) )>::type;
+    std::unique_ptr<typename DBConType::PreparedStmt> pStmt; // pointer to insert statement
 
   public:
-    SQLStatement( const SQLStatement& ) = delete; // no statement copies
+    _SQLStatement( const _SQLStatement& ) = delete; // no statement copies
 
-    SQLStatement( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText ) //--
-        : pDB( pDB ), pStmt( std::make_unique<typename DBCon::PreparedStmt>( this->pDB, rsStmtText ) )
+    _SQLStatement( DBConPtrType pDB, const std::string& rsStmtText ) //--
+        : pDB( pDB ), pStmt( std::make_unique<typename DBConType::PreparedStmt>( this->pDB, rsStmtText ) )
     {} // constructor
 
     template <typename... ArgTypes> inline int exec( ArgTypes&&... args )
@@ -283,20 +231,25 @@ template <typename DBCon> class SQLStatement
     } // method
 }; // class
 
+template <typename DBConType> using SQLStatement = _SQLStatement<std::shared_ptr<DBConType>>;
 
 /** @brief An instance of this class models a single SQL query
  * @details
  * @param bExplain whether the query shall explain itself on it's first execution
+ * https://stackoverflow.com/questions/24314727/remove-pointer-analog-that-works-for-anything-that-supports-operator/24315093#24315093
  */
-template <bool bExplain, typename DBCon, typename... ColTypes> class SQLQueryTmpl
+template <bool bExplain, typename DBConPtrType, typename... ColTypes> class _SQLQueryTmpl
 {
   private:
-    std::shared_ptr<DBCon> pDB; // Database connection //--
-    std::unique_ptr<typename DBCon::template PreparedQuery<ColTypes...>> pQuery; // pointer to insert statement
+    DBConPtrType pDB; // Database connection
+    // See: https://www.reddit.com/r/cpp_questions/comments/ddgc04/remove_pointert_for_smart_pointers/
+    using DBConType = typename std::remove_reference<decltype( *std::declval<DBConPtrType>( ) )>::type;
+
+    std::unique_ptr<typename DBConType::template PreparedQuery<ColTypes...>> pQuery; // pointer to insert statement
     const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
 
     // type of the explain query
-    using ExplainQType = typename DBCon::template PreparedQuery<int64_t, // id
+    using ExplainQType = typename DBConType::template PreparedQuery<int64_t, // id
                                                                 std::string, // select_type
                                                                 std::string, // table
                                                                 std::string, // type
@@ -337,12 +290,15 @@ template <bool bExplain, typename DBCon, typename... ColTypes> class SQLQueryTmp
     } // method
 
   public:
-    /** @brief Constructs a query instance using the statement rsStmtText */
-    SQLQueryTmpl( std::shared_ptr<DBCon> pDB, const std::string& rsStmtText )
+    /** @brief Constructs a query instance using the statement rsStmtText. The query can receive additional parameter by
+     *  a JSON  passed via rjConfig.
+     */
+    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{ } )
         : pDB( pDB ),
-          pQuery( std::make_unique<typename DBCon::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText ) ),
+          pQuery( std::make_unique<typename DBConType::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText,
+                                                                                             rjConfig ) ),
           sStmtText( rsStmtText ),
-          pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText ) : nullptr ),
+          pExplainQuery(bExplain ? std::make_unique<ExplainQType>(pDB, "EXPLAIN " + rsStmtText, json{ } ) : nullptr ),
           bIsExplained( false )
     {} // constructor
 
@@ -492,14 +448,19 @@ template <bool bExplain, typename DBCon, typename... ColTypes> class SQLQueryTmp
             vRetVec.emplace_back( std::get<COL_NUM>( pQuery->tCellValues ) );
         return vRetVec;
     } // template method
-}; // class
-
+}; // class (SQLQuery)
 
 /** @brief An instance of this class models a single SQL query. */
-template <typename DBCon, typename... ColTypes> using SQLQuery = SQLQueryTmpl<false, DBCon, ColTypes...>;
+template <typename DBCon, typename... ColTypes> using _SQLQuery = _SQLQueryTmpl<false, DBCon, ColTypes...>;
 
 /** @brief An instance of this class models a single SQL query that explains itself on the first usage. */
-template <typename DBCon, typename... ColTypes> using ExplainedSQLQuery = SQLQueryTmpl<true, DBCon, ColTypes...>;
+template <typename DBCon, typename... ColTypes> using _ExplainedSQLQuery = _SQLQueryTmpl<true, DBCon, ColTypes...>;
+
+template <typename DBConType, typename... ColTypes> //
+using SQLQuery = _SQLQuery<std::shared_ptr<DBConType>, ColTypes...>;
+
+template <typename DBConType, typename... ColTypes> //
+using ExplainedSQLQuery = _ExplainedSQLQuery<std::shared_ptr<DBConType>, ColTypes...>;
 
 // Constants for table definitions via json
 const std::string TABLE_NAME = "TABLE_NAME";
@@ -630,7 +591,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         size_t uiInsPos; // index of the next insert into the array
         std::unique_ptr<typename DBCon::PreparedStmt> pBulkInsertStmt; // pointer to prepared bulk insert statement
         std::unique_ptr<typename DBCon::PreparedStmt> pSingleInsertStmt; // required for buffer flush
-        std::shared_ptr<std::atomic<PriKeyDefaultType>> pAutoIncrCounter; // pointer to auto increment counter
+        std::shared_ptr<std::atomic<PriKeyDefaultType>> pPriKeyCntr; // pointer to auto increment counter
+
+        // If local primary key counting is used, pLocalPriKeyCntr and uiNumRemainPriKey are used for this purpose
+        std::unique_ptr<PriKeyDefaultType> pLocalPriKeyCntr; // local primary key counter (nullptr if unused)
+        size_t uiNumRemainPriKey; // number of remaining primary keys in batch
 
 #if BULK_INSERT_BY_TUPLE_CATENATION // Nice Haskell like approach, but apparently to much for most C++ compilers ...
         // Implementation part of cat_arr_of_tpl
@@ -694,20 +659,37 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
         // DEL: /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
         // DEL:  *  Design alternative: iterate over the array and bind each tuple separately.
-        // DEL:  *  Discussion: The latter approach requires more code but avoids the template instantiation problems.
-        // DEL:  */
-        // DEL: inline void bulkInsert( )
-        // DEL: {
-        // DEL:     // Iterates over the array during compile time.
-        // DEL:     forAllDoBind( aBuf );
-        // DEL:     // After binding all arguments, actually execute the insert statement.
-        // DEL:     pBulkInsertStmt->exec( );
-        // DEL: } // method
+        // DEL:  *  Discussion: The latter approach requires more code but avoids the template instantiation
+        // problems. DEL:  */ DEL: inline void bulkInsert( ) DEL: { DEL:     // Iterates over the array during
+        // compile time. DEL:     forAllDoBind( aBuf ); DEL:     // After binding all arguments, actually execute
+        // the insert statement. DEL:     pBulkInsertStmt->exec( ); DEL: } // method
 
 
-        /** @brief If the buffer is full, insert the buffer content into the table by executing a bulk insert statement.
-         *  Design alternative: iterate over the array and bind each tuple separately.
-         *  Discussion: The latter approach requires more code but avoids the template instantiation problems.
+        inline PriKeyDefaultType getPriKey( )
+        {
+            assert( pPriKeyCntr != nullptr );
+
+            if( pLocalPriKeyCntr )
+            {
+                // Keys are assigned from a batch
+                if( uiNumRemainPriKey == 0 )
+                {
+                    // All locals keys are exhausted, get a new batch of BUF_SIZE many keys
+                    uiNumRemainPriKey = BUF_SIZE;
+                    *pLocalPriKeyCntr = pPriKeyCntr->fetch_add( BUF_SIZE );
+                } // if
+                // Return a key from the current batch
+                uiNumRemainPriKey--;
+                return ( *pLocalPriKeyCntr )++;
+            } // if
+            else
+                // Each key is 'globally' requested.
+                return pPriKeyCntr->fetch_add( 1 );
+        } // method
+
+        /** @brief If the buffer is full, insert the buffer content into the table by executing a bulk insert
+         * statement. Design alternative: iterate over the array and bind each tuple separately. Discussion: The
+         * latter approach requires more code but avoids the template instantiation problems.
          */
         inline void bulkInsertIfBufFull( )
         {
@@ -729,7 +711,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         /** @brief Store a single row in the buffer and return the primary key. */
         inline PriKeyDefaultType storeInBuf( Identity<PriKeyDefaultType> _, const OtherTypes&... args )
         {
-            PriKeyDefaultType uiPriKey = pAutoIncrCounter->fetch_add( 1 );
+            // If required book a new batch of primary keys.
+            PriKeyDefaultType uiPriKey = getPriKey( );
             aBuf[ uiInsPos ] = InsTupleType( uiPriKey, args... );
             return uiPriKey;
         } // method
@@ -740,23 +723,32 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             aBuf[ uiInsPos ] = InsTupleType( nullptr, args... );
             return nullptr;
         } // method
+
+
 #endif // alternative approach
 
       public:
         /** @brief Construct bulk-inserter.
          *  The table must be part of the database already, or the construction fails.
-         *  Implementation detail:
-         *  Because we can not guarantee the life of host table for all of the life of the bulk inserter,
-         *  we should not keep a reference to the table. Instead we copy the required info of the table.
+         *  @details
+         *  If bReserveBatchOfPriKeys is true, the bulk inserter reserves a batch of keys, where the size of the batch
+         *  is equal to the size of the buffer. The bulk inserter uses the keys in this batch for assigning keys in
+         *  strictly increasing order. This helps the database regarding the insertion of keys in the B-tree (index) and
+         *  speeds up the bulk inserter in a multi-threaded environment.
+         *  Implementation detail: Because we can not guarantee the life of host table for all of the life of the bulk
+         *  inserter, we should not keep a reference to the table. Instead we copy the required info of the table.
          */
         SQLBulkInserter( const SQLTable& rxHost, // host table
-                         std::shared_ptr<std::atomic<PriKeyDefaultType>> pAutoIncrCounter = nullptr )
+                         std::shared_ptr<std::atomic<PriKeyDefaultType>> pPriKeyCntr = nullptr,
+                         bool bReserveBatchOfPriKeys = false )
             : uiInsPos( 0 ),
               pBulkInsertStmt( // compile bulk insert stmt
                   std::make_unique<typename DBCon::PreparedStmt>( rxHost.pDB, rxHost.makeInsertStmt( BUF_SIZE ) ) ),
               pSingleInsertStmt( // compile single insert stmt
                   std::make_unique<typename DBCon::PreparedStmt>( rxHost.pDB, rxHost.makeInsertStmt( 1 ) ) ),
-              pAutoIncrCounter( pAutoIncrCounter )
+              pPriKeyCntr( pPriKeyCntr ),
+              pLocalPriKeyCntr( bReserveBatchOfPriKeys ? std::make_unique<PriKeyDefaultType>( 0 ) : nullptr ),
+              uiNumRemainPriKey( 0 ) // initially, the batch is empty
         {
             static_assert( sizeof...( OtherTypes ) + 1 == sizeof...( ColTypes ) );
         } // constructor
@@ -770,11 +762,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         SQLBulkInserter( std::shared_ptr<DBCon> pConnection );
 
         /** @brief Inserts a row into the table via a bulk-insert approach.
-         * Reasonable addition: insert using moves.
+         *  Reasonable addition: insert using moves.
          */
         inline void insert( const FstType& fstArg, const OtherTypes&... otherArgs )
         {
-            assert( pAutoIncrCounter == nullptr );
+            assert( pPriKeyCntr == nullptr );
             aBuf[ uiInsPos ] = InsTupleType( fstArg, otherArgs... ); // This triggers a copy...
             bulkInsertIfBufFull( ); // write buffer to DB if full
         } // method
@@ -784,21 +776,21 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         inline FstType insert( const OtherTypes&... args )
         {
-            // First column is expected to keep a primary key. In the case of AUTO_INCREMENT, FstType is std::nullptr_t.
-            // In the case of a primary key that is incremented by the library, FstType is PriKeyDefaultType.
+            // First column is expected to keep a primary key. In the case of AUTO_INCREMENT, FstType is
+            // std::nullptr_t. In the case of a primary key that is incremented by the library, FstType is
+            // PriKeyDefaultType.
             static_assert( ( std::is_same<FstType, std::nullptr_t>::value ) ||
                                ( std::is_same<FstType, PriKeyDefaultType>::value ),
                            "FstType must be either std::nullptr_t or PriKeyDefaultType" );
             // pAutoIncrCounter must be initialized if FstType is PriKeyDefaultType
-            assert( !( std::is_same<FstType, PriKeyDefaultType>::value && ( pAutoIncrCounter == nullptr ) ) );
+            assert( !( std::is_same<FstType, PriKeyDefaultType>::value && ( pPriKeyCntr == nullptr ) ) );
 
             FstType uiRetVal = storeInBuf( Identity<FstType>( ), args... );
             bulkInsertIfBufFull( ); // write buffer to DB if full
             return uiRetVal;
         } // method
 
-        /** @brief Flush a non-full buffer to the database.
-         */
+        /** @brief Flush a non-full buffer to the database. */
         inline void flush( )
         {
             // uiInsPos must be set zero before calling bindAndExec, because bindAndExec could throw an exception
@@ -811,8 +803,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                 STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
         } // method
 
-        /** @brief Destructor flushes the buffer.
-         */
+        /** @brief Destructor flushes the buffer. */
         ~SQLBulkInserter( )
         {
             // Throwing an exception in a destructor results in undefined behavior.
@@ -1052,7 +1043,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     std::string makeTableCreateStmt( )
     {
         std::string sStmt = "CREATE TABLE " + getTableName( ) + " (";
-        // deal with regular columns
+        // SQL code for regular columns
         for( size_t iItr = 0; iItr < this->rjTableCols.size( ); )
         {
             auto& rjCol = this->rjTableCols[ iItr ]; // current column in jTableDef
@@ -1067,14 +1058,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             if( ++iItr < this->rjTableCols.size( ) )
                 sStmt.append( ", " );
         } // for
-        // deal with generated columns if there are any defined
+
+        // SQL code for generated columns if there are any defined
         if( this->jTableDef.count( GENERATED_COLUMNS ) )
             for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
             {
-                // get the json column enty
+                // get the json column entry
                 auto& rjCol = this->jTableDef[ GENERATED_COLUMNS ][ iItr ]; // current column in jTableDef
 
-                // check that each colum is complete
+                // check that each column is complete
                 if( rjCol.count( COLUMN_NAME ) == 0 )
                     throw std::runtime_error(
                         std::string( "COLUMN_NAME is missing for a GENERATED_COLUMNS in the table " )
@@ -1089,22 +1081,22 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                                                   .append( rjCol[ COLUMN_NAME ] )
                                                   .append( " in the table " )
                                                   .append( getTableName( ) ) );
-                // append to the SQL statemnt
+                // append to the SQL statement
                 sStmt
-                    // insert separating comma. since the last regular colum does not have a comma we can always saveley
-                    // insert a seperating comma
+                    // Insert separating comma. since the last regular column does not have a comma we can always
+                    // safely insert a separating comma
                     .append( ", " )
                     .append( rjCol[ COLUMN_NAME ] ) // column name
                     .append( " " )
                     .append( rjCol[ TYPE ] ) // column type
-                    /* Generated columns are columns that are computed from other columns
-                     * InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
-                     * the STORED variant. -> actually it doesn't...
-                     * The user is supposed to supply an expression that computes the generated column
-                     * see:
-                     * https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
-                     * https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
-                     */
+
+                    // Generated columns are columns that are computed from other columns
+                    // InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
+                    // the STORED variant. -> actually it doesn't...
+                    // The user is supposed to supply an expression that computes the generated column
+                    // see:
+                    // https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+                    // https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
                     .append( " AS ( " )
                     .append( rjCol[ AS ] )
                     .append( " ) " )
@@ -1122,7 +1114,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // Foreign Key definitions
         for( auto& rjItem : jTableDef.items( ) )
             if( rjItem.key( ) == FOREIGN_KEY )
-            { // Found definition
+            {
+                // Found foreign key definition
                 auto& rjVal = rjItem.value( );
                 if( rjVal.count( COLUMN_NAME ) != 1 || rjVal.count( REFERENCES ) != 1 )
                     throw std::runtime_error( "JSON table definition for table: " + getTableName( ) +
@@ -1150,14 +1143,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
           ... );
     } // meta
 
-    /** @brief Delivers the "VALUES"-art of an insertion statement */
+    /** @brief Delivers the "VALUES"-part of an insertion statement */
     inline std::string getValuesStmt( ) const
     {
         std::string sStmtText( "(" );
-        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{} );
-        // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated explicitly, the
-        // only permitted value is DEFAULT.
-        // this assumes that the create table statement always appends all generated columns at the end
+        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+
+        // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated explicitly,
+        // the only permitted value is DEFAULT. this assumes that the create table statement always appends all
+        // generated columns at the end
         if( this->jTableDef.count( GENERATED_COLUMNS ) )
             for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
                 sStmtText.append( ", DEFAULT" );
@@ -1171,7 +1165,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
      */
     std::string makeInsertStmt( const size_t uiNumVals = 1 ) const
     {
-        // Number of colums
+        // Number of columns
         assert( this->rjTableCols.size( ) == sizeof...( ColTypes ) );
 
         const std::string sValuesPartOfStmt( getValuesStmt( ) );
@@ -1181,24 +1175,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         for( size_t uiItrRow = 0; uiItrRow < uiNumVals; )
         {
             sStmt.append( sValuesPartOfStmt );
-            // DEPR sStmt.append( "(" );
-            // DEPR // Comma separated list
-            // DEPR for( size_t uiItr = 0; uiItr < this->rjTableCols.size( ); )
-            // DEPR {
-            // DEPR     if( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 0 )
-            // DEPR         sStmt.append( "?" ); // default insert statement
-            // DEPR     else // custom insert statement
-            // DEPR     {
-            // DEPR         // max one insert statement per column
-            // DEPR         assert( this->rjTableCols[ uiItr ].count( PLACEHOLDER ) == 1 );
-            // DEPR         sStmt.append( this->rjTableCols[ uiItr ][ PLACEHOLDER ] ); // custom insert statement
-            // DEPR     } // else
-            // DEPR
-            // DEPR     // insert separating comma
-            // DEPR     if( ++uiItr < this->rjTableCols.size( ) )
-            // DEPR         sStmt.append( ", " );
-            // DEPR } // inner for
-            // DEPR sStmt.append( ")" );
+
             // insert separating comma
             if( ++uiItrRow < uiNumVals )
                 sStmt.append( ", " );
@@ -1322,8 +1299,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     } // method
 
 
-    /** @brief Inserts the argument pack as fresh row into the table without guaranteeing type correctness at compile
-     *  time.
+    /** @brief Inserts the argument pack as fresh row into the table without guaranteeing type correctness at
+     * compile time.
      *  @detail This form of the insert does not guarantees that there are no problems with column types at runtime.
      *  It allows the injection of NULL values into an insertion by passing (void *)NULL at th column position,
      *  where the NULL value shall occurs. Don't use insertNonSafe, if you do not need explicit NULL values in the
@@ -1419,185 +1396,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
 }; // class (SQLTable)
 
-#if 0
-/** @brief Variation of the normal SQL table having an automatic primary key.
- *  Primary Key is of type int64_t and on an additional first column called ID.
- *  The primary key is incremented by the DB engine itself via AUTO_INCREMENT.
- */
-template <typename DBCon, typename... ColTypes>
-#ifdef PRIMARY_KEY_ON_LAST_ROW
-class SQLTableWithAutoPriKey : public SQLTable<DBCon, ColTypes..., PriKeyDefaultType>
-#else
-class SQLTableWithAutoPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...>
-#endif
-{
-    /* Inject primary key column definition into table definition */
-    json inject( const json& rjTableDef )
-    {
-        // Create deep copy of the table definition
-        json jTableDef( rjTableDef );
-#ifdef PRIMARY_KEY_ON_LAST_ROW
-        if( jTableDef.count( TABLE_COLUMNS ) )
-            jTableDef[ TABLE_COLUMNS ].push_back( json::object( { { COLUMN_NAME, "ID" },
-                                                                  { CONSTRAINTS,
-                                                                    "NOT NULL AUTO_INCREMENT PRIMARY KEY" } } ) );
-#else
-        // Primary key on first row:
-        if( jTableDef.count( TABLE_COLUMNS ) )
-            jTableDef[ TABLE_COLUMNS ].insert(
-                jTableDef[ TABLE_COLUMNS ].begin( ),
-                json::object(
-                    { { COLUMN_NAME, "id" }, { CONSTRAINTS, "NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY" } } ) );
-#endif
-        return jTableDef;
-    } // method
-
-    /** @brief Insert the argument pack as fresh row into the table in a thread-safe way.
-     *	Delivers the primary key of the inserted row as return value.
-     *  @detail We need a lock_guard, because in the case of concurrent inserts (on DB level) we have to guarantee
-     *  that all AUTO_INCREMENT inserts occur serialized for getting the correct AUTO_INCREMENT value.
-     */
-    template <typename... ArgTypes> inline int64_t insertThreadSafe( const ArgTypes&... args )
-    {
-        std::lock_guard<std::mutex> xGuard( this->pDB->pGlobalInsertLock );
-        // Thread-safe region (till end of method).
-        SQLTable<DBCon, int64_t, ColTypes...>::insertNonSafe( nullptr, args... );
-        return this->pDB->getLastAutoIncrVal( );
-    } // method
-
-  public:
-    /**
-     * @brief holds the columns types.
-     * @details
-     * since a parameter pack cannot be held in a using, we hold the type TypePack<ColTypes...>.
-     * pack is a completely empty struct.
-     * @see get_inserter_container_module.h, there this is used to extract the types of all column from a tabletype that
-     * is given as a template parameter.
-     */
-    using ColTypesForw = TypePack<ColTypes...>;
-
-    SQLTableWithAutoPriKey( const SQLTableWithAutoPriKey& ) = delete; // no table copies
-
-    /* Constructor */
-    SQLTableWithAutoPriKey( std::shared_ptr<DBCon> pDB, const json& rjTableDef ) //--
-#ifdef PRIMARY_KEY_ON_LAST_ROW
-        : SQLTable<DBCon, ColTypes..., int64_t>( pDB, inject( rjTableDef ),
-                                                 std::set<size_t>( { rjTableDef[ TABLE_COLUMNS ].size( ) } )
-#else
-        : SQLTable<DBCon, int64_t, ColTypes...>( pDB, inject( rjTableDef ) /* , std::set<size_t>( { 0 } ) */
-#endif
-          )
-    {} // constructor
-
-    /** @brief Inserts the argument pack as fresh row into the table without guaranteeing type correctness.
-     *	Delivers the primary key of the inserted row as return value.
-     *  @detail It allows the injection of NULL values into an insertion by passing nullptr at the column position,
-     *   where the NULL value shall occurs.
-     *   Don't use insertNonSafe, if you do not need explicit NULL values in the database.
-     */
-    template <typename... ArgTypes> inline int64_t insertNonSafe( const ArgTypes&... args )
-    {
-        return this->insertThreadSafe( args... );
-    } // method
-
-    /** @brief Inserts a fresh row into the table type-safely. (type-safe variant of insertNonSafe)
-     * Delivers the primary key of the inserted row as return value.
-     * FIXME: std::forward<ArgTypes>( args )...
-     */
-    inline int64_t insert( const ColTypes&... args )
-    {
-        return this->insertThreadSafe( args... );
-    } // method
-
-    /** @brief Alias for bulk inserter type for tables with primary key */
-    template <size_t BUF_SIZE>
-    using SQLBulkInserterType =
-        typename SQLTable<DBCon, int64_t, ColTypes...>::template SQLBulkInserter<BUF_SIZE, std::nullptr_t, ColTypes...>;
-
-    /** @brief Delivers a shared pointer to a bulk inserter for inserting table rows type-safely.
-     *   TIP: Definition of a bulk inserter (don't forget the keyword template with GCC!):
-     *        auto xBulkInserter = table.template getBulkInserter< size >();
-     */
-    template <size_t BUF_SIZE> std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( )
-    {
-        return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this );
-    } // method
-
-    /** @brief Alias for file bulk inserter type for tables with primary key */
-    template <size_t BUF_SIZE>
-    using SQLFileBulkInserterType =
-        typename SQLTable<DBCon, int64_t, ColTypes...>::template SQLFileBulkInserter<BUF_SIZE, std::nullptr_t,
-                                                                                     ColTypes...>;
-
-    /** @brief Bulk inserter that uses a file for data steaming. */
-    template <size_t BUF_SIZE>
-    std::shared_ptr<SQLFileBulkInserterType<BUF_SIZE>> getFileBulkInserter( int64_t uiReleaseThreshold = 1000000,
-                                                                            const std::string& srExtension = "" )
-    {
-        return std::make_shared<SQLFileBulkInserterType<BUF_SIZE>>( *this, uiReleaseThreshold, srExtension );
-    } // method
-}; // class SQLTableWithAutoPriKey
-#endif
-
-/** @brief Class definition for single master sync object managing concurrent access and primary key counters. */
-class SQLDBGlobalSync
-{
-    using CntsMapType = std::map<std::string, std::shared_ptr<std::atomic<PriKeyDefaultType>>>;
-
-    std::shared_ptr<CntsMapType> pPriKeyCntsMap; // master map that keeps associations
-                                                 // between table names and primary key counters
-
-    std::unique_ptr<std::mutex> pMasterMutex; // top level mutex for locking on complete DB level.
-
-  public:
-    /** @brief Constructs and initializes the global sync object */
-    SQLDBGlobalSync( )
-        : pPriKeyCntsMap( std::make_shared<CntsMapType>( ) ), pMasterMutex( std::make_unique<std::mutex>( ) )
-    {
-        // DEBUG: std::cout << "Init SQLDBGlobal ..." << std::endl;
-    } // constructor
-
-    /** @brief Returns a shared pointer to the primary key counter for the table with name rsTblName. If there is no
-     *  such pointer, it is created and initialized using uiPriKeyCnt.
-     *  @details Design: All tables with an automatic primary key call this method in their constructor delivering the
-     *  maximum of the id column as suggestion.
-     */
-    std::shared_ptr<std::atomic<PriKeyDefaultType>> getPtrToPriKeyCnt( const std::string rsTblName,
-                                                                       PriKeyDefaultType uiPriKeyCnt ) const
-    {
-        // Make sure that the below code is exclusively executed by one thread.
-        std::lock_guard<std::mutex> xLock( *pMasterMutex );
-
-        auto pItr = pPriKeyCntsMap->find( rsTblName );
-        if( pItr == pPriKeyCntsMap->end( ) )
-        {
-            // There is no primary key entry for rsTblName so far. Create one ...
-            // Use as starting value of the primary key the maximal value so far plus one.
-            // DEBUG: std::cout << "In getPtrToPriKeyCnt make new pointer ... " << uiPriKeyCnt << std::endl;
-            auto pAutoIncrCntPtr = std::make_shared<std::atomic<PriKeyDefaultType>>( uiPriKeyCnt + 1 );
-            pPriKeyCntsMap->emplace( rsTblName, pAutoIncrCntPtr );
-            return pAutoIncrCntPtr;
-        } // if
-
-        // DEBUG: std::cout << "In getPtrToPriKeyCnt use existing pointer ... " << uiPriKeyCnt << std::endl;
-        // There is already an entry for tables of name rsTblName. Deliver the stored pointer to the counter.
-        return pItr->second;
-    } // method
-
-    /** @brief Destructs the global sync object */
-    ~SQLDBGlobalSync( )
-    {
-        // DEBUG: std::cout << "Finish SQLDBGlobal ..." << std::endl;
-    } // destructor
-}; // class
-
-/** @brief Single master object for concurrency synchronization. */
-const SQLDBGlobalSync xSQLDBGlobalSync;
-
+// Used for indicating that the bulk inserter shall reserve a batch of keys.
+const bool RESERVE_BATCH_OF_PRIKEY = true;
+const bool NO_BATCH_OF_PRIKEY = false;
 
 /** @brief Variation of the normal SQL table having an automatic primary key.
- *  @details PriKeyType should be either std::nullptr_t or PriKeyDefaultType. If PriKeyType is PriKeyDefaultType, the
- *   primary key is incremented by the SQL library itself. Primary key is always the first column called 'id'.
+ *  @details PriKeyType should be either std::nullptr_t or PriKeyDefaultType. If PriKeyType is PriKeyDefaultType,
+ * the primary key is incremented by the SQL library itself. Primary key is always the first column called 'id'.
  */
 template <typename DBCon, typename PriKeyType, typename... ColTypes>
 class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...>
@@ -1635,15 +1440,16 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
     // private attributes
     //-- typename SQLTable<DBCon, PriKeyType, ColTypes...>::SQLIndexView xPriKeyIndexViewType;
     std::shared_ptr<std::atomic<PriKeyDefaultType>>
-        pAutoIncrCounter; // atomic incrementing counter. (Shared with other instances of the table.)
+        pPriKeyCntr; // atomic incrementing counter. (Shared with other instances of the table.)
 
-    /** @brief Insert the argument pack as fresh row into the table, if the primary key is computed by the library. */
+    /** @brief Insert the argument pack as fresh row into the table, if the primary key is computed by the library.
+     */
     template <typename... ArgTypes>
     inline PriKeyDefaultType dispatchedInsert( Identity<PriKeyDefaultType> _, ArgTypes&&... args )
     {
         // Fetch the current primary key counter and increments it by one
         // fetch_add(1) is a single atomic read-modify-write operation.
-        auto uiPriKeyValue = pAutoIncrCounter->fetch_add( 1 );
+        auto uiPriKeyValue = pPriKeyCntr->fetch_add( 1 );
         SQLTable<DBCon, PriKeyDefaultType, ColTypes...>::insertNonSafe( uiPriKeyValue,
                                                                         std::forward<ArgTypes>( args )... );
         return uiPriKeyValue;
@@ -1687,7 +1493,7 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
         SQLQuery<DBCon, PriKeyDefaultType> xQuery( pDBCon,
                                                    "SELECT COALESCE(MAX(id), 0) FROM " + this->getTableName( ) );
         xQuery.execAndFetch( ); // execute the query and fetch the value
-        pAutoIncrCounter = xSQLDBGlobalSync.getPtrToPriKeyCnt( this->getTableName( ), xQuery.getVal( ) );
+        pPriKeyCntr = xSQLDBGlobalSync.getPtrToPriKeyCnt( this->getTableName( ), xQuery.getVal( ) );
     } // constructor
 
     /** @brief Insert the argument pack as fresh row into the table.
@@ -1719,9 +1525,10 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
      *   TIP: Definition of a bulk inserter (don't forget the keyword 'template' when using GCC!):
      *        auto xBulkInserter = table.template getBulkInserter< size >();
      */
-    template <size_t BUF_SIZE> std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( )
+    template <size_t BUF_SIZE>
+    std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( bool bReserveBatchOfPriKeys = false )
     {
-        return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this, pAutoIncrCounter );
+        return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this, pPriKeyCntr, bReserveBatchOfPriKeys );
     } // method
 }; // class  SQLTableWithPriKey
 
@@ -1753,3 +1560,187 @@ template <typename DBConType> class SQLDBInformer
         return xQuery.template executeAndStoreInVector<0>( );
     } // method
 }; // class SQLDBInformer
+
+// template <typename DBConType> using SQLDBInformer = _SQLDBInformer<std::shared_ptr<DBConType>>;
+
+#define DEFAULT_DBNAME "defaultDB"
+
+/** @brief An instance represents a connection to DB-system like MySQL etc.
+ *   DBImpl must be a class that implements a database API.
+ *  @detail A single connection is supposed not to be thread-safe. For multiple threads use a connection pool.
+ */
+template <typename DBImpl> class SQLDB : public DBImpl
+{
+    /** brief The guard guarantees that the transaction commits of the object runs out of scope.
+     */
+    class GuardedTransaction
+    {
+        SQLDB<DBImpl>& rHost; // host DB connection
+        std::shared_ptr<bool> pHostTombStone; // for checking the aliveness of the host
+        bool bStateCommitted; // Is true if the transaction has been committed, false otherwise
+
+      public:
+        GuardedTransaction( const GuardedTransaction& ) = delete; // no transaction copies
+
+        /** @brief Constructs a transaction. */
+        GuardedTransaction( SQLDB<DBImpl>& rHost, std::shared_ptr<bool> pHostTombStone )
+            : rHost( rHost ), pHostTombStone( pHostTombStone ), bStateCommitted( true )
+        {
+            this->start( );
+        } // constructor
+
+        /** @brief Commit the transaction */
+        void commit( )
+        {
+            if( bStateCommitted )
+                throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit after committing already." );
+            if( *pHostTombStone )
+                throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit although the database connection "
+                                          "has been gone already." );
+            rHost.commitTrxn( );
+            this->bStateCommitted = true;
+        } // method
+
+        /** @brief Start the transaction */
+        void start( )
+        {
+            if( !bStateCommitted )
+                throw std::runtime_error( "SQL-DB Transaction:\nYou have to commit before starting a transaction." );
+            if( *pHostTombStone )
+                throw std::runtime_error(
+                    "SQL-DB Transaction:\nYou tried to start a transaction although the database connection "
+                    "has been gone already." );
+            rHost.startTrxn( );
+            this->bStateCommitted = false;
+        } // method
+
+        /** @brief Commits and destructs transaction. */
+        ~GuardedTransaction( )
+        {
+            this->commit( );
+        } // destructor
+    }; // class (GuardedTransaction)
+
+    std::shared_ptr<bool> pTombStone; // So long the database connection is alive, the stone says false.
+                                      // As soon as the DB is gone, the stone says true.
+
+    /** @brief Extracts the schema name from JSON definition of the connection. Uses DEFAULT_DBNAME as schema name, if
+     *  the JSON does not define any name.
+     */
+    std::string getSchemaName( const json& jDBConfig )
+    {
+        if( jDBConfig.count( SCHEMA ) && jDBConfig[ SCHEMA ].count( NAME ) )
+            return jDBConfig[ SCHEMA ][ NAME ].get<std::string>( );
+        return DEFAULT_DBNAME;
+    } // method
+
+    /** @brief Extracts the value of the DROP_ON_CLOSURE flag, if existing. Otherwise returns false. */
+    bool getDropOnClosureFlag( const json& jDBConfig )
+    {
+        if( jDBConfig.count( SCHEMA ) && jDBConfig[ SCHEMA ].count( FLAGS ) )
+            for( auto rsString : jDBConfig[ SCHEMA ][ FLAGS ] )
+                if( rsString == DROP_ON_CLOSURE )
+                    return true;
+        return false;
+    } // method
+
+  public:
+    typedef std::unique_ptr<GuardedTransaction> uniqueGuardedTrxnType;
+    typedef std::shared_ptr<GuardedTransaction> sharedGuardedTrxnType;
+    typedef DBImpl DBImplForward; // Forwarding of the template parameter type
+    const std::string sConId; // unique connection ID with respect to the current machine (used by the FileBulkInserter)
+    const std::string sSchemaName; // the schema name used by the connection
+    const bool bDropOnClosure; // this is true the schema shall self delete in its destructor
+
+    SQLDB( const SQLDB& ) = delete; // no DB connection copies
+
+    // For serializing all table insertions with respect to the current DB-connection.
+    // Necessary for getting the correct last insertion ID in case of an auto-increment column. (e.g. with MySQL)
+    // FIXME: Remove the lock, because it is not necessary.
+    std::mutex pGlobalInsertLock;
+
+    SQLDB( const json& jDBConData = json{ } )
+        : DBImpl( jDBConData ),
+          pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
+          sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
+          sSchemaName( getSchemaName( jDBConData ) ),
+          bDropOnClosure( getDropOnClosureFlag( jDBConData ) )
+    {
+        // Register the selected schema with global warden and select it for use.
+        xSQLDBGlobalSync.registerSchema( sSchemaName );
+        DBImpl::useSchema( sSchemaName );
+    } // constructor
+
+    /** @brief Initialize DB connection using a given schema name.
+     *  @details This constructor is exported to python.
+     */
+    SQLDB( std::string sSchemaName ) : SQLDB( json{ { SCHEMA, { NAME, sSchemaName } } } )
+    {}
+
+    /** @brief Destructs connection in an exception safe way ... */
+    ~SQLDB( )
+    {
+        // Throwing an exception in a destructor results in undefined behavior.
+        doNoExcept( [ this ] {
+            // Unregister the schema in the global visor
+            auto uiRemainCons = xSQLDBGlobalSync.unregisterSchema( sSchemaName );
+
+            // If I am the last connection using my schema and the schema shall be dropped finally,
+            // it is my job to do it now ...
+            if( ( uiRemainCons == 0 ) && this->bDropOnClosure )
+            {
+                xSQLDBGlobalSync.doSynchronized( [ this ] {
+                    // DEBUG: std::cout << "Do schema drop synchronized in Destructor" << std::endl;
+                    this->dropSchema( this->sSchemaName );
+                } ); // doSynchronized
+            } // if
+        } );
+        // Inform about the "death" of the database connection.
+        *pTombStone = true;
+        // Now the destructor of the DB implementor is called ...
+    }; // destructor
+
+    /** @brief Directly execute the statement in DB. */
+    void execStmt( const std::string& rsStmtTxt )
+    {
+        DBImpl::execSQL( rsStmtTxt );
+    } // method
+
+    /** @brief A commitGuard immediately starts a transaction and commits it, if it goes out of scope.
+     * Destructing the guard after destructing the database leads to a crash.
+     */
+    std::unique_ptr<GuardedTransaction> uniqueGuardedTrxn( )
+    {
+        return std::make_unique<GuardedTransaction>( *this, pTombStone );
+    } // method
+
+    std::shared_ptr<GuardedTransaction> sharedGuardedTrxn( )
+    {
+        return std::make_shared<GuardedTransaction>( *this, pTombStone );
+    } // method
+
+    // WARNING: If indexExists is coupled with an index creation, it should be executed "pool safe".
+    bool indexExists( const std::string& rsTblName, const std::string& rsIdxName )
+    {
+        return DBImpl::indexExistsInDB( rsTblName, rsIdxName );
+    } // method
+
+    /** @brief Drop Database Schema.
+     *  @details
+     *  @note Used id with care!
+     */
+    void dropSchema( const std::string& rsSchemaName )
+    {
+        DBImpl::execSQL( "DROP DATABASE " + rsSchemaName );
+    } // method
+
+    /** @brief This function should be redefined in pooled SQL connections so that the function is executed in mutex
+     *  protected environment. In a single connection we simply execute the function.
+     *  @todo Get rid of doPoolSafe here by doing the locking via the master sync object.
+     */
+    template <typename F> void doPoolSafe( F&& func )
+    {
+        // DEBUG: std::cout << "doPoolSafe in SQLDB ..." << std::endl;
+        func( );
+    } // method
+}; // SQLDB

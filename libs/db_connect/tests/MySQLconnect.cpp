@@ -29,7 +29,7 @@ template <class Ch, class Tr, class... Args>
 auto& operator<<( std::basic_ostream<Ch, Tr>& os, const std::tuple<Args...>& t )
 {
     os << "(";
-    print_tuple_impl( os, t, std::index_sequence_for<Args...>{} );
+    print_tuple_impl( os, t, std::index_sequence_for<Args...>{ } );
     return os << ")";
 } // meta
 
@@ -43,7 +43,7 @@ template <typename Array, std::size_t... I> auto a2t_impl( const Array& a, std::
 template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
 auto a2t( const std::array<T, N>& a )
 {
-    return a2t_impl( a, Indices{} );
+    return a2t_impl( a, Indices{ } );
 }
 
 
@@ -82,7 +82,7 @@ void tupleCatination( const std::array<std::tuple<TupleTypes...>, SIZE>& aArr )
     std::cout << typeid( tCatenated ).name( ) << std::endl;
     std::cout << "START *********" << std::endl;
     STD_APPLY(
-        [&]( auto&... args ) { // We forward the elements by reference for avoiding copies.
+        [ & ]( auto&... args ) { // We forward the elements by reference for avoiding copies.
             printArgPack( args... ); // Here should occur the binding call
             // std::cout << "CONT" << std::endl;
         },
@@ -157,16 +157,16 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
 
     {
         // json::array( { "WITHOUT ROWID" } )
-        json xTestTableDef = json{{TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr )},
-                                  {TABLE_COLUMNS,
-                                   {{{COLUMN_NAME, "Column_1"} /*, { CONSTRAINTS, "UNIQUE" } */},
-                                    {{COLUMN_NAME, "Column_2"}},
-                                    {{COLUMN_NAME, "BlobColum"}},
-                                    {{COLUMN_NAME, "TextColumn"}},
-                                    {{COLUMN_NAME, "Col_uint32_t"}}}},
-                                  {SQLITE_EXTRA, {"WITHOUT ROWID"}} /*,
-                              { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
-                                  /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+        json xTestTableDef = json{ { TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr ) },
+                                   { TABLE_COLUMNS,
+                                     { { { COLUMN_NAME, "Column_1" } /*, { CONSTRAINTS, "UNIQUE" } */ },
+                                       { { COLUMN_NAME, "Column_2" } },
+                                       { { COLUMN_NAME, "BlobColum" } },
+                                       { { COLUMN_NAME, "TextColumn" } },
+                                       { { COLUMN_NAME, "Col_uint32_t" } } } },
+                                   { SQLITE_EXTRA, { "WITHOUT ROWID" } } /*,
+                                   { CPP_EXTRA, { "DROP ON DESTRUCTION" } } */
+                                   /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
         // {CPP_EXTRA, "DROP ON DESTRUCTION"}};
         // std::cout << std::setw( 2 ) << xTestTableLibIncrDef << std::endl;
         SQLTableWithAutoPriKey<DBConnector, int, int, int, std::string, uint32_t> xTestTable( pMySQLDB, xTestTableDef );
@@ -310,7 +310,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         // typename DBConnector::template PreparedQuery<int> xQuery( pMySQLDB, "SELECT Column_1 FROM TEST_TABLE" );
 
         SQLQuery_<int> xQuery( pMySQLDB, "SELECT Column_1 FROM TEST_TABLE" );
-        xQuery.execAndForAll( [&]( int iCell ) { std::cout << iCell << std::endl; } );
+        xQuery.execAndForAll( [ & ]( int iCell ) { std::cout << iCell << std::endl; } );
 
         SQLQuery_<int> xQueryScalar( pMySQLDB, "SELECT COUNT(*) FROM TEST_TABLE" );
         std::cout << "Count:" << xQueryScalar.scalar( ) << std::endl;
@@ -330,12 +330,12 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         if( pMySQLDB->indexExists( "TEST_TABLE", "text_index" ) )
             std::cout << "INDEX text_index ON TEST_TABLE rediscovered!" << std::endl;
 
-        xTestTable.addIndex( json{/* { "INDEX_NAME", "sv_call_table_score_index_" } , */
-                                  {"INDEX_COLUMNS", "Column_1"},
-                                  {"WHERE", "Column_1 = 1"}} );
-        xTestTable.addIndex( json{/* { "INDEX_NAME", "sv_call_table_score_index_" } , */
-                                  {"INDEX_COLUMNS", "Column_1"},
-                                  {"WHERE", "Column_1 = 1"}} );
+        xTestTable.addIndex( json{ /* { "INDEX_NAME", "sv_call_table_score_index_" } , */
+                                   { "INDEX_COLUMNS", "Column_1" },
+                                   { "WHERE", "Column_1 = 1" } } );
+        xTestTable.addIndex( json{ /* { "INDEX_NAME", "sv_call_table_score_index_" } , */
+                                   { "INDEX_COLUMNS", "Column_1" },
+                                   { "WHERE", "Column_1 = 1" } } );
 
         std::cout << "Test table traversal via EOF" << std::endl;
 
@@ -409,44 +409,27 @@ void excptTest( )
     // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
     auto xFuture = xDBPool.enqueue( []( auto pConMng ) { throw std::runtime_error( "Throw ..." ); } );
 
-    doSwallowingExcpt( [&]( ) { xFuture.get( ); } ); // catch via future
+    doSwallowingExcpt( [ & ]( ) { xFuture.get( ); } ); // catch via future
 } // method
 
-// /** @brief Master object the exists only once and manages global concurrent access. */
-// class SQLDBGlobal
-// {
-//     std::map<std::string, std::atomic<int>> mPriKeyCounter;
-// public:
-//
-//
-// };
-
-
-int main( int argc, char** argv )
+/** @brief Test the primary key related part of the code */
+int priKeyTest( )
 {
-    return 0;
-    {
-        std::shared_ptr<SQLDB<MySQLConDB>> xDBCon(
-            std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, "test_pri_key"}} ) );
-        auto xDBInformer = SQLDBInformer<SQLDB<MySQLConDB>>( xDBCon );
-        for( auto& sSchema : xDBInformer.getAllSchemas( ) )
-            std::cout << "Schema: " << sSchema << std::endl;
-    } // scope
-
     double dLibIncrTotalTime = 0;
     double dAutoTotalTime = 0;
     for( int a = 0; a < 10; a++ )
-        doNoExcept( [&] {
+        doNoExcept( [ & ] {
             json xTestTableLibIncrDef =
-                json{{TABLE_NAME, "TEST_TABLE_LIB_INCR"},
-                     {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "int_col_2"}}}},
-                     /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+                json{ { TABLE_NAME, "TEST_TABLE_LIB_INCR" },
+                      { TABLE_COLUMNS, { { { COLUMN_NAME, "int_col_1" } }, { { COLUMN_NAME, "int_col_2" } } } },
+                      /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */ };
 
-            json xTestTableAutoDef = json{{TABLE_NAME, "TEST_TABLE_AUTO"},
-                                          {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "int_col_2"}}}},
-                                          /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+            json xTestTableAutoDef =
+                json{ { TABLE_NAME, "TEST_TABLE_AUTO" },
+                      { TABLE_COLUMNS, { { { COLUMN_NAME, "int_col_1" } }, { { COLUMN_NAME, "int_col_2" } } } },
+                      /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */ };
 
-            int numValues = 100000;
+            int numValues = 10000;
 
             double dLibIncrMaxTime = 0;
             double dAutoMaxTime = 0;
@@ -454,53 +437,55 @@ int main( int argc, char** argv )
             // std::mutex xLock;
             {
                 {
-                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, "test_pri_key"}} );
-                    for( int i = 0; i < 10; i++ )
+                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{ { SCHEMA, "test_pri_key" } } );
+                    for( int i = 0; i < 20; i++ )
                         // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
-                        vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
+                        vFutures.push_back( xDBPool.enqueue( [ & ]( auto pDBCon ) {
                             doNoExcept(
-                                [&] {
+                                [ & ] {
                                     SQLTableWithLibIncrPriKey<PooledSQLDBCon<MySQLConDB>, int, int> xPoolTable(
                                         pDBCon, xTestTableLibIncrDef );
                                     auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
                                     std::map<int, int> xVerificationMap;
                                     double dTime =
-                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
-                                            auto xBulkInserter = xPoolTable.template getBulkInserter<500>( );
+                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [ & ]( ) {
+                                            auto xBulkInserter = xPoolTable.template getBulkInserter<500>(
+                                                RESERVE_BATCH_OF_PRIKEY ); // RESERVE_BATCH_OF_PRIKEY );
                                             // std::lock_guard<std::mutex> xGuard( xLock );
                                             for( int i = 0; i < numValues; i++ )
                                             {
                                                 auto uiPriKey = xBulkInserter->insert( i * 2, 10 );
-                                                // xVerificationMap[ uiPriKey ] = i * 2;
+                                                xVerificationMap[ uiPriKey ] = i * 2;
                                             }
                                             std::cout << "Finished inserting via BulkInserter LibIncr .... "
                                                       << std::endl;
                                         } );
-                                    pDBCon->doPoolSafe( [&] { dLibIncrMaxTime = std::max( dLibIncrMaxTime, dTime ); } );
+                                    pDBCon->doPoolSafe(
+                                        [ & ] { dLibIncrMaxTime = std::max( dLibIncrMaxTime, dTime ); } );
 
                                     // Verify the xVerificationMap
-                                    // SQLQuery<PooledSQLDBCon<MySQLConDB>, int> xQuery(
-                                    //     pDBCon, "SELECT int_col_1 FROM TEST_TABLE_LIB_INCR WHERE id = ?" );
-                                    // for( auto rKeyValue : xVerificationMap )
-                                    // {
-                                    //     if( xQuery.scalar( rKeyValue.first ) != rKeyValue.second )
-                                    //     {
-                                    //         std::cout << "PANIC: Check failed" << std::endl;
-                                    //         exit( 1 );
-                                    //     } // if
-                                    // } // for
+                                    SQLQuery<PooledSQLDBCon<MySQLConDB>, int> xQuery(
+                                        pDBCon, "SELECT int_col_1 FROM TEST_TABLE_LIB_INCR WHERE id = ?" );
+                                    for( auto rKeyValue : xVerificationMap )
+                                    {
+                                        if( xQuery.scalar( rKeyValue.first ) != rKeyValue.second )
+                                        {
+                                            std::cout << "PANIC: Check failed" << std::endl;
+                                            exit( 1 );
+                                        } // if
+                                    } // for
                                 },
                                 "Problem during thread execution" );
                         } ) );
                 }
-
+#if 0
                 {
-                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, "test_pri_key"}} );
+                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{ { SCHEMA, "test_pri_key" } } );
                     for( int i = 0; i < 10; i++ )
                         // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
-                        vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
+                        vFutures.push_back( xDBPool.enqueue( [ & ]( auto pDBCon ) {
                             doNoExcept(
-                                [&] {
+                                [ & ] {
                                     SQLTableWithAutoPriKey<PooledSQLDBCon<MySQLConDB>, int, int> xPoolTable(
                                         pDBCon, xTestTableAutoDef );
                                     auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
@@ -508,18 +493,19 @@ int main( int argc, char** argv )
                                     // xPoolTable.insertNonSafe( 2, nullptr );
                                     // xPoolTable.insert( 2, 4 );
                                     double dTime =
-                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
+                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [ & ]( ) {
                                             auto xBulkInserter = xPoolTable.template getBulkInserter<500>( );
                                             // std::lock_guard<std::mutex> xGuard( xLock );
                                             for( int i = 0; i < numValues; i++ )
                                                 xBulkInserter->insert( i * 2, 10 );
                                             std::cout << "Finished inserting via BulkInserter Auto .... " << std::endl;
                                         } );
-                                    pDBCon->doPoolSafe( [&] { dAutoMaxTime = std::max( dAutoMaxTime, dTime ); } );
+                                    pDBCon->doPoolSafe( [ & ] { dAutoMaxTime = std::max( dAutoMaxTime, dTime ); } );
                                 },
                                 "Problem during thread execution" );
                         } ) );
                 }
+#endif
             } // close the pool
             dLibIncrTotalTime += dLibIncrMaxTime;
             dAutoTotalTime += dAutoMaxTime;
@@ -533,17 +519,82 @@ int main( int argc, char** argv )
     // pDBCon->execSQL( "DROP TABLE TEST_TABLE" );
 
     return 0;
+} // function (priKeyTest)
+
+
+/** @brief Test for correct drop schema in the context of a connection pool */
+int dropSchemaTest( )
+{
+    SQLDBConPool<MySQLConDB> xDBPool(
+        10, json{ { SCHEMA, { { NAME, "test_schema_drop" }, { FLAGS, { DROP_ON_CLOSURE } } } } } );
+
+    return 0;
+
+} // function (dropSchemaTest)
+
+
+/** @brief Test the listing of all schema */
+int schemaListTest( )
+{
+    std::shared_ptr<SQLDB<MySQLConDB>> xDBCon( std::make_shared<SQLDB<MySQLConDB>>(
+        json{ { SCHEMA, { { NAME, "schema_list_test" }, { FLAGS, { DROP_ON_CLOSURE } } } } } ) );
+    auto xDBInformer = SQLDBInformer<SQLDB<MySQLConDB>>( xDBCon );
+    std::cout << "List of schema for the current connection" << std::endl;
+    for( auto& sSchema : xDBInformer.getAllSchemas( ) )
+        std::cout << sSchema << std::endl;
+
+    return 0;
+} // function (schemaListTest)
+
+
+int mySQLStorageResultTest( )
+{
+    doNoExcept( [ & ] {
+        std::cout << "Do mySQLStorageResultTest ..." << std::endl;
+        std::shared_ptr<SQLDB<MySQLConDB>> pDBCon(
+            std::make_shared<SQLDB<MySQLConDB>>( json{ { SCHEMA, { { NAME, "storage_result_test" } } } } ) );
+
+        json xTestTableWithStringsDef =
+            json{ { TABLE_NAME, "TEST_TABLE_WITH_STRINGS" }, { TABLE_COLUMNS, { { { COLUMN_NAME, "string_col" } } } } };
+
+        SQLTableWithLibIncrPriKey<SQLDB<MySQLConDB>, std::string> xTestTableWithStrings( pDBCon,
+                                                                                         xTestTableWithStringsDef );
+
+        auto xBulkInserter = xTestTableWithStrings.template getBulkInserter<500>( RESERVE_BATCH_OF_PRIKEY );
+
+        {
+            auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
+            for( int i = 0; i < 10000000; i++ )
+                xBulkInserter->insert( "This is a text that requires some buffer memory ..." );
+        } // end of transaction
+
+        // Verify the xVerificationMap
+        std::cout << "Do execute query ..." << std::endl;
+        SQLQuery<SQLDB<MySQLConDB>, std::string> xQuery(
+            pDBCon,
+            "SELECT string_col FROM TEST_TABLE_WITH_STRINGS",
+            json{ { MYSQL_EXTRA, { { FLAGS, { NO_RESULT_STORAGE_ON_CLIENT } } } } } );
+        size_t uiCount = 0;
+        xQuery.execAndForAll( [ & ]( auto iCell ) { uiCount++; } );
+
+        std::cout << "Counter: " << uiCount << std::endl;
+    } );
+
+    return 0;
+} // function (mySQLStorageResultTest)
+
+int main( int argc, char** argv )
+{
+    priKeyTest( );
+    return 0;
+
     try
     {
-        {
-            SQLDB<MySQLConDB> xDBCon( json{{SCHEMA, "sv_db"}} );
-            xDBCon.dropSchema( "sv_db " );
-        } // scope
-
         // definition of database connection in json:
-        auto jDBConfig = json{{SCHEMA, "sv_db"},
-                              {TEMPORARY, true},
-                              {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}};
+        auto jDBConfig =
+            json{ { SCHEMA, { { NAME, "sv_db" }, { FLAGS, { DROP_ON_CLOSURE } } } },
+                  // { TEMPORARY, true },
+                  { CONNECTION, { { HOSTNAME, "localhost" }, { USER, "root" }, { PASSWORD, "admin" }, { PORT, 0 } } } };
 
         std::vector<std::future<void>> vFutures;
         {
@@ -552,7 +603,7 @@ int main( int argc, char** argv )
                 // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
                 vFutures.push_back( xDBPool.enqueue( []( auto pDBCon ) {
                     doNoExcept(
-                        [&] {
+                        [ & ] {
                             typedef decltype( *pDBCon ) Type;
                             // typedef typename SubType :: element_type Type;
                             // using Type = typename decltype( pDBCon )::element_type;
@@ -566,7 +617,7 @@ int main( int argc, char** argv )
 
         // Get all future exception safe
         for( auto& rFurture : vFutures )
-            doNoExcept( [&] { rFurture.get( ); } );
+            doNoExcept( [ & ] { rFurture.get( ); } );
 
         std::cout << "ALL WORK DONE ..." << std::endl;
 #ifdef _MSC_VER
@@ -579,7 +630,8 @@ int main( int argc, char** argv )
         std::vector<std::shared_ptr<SQLDB<MySQLConDB>>> vec;
         for( unsigned int uiCount = 0; uiCount < uiPoolSize; uiCount++ )
         {
-            vec.push_back( std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, "sv_db_2"}, {TEMPORARY, true}} ) );
+            vec.push_back( std::make_shared<SQLDB<MySQLConDB>>(
+                json{ { SCHEMA, { { NAME, "sv_db_2" }, { FLAGS, { DROP_ON_CLOSURE } } } } } ) );
         } // for
 
         {
@@ -587,7 +639,7 @@ int main( int argc, char** argv )
 
             for( size_t uiJobId = 0; uiJobId < uiPoolSize; uiJobId++ )
                 xPool.enqueue(
-                    [&]( size_t, size_t uiJobId_ ) {
+                    [ & ]( size_t, size_t uiJobId_ ) {
                         std::cout << "Start job Nr.: " << uiJobId_ << std::endl;
                         try
                         {

@@ -15,7 +15,9 @@ int main( void )
     std::vector<std::future<void>> vFutures;
     {
         doNoExcept( [&] {
-            SQLDBConPool<MySQLConDB> xDBPool( 32, json{{SCHEMA, "Pooled_DB"}, {TEMPORARY, true}} );
+            SQLDBConPool<MySQLConDB> xDBPool( 32, json{
+                                                      {SCHEMA, {{NAME, "pooled_DB"}, {FLAGS, {DROP_ON_CLOSURE}}}}
+                                                  } );
 
             for( int i = 0; i < 32; i++ )
                 // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
