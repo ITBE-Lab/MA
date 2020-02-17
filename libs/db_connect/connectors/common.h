@@ -286,7 +286,7 @@ template <typename DBCon> class SQLStatement
 
 /** @brief An instance of this class models a single SQL query
  * @details
- * @param bExplain wether the query shall explain itself on it's first execution
+ * @param bExplain whether the query shall explain itself on it's first execution
  */
 template <bool bExplain, typename DBCon, typename... ColTypes> class SQLQueryTmpl
 {
