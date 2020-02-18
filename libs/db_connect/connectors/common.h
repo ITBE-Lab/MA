@@ -1521,7 +1521,7 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
      *        auto xBulkInserter = table.template getBulkInserter< size >();
      */
     template <size_t BUF_SIZE>
-    std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( bool bReserveBatchOfPriKeys = false )
+    std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( bool bReserveBatchOfPriKeys = true )
     {
         return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this, pPriKeyCntr, bReserveBatchOfPriKeys );
     } // method

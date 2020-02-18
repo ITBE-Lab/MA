@@ -11,6 +11,85 @@
 namespace libMA
 {
 
+#define PROFILE_INSERTER 1
+#if PROFILE_INSERTER
+
+using duration = std::chrono::duration<double>;
+using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
+
+/** @brief prints the average number of inserts on destruction
+ *  @details
+ *  averages over the inserts produced by each individual AbstractInserterContainer
+ */
+class SharedInserterProfiler
+{
+  public:
+    std::mutex xLock;
+    size_t uiNumInsertsTotal;
+    size_t uiNumTotalInserters;
+    duration xTotalTime;
+
+  public:
+    SharedInserterProfiler( )
+        : uiNumInsertsTotal( 0 ), uiNumTotalInserters( 0 ), xTotalTime( duration::zero( ) )
+    {} // constructor
+
+    ~SharedInserterProfiler( )
+    {
+        size_t uiNum = uiNumInsertsTotal / xTotalTime.count( );
+        std::cout << "InserterProfiler: Averaged ";
+        if( uiNum > 100 )
+            std::cout << uiNum / 100 << ",";
+        std::cout << uiNum % 100 << " inserts per second over " << uiNumTotalInserters << " containers." << std::endl;
+    } // destructor
+
+    inline void inc( size_t uiNumInsertsTotal, time_point xStartTime )
+    {
+        std::lock_guard<std::mutex> xGuard( xLock );
+        this->uiNumInsertsTotal += uiNumInsertsTotal;
+        this->xTotalTime += std::chrono::steady_clock::now( ) - xStartTime;
+        uiNumTotalInserters++;
+    }
+}; // class
+class InserterProfiler
+{
+    size_t uiNumInserts;
+    time_point xStartTime;
+    std::shared_ptr<SharedInserterProfiler> pSharedProfiler;
+
+  public:
+    InserterProfiler( std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
+        : uiNumInserts( 0 ), xStartTime( std::chrono::steady_clock::now( ) ), pSharedProfiler( pSharedProfiler )
+    {} // constructor
+
+    ~InserterProfiler( )
+    {
+        pSharedProfiler->inc( uiNumInserts, xStartTime );
+    } // class
+
+    inline void inc( )
+    {
+        uiNumInserts++;
+    } // method
+
+}; // class
+#else
+
+// @see docu above
+class SharedInserterProfiler
+{}; // class
+
+// @see docu above
+class InserterProfiler
+{
+  public:
+    InserterProfiler( std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
+    {} // constructor
+
+    inline void inc( )
+    {} // method
+}; // class
+#endif
 /**
  * @brief container that holds the table that is inserted to
  * @details
@@ -38,6 +117,8 @@ class AbstractInserterContainer : public Container
     std::shared_ptr<TableType> pInserter;
 
   private:
+    std::unique_ptr<InserterProfiler> pProfiler;
+
     // needs to be below pTable, so that the transactions destructor is called first
     typename DBCon::sharedGuardedTrxnType pTransaction;
     // needs to be below pTransaction to keep the connection alive until the transaction is destructed
@@ -45,22 +126,33 @@ class AbstractInserterContainer : public Container
 
   public:
     AbstractInserterContainer(
-        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType>, std::shared_ptr<DBCon>> xFromRun, int64_t iId )
+        std::tuple<typename DBCon::sharedGuardedTrxnType, int, std::shared_ptr<TableType>, std::shared_ptr<DBCon>>
+            xFromRun,
+        int64_t iId, std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         : iConnectionId( std::get<1>( xFromRun ) ),
           iId( iId ),
           pInserter( std::get<2>( xFromRun ) ),
+          pProfiler( std::make_unique<InserterProfiler>( pSharedProfiler ) ),
           pTransaction( std::get<0>( xFromRun ) ),
           pConnection( std::get<3>( xFromRun ) )
     {}
 
+  protected:
     /**
      * @brief insert an element into the table TableType
      * @details
      * Whenever you inherit from this class your job is to implement this function.
      */
-    virtual void EXPORTED insert( std::shared_ptr<InsertTypes>... pArgs )
+    virtual void EXPORTED insert_override( std::shared_ptr<InsertTypes>... pArgs )
     {
         throw std::runtime_error( "insert function of AbstractInserterContainer was not defined." );
+    } // method
+
+  public:
+    inline void insert( std::shared_ptr<InsertTypes>... pArgs )
+    {
+        pProfiler->inc( );
+        insert_override( pArgs... );
     } // method
 
   private:
@@ -88,7 +180,8 @@ class AbstractInserterContainer : public Container
     {
         pInserter.reset( );
         pTransaction.reset( );
-        pConnection.reset();
+        pProfiler.reset( );
+        pConnection.reset( );
     } // method
 }; // class
 
@@ -102,7 +195,8 @@ template <typename DBCon, template <typename T> typename TableType, typename... 
 class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>
 {
   public:
-    InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
+    InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
+                       std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         : AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
@@ -112,7 +206,7 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
                                                             std::make_shared<TableType<DBCon>>( pConnection ),
                                                             pConnection );
                                 } ),
-              iId )
+              iId, pSharedProfiler )
     {} // constructor
 
 }; // class
@@ -131,7 +225,8 @@ class BulkInserterContainer
     : public AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>
 {
   public:
-    BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
+    BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
+                           std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
         // This construction makes sure that the table exists in the database.
         : AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>(
@@ -144,7 +239,7 @@ class BulkInserterContainer
                                         TableType<DBCon>( pConnection ).template getBulkInserter<500>( ),
                                         pConnection );
                                 } ),
-              iId )
+              iId, pSharedProfiler )
     {} // constructor
 
 }; // class
@@ -177,6 +272,8 @@ template <template <typename T> typename InserterContainerType, typename DBCon, 
 class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableType, TypePack<ColumnTypes...>>
     : public Module<InserterContainerType<DBCon>, false, PoolContainer<DBCon>>
 {
+    std::shared_ptr<SharedInserterProfiler> pSharedProfiler;
+
   public:
     const int64_t iId;
 
@@ -191,16 +288,18 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
     ///@brief creates a new inserter from given arguments
     GetInserterContainerModule( const ParameterSetManager& rParameters, std::shared_ptr<DBConInit> pConnection,
                                 ColumnTypes... xArguments )
-        : iId( TableType<DBConInit>( pConnection ).insert( xArguments... ) )
+        : pSharedProfiler( std::make_shared<SharedInserterProfiler>( ) ),
+          iId( TableType<DBConInit>( pConnection ).insert( xArguments... ) )
     {} // constructor
 
     ///@brief creates an inserter for an existing db element
-    GetInserterContainerModule( const ParameterSetManager& rParameters, int64_t iId ) : iId( iId )
+    GetInserterContainerModule( const ParameterSetManager& rParameters, int64_t iId )
+        : pSharedProfiler( std::make_shared<SharedInserterProfiler>( ) ), iId( iId )
     {} // constructor
 
     std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-        return std::make_shared<InserterContainerType<DBCon>>( pPool, iId );
+        return std::make_shared<InserterContainerType<DBCon>>( pPool, iId, pSharedProfiler );
     } // method
 }; // class
 

@@ -27,8 +27,11 @@ class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTa
     std::shared_ptr<BulkInserterType<SvCallSupportTable<DBCon>>> pSupportInserter;
 
 
-    SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        : ParentType::BulkInserterContainer( pPool, iId ),
+    SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool,
+                                 int64_t iId,
+                                 std::shared_ptr<SharedInserterProfiler>
+                                     pSharedProfiler )
+        : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler ),
           pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
               return std::make_shared<BulkInserterType<SvCallSupportTable<DBCon>>>(
                   SvCallSupportTable<DBCon>( pConnection ) );
@@ -60,18 +63,18 @@ class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTa
         for( int64_t iId : rCall.vSupportingJumpIds )
             pSupportInserter->insert( iCallId, iId );
     } // method
-
-    virtual void EXPORTED insert( std::shared_ptr<SvCall> pCall )
+  protected:
+    virtual void EXPORTED insert_override( std::shared_ptr<SvCall> pCall )
     {
         insertCall( *pCall );
     } // method
 
-    virtual void EXPORTED insert( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    virtual void EXPORTED insert_override( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
     {
         for( auto pCall : pCalls->vContent )
             insertCall( *pCall );
     } // method
-
+  public:
     virtual void close( )
     {
         pSupportInserter.reset( );
