@@ -45,9 +45,7 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
                        "DELETE FROM sv_call_support_table "
                        "WHERE call_id = ? " )
     {
-        // DEL: pDatabase->execStmt( "CREATE INDEX IF NOT EXISTS sv_call_support_index ON sv_call_support_table "
-        // DEL:                      "(call_id, jump_id)" );
-        this->addIndex( json{{"INDEX_NAME", "sv_call_support_index"}, {"INDEX_COLUMNS", "call_id, jump_id"}} );
+        // this->addIndex( json{{"INDEX_NAME", "sv_call_support_index"}, {"INDEX_COLUMNS", "call_id, jump_id"}} );
     } // default constructor
 
     inline void deleteRun( std::string& rS )

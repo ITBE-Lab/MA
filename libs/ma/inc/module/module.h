@@ -415,7 +415,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
 {
   public:
     double execTime = 0;
-    double waitOnLockTime = 0;
+    std::chrono::duration<double> xWaitOnLockTime = std::chrono::duration<double>::zero( );
     typedef TP_TYPE TP_CONTENT;
     /*
      * typename TP_DEPENDENCIES::TP_CONTENT...
@@ -438,6 +438,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     TP_PREDECESSORS tPredecessors;
 
   public:
+    double waitTime() const
+    {
+        return xWaitOnLockTime.count();
+    }
+
     void addSuccessor( BasePledge* pX )
     {
         vSuccessors.push_back( pX );
@@ -538,16 +543,16 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         // if(vSuccessors.size() > 1) @todo @fixme this should be here
         if( pPledger->requiresLock( ) )
         {
-            auto timeStamp = std::chrono::system_clock::now( );
+            auto xTimeStamp = std::chrono::system_clock::now( );
             // multithreading is possible thus a guard is required here.
             // deadlock prevention is trivial,
             // since computational graphs are essentially trees.
             std::lock_guard<std::mutex> xGuard( *pMutex );
 
-            std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
+            std::chrono::duration<double> xDuration = std::chrono::system_clock::now( ) - xTimeStamp;
             // record how long we took to obtain the lock
             // the increment operation has to be done within the scope of xGuard
-            waitOnLockTime += duration.count( );
+            xWaitOnLockTime += xDuration;
 
             return fDo( );
         } // if

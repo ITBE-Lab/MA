@@ -23,24 +23,28 @@ using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
  */
 class SharedInserterProfiler
 {
-  public:
     std::mutex xLock;
     size_t uiNumInsertsTotal;
     size_t uiNumTotalInserters;
     duration xTotalTime;
 
+    template <class T> std::string withCommas( T value )
+    {
+        std::stringstream ss;
+        ss.imbue( std::locale( "" ) );
+        ss << std::fixed << value;
+        return ss.str( );
+    } // method
+
   public:
-    SharedInserterProfiler( )
-        : uiNumInsertsTotal( 0 ), uiNumTotalInserters( 0 ), xTotalTime( duration::zero( ) )
+    SharedInserterProfiler( ) : uiNumInsertsTotal( 0 ), uiNumTotalInserters( 0 ), xTotalTime( duration::zero( ) )
     {} // constructor
 
     ~SharedInserterProfiler( )
     {
-        size_t uiNum = uiNumInsertsTotal / xTotalTime.count( );
-        std::cout << "InserterProfiler: Averaged ";
-        if( uiNum > 100 )
-            std::cout << uiNum / 100 << ",";
-        std::cout << uiNum % 100 << " inserts per second over " << uiNumTotalInserters << " containers." << std::endl;
+        size_t uiNum = ( size_t )( uiNumInsertsTotal / xTotalTime.count( ) );
+        std::cout << "InserterProfiler: Averaged " << withCommas( uiNum ) << " inserts per second over "
+                  << uiNumTotalInserters << " containers." << std::endl;
     } // destructor
 
     inline void inc( size_t uiNumInsertsTotal, time_point xStartTime )
@@ -176,8 +180,14 @@ class AbstractInserterContainer : public Container
      * purpose.
      * Use this from python in order to make sure all elements are inserted.
      */
-    virtual void close( )
+    virtual void close( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
+#if DEBUG_LEVEL == 0
+        // reenable foreign_key_checks for this connection
+        pPool->xPool.run( iConnectionId, []( std::shared_ptr<DBCon> pConnection ) {
+            pConnection->execSQL( "SET foreign_key_checks=1" );
+        } );
+#endif
         pInserter.reset( );
         pTransaction.reset( );
         pProfiler.reset( );
@@ -201,7 +211,11 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
-                                    return std::make_tuple( nullptr /*pConnection->sharedGuardedTrxn( )*/,
+#if DEBUG_LEVEL == 0
+                                    // disable foreign_key_checks for this connection
+                                    pConnection->execSQL( "SET foreign_key_checks=0" );
+#endif
+                                    return std::make_tuple( pConnection->sharedGuardedTrxn( ),
                                                             (int)pConnection->getTaskId( ),
                                                             std::make_shared<TableType<DBCon>>( pConnection ),
                                                             pConnection );
@@ -211,6 +225,7 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
 
 }; // class
 
+// @todo make the bulk inserter size a template parameter of the inserter container
 /// @brief a short typename for the bulk inserter type
 template <typename TableType> using BulkInserterType = typename TableType::template SQLBulkInserterType<500>;
 /**
@@ -233,8 +248,12 @@ class BulkInserterContainer
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
+#if DEBUG_LEVEL == 0
+                                    // disable foreign_key_checks for this connection
+                                    pConnection->execSQL( "SET foreign_key_checks=0" );
+#endif
                                     return std::make_tuple(
-                                        nullptr /*pConnection->sharedGuardedTrxn( )*/,
+                                        pConnection->sharedGuardedTrxn( ),
                                         (int)pConnection->getTaskId( ),
                                         TableType<DBCon>( pConnection ).template getBulkInserter<500>( ),
                                         pConnection );

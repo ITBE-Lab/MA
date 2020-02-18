@@ -11,7 +11,7 @@ class AnalyzeRuntimes:
         self.counter = 0
 
     def register(self, name, pledge, average=False, func=lambda x: x.exec_time,
-                 w_func=lambda x: x.wait_on_lock_time if hasattr(x, 'wait_on_lock_time') else 0):
+                 w_func=lambda x: x.wait_on_lock_time() if "wait_on_lock_time" in dir(x) else 0):
         if not name in self.times:
             self.times[name] = (self.counter, average, [])
             self.counter += 1

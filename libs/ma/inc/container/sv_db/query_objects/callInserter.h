@@ -20,7 +20,17 @@ namespace libMA
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
  */
 template <typename CallOrVector, typename DBCon>
-class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTable, CallOrVector>
+class SvCallInserterContainerTmpl : public
+#if DEBUG_LEVEL == 0
+                                    // in release mode, we can use a BulkInserter since foreign_key_checks are
+                                    // disabled
+                                    BulkInserterContainer
+#else
+                                    // if we are in debug mode, calls need to be inserted immediately since
+                                    // the sv_call_support_table references the primarry key of the call_table
+                                    InserterContainer
+#endif
+                                    <DBCon, SvCallTable, CallOrVector>
 {
   public:
     using ParentType = BulkInserterContainer<DBCon, SvCallTable, CallOrVector>;
@@ -75,10 +85,10 @@ class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTa
             insertCall( *pCall );
     } // method
   public:
-    virtual void close( )
+    virtual void close( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
         pSupportInserter.reset( );
-        ParentType::close( );
+        ParentType::close( pPool );
     } // method
 }; // class
 

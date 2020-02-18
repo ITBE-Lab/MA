@@ -64,7 +64,7 @@ void exportModuleClass( py::module& rxPyModuleId )
     py::class_<TP_PLEDGE, BasePledge, std::shared_ptr<TP_PLEDGE>>( rxPyModuleId, "Pledge" )
         .def( py::init<>( ) ) // default constructor
         .def_readonly("exec_time", &TP_PLEDGE::execTime)
-        .def_readonly("wait_on_lock_time", &TP_PLEDGE::waitOnLockTime)
+        .def("wait_on_lock_time", &TP_PLEDGE::waitTime)
         .def( "set", &TP_PLEDGE::set )
         .def( "get", &TP_PLEDGE::get );
     py::implicitly_convertible<TP_PLEDGE, BasePledge>( );

@@ -37,7 +37,7 @@ def insert_paired_reads(parameter_set, dataset_name, sequencer_name, filename_ve
     res.simultaneous_get(parameter_set.get_num_threads())
 
     for inserter in inserter_vec:
-        inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
+        inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
     analyze.analyze(runtime_file)
 
@@ -69,7 +69,7 @@ def insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name, querie
     res.simultaneous_get(parameter_set.get_num_threads())
 
     for inserter in inserter_vec:
-        inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
+        inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
     analyze.analyze(runtime_file)
 

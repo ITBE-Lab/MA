@@ -86,7 +86,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         print("\texecuting graph...")
         res.simultaneous_get( parameter_set_manager.get_num_threads() )
         for inserter in inserter_vec:
-            inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
+            inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
         print("\tdone executing")
         analyze.analyze(out_file)
 

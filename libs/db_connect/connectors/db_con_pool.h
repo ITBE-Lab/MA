@@ -64,7 +64,7 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
  */
 template <typename DBImpl> class SQLDBConPool
 {
-#define DO_PROFILE 1
+#define DO_PROFILE 0
   private:
     using TaskType = std::function<void( std::shared_ptr<PooledSQLDBCon<DBImpl>> )>; // type of the tasks to be executed
 
@@ -362,23 +362,23 @@ template <typename DBImpl> class SQLDBConPool
             bStop = true;
         } // end of scope for queue_mutex, so we unlock the mutex
 
-        std::cout << "Pool shutdown started ..." << std::endl;
+        //std::cout << "Pool shutdown started ..." << std::endl;
         // Notify all waiting threads to continue so that they recognize the stop flag and terminate.
         xCondition.notify_all( );
 
         // Wait until all workers finished their job.
         // (The destructor is blocked until all workers finished their job.)
-        std::cout << "WORKER:" << vWorkers.size( ) << std::endl;
+        // std::cout << "WORKER:" << vWorkers.size( ) << std::endl;
         for( size_t uiItr = 0; uiItr < vWorkers.size( ); ++uiItr )
             vWorkers[ uiItr ].join( );
 
-        std::cout << "Pool shutdown finished ..." << std::endl;
+        //std::cout << "Pool shutdown finished ..." << std::endl;
     } // method
 
     /** @brief The destructor blocks until all workers terminated. */
     ~SQLDBConPool( )
     {
-        std::cout << "SQLDBConPool Destructor." << std::endl;
+        //std::cout << "SQLDBConPool Destructor." << std::endl;
         this->shutdown( );
         updateTime( );
         printTime( std::cout );
