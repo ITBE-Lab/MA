@@ -310,22 +310,28 @@ class GzFileStream : public FileStream
 class Reader
 {
   public:
-    virtual size_t getCurrPosInFile( ) const = 0;
-    virtual size_t getFileSize( ) const = 0;
-    virtual size_t getCurrFileIndex( ) const = 0;
+    virtual size_t getCurrPosInFile( ) = 0;
+    virtual size_t getFileSize( ) = 0;
+    virtual size_t getCurrFileIndex( ) = 0;
     virtual size_t getNumFiles( ) const = 0;
 }; // class
 
+class FileReader;
 
 class SingleFileReader : public Module<NucSeq, true>, public Reader
 {
   public:
-    virtual const std::string status( ) const
+    virtual const std::string status( )
     {
         throw std::runtime_error( "This method must be overridden." );
     } // method
 
     virtual void reset( )
+    {
+        throw std::runtime_error( "This method must be overridden." );
+    } // method
+
+    virtual void withFileReader( std::function<void( FileReader& )> func )
     {
         throw std::runtime_error( "This method must be overridden." );
     } // method
@@ -395,14 +401,14 @@ class FileReader : public SingleFileReader
         return true;
     } // function
 
-    size_t getCurrPosInFile( ) const
+    size_t getCurrPosInFile( )
     {
         if( pFile->eof( ) )
             return uiFileSize;
         return pFile->tellg( );
     } // function
 
-    size_t getFileSize( ) const
+    size_t getFileSize( )
     {
         // prevent floating point exception here (this is only used for progress bar...)
         if( uiFileSize == 0 )
@@ -410,7 +416,7 @@ class FileReader : public SingleFileReader
         return uiFileSize;
     } // function
 
-    size_t getCurrFileIndex( ) const
+    size_t getCurrFileIndex( )
     {
         return 0;
     } // method
@@ -420,7 +426,7 @@ class FileReader : public SingleFileReader
         return 1;
     } // method
 
-    virtual const std::string status( ) const
+    virtual const std::string status( )
     {
         return std::string( xFileName.string( ) )
             .append( ":" )
@@ -439,56 +445,86 @@ class FileReader : public SingleFileReader
 #endif
             pFile = std::make_shared<StdFileStream>( xFileName );
     } // method
+
+    virtual void withFileReader( std::function<void( FileReader& )> func )
+    {
+        func( *this );
+    } // method
+
 }; // class
 
 /**
  * @brief reads all files in a list
  * @details
- * @todo this could apply a round robin approach instead of reading the files sequentially
+ * Applies a round robin approach instead of reading the files sequentially.
+ * That way several threads can work simultaneously if multiple input files are given.
  */
 class FileListReader : public SingleFileReader
 {
   public:
-    size_t uiFileIndex;
-    std::vector<fs::path> vsFileNames;
-    std::unique_ptr<FileReader> pFileReader;
+    std::mutex xMutex;
+    std::condition_variable xCondition; // For wait, notify synchronization purposes.
+    std::queue<std::shared_ptr<FileReader>> xFileReaders;
+    size_t uiNumFiles = 0;
+    bool bIsFinished = false;
 
-  private:
-    void openNextFileWhileNecessary( )
+    /** @brief gets std::unique_ptr<FileReader>
+     * @details
+     * This function is threadsave, it uses a queue to distribute the file readers among threads.
+     * It makes sure that each file reader will only ever be used by one thread.
+     * @todo move this to container
+     */
+    virtual void withFileReader( std::function<void( FileReader& )> func )
     {
-        while( pFileReader->isFinished( ) && !this->isFinished( ) )
+        std::shared_ptr<FileReader> pReader;
         {
-            uiFileIndex++;
-            if( uiFileIndex >= vsFileNames.size( ) )
-                this->setFinished( );
+            std::unique_lock<std::mutex> xLock( xMutex );
+            while( xFileReaders.empty( ) )
+            {
+                // if some other thread finished this module,
+                if( bIsFinished )
+                    return;
+                xCondition.wait( xLock );
+            } // while
+            pReader = xFileReaders.front( );
+            xFileReaders.pop( );
+        } // scope for xLock
+        // parallel execution of func allowed
+        func( *pReader );
+        {
+            std::unique_lock<std::mutex> xLock( xMutex );
+            if( !pReader->isFinished( ) )
+                xFileReaders.push( pReader );
+
+            if( xFileReaders.empty( ) )
+            {
+                bIsFinished = true;
+                xCondition.notify_all( );
+            } // if
             else
-                pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
-        } // if
+                xCondition.notify_one( );
+        } // scope for xLock
     } // method
-  public:
+
     /**
      * @brief creates a new FileReader.
      */
-    FileListReader( const std::vector<fs::path>& vsFileNames )
-        : uiFileIndex( 0 ),
-          vsFileNames( vsFileNames ),
-          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
+    FileListReader( const std::vector<fs::path>& vsFileNames ) : uiNumFiles( vsFileNames.size( ) )
     {
-        openNextFileWhileNecessary( );
+        for( auto sFileName : vsFileNames )
+            xFileReaders.push( std::make_shared<FileReader>( sFileName ) );
     } // constructor
 
     FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
-        : uiFileIndex( 0 ),
-          vsFileNames( vsFileNames ),
-          pFileReader( std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] ) )
-    {
-        openNextFileWhileNecessary( );
-    } // constructor
+        : FileListReader( vsFileNames )
+    {} // constructor
+
+    FileListReader( const FileListReader& ) = delete; // no copies
 
     std::shared_ptr<NucSeq> EXPORTED execute( )
     {
-        auto pRet = pFileReader->execute( );
-        openNextFileWhileNecessary( );
+        std::shared_ptr<NucSeq> pRet = std::make_shared<NucSeq>(); // @todo nullptr
+        withFileReader( [&pRet]( FileReader& xReader ) { pRet = xReader.execute( ); } );
         return pRet;
     } // method
 
@@ -505,43 +541,50 @@ class FileListReader : public SingleFileReader
     // @override
     virtual bool requiresLock( ) const
     {
-        return pFileReader->requiresLock( );
+        return false; // locking mechanism is provided internally
     } // function
 
-    size_t getCurrPosInFile( ) const
+    size_t getCurrPosInFile( )
     {
-        return pFileReader->getCurrPosInFile( );
+        std::unique_lock<std::mutex> xLock( xMutex );
+        return xFileReaders.front( )->getCurrPosInFile( );
     } // function
 
-    size_t getFileSize( ) const
+    size_t getFileSize( )
     {
-        return pFileReader->getFileSize( );
+        std::unique_lock<std::mutex> xLock( xMutex );
+        return xFileReaders.front( )->getFileSize( );
     } // function
 
-    size_t getCurrFileIndex( ) const
+    size_t getCurrFileIndex( )
     {
-        return uiFileIndex;
+        std::unique_lock<std::mutex> xLock( xMutex );
+        return uiNumFiles - xFileReaders.size( );
     } // method
 
     size_t getNumFiles( ) const
     {
-        return vsFileNames.size( );
+        return uiNumFiles;
     } // method
 
-    virtual const std::string status( ) const
+    virtual const std::string status( )
     {
-        return std::string( std::to_string( this->getCurrFileIndex( ) ) )
-            .append( "/" )
-            .append( std::to_string( this->getNumFiles( ) ) )
-            .append( "::" )
-            .append( this->pFileReader->status( ) );
+        std::string sOut = std::string( std::to_string( this->getCurrFileIndex( ) ) )
+                               .append( "/" )
+                               .append( std::to_string( this->getNumFiles( ) ) )
+                               .append( "::" );
+        std::unique_lock<std::mutex> xLock( xMutex );
+        sOut.append( xFileReaders.front( )->status( ) );
+        return sOut;
     } // method
 
-    virtual void reset( )
+    virtual bool isFinished( )
     {
-        uiFileIndex = 0;
-        pFileReader = std::make_unique<FileReader>( vsFileNames[ uiFileIndex ] );
+        // need to obtain lock in order to know if reader is finished
+        std::unique_lock<std::mutex> xLock( xMutex );
+        return bIsFinished;
     } // method
+
 }; // class
 
 typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
@@ -558,7 +601,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     const bool bRevCompMate;
 
     /**
-     * @brief creates a new FileReader.
+     * @brief creates a new FileReader that reads from a list of files.
      */
     PairedFileReader(
         const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
@@ -568,7 +611,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
     {} // constructor
 
     /**
-     * @brief creates a new FileReader.
+     * @brief creates a new FileReader with a single query
      */
     PairedFileReader( const ParameterSetManager& rParameters, std::string sQuery, std::string sMate )
         : pF1( std::make_shared<FileReader>( rParameters, sQuery, sQuery.size( ) ) ),
@@ -586,17 +629,17 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
         return pF1->requiresLock( ) || pF2->requiresLock( );
     } // function
 
-    size_t getCurrPosInFile( ) const
+    size_t getCurrPosInFile( )
     {
         return pF1->getCurrPosInFile( ) + pF2->getCurrPosInFile( );
     } // function
 
-    size_t getFileSize( ) const
+    size_t getFileSize( )
     {
         return pF1->getFileSize( ) + pF2->getFileSize( );
     } // function
 
-    size_t getCurrFileIndex( ) const
+    size_t getCurrFileIndex( )
     {
         return pF1->getCurrFileIndex( ) + pF2->getCurrFileIndex( );
     } // method
@@ -606,7 +649,7 @@ class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
         return pF1->getNumFiles( ) + pF2->getNumFiles( );
     } // method
 
-    virtual const std::string status( ) const
+    virtual const std::string status( )
     {
         return std::string( this->pF1->status( ) ).append( ";" ).append( this->pF2->status( ) );
     } // method

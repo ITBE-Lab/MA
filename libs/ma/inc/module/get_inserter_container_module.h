@@ -55,7 +55,7 @@ class SharedInserterProfiler
         this->uiNumInsertsTotal += uiNumInsertsTotal;
         this->xTotalTime += std::chrono::steady_clock::now( ) - xStartTime;
         uiNumTotalInserters++;
-    }
+    } // method
 }; // class
 class InserterProfiler
 {

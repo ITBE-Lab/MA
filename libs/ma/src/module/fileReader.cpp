@@ -212,23 +212,30 @@ std::shared_ptr<NucSeq> FileReader::execute( )
 std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
 {
     auto pRet = std::make_shared<TP_PAIRED_READS>( );
-    pRet->push_back( pF1->execute( ) );
-    pRet->push_back( pF2->execute( ) );
-    if( pF1->getCurrFileIndex( ) != pF2->getCurrFileIndex( ) )
-        throw std::runtime_error(
-            "Cannot perfrom paired alignment on files with different amounts of reads. FileReader Status: " +
-            this->status( ) );
-    // forward the finished flags...
-    if( pF1->isFinished( ) || pF2->isFinished( ) )
-    {
-        /*
-         * Print a warning if the fasta files have a different number of queries.
-         */
-        if( !pF1->isFinished( ) || !pF2->isFinished( ) )
-            throw std::runtime_error(
-                "You cannot perform paired alignment with a different amount of primary queries and mate queries." );
-        this->setFinished( );
-    }
+    pF1->withFileReader( [this, &pRet]( FileReader& rReader1) {
+        pF2->withFileReader( [this, &pRet, &rReader1] (FileReader& rReader2) {
+            pRet->push_back( rReader1.execute( ) );
+            pRet->push_back( rReader2.execute( ) );
+#if DEBUG_LEVEL > 0
+            if( rReader1.getCurrFileIndex( ) != rReader2.getCurrFileIndex( ) )
+                throw std::runtime_error(
+                    "Cannot perfrom paired alignment on files with different amounts of reads. FileReader Status: " +
+                    this->status( ) );
+#endif
+            // forward the finished flags...
+            if( rReader1.isFinished( ) || rReader2.isFinished( ) )
+            {
+                /*
+                 * Print a warning if the fasta files have a different number of queries.
+                 */
+                if( !rReader1.isFinished( ) || !rReader2.isFinished( ) )
+                    throw std::runtime_error( "You cannot perform paired alignment with a different amount of primary "
+                                              "queries and mate queries." );
+                this->setFinished( );
+            } // if
+        } );
+    } );
+
     if( ( *pRet )[ 0 ] == nullptr )
         return nullptr;
     if( ( *pRet )[ 1 ] == nullptr )
@@ -244,6 +251,7 @@ std::shared_ptr<TP_PAIRED_READS> PairedFileReader::execute( )
 
 void PairedFileReader::checkPaired( )
 {
+    return; // @todo see above
     while( !pF1->isFinished( ) && !pF2->isFinished( ) )
     {
         auto pQ1 = pF1->execute( );

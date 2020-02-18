@@ -132,7 +132,7 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
         return this->callFunc( tParams, typename gens<sizeof...( TP_ARGUMENTS )>::type( ) );
     } // method
 
-    virtual bool isFinished( ) const
+    virtual bool isFinished( )
     {
         if( !IS_VOLATILE )
             return false;
@@ -438,9 +438,9 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     TP_PREDECESSORS tPredecessors;
 
   public:
-    double waitTime() const
+    double waitTime( ) const
     {
-        return xWaitOnLockTime.count();
+        return xWaitOnLockTime.count( );
     }
 
     void addSuccessor( BasePledge* pX )
@@ -668,7 +668,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
             throw std::runtime_error( "No pledger known for unfulfilled pledge of type " + type_name( this ) +
                                       "; With container type: " + type_name( pContent ) );
         // in this case there is no need to execute again
-        if( pContent != nullptr && !IS_VOLATILE )
+        if( !IS_VOLATILE && pContent != nullptr )
             return pContent;
 
         // locks a mutex if this pledge can be reached from multiple leaves in the graph
@@ -676,6 +676,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         return lockIfNecessary( [&]( ) {
             TP_INPUT tInput;
             // execute all dependencies
+            decltype( pContent ) pRet;
             if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
                 /*
                  * if one dependency returns EoF then stop executing
@@ -692,21 +693,23 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
                 auto timeStamp = std::chrono::system_clock::now( );
 
                 // actually execute the module
-                pContent = pPledger->executeTup( tInput );
+                pRet = pPledger->executeTup( tInput );
+                pContent = pRet;
 
                 std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
                 // increase the total executing time for this pledge
                 execTime += duration.count( );
 
                 // safety check
-                if( pContent == nullptr )
-                    throw std::runtime_error( "A module is not allowed to return nullpointers in execute; throw an "
-                                              "exception instead or return an empty container! Module type:" +
+                if( pRet == nullptr && ( !pPledger->isFinished( ) || !IS_VOLATILE ) )
+                    throw std::runtime_error( "An unfinished/non-volatile module is not allowed to return nullpointers "
+                                              "in execute; throw an exception instead or return an empty container! "
+                                              "Module type:" +
                                               type_name( pPledger ) );
             } // else
 
             // return must be here and returned throught the lambda to avoid data race...
-            return pContent;
+            return pRet;
         } // lambda
         ); // function call
     } // function
@@ -907,7 +910,7 @@ class PyPledgeVector : public Pledge<PyContainerVector>
         return false;
     } // method
 
-    virtual bool isFinished( ) const
+    virtual bool isFinished( )
     {
         // if( Pledge<PyContainerVector>::isFinished( ) )
         //    return true;
@@ -922,9 +925,9 @@ class PyPledgeVector : public Pledge<PyContainerVector>
         BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
     } // method
 
-    inline void clear()
+    inline void clear( )
     {
-        vPledges.clear();
+        vPledges.clear( );
     } // method
 }; // class
 
@@ -937,13 +940,18 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
   private:
     template <size_t IDX> struct TupleFiller
     {
-        bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn )
+        bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn, TP_MODULE& xModule )
         {
             if( vIn[ IDX ] == nullptr )
-                throw std::runtime_error( "Wrong type for module (" + type_name<TP_MODULE>( ) +
-                                          ") input (parameter index: " + std::to_string( IDX ) +
-                                          "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
-                                          " but got: nullptr of type " + type_name( vIn[ IDX ] ) );
+            {
+                // nullpointers are allowed from finished volatile modules
+                if( !xModule.isFinished( ) || !TP_MODULE::IS_VOLATILE )
+                    throw std::runtime_error( "Wrong type for module (" + type_name<TP_MODULE>( ) +
+                                              ") input (parameter index: " + std::to_string( IDX ) +
+                                              "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
+                                              " but got: nullptr of type " + type_name( vIn[ IDX ] ) );
+                return false;
+            } // if
             // convert the content in the vector to the element types of the tuple
             auto pCasted = std::dynamic_pointer_cast<
                 typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>( vIn[ IDX ] );
@@ -970,11 +978,13 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
                 std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->size( ) ) );
 
         typename TP_MODULE::TP_TUPLE_ARGS tTyped;
-        TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn );
-        return xModule.executeTup( tTyped );
+        if( TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn, xModule ) )
+            return xModule.executeTup( tTyped );
+        else
+            return nullptr;
     } // method
 
-    virtual bool isFinished( ) const
+    virtual bool isFinished( )
     {
         return xModule.isFinished( );
     } // method
