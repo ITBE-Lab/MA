@@ -24,9 +24,10 @@ template <typename DBCon> class ReadInserterContainer : public BulkInserterConta
     using ParentType::BulkInserterContainer;
 
   protected:
-    virtual void EXPORTED insert_override( std::shared_ptr<NucSeq> pRead )
+    virtual size_t EXPORTED insert_override( std::shared_ptr<NucSeq> pRead )
     {
         ParentType::pInserter->insert( ParentType::iId, pRead->sName, makeSharedCompNucSeq( *pRead ) );
+        return 1;
     } // method
 }; // class
 
@@ -65,13 +66,14 @@ class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTabl
               } ) )
     {} // constructor
   protected:
-    virtual void EXPORTED insert_override( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+    virtual size_t EXPORTED insert_override( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
         auto iReadIdA =
             ParentType::pInserter->insert( ParentType::iId, pReadA->sName, makeSharedCompNucSeq( *pReadA ) );
         auto iReadIdB =
             ParentType::pInserter->insert( ParentType::iId, pReadB->sName, makeSharedCompNucSeq( *pReadB ) );
         pPairedReadInserter->insert( iReadIdA, iReadIdB );
+        return 3;
     } // method
 }; // class
 

@@ -45,7 +45,7 @@ class SharedInserterProfiler
     ~SharedInserterProfiler( )
     {
         size_t uiNum = ( size_t )( uiNumInsertsTotal / xTotalTime.count( ) );
-        std::cout << sName << ": Averaged " << withCommas( uiNum ) << " inserts per second over " << uiNumTotalInserters
+        std::cout << sName << ": Averaged " << withCommas( uiNum ) << " rows per second over " << uiNumTotalInserters
                   << " containers." << std::endl;
     } // destructor
 
@@ -73,9 +73,9 @@ class InserterProfiler
         pSharedProfiler->inc( uiNumInserts, xStartTime );
     } // class
 
-    inline void inc( )
+    inline void inc( size_t uiNumInserts )
     {
-        uiNumInserts++;
+        this->uiNumInserts += uiNumInserts;
     } // method
 
 }; // class
@@ -92,7 +92,7 @@ class InserterProfiler
     InserterProfiler( std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
     {} // constructor
 
-    inline void inc( )
+    inline void inc( size_t uiNumInserts )
     {} // method
 }; // class
 #endif
@@ -148,8 +148,9 @@ class AbstractInserterContainer : public Container
      * @brief insert an element into the table TableType
      * @details
      * Whenever you inherit from this class your job is to implement this function.
+     * Shall return the number of rows that were inserted.
      */
-    virtual void EXPORTED insert_override( std::shared_ptr<InsertTypes>... pArgs )
+    virtual size_t EXPORTED insert_override( std::shared_ptr<InsertTypes>... pArgs )
     {
         throw std::runtime_error( "insert function of AbstractInserterContainer was not defined." );
     } // method
@@ -157,8 +158,7 @@ class AbstractInserterContainer : public Container
   public:
     inline void insert( std::shared_ptr<InsertTypes>... pArgs )
     {
-        pProfiler->inc( );
-        insert_override( pArgs... );
+        pProfiler->inc( insert_override( pArgs... ) );
     } // method
 
   private:

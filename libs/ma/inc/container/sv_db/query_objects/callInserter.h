@@ -56,7 +56,7 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, SvCallTable, CallOrV
      * Makes use of the libMA::SvCallInserter::CallContex.
      * Expects that rCall does NOT exist in the DB yet.
      */
-    inline void insertCall( SvCall& rCall )
+    inline size_t insertCall( SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
         int64_t iCallId = ParentType::pInserter->insert( ParentType::iId, //
@@ -74,17 +74,20 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, SvCallTable, CallOrV
         rCall.iId = iCallId;
         for( int64_t iId : rCall.vSupportingJumpIds )
             pSupportInserter->insert( iCallId, iId );
+        return 1 + rCall.vSupportingJumpIds.size();
     } // method
   protected:
-    virtual void EXPORTED insert_override( std::shared_ptr<SvCall> pCall )
+    virtual size_t EXPORTED insert_override( std::shared_ptr<SvCall> pCall )
     {
-        insertCall( *pCall );
+        return insertCall( *pCall );
     } // method
 
-    virtual void EXPORTED insert_override( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    virtual size_t EXPORTED insert_override( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
     {
+        size_t uiTotal = 0;
         for( auto pCall : pCalls->vContent )
-            insertCall( *pCall );
+            uiTotal += insertCall( *pCall );
+        return uiTotal;
     } // method
   public:
     virtual void close( std::shared_ptr<PoolContainer<DBCon>> pPool )

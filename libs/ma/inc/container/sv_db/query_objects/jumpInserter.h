@@ -23,7 +23,7 @@ class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, C
     using ParentType::BulkInserterContainer;
 
   protected:
-    virtual void EXPORTED insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps,
+    virtual size_t EXPORTED insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps,
                                            std::shared_ptr<NucSeq> pRead )
     {
         const int64_t iReadId = pRead->iId;
@@ -44,6 +44,7 @@ class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, C
                 (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
                 (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
         } // for
+        return pJumps->size();
     } // method
 }; // class
 
