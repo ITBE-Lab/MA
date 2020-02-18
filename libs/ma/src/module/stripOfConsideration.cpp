@@ -3,16 +3,9 @@
  * @brief Implements a Strip of Consideration.
  * @author Markus Schmidt
  */
-#include "util/default_parameters.h"
 #include "module/stripOfConsideration.h"
 #include "system.h"
 using namespace libMA;
-
-using namespace libMA::defaults;
-extern int libMA::defaults::iGap;
-extern int libMA::defaults::iExtend;
-extern int libMA::defaults::iMatch;
-extern int libMA::defaults::iMissMatch;
 
 
 std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr<SegmentVector> pSegments,
@@ -33,7 +26,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
      * This is the formula from the paper
      * computes the size required for the strip so that we collect all relevent seeds.
      */
-    const nucSeqIndex uiStripSize = this->getStripSize( uiQLen, iMatch, iExtend, iGap );
+    const nucSeqIndex uiStripSize = this->getStripSize( uiQLen, pGlobalParams->iMatch->get(), pGlobalParams->iExtend->get(), pGlobalParams->iGap->get() );
 
     // extract the seeds
     auto pSeeds = std::make_shared<Seeds>( );

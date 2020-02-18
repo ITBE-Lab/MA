@@ -2,7 +2,6 @@
  * @file needlemanWunsch.cpp
  * @author Markus Schmidt
  */
-#include "util/default_parameters.h"
 #include "module/needlemanWunsch.h"
 
 #if OLD_KSW == 1
@@ -903,8 +902,8 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
     auto pAlignment = std::make_shared<Alignment>( );
     Wrapper_ksw_extz_t ez;
     AlignedMemoryManager xMemoryManager;
-    KswCppParam<5> xParams( defaults::iMatch, defaults::iMissMatch, defaults::iGap, defaults::iExtend, defaults::iGap2,
-                            defaults::iExtend2 );
+    KswCppParam<5> xParams( pGlobalParams->iMatch->get(), pGlobalParams->iMissMatch->get(), pGlobalParams->iGap->get(), pGlobalParams->iExtend->get(), pGlobalParams->iGap2->get(),
+                            pGlobalParams->iExtend2->get() );
 
     ksw_simplified( (int)pQuery->length( ),
                     pQuery->pGetSequenceRef( ),
@@ -957,8 +956,8 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
     auto pAlignment = std::make_shared<Alignment>( );
     Wrapper_ksw_extz_t ez;
     AlignedMemoryManager xMemoryManager;
-    KswCppParam<5> xParams( defaults::iMatch, defaults::iMissMatch, defaults::iGap, defaults::iExtend, defaults::iGap2,
-                            defaults::iExtend2 );
+    KswCppParam<5> xParams( pGlobalParams->iMatch->get(), pGlobalParams->iMissMatch->get(), pGlobalParams->iGap->get(), pGlobalParams->iExtend->get(), pGlobalParams->iGap2->get(),
+                            pGlobalParams->iExtend2->get() );
 
     if( bRev )
     {
@@ -970,8 +969,8 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
              (int)pRef->length( ),
              pRef->pGetSequenceRef( ),
              xParams,
-             defaults::iBandwidthDPExtension,
-             defaults::uiZDrop,
+             pGlobalParams->iBandwidthDPExtension->get(),
+             pGlobalParams->uiZDrop->get(),
              ez.ez, // return value
              xMemoryManager,
              false );

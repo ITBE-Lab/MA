@@ -180,6 +180,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                              sIndentDesc );
         } // for
     } // if
+    // @todo print global options here
 
     std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
     std::cout << "Compiled with following switches:";

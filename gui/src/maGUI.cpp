@@ -33,7 +33,6 @@
 #include "mwx.h"
 
 /* Due to MSVC libMa should be included after the wxWidgets includes */
-#include "util/default_parameters.h"
 #include "util/export.h"
 #include "version.h"
 using namespace libMA;

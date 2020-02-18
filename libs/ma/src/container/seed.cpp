@@ -4,7 +4,6 @@
  */
 #include "container/seed.h"
 #include "container/pack.h"
-#include "util/default_parameters.h"
 #include "util/pybind11.h"
 using namespace libMA;
 
@@ -12,12 +11,6 @@ using namespace libMA;
 // getting ambiguous abs otherwise
 #include <cstdlib>
 #endif
-
-using namespace libMA::defaults;
-extern int libMA::defaults::iGap;
-extern int libMA::defaults::iExtend;
-extern int libMA::defaults::iMatch;
-extern int libMA::defaults::iMissMatch;
 
 void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended )
 {

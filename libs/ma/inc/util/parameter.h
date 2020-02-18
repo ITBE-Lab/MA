@@ -489,6 +489,7 @@ const std::pair<size_t, std::string> SOC_PARAMETERS = std::make_pair( 2, "Strip 
 const std::pair<size_t, std::string> PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
 const std::pair<size_t, std::string> SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
 const std::pair<size_t, std::string> GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );
+const std::pair<size_t, std::string> GLOBAL_PARAMETER = std::make_pair( 0, "Global Parameter" );
 const std::pair<size_t, std::string> SV_PARAMETERS = std::make_pair( 6, "SV Parameter" );
 
 
@@ -925,11 +926,25 @@ class GeneralParameter : public ParameterSetBase
 class GlobalParameter : public ParameterSetBase
 {
   public:
+    // jump parameters
     AlignerParameterPointer<double> xJumpS; // s parameter for fuzziness of jumps
     AlignerParameterPointer<double> xJumpSNeg; // s parameter for fuzziness of jumps in negative direciton
     AlignerParameterPointer<double> xJumpM; // m parameter for fuzziness of jumps
     AlignerParameterPointer<double> xJumpH; // h parameter for fuzziness of jumps
     AlignerParameterPointer<int> xSeedDirFuzziness; // m parameter for fuzziness of jumps
+    // parameters from default_parameters @todo these should all be checked and removed if possible...
+    AlignerParameterPointer<int> iMatch;
+    AlignerParameterPointer<int> iMissMatch;
+    AlignerParameterPointer<int> iGap;
+    AlignerParameterPointer<int> iExtend;
+    AlignerParameterPointer<int> iGap2;
+    AlignerParameterPointer<int> iExtend2;
+    AlignerParameterPointer<double> dUnpaired;
+    AlignerParameterPointer<size_t> uiMean;
+    AlignerParameterPointer<double> fStd;
+    AlignerParameterPointer<size_t> uiSVPenalty;
+    AlignerParameterPointer<int> iBandwidthDPExtension;
+    AlignerParameterPointer<size_t> uiZDrop;
 
     /* Constructor */
     GlobalParameter( )
@@ -937,7 +952,23 @@ class GlobalParameter : public ParameterSetBase
           xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
           xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
-          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue )
+          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
+          iMatch( this, "Match", "score for a DP match (used in SoC width computation)", GLOBAL_PARAMETER, 2 ),
+          iMissMatch( this, "MissMatch", "penalty for a DP missmatch", GLOBAL_PARAMETER, 4 ),
+          iGap( this, "Gap", "penalty for a DP gap opening (used in SoC width computation)", GLOBAL_PARAMETER, 4 ),
+          iExtend( this, "Extend", "penalty for a DP gap extension (used in SoC width computation)", GLOBAL_PARAMETER,
+                   2 ),
+          iGap2( this, "Gap2", "penalty for a DP gap opening (used in SoC width computation)", GLOBAL_PARAMETER, 24 ),
+          iExtend2( this, "Extend2", "penalty for a DP gap extension (used in SoC width computation)", GLOBAL_PARAMETER,
+                    1 ),
+          dUnpaired( this, "Unpaired", "penalty for unpaired reads", GLOBAL_PARAMETER, 1.25 ),
+          uiMean( this, "Mean", "mean distance for paired reads", GLOBAL_PARAMETER, 400 ),
+          fStd( this, "Std", "standard deviation for distance of paired reads", GLOBAL_PARAMETER, 150 ),
+          uiSVPenalty( this, "SVPenalty", "@todo", GLOBAL_PARAMETER, 100 ),
+          iBandwidthDPExtension( this, "BandwidthDPExtension",
+                                 "When extending the end of a alignment we use this bandwidth.", GLOBAL_PARAMETER,
+                                 512 ),
+          uiZDrop( this, "ZDrop", "@todo", GLOBAL_PARAMETER, 200 )
     {} // constructor
 
     /* Named copy Constructor */

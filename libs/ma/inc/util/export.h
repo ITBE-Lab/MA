@@ -164,7 +164,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/stripOfConsideration.h"
 #include "module/svJumpsFromSeeds.h"
 #include "module/sweepSvJumps.h"
-#include "util/default_parameters.h"
 
 namespace libMA
 {

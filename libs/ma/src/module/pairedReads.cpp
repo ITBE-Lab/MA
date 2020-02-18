@@ -6,14 +6,10 @@
 #define NOMINMAX
 #endif
 
-#include "util/default_parameters.h"
 #include "module/pairedReads.h"
 #include <limits>
 
 using namespace libMA;
-
-using namespace libMA::defaults;
-extern int libMA::defaults::iMatch;
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
 PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
@@ -37,11 +33,11 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
     // the indices of the best alignment pair
     std::vector<std::tuple<int64_t, bool, size_t, size_t>> vScores;
 
-    
+
     // try out all combinations
     // this assumes that not more than three or four alignments are reported
     // otherwise this here might be a serious bottleneck
-        
+
     for( unsigned int i = 0; i < pAlignments1->size( ); i++ )
     {
         std::shared_ptr<Alignment> pAlignment1 = ( *pAlignments1 )[ i ]; // dc
@@ -69,7 +65,7 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
                 // bonus score if alignments are paired
                 if( ( (double)d ) >= ( (double)mean ) - std * 3 && ( (double)d ) <= ( (double)mean ) + std * 3 )
                 {
-                    iScore = (int64_t)(iScore * dUnpaired);
+                    iScore = ( int64_t )( iScore * pGlobalParams->dUnpaired->get( ) );
                     bIsPaired = true;
                 } // if
             }
@@ -101,16 +97,18 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
         float fMapQ =
             ( (float)( std::get<0>( vScores[ 0 ] ) - std::get<0>( vScores[ 1 ] ) ) ) / std::get<0>( vScores[ 0 ] );
 
-        if(( *pAlignments1 )[ uiI1 ]->getNumSeeds() <= 1 && ( *pAlignments2 )[ uiI2 ]->getNumSeeds() <= 1)
+        if( ( *pAlignments1 )[ uiI1 ]->getNumSeeds( ) <= 1 && ( *pAlignments2 )[ uiI2 ]->getNumSeeds( ) <= 1 )
             fMapQ /= 2;
 
-        if(( *pAlignments1 )[ uiI1 ]->score() >= iMatch * pQ1->length( ) * 0.8 && pAlignments1->size() >= 3)
+        if( ( *pAlignments1 )[ uiI1 ]->score( ) >= pGlobalParams->iMatch->get( ) * pQ1->length( ) * 0.8 &&
+            pAlignments1->size( ) >= 3 )
             fMapQ *= 2;
-        else if(( *pAlignments2 )[ uiI2 ]->score() >= iMatch * pQ2->length( ) * 0.8 && pAlignments2->size() >= 3)
+        else if( ( *pAlignments2 )[ uiI2 ]->score( ) >= pGlobalParams->iMatch->get( ) * pQ2->length( ) * 0.8 &&
+                 pAlignments2->size( ) >= 3 )
             fMapQ *= 2;
-        if(fMapQ > 1)
+        if( fMapQ > 1 )
             fMapQ = 1;
-    
+
         ( *pAlignments1 )[ uiI1 ]->fMappingQuality = fMapQ;
         ( *pAlignments2 )[ uiI2 ]->fMappingQuality = fMapQ;
     } // if

@@ -3,12 +3,8 @@
  * @author Markus Schmidt
  */
 #include "module/mappingQuality.h"
-#include "util/default_parameters.h"
 
 using namespace libMA;
-
-using namespace libMA::defaults;
-// extern int iMatch;
 
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::execute(
@@ -79,12 +75,12 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::exe
     } // if
     else
         // the score of the second best alignment is 0 if we do not even find one...
-        pFirst->fMappingQuality = pFirst->score( ) / (double)( iMatch * pQuery->length( ) );
+        pFirst->fMappingQuality = pFirst->score( ) / (double)( pGlobalParams->iMatch->get() * pQuery->length( ) );
 
     if(pFirst->getNumSeeds() <= 1)
         pFirst->fMappingQuality /= 2;
 
-    if(pFirst->score() >= iMatch * pQuery->length( ) * 0.8 && pAlignments->size() >= 3)
+    if(pFirst->score() >= pGlobalParams->iMatch->get() * pQuery->length( ) * 0.8 && pAlignments->size() >= 3)
         pFirst->fMappingQuality *= 2;
     if(pFirst->fMappingQuality > 1)
         pFirst->fMappingQuality = 1;

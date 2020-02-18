@@ -3,16 +3,10 @@
  * @author Markus Schmidt
  */
 #include "container/alignment.h"
-#include "util/default_parameters.h"
+#include "util/parameter.h"
 #include "util/pybind11.h"
 using namespace libMA;
 
-using namespace libMA::defaults;
-extern int libMA::defaults::iGap;
-extern int libMA::defaults::iExtend;
-extern int libMA::defaults::iMatch;
-extern int libMA::defaults::iMissMatch;
-extern size_t libMA::defaults::uiSVPenalty;
 
 void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
 {
@@ -30,14 +24,14 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
     // adjust the score of the alignment
     if( type == MatchType::seed || type == MatchType::match )
     {
-        iScore += iMatch * size;
+        iScore += pGlobalParams->iMatch->get( ) * size;
         uiEndOnRef += size;
         uiEndOnQuery += size;
     } // if
     else if( type == MatchType::missmatch )
     {
-        // iMissMatch is a penalty not a score
-        iScore -= iMissMatch * size;
+        // pGlobalParams->iMissMatch->get() is a penalty not a score
+        iScore -= pGlobalParams->iMissMatch->get( ) * size;
         uiEndOnRef += size;
         uiEndOnQuery += size;
     } // else if
@@ -48,23 +42,24 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
             uiEndOnQuery += size;
         else
             uiEndOnRef += size;
-        // iGap & iExtend is a penalty not a score
+        // pGlobalParams->iGap->get() & pGlobalParams->iExtend->get() is a penalty not a score
         if( data.size( ) != 0 && ( data.back( ).first == type ) )
         {
             // revert last alignment but memorize the length
             size += data.back( ).second;
             uiLength -= data.back( ).second;
-            if( iExtend * data.back( ).second + iGap < uiSVPenalty )
-                iScore += iExtend * data.back( ).second + iGap;
+            if( pGlobalParams->iExtend->get( ) * data.back( ).second + pGlobalParams->iGap->get( ) <
+                pGlobalParams->uiSVPenalty->get( ) )
+                iScore += pGlobalParams->iExtend->get( ) * data.back( ).second + pGlobalParams->iGap->get( );
             else
-                iScore += uiSVPenalty;
+                iScore += pGlobalParams->uiSVPenalty->get( );
             data.pop_back( );
         } // if
         // add the penalty for this indel (plus the possibly removed last one...)
-        if( iExtend * size + iGap < uiSVPenalty )
-            iScore -= iExtend * size + iGap;
+        if( pGlobalParams->iExtend->get( ) * size + pGlobalParams->iGap->get( ) < pGlobalParams->uiSVPenalty->get( ) )
+            iScore -= pGlobalParams->iExtend->get( ) * size + pGlobalParams->iGap->get( );
         else
-            iScore -= uiSVPenalty;
+            iScore -= pGlobalParams->uiSVPenalty->get( );
     } // else if
 
     /*
@@ -111,17 +106,18 @@ unsigned int EXPORTED Alignment::localscore( ) const
         {
             case MatchType::deletion:
             case MatchType::insertion:
-                if( iExtend * data[ index ].second + iGap < uiSVPenalty )
-                    iScoreCurr -= iExtend * data[ index ].second + iGap;
+                if( pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( ) <
+                    pGlobalParams->uiSVPenalty->get( ) )
+                    iScoreCurr -= pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( );
                 else
-                    iScoreCurr -= uiSVPenalty;
+                    iScoreCurr -= pGlobalParams->uiSVPenalty->get( );
                 break;
             case MatchType::missmatch:
-                iScoreCurr -= iMissMatch * data[ index ].second;
+                iScoreCurr -= pGlobalParams->iMissMatch->get( ) * data[ index ].second;
                 break;
             case MatchType::match:
             case MatchType::seed:
-                iScoreCurr += iMatch * data[ index ].second;
+                iScoreCurr += pGlobalParams->iMatch->get( ) * data[ index ].second;
                 break;
         } // switch
         if( iScoreCurr < 0 )
@@ -159,17 +155,18 @@ void EXPORTED Alignment::makeLocal( )
         {
             case MatchType::deletion:
             case MatchType::insertion:
-                if( iExtend * data[ index ].second + iGap < uiSVPenalty )
-                    iScoreCurr -= iExtend * data[ index ].second + iGap;
+                if( pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( ) <
+                    pGlobalParams->uiSVPenalty->get( ) )
+                    iScoreCurr -= pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( );
                 else
-                    iScoreCurr -= uiSVPenalty;
+                    iScoreCurr -= pGlobalParams->uiSVPenalty->get( );
                 break;
             case MatchType::missmatch:
-                iScoreCurr -= iMissMatch * data[ index ].second;
+                iScoreCurr -= pGlobalParams->iMissMatch->get( ) * data[ index ].second;
                 break;
             case MatchType::match:
             case MatchType::seed:
-                iScoreCurr += iMatch * data[ index ].second;
+                iScoreCurr += pGlobalParams->iMatch->get( ) * data[ index ].second;
                 break;
         } // switch
         if( iScoreCurr < 0 )
@@ -254,10 +251,11 @@ void EXPORTED Alignment::removeDangeling( )
             uiBeginOnRef += data.front( ).second;
         else // insertion
             uiBeginOnQuery += data.front( ).second;
-        if( iGap + iExtend * data.front( ).second < uiSVPenalty )
-            iScore += iGap + iExtend * data.front( ).second;
+        if( pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.front( ).second <
+            pGlobalParams->uiSVPenalty->get( ) )
+            iScore += pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.front( ).second;
         else
-            iScore += uiSVPenalty;
+            iScore += pGlobalParams->uiSVPenalty->get( );
         uiLength -= data.front( ).second;
         data.erase( data.begin( ), data.begin( ) + 1 );
     } // if
@@ -267,10 +265,11 @@ void EXPORTED Alignment::removeDangeling( )
             uiEndOnRef -= data.back( ).second;
         else // insertion
             uiEndOnQuery -= data.back( ).second;
-        if( iGap + iExtend * data.back( ).second < uiSVPenalty )
-            iScore += iGap + iExtend * data.back( ).second;
+        if( pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.back( ).second <
+            pGlobalParams->uiSVPenalty->get( ) )
+            iScore += pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.back( ).second;
         else
-            iScore += uiSVPenalty;
+            iScore += pGlobalParams->uiSVPenalty->get( );
         uiLength -= data.back( ).second;
         data.pop_back( );
     } // if
@@ -302,17 +301,18 @@ int64_t Alignment::reCalcScore( ) const
         {
             case MatchType::deletion:
             case MatchType::insertion:
-                if( iExtend * data[ index ].second + iGap < uiSVPenalty )
-                    iScore -= iExtend * data[ index ].second + iGap;
+                if( pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( ) <
+                    pGlobalParams->uiSVPenalty->get( ) )
+                    iScore -= pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( );
                 else
-                    iScore -= uiSVPenalty;
+                    iScore -= pGlobalParams->uiSVPenalty->get( );
                 break;
             case MatchType::missmatch:
-                iScore -= iMissMatch * data[ index ].second;
+                iScore -= pGlobalParams->iMissMatch->get( ) * data[ index ].second;
                 break;
             case MatchType::match:
             case MatchType::seed:
-                iScore += iMatch * data[ index ].second;
+                iScore += pGlobalParams->iMatch->get( ) * data[ index ].second;
                 break;
         } // switch
     return iScore;
