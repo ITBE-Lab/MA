@@ -524,7 +524,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> xRet;
         std::get<0>( xRet ) = -1;
         std::get<2>( xRet ) = bForwardContext; // does nothing...
-        if( bForwardContext && xNextCallForwardContext.execAndFetch( iCallerRun, uiFrom ) )
+        if( bForwardContext && xNextCallForwardContext.execAndFetch( uiFrom ) )
         {
             auto xQ = xNextCallForwardContext.get( );
             std::get<0>( xRet ) = std::get<0>( xQ );
@@ -533,7 +533,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             std::get<3>( xRet ) = std::get<4>( xQ );
             std::get<4>( xRet ) = std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
         } // if
-        else if( !bForwardContext && xNextCallBackwardContext.execAndFetch( iCallerRun, uiFrom ) )
+        else if( !bForwardContext && xNextCallBackwardContext.execAndFetch( uiFrom ) )
         {
             auto xQ = xNextCallBackwardContext.get( );
             std::get<0>( xRet ) = std::get<0>( xQ );
@@ -545,56 +545,64 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xRet;
     } // method
 
+    /** @brief reconstruct a sequenced genome from a reference and the calls of the run with id iCallerRun.
+     *  @details
+     *  @todo at the moment this does not deal with jumped over sequences
+     *  @todo at the moment this does not check the regex (?)
+     *  Creates a reconstruction_table that is filled with all unused calls from iCallerRun and then deletes the calls
+     *  one by one until the sequenced genome is reconstructed
+     */
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
-        // SQL for checking how much work remains:
-        // SELECT COUNT(*) FROM minimal2.sv_call_table WHERE id NOT IN (SELECT call_id FROM
-        // minimal2.reconstruction_table);
         auto pRet = std::make_shared<Pack>( );
         {
             // auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-            SQLTable<DBCon, int64_t> xReconstructionTable( this->pConnection,
-                                                           json{{TABLE_NAME, "reconstruction_table"},
-                                                                {CPP_EXTRA, "DROP ON DESTRUCTION"},
-                                                                {TABLE_COLUMNS,
-                                                                 {{{COLUMN_NAME, "call_id"},
-                                                                   {REFERENCES, "sv_call_table(id)"},
-                                                                   {CONSTRAINTS, "NOT NULL PRIMARY KEY"}}}}} );
+            SQLTable<DBCon, int64_t, uint32_t, uint32_t> xReconstructionTable(
+                this->pConnection,
+                json{{TABLE_NAME, "reconstruction_table"},
+                     {CPP_EXTRA, "DROP ON DESTRUCTION"},
+                     {TABLE_COLUMNS,
+                      {
+                          {{COLUMN_NAME, "call_id"},
+                           {REFERENCES, "sv_call_table(id)"},
+                           {CONSTRAINTS, "NOT NULL PRIMARY KEY"}},
+                          {{COLUMN_NAME, "from_pos"}},
+                          {{COLUMN_NAME, "to_pos"}}
+                          //
+                      }}} );
 
-            //this->addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
+            metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) {
+                this->pConnection->execSQL( "INSERT INTO reconstruction_table (call_id, from_pos, to_pos) "
+                                            "SELECT id, from_pos, to_pos "
+                                            "FROM sv_call_table "
+                                            "WHERE sv_caller_run_id = ?",
+                                            iCallerRun );
+            } );
 
-            //this->addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
-
-            //this->pConnection->execSQL( "ANALYZE TABLE sv_call_table" );
-            //this->pConnection->execSQL( "ANALYZE TABLE reconstruction_table" );
+            metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
+                xReconstructionTable.addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "from_pos"}} );
+                xReconstructionTable.addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "to_pos"}} );
+            } );
 
             NextCallType xNextCallForwardContext(
                 this->pConnection,
-                "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
+                "SELECT id, switch_strand, sv_call_table.to_pos, to_size, inserted_sequence, "
+                "       sv_call_table.from_pos + from_size "
                 "FROM sv_call_table "
-                "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
-                "AND sv_call_table.from_pos >= ? " // dim 2
-                "AND id NOT IN ( "
-                "  SELECT call_id "
-                "  FROM reconstruction_table "
-                ") "
-                "ORDER BY sv_call_table.from_pos ASC "
+                "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+                "WHERE reconstruction_table.from_pos >= ? "
+                "ORDER BY reconstruction_table.from_pos ASC "
                 "LIMIT 1 " );
-            NextCallType xNextCallBackwardContext( this->pConnection,
-                                                   "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
-                                                   "       inserted_sequence, to_pos "
-                                                   "FROM sv_call_table "
-                                                   "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
-                                                   "AND sv_call_table.to_pos <= ? " // dim 2
-                                                   "AND id NOT IN ( "
-                                                   "  SELECT call_id "
-                                                   "  FROM reconstruction_table "
-                                                   ") "
-                                                   "ORDER BY sv_call_table.to_pos DESC "
-                                                   "LIMIT 1 " );
+            NextCallType xNextCallBackwardContext(
+                this->pConnection,
+                "SELECT id, switch_strand, sv_call_table.from_pos, from_size, "
+                "       inserted_sequence, sv_call_table.to_pos "
+                "FROM sv_call_table "
+                "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+                "WHERE reconstruction_table.to_pos <= ? "
+                "ORDER BY reconstruction_table.to_pos DESC "
+                "LIMIT 1 " );
 
-            // @todo at the moment this does not deal with jumped over sequences
-            // @todo at the moment this does not check the regex (?)
 #if DEBUG_LEVEL > 0
             std::set<int64_t> xVisitedCalls;
 #endif
@@ -705,7 +713,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
                     metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
                         // remember that we used this call
-                        xReconstructionTable.insert( std::get<0>( tNextCall ) );
+                        this->pConnection->execSQL( "DELETE FROM reconstruction_table "
+                                                    "WHERE call_id = ? ",
+                                                    std::get<0>( tNextCall ) );
 #if DEBUG_LEVEL > 0
                         xVisitedCalls.insert( std::get<0>( tNextCall ) );
 #endif
@@ -716,8 +726,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             } // while
         } // scope xReconstructionTable
 
-        //this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
-        //this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
+        // this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
+        // this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
 
         return pRet;
     } // method

@@ -1106,7 +1106,6 @@ class MySQLConDB
     void useSchema( const std::string& rsSchemaName ) //, bool bTemporaryDb )
     {
         checkDBCon( );
-        std::cout << "MySQL::Use Schema: " << rsSchemaName << std::endl;
         if( mysql_select_db( pMySQLHandler, rsSchemaName.c_str( ) ) )
         {
             // Create the database if not existing.
