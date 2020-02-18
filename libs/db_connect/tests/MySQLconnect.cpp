@@ -454,7 +454,7 @@ int priKeyTest( )
                                             for( int i = 0; i < numValues; i++ )
                                             {
                                                 auto uiPriKey = xBulkInserter->insert( i * 2, 10 );
-                                                xVerificationMap[ uiPriKey ] = (int)( i * 2 );
+                                                xVerificationMap[ (int)uiPriKey ] = i * 2;
                                             }
                                             std::cout << "Finished inserting via BulkInserter LibIncr .... "
                                                       << std::endl;

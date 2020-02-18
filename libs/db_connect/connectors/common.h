@@ -249,16 +249,16 @@ template <bool bExplain, typename DBConPtrType, typename... ColTypes> class _SQL
 
     // type of the explain query
     using ExplainQType = typename DBConType::template PreparedQuery<int64_t, // id
-                                                                std::string, // select_type
-                                                                std::string, // table
-                                                                std::string, // type
-                                                                std::string, // possible_keys
-                                                                std::string, // key
-                                                                std::string, // key_len
-                                                                std::string, // ref
-                                                                uint64_t, // rows
-                                                                std::string // Extra
-                                                                >;
+                                                                    std::string, // select_type
+                                                                    std::string, // table
+                                                                    std::string, // type
+                                                                    std::string, // possible_keys
+                                                                    std::string, // key
+                                                                    std::string, // key_len
+                                                                    std::string, // ref
+                                                                    uint64_t, // rows
+                                                                    std::string // Extra
+                                                                    >;
     std::unique_ptr<ExplainQType> pExplainQuery; // pointer to explain statement
     bool bIsExplained; // holds if the query explained itself already
 
@@ -292,12 +292,12 @@ template <bool bExplain, typename DBConPtrType, typename... ColTypes> class _SQL
     /** @brief Constructs a query instance using the statement rsStmtText. The query can receive additional parameter by
      *  a JSON  passed via rjConfig.
      */
-    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{ } )
+    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{} )
         : pDB( pDB ),
           pQuery( std::make_unique<typename DBConType::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText,
                                                                                              rjConfig ) ),
           sStmtText( rsStmtText ),
-          pExplainQuery(bExplain ? std::make_unique<ExplainQType>(pDB, "EXPLAIN " + rsStmtText, json{ } ) : nullptr ),
+          pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText, json{} ) : nullptr ),
           bIsExplained( false )
     {} // constructor
 
@@ -572,6 +572,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // inner class SQL Index
 
   public:
+    using uiBulkInsertSize = std::integral_constant<size_t, 500>;
+
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
      */
@@ -646,8 +648,32 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             ( doSingleBind<Idx>( a[ Idx ] ), ... );
         } // meta
 
-        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row) */
-        template <typename T, std::size_t N> void forAllDoBind( const std::array<T, N>& a )
+#define MAX_COMPILETIME_BIND_N 800
+        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
+         * @details
+         * This function is only used if the template parameter is N > MAX_COMPILETIME_BIND_N.
+         * In that case we bind the parameters via a runtime loop.
+         * @todo show arne
+         */
+        template <typename T, std::size_t N>
+        typename std::enable_if</* condition -> */ ( N > MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
+        forAllDoBind( const std::array<T, N>& a )
+        {
+            for( size_t uiI = 0; uiI < N; uiI++ ) // the runtime bind loop
+                STD_APPLY( [&]( auto&... args ) //
+                           { pBulkInsertStmt->bindRuntime( uiI, args... ); },
+                           a[ uiI ] );
+        } // meta
+
+        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
+         * @details
+         * This function is only used if the template parameter is N <= MAX_COMPILETIME_BIND_N.
+         * In that case we bind the parameters via a compiletime loop.
+         * @note If this would be compiled with N > 1000 GCC would compile forever and MSVC would throw an exception.
+         */
+        template <typename T, std::size_t N>
+        typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
+        forAllDoBind( const std::array<T, N>& a )
         {
             forAllDoBindImpl( a, std::make_index_sequence<N>{} );
         } // meta
@@ -1142,7 +1168,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     inline std::string getValuesStmt( ) const
     {
         std::string sStmtText( "(" );
-        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{} );
 
         // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated explicitly,
         // the only permitted value is DEFAULT. this assumes that the create table statement always appends all
@@ -1655,7 +1681,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( const json& jDBConData = json{ } )
+    SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
@@ -1671,14 +1697,14 @@ template <typename DBImpl> class SQLDB : public DBImpl
     /** @brief Initialize DB connection using a given schema name.
      *  @details This constructor is exported to python.
      */
-    SQLDB( std::string sSchemaName ) : SQLDB( json{ { SCHEMA, {{ NAME, sSchemaName }} } } )
+    SQLDB( std::string sSchemaName ) : SQLDB( json{{SCHEMA, {{NAME, sSchemaName}}}} )
     {}
 
     /** @brief Destructs connection in an exception safe way ... */
     ~SQLDB( )
     {
         // Throwing an exception in a destructor results in undefined behavior.
-        doNoExcept( [ this ] {
+        doNoExcept( [this] {
             // Unregister the schema in the global visor
             auto uiRemainCons = xSQLDBGlobalSync.unregisterSchema( sSchemaName );
 
@@ -1686,7 +1712,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             // it is my job to do it now ...
             if( ( uiRemainCons == 0 ) && this->bDropOnClosure )
             {
-                xSQLDBGlobalSync.doSynchronized( [ this ] {
+                xSQLDBGlobalSync.doSynchronized( [this] {
                     // DEBUG: std::cout << "Do schema drop synchronized in Destructor" << std::endl;
                     this->dropSchema( this->sSchemaName );
                 } ); // doSynchronized

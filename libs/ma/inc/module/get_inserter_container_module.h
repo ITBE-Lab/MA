@@ -24,6 +24,7 @@ using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
 class SharedInserterProfiler
 {
     std::mutex xLock;
+    std::string sName;
     size_t uiNumInsertsTotal;
     size_t uiNumTotalInserters;
     duration xTotalTime;
@@ -37,14 +38,15 @@ class SharedInserterProfiler
     } // method
 
   public:
-    SharedInserterProfiler( ) : uiNumInsertsTotal( 0 ), uiNumTotalInserters( 0 ), xTotalTime( duration::zero( ) )
+    SharedInserterProfiler( std::string sName )
+        : sName( sName ), uiNumInsertsTotal( 0 ), uiNumTotalInserters( 0 ), xTotalTime( duration::zero( ) )
     {} // constructor
 
     ~SharedInserterProfiler( )
     {
         size_t uiNum = ( size_t )( uiNumInsertsTotal / xTotalTime.count( ) );
-        std::cout << "InserterProfiler: Averaged " << withCommas( uiNum ) << " inserts per second over "
-                  << uiNumTotalInserters << " containers." << std::endl;
+        std::cout << sName << ": Averaged " << withCommas( uiNum ) << " inserts per second over " << uiNumTotalInserters
+                  << " containers." << std::endl;
     } // destructor
 
     inline void inc( size_t uiNumInsertsTotal, time_point xStartTime )
@@ -205,6 +207,11 @@ template <typename DBCon, template <typename T> typename TableType, typename... 
 class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>
 {
   public:
+    static std::string getName( )
+    {
+        return "Inserter";
+    } // method
+
     InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
                        std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         : AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>(
@@ -227,7 +234,8 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
 
 // @todo make the bulk inserter size a template parameter of the inserter container
 /// @brief a short typename for the bulk inserter type
-template <typename TableType> using BulkInserterType = typename TableType::template SQLBulkInserterType<500>;
+template <typename TableType>
+using BulkInserterType = typename TableType::template SQLBulkInserterType<TableType::uiBulkInsertSize::value>;
 /**
  * @brief container that holds a bulk inserter for a table
  * @details
@@ -240,6 +248,11 @@ class BulkInserterContainer
     : public AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>
 {
   public:
+    static std::string getName( )
+    {
+        return "BulkInserter";
+    } // method
+
     BulkInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
                            std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
@@ -255,7 +268,8 @@ class BulkInserterContainer
                                     return std::make_tuple(
                                         pConnection->sharedGuardedTrxn( ),
                                         (int)pConnection->getTaskId( ),
-                                        TableType<DBCon>( pConnection ).template getBulkInserter<500>( ),
+                                        TableType<DBCon>( pConnection )
+                                            .template getBulkInserter<TableType<DBCon>::uiBulkInsertSize::value>( ),
                                         pConnection );
                                 } ),
               iId, pSharedProfiler )
@@ -307,13 +321,14 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
     ///@brief creates a new inserter from given arguments
     GetInserterContainerModule( const ParameterSetManager& rParameters, std::shared_ptr<DBConInit> pConnection,
                                 ColumnTypes... xArguments )
-        : pSharedProfiler( std::make_shared<SharedInserterProfiler>( ) ),
+        : pSharedProfiler( std::make_shared<SharedInserterProfiler>( InserterContainerTypeForw::getName( ) ) ),
           iId( TableType<DBConInit>( pConnection ).insert( xArguments... ) )
     {} // constructor
 
     ///@brief creates an inserter for an existing db element
     GetInserterContainerModule( const ParameterSetManager& rParameters, int64_t iId )
-        : pSharedProfiler( std::make_shared<SharedInserterProfiler>( ) ), iId( iId )
+        : pSharedProfiler( std::make_shared<SharedInserterProfiler>( InserterContainerTypeForw::getName( ) ) ),
+          iId( iId )
     {} // constructor
 
     std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<PoolContainer<DBCon>> pPool )

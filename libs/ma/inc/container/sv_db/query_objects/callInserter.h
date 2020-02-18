@@ -14,26 +14,28 @@
 namespace libMA
 {
 
+
+#if DEBUG_LEVEL == 0
+// in release mode, we can use a BulkInserter since foreign_key_checks are
+// disabled
+#define BulkOrNot BulkInserterContainer
+#else
+// if we are in debug mode, calls need to be inserted immediately since
+// the sv_call_support_table references the primary key of the call_table
+#define BulkOrNot InserterContainer
+#endif
+
 /**
  * @brief A transaction based structural variant call inserter
  * @details
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
  */
 template <typename CallOrVector, typename DBCon>
-class SvCallInserterContainerTmpl : public
-#if DEBUG_LEVEL == 0
-                                    // in release mode, we can use a BulkInserter since foreign_key_checks are
-                                    // disabled
-                                    BulkInserterContainer
-#else
-                                    // if we are in debug mode, calls need to be inserted immediately since
-                                    // the sv_call_support_table references the primarry key of the call_table
-                                    InserterContainer
-#endif
-                                    <DBCon, SvCallTable, CallOrVector>
+class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, SvCallTable, CallOrVector>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, SvCallTable, CallOrVector>;
+    using ParentType = BulkOrNot<DBCon, SvCallTable, CallOrVector>;
+
     std::shared_ptr<BulkInserterType<SvCallSupportTable<DBCon>>> pSupportInserter;
 
 
@@ -41,7 +43,7 @@ class SvCallInserterContainerTmpl : public
                                  int64_t iId,
                                  std::shared_ptr<SharedInserterProfiler>
                                      pSharedProfiler )
-        : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler ),
+        : ParentType::BulkOrNot( pPool, iId, pSharedProfiler ),
           pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
               return std::make_shared<BulkInserterType<SvCallSupportTable<DBCon>>>(
                   SvCallSupportTable<DBCon>( pConnection ) );

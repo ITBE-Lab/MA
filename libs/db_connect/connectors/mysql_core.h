@@ -627,6 +627,19 @@ class MySQLConDB
             bindArgumentsForwarding<N + 1, Rest...>( std::forward<Rest>( args )... );
         } // variadic method
 
+        // Base case for binding with forwarding
+        template <typename... Rest> void bindArgumentsForwardingRuntime( size_t N )
+        {} // base case
+        /** @brief as bindArgumentsForwarding, but using a runtime offset */
+        template <typename Type, typename... Rest>
+        void bindArgumentsForwardingRuntime( size_t N, Type&& arg, Rest&&... args )
+        {
+            // bind argument N
+            this->vInputArgs[ N ].set( std::forward<Type>( arg ) );
+            // recursively bind remaining arguments
+            bindArgumentsForwardingRuntime<Rest...>( N + 1, std::forward<Rest>( args )... );
+        } // variadic method
+
       public:
         /** @brief Constructs a prepared statement using the SQL in rsStmtText */
         PreparedStmtTmpl( DBPtrType const pMySQLDB, const std::string& rsStmtText )
@@ -679,6 +692,15 @@ class MySQLConDB
             assert( ( sizeof...( args ) == 0 ) || ( ( iStmtParamCount % (int)( sizeof...( args ) ) == 0 ) &&
                                                     ( OFFSET * (int)( sizeof...( args ) ) < iStmtParamCount ) ) );
             bindArgumentsForwarding<OFFSET * sizeof...( args ), ArgTypes&&...>( std::forward<ArgTypes>( args )... );
+        } // method
+
+        /** @brief as bind, but using a runtime offset */
+        template <typename... ArgTypes> inline void bindRuntime( size_t OFFSET, ArgTypes&&... args )
+        {
+            assert( ( sizeof...( args ) == 0 ) || ( ( iStmtParamCount % (int)( sizeof...( args ) ) == 0 ) &&
+                                                    ( OFFSET * (int)( sizeof...( args ) ) < iStmtParamCount ) ) );
+            bindArgumentsForwardingRuntime<ArgTypes&&...>( OFFSET * sizeof...( args ),
+                                                           std::forward<ArgTypes>( args )... );
         } // method
 
         /* ArgTypes are the types of the arguments of the query.

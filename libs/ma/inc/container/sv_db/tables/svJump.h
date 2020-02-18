@@ -52,6 +52,11 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
     SQLStatement<DBCon> xDeleteRun;
 
   public:
+#if DEBUG_LEVEL == 0 // @todo discuss with arne
+    // increase the bulk inserter size on this table
+    using uiBulkInsertSize = std::integral_constant<size_t, 5000>;
+#endif
+
     SvJumpTable( std::shared_ptr<DBCon> pDatabase )
         : SvJumpTableType<DBCon>( pDatabase, // the database where the table resides
                                   jSvJumpTableDef ),
