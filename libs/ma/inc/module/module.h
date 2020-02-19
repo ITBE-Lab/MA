@@ -385,7 +385,7 @@ class BasePledge
 template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> class Pledge : public BasePledge
 {
   public:
-    double execTime = 0;
+    std::chrono::duration<double> xExecTime = std::chrono::duration<double>::zero( );
     std::chrono::duration<double> xWaitOnLockTime = std::chrono::duration<double>::zero( );
     typedef TP_TYPE TP_CONTENT;
     /*
@@ -412,6 +412,11 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     double waitTime( ) const
     {
         return xWaitOnLockTime.count( );
+    }
+
+    double execTime() const
+    {
+        return xExecTime.count();
     }
 
     void addSuccessor( BasePledge* pX )
@@ -616,7 +621,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
 
         std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
         // increase the total executing time for this pledge
-        execTime += duration.count( );
+        xExecTime += duration;
 
         // safety check
         if( pRet == nullptr && !IS_VOLATILE )

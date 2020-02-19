@@ -129,9 +129,7 @@ template <typename DBCon> class NucSeqFetcher : public Module<NucSeq, true, NucS
         auto pRet = std::get<0>( xTup )->pUncomNucSeq;
         pRet->iId = (int64_t)std::get<1>( xTup );
         if( !pQuery->next( ) )
-        {
-            // @todo
-        }
+            return nullptr;
         assert( pRet->iId != -1 );
         return pRet;
     } // method

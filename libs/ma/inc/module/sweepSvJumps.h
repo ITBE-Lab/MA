@@ -35,6 +35,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
     int64_t iRefSize;
     int64_t iSectionSize;
     int64_t iCurrStart;
+    std::mutex xMutex;
     /**
      * @brief
      * @details
@@ -51,6 +52,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
     virtual std::shared_ptr<GenomeSection> EXPORTED execute( )
     {
+        std::unique_lock<std::mutex> xLock(xMutex);
         // setFinished( );
         // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
@@ -63,9 +65,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
         iCurrStart++;
         if( ( iCurrStart / 2 ) * iSectionSize >= iRefSize )
-        {
-            //@todo
-        }
+            return nullptr;
         return pRet;
     } // method
 }; // class
