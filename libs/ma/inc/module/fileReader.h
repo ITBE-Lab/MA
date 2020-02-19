@@ -7,6 +7,7 @@
 #define FILE_READER_H
 
 #include "container/nucSeq.h"
+#include "module/cyclic_queue_modules.h"
 #include "module/module.h"
 #include "support.h"
 
@@ -24,9 +25,11 @@
 namespace libMA
 {
 
-class FileStream
+class FileStream : public Container
 {
   public:
+    std::mutex xMutex;
+    DEBUG( size_t uiNumLinesWithNs = 0; ) // DEBUG
     DEBUG( size_t uiNumLinesRead = 0; ) // DEBUG
 
     FileStream( )
@@ -51,7 +54,15 @@ class FileStream
     {
         throw std::runtime_error( "This function should have been overridden" );
     }
+    virtual size_t fileSize( )
+    {
+        throw std::runtime_error( "This function should have been overridden" );
+    }
     virtual char peek( )
+    {
+        throw std::runtime_error( "This function should have been overridden" );
+    }
+    virtual std::string fileName( )
     {
         throw std::runtime_error( "This function should have been overridden" );
     }
@@ -65,10 +76,15 @@ class StdFileStream : public FileStream
 {
   private:
     std::ifstream xStream;
+    size_t uiFileSize = 0;
+    const std::string sFileName;
 
   public:
-    StdFileStream( fs::path sFilename ) : xStream( sFilename )
-    {} // constructor
+    StdFileStream( fs::path sFilename ) : xStream( sFilename ), sFileName( sFilename.string( ) )
+    {
+        std::ifstream xFileEnd( sFilename, std::ifstream::ate | std::ifstream::binary );
+        uiFileSize = xFileEnd.tellg( );
+    } // constructor
 
     bool eof( ) const
     {
@@ -96,9 +112,19 @@ class StdFileStream : public FileStream
         return xStream.peek( );
     } // method
 
+    virtual std::string fileName( )
+    {
+        return sFileName;
+    } // method
+
     size_t tellg( )
     {
         return xStream.tellg( );
+    } // method
+
+    virtual size_t fileSize( )
+    {
+        throw uiFileSize;
     } // method
 
     /**
@@ -147,9 +173,10 @@ class StringStream : public FileStream
 {
   private:
     std::stringstream xStream;
+    size_t uiFileSize;
 
   public:
-    StringStream( std::string& sString ) : xStream( sString )
+    StringStream( const std::string& sString ) : xStream( sString ), uiFileSize( sString.size( ) )
     {} // constructor
 
     bool eof( ) const
@@ -178,9 +205,19 @@ class StringStream : public FileStream
         return xStream.peek( );
     } // method
 
+    virtual std::string fileName( )
+    {
+        return "StringStream";
+    } // method
+
     size_t tellg( )
     {
         return xStream.tellg( );
+    } // method
+
+    virtual size_t fileSize( )
+    {
+        throw uiFileSize;
     } // method
 
     /**
@@ -233,10 +270,16 @@ class GzFileStream : public FileStream
     gzFile pFile;
     int lastReadReturn = 1; // 1 == last read was ok; 0 == eof; -1 == error
     unsigned char cBuff;
+    size_t uiFileSize = 0;
+    std::string sFileName;
 
   public:
-    GzFileStream( fs::path sFilename )
+    GzFileStream( fs::path sFilename ) : sFileName( sFilename.string( ) )
     {
+        {
+            std::ifstream xFileEnd( sFilename, std::ifstream::ate | std::ifstream::binary );
+            uiFileSize = xFileEnd.tellg( );
+        } // scope for xFileEnd
         // open the file in reading and binary mode
         pFile = gzopen( sFilename.string( ).c_str( ), "rb" );
         if( pFile != nullptr )
@@ -272,9 +315,19 @@ class GzFileStream : public FileStream
         return gzoffset( pFile );
     } // method
 
+    virtual size_t fileSize( )
+    {
+        throw uiFileSize;
+    } // method
+
     char peek( )
     {
         return cBuff;
+    } // method
+
+    virtual std::string fileName( )
+    {
+        return sFileName;
     } // method
 
     void safeGetLine( std::string& t )
@@ -307,6 +360,70 @@ class GzFileStream : public FileStream
 }; // class
 #endif
 
+class FileStreamFromPath : public FileStream
+{
+  public:
+    std::unique_ptr<FileStream> pStream;
+
+    FileStreamFromPath( fs::path sFileName )
+    {
+#ifdef WITH_ZLIB
+        if( sFileName.extension( ).string( ) == ".gz" )
+            pStream = std::make_unique<GzFileStream>( sFileName );
+        else
+#endif
+            pStream = std::make_unique<StdFileStream>( sFileName );
+        if( !pStream->is_open( ) )
+        {
+            throw std::runtime_error( "Unable to open file" + sFileName.string( ) );
+        } // if
+    } // contstructor
+
+    FileStreamFromPath( std::string sFileName ) : FileStreamFromPath( fs::path( sFileName ) )
+    {} //  // contstructor
+
+    ~FileStreamFromPath( )
+    {
+        pStream->close( );
+    }
+
+    virtual bool eof( ) const
+    {
+        return pStream->eof( );
+    }
+
+    virtual bool is_open( ) const
+    {
+        return pStream->is_open( );
+    }
+    virtual void close( )
+    {
+        pStream->close( );
+    }
+    virtual size_t tellg( )
+    {
+        return pStream->tellg( );
+    }
+    virtual size_t fileSize( )
+    {
+        return pStream->fileSize( );
+    }
+    virtual char peek( )
+    {
+        return pStream->peek( );
+    }
+    virtual std::string fileName( )
+    {
+        return pStream->fileName( );
+    } // method
+    virtual void safeGetLine( std::string& t )
+    {
+        pStream->safeGetLine( t );
+    }
+}; // class
+
+
+#if 0
 class Reader
 {
   public:
@@ -314,93 +431,6 @@ class Reader
     virtual size_t getFileSize( ) = 0;
     virtual size_t getCurrFileIndex( ) = 0;
     virtual size_t getNumFiles( ) const = 0;
-}; // class
-
-class FileReader;
-
-class SingleFileReader : public Module<NucSeq, true>, public Reader
-{
-  public:
-    virtual const std::string status( )
-    {
-        throw std::runtime_error( "This method must be overridden." );
-    } // method
-
-    virtual void reset( )
-    {
-        throw std::runtime_error( "This method must be overridden." );
-    } // method
-
-    virtual void withFileReader( std::function<void( FileReader& )> func )
-    {
-        throw std::runtime_error( "This method must be overridden." );
-    } // method
-}; // class
-
-/**
- * @brief Reads Queries from a file.
- * @details
- * Reads (multi-)fasta or fastaq format.
- */
-class FileReader : public SingleFileReader
-{
-  public:
-    const fs::path xFileName;
-    std::shared_ptr<FileStream> pFile;
-    size_t uiFileSize = 0;
-    DEBUG( size_t uiNumLinesWithNs = 0; ) // DEBUG
-
-    /**
-     * @brief creates a new FileReader.
-     */
-    FileReader( fs::path sFileName ) : xFileName( sFileName )
-    {
-#ifdef WITH_ZLIB
-        if( sFileName.extension( ).string( ) == ".gz" )
-            pFile = std::make_shared<GzFileStream>( sFileName );
-        else
-#endif
-            pFile = std::make_shared<StdFileStream>( sFileName );
-        if( !pFile->is_open( ) )
-        {
-            throw std::runtime_error( "Unable to open file" + sFileName.string( ) );
-        } // if
-        std::ifstream xFileEnd( sFileName, std::ifstream::ate | std::ifstream::binary );
-        uiFileSize = xFileEnd.tellg( );
-        if( uiFileSize == 0 )
-            this->setFinished( );
-    } // constructor
-
-    /**
-     * @brief creates a new FileReader.
-     */
-    FileReader( const ParameterSetManager& rParameters, fs::path sFileName ) : FileReader( sFileName )
-    {} // constructor
-
-    /**
-     * @brief creates a new FileReader.
-     */
-    FileReader( const ParameterSetManager& rParameters, std::string& sString, size_t uiStringSize ) : xFileName( )
-    {
-        pFile = std::make_shared<StringStream>( sString );
-        uiFileSize = uiStringSize;
-        if( uiFileSize == 0 )
-            throw std::runtime_error( "Got empty query via text input." );
-    } // constructor
-
-    ~FileReader( )
-    {
-        pFile->close( );
-    } // deconstructor
-
-    std::shared_ptr<NucSeq> EXPORTED execute( );
-
-    // @override
-    virtual bool requiresLock( ) const
-    {
-        return true;
-    } // function
-
     size_t getCurrPosInFile( )
     {
         if( pFile->eof( ) )
@@ -445,213 +475,141 @@ class FileReader : public SingleFileReader
 #endif
             pFile = std::make_shared<StdFileStream>( xFileName );
     } // method
-
-    virtual void withFileReader( std::function<void( FileReader& )> func )
-    {
-        func( *this );
-    } // method
-
 }; // class
+#endif
 
-/**
- * @brief reads all files in a list
- * @details
- * Applies a round robin approach instead of reading the files sequentially.
- * That way several threads can work simultaneously if multiple input files are given.
- */
-class FileListReader : public SingleFileReader
-{
-  public:
-    std::mutex xMutex;
-    std::condition_variable xCondition; // For wait, notify synchronization purposes.
-    std::queue<std::shared_ptr<FileReader>> xFileReaders;
-    size_t uiNumFiles = 0;
-    bool bIsFinished = false;
-
-    /** @brief gets std::unique_ptr<FileReader>
-     * @details
-     * This function is threadsave, it uses a queue to distribute the file readers among threads.
-     * It makes sure that each file reader will only ever be used by one thread.
-     * @todo move this to container
-     */
-    virtual void withFileReader( std::function<void( FileReader& )> func )
-    {
-        std::shared_ptr<FileReader> pReader;
-        {
-            std::unique_lock<std::mutex> xLock( xMutex );
-            while( xFileReaders.empty( ) )
-            {
-                // if some other thread finished this module,
-                if( bIsFinished )
-                    return;
-                xCondition.wait( xLock );
-            } // while
-            pReader = xFileReaders.front( );
-            xFileReaders.pop( );
-        } // scope for xLock
-        // parallel execution of func allowed
-        func( *pReader );
-        {
-            std::unique_lock<std::mutex> xLock( xMutex );
-            if( !pReader->isFinished( ) )
-                xFileReaders.push( pReader );
-
-            if( xFileReaders.empty( ) )
-            {
-                bIsFinished = true;
-                xCondition.notify_all( );
-            } // if
-            else
-                xCondition.notify_one( );
-        } // scope for xLock
-    } // method
-
-    /**
-     * @brief creates a new FileReader.
-     */
-    FileListReader( const std::vector<fs::path>& vsFileNames ) : uiNumFiles( vsFileNames.size( ) )
-    {
-        for( auto sFileName : vsFileNames )
-            xFileReaders.push( std::make_shared<FileReader>( sFileName ) );
-    } // constructor
-
-    FileListReader( const ParameterSetManager& rParameters, const std::vector<fs::path>& vsFileNames )
-        : FileListReader( vsFileNames )
-    {} // constructor
-
-    FileListReader( const FileListReader& ) = delete; // no copies
-
-    std::shared_ptr<NucSeq> EXPORTED execute( )
-    {
-        std::shared_ptr<NucSeq> pRet = std::make_shared<NucSeq>(); // @todo nullptr
-        withFileReader( [&pRet]( FileReader& xReader ) { pRet = xReader.execute( ); } );
-        return pRet;
-    } // method
-
-    std::vector<std::shared_ptr<NucSeq>> read_all( )
-    {
-        std::vector<std::shared_ptr<NucSeq>> vRet;
-
-        while( !isFinished( ) )
-            vRet.push_back( execute( ) );
-
-        return vRet;
-    } // method
-
-    // @override
-    virtual bool requiresLock( ) const
-    {
-        return false; // locking mechanism is provided internally
-    } // function
-
-    size_t getCurrPosInFile( )
-    {
-        std::unique_lock<std::mutex> xLock( xMutex );
-        return xFileReaders.front( )->getCurrPosInFile( );
-    } // function
-
-    size_t getFileSize( )
-    {
-        std::unique_lock<std::mutex> xLock( xMutex );
-        return xFileReaders.front( )->getFileSize( );
-    } // function
-
-    size_t getCurrFileIndex( )
-    {
-        std::unique_lock<std::mutex> xLock( xMutex );
-        return uiNumFiles - xFileReaders.size( );
-    } // method
-
-    size_t getNumFiles( ) const
-    {
-        return uiNumFiles;
-    } // method
-
-    virtual const std::string status( )
-    {
-        std::string sOut = std::string( std::to_string( this->getCurrFileIndex( ) ) )
-                               .append( "/" )
-                               .append( std::to_string( this->getNumFiles( ) ) )
-                               .append( "::" );
-        std::unique_lock<std::mutex> xLock( xMutex );
-        sOut.append( xFileReaders.front( )->status( ) );
-        return sOut;
-    } // method
-
-    virtual bool isFinished( )
-    {
-        // need to obtain lock in order to know if reader is finished
-        std::unique_lock<std::mutex> xLock( xMutex );
-        return bIsFinished;
-    } // method
-
-}; // class
-
-typedef ContainerVector<std::shared_ptr<NucSeq>> TP_PAIRED_READS;
 /**
  * @brief Reads Queries from a file.
  * @details
  * Reads (multi-)fasta or fastaq format.
  */
-class PairedFileReader : public Module<TP_PAIRED_READS, true>, public Reader
+class FileReader : public Module<NucSeq, true, FileStream>
 {
   public:
-    std::shared_ptr<SingleFileReader> pF1;
-    std::shared_ptr<SingleFileReader> pF2;
+    /**
+     * @brief creates a new FileReader.
+     */
+    FileReader( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<FileStream> pStream );
+
+}; // class
+
+using FileStreamQueue = CyclicQueue<FileStream>;
+class PairedFileStream : public FileStream, public std::pair<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>
+{
+  public:
+    using std::pair<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>::pair;
+
+    virtual bool eof( ) const
+    {
+        return first->eof( ) || second->eof( );
+    }
+
+    virtual bool is_open( ) const
+    {
+        return first->is_open( ) && second->is_open( );
+    }
+    virtual void close( )
+    {
+        first->close( );
+        second->close( );
+    }
+    virtual size_t tellg( )
+    {
+        return first->tellg( ) + second->tellg( );
+    }
+    virtual size_t fileSize( )
+    {
+        return first->fileSize( ) + second->fileSize( );
+    }
+    virtual char peek( )
+    {
+        throw std::runtime_error( "This function should have been overridden" );
+    }
+    virtual std::string fileName( )
+    {
+        return first->fileName( ) + std::string( "," ) + second->fileName( );
+    }
+    virtual void safeGetLine( std::string& t )
+    {
+        throw std::runtime_error( "This function should have been overridden" );
+    }
+}; // class
+
+using PairedFileStreamQueue = CyclicQueue<PairedFileStream>;
+
+inline std::shared_ptr<PairedFileStreamQueue>
+combineFileStreams( std::shared_ptr<FileStreamQueue> pA, std::shared_ptr<FileStreamQueue> pB )
+{
+    auto pRet = std::make_shared<PairedFileStreamQueue>( );
+    while( pA->uiUnfinishedContainers > 0 && pB->uiUnfinishedContainers > 0 )
+    {
+        pRet->add( std::make_shared<PairedFileStream>( pA->pop( ), pB->pop( ) ) );
+        pA->informThatContainerIsFinished( );
+        pB->informThatContainerIsFinished( );
+    } // while
+    if( pA->uiUnfinishedContainers != pB->uiUnfinishedContainers )
+        throw std::runtime_error( "@todo" );
+    return pRet;
+} // function
+
+using PairedReadsContainer = ContainerVector<std::shared_ptr<NucSeq>>;
+
+/**
+ * @brief Reads Queries from a file.
+ * @details
+ * Reads (multi-)fasta or fastaq format.
+ */
+class PairedFileReader : public Module<PairedReadsContainer, true, PairedFileStream>
+{
+  public:
+    FileReader xFileReader;
     const bool bRevCompMate;
 
     /**
      * @brief creates a new FileReader that reads from a list of files.
      */
-    PairedFileReader(
-        const ParameterSetManager& rParameters, std::vector<fs::path> vsFileName1, std::vector<fs::path> vsFileName2 )
-        : pF1( std::make_shared<FileListReader>( vsFileName1 ) ),
-          pF2( std::make_shared<FileListReader>( vsFileName2 ) ),
-          bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
+    PairedFileReader( const ParameterSetManager& rParameters )
+        : xFileReader( rParameters ), bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
     {} // constructor
 
-    /**
-     * @brief creates a new FileReader with a single query
-     */
-    PairedFileReader( const ParameterSetManager& rParameters, std::string sQuery, std::string sMate )
-        : pF1( std::make_shared<FileReader>( rParameters, sQuery, sQuery.size( ) ) ),
-          pF2( std::make_shared<FileReader>( rParameters, sMate, sMate.size( ) ) ),
-          bRevCompMate( rParameters.getSelected( )->xRevCompPairedReadMates->get( ) )
-    {} // constructor
-
-    void EXPORTED checkPaired( );
-
-    std::shared_ptr<TP_PAIRED_READS> EXPORTED execute( );
-
-    // @override
-    virtual bool requiresLock( ) const
+    std::shared_ptr<PairedReadsContainer> execute( std::shared_ptr<PairedFileStream> pFileStreamIn )
     {
-        return pF1->requiresLock( ) || pF2->requiresLock( );
-    } // function
+        auto pRet = std::make_shared<PairedReadsContainer>( );
+        pRet->push_back( xFileReader.execute( pFileStreamIn->first ) );
+        pRet->push_back( xFileReader.execute( pFileStreamIn->second ) );
+#if 0
+#if DEBUG_LEVEL > 0
+        if( rReader1.getCurrFileIndex( ) != rReader2.getCurrFileIndex( ) )
+            throw std::runtime_error( "Cannot perfrom paired alignment on files with different amounts of "
+                                      "reads. FileReader Status: " +
+                                      this->status( ) );
+#endif
+        // forward the finished flags...
+        if( rReader1.isFinished( ) || rReader2.isFinished( ) )
+        {
+            /*
+             * Print a warning if the fasta files have a different number of queries.
+             */
+            if( !rReader1.isFinished( ) || !rReader2.isFinished( ) )
+                throw std::runtime_error( "You cannot perform paired alignment with a different amount of primary "
+                                          "queries and mate queries." );
+            // this->setFinished( );
+        } // if
+#endif
+        if( ( *pRet )[ 0 ] == nullptr )
+            return nullptr;
+        if( ( *pRet )[ 1 ] == nullptr )
+            return nullptr;
 
-    size_t getCurrPosInFile( )
-    {
-        return pF1->getCurrPosInFile( ) + pF2->getCurrPosInFile( );
-    } // function
-
-    size_t getFileSize( )
-    {
-        return pF1->getFileSize( ) + pF2->getFileSize( );
-    } // function
-
-    size_t getCurrFileIndex( )
-    {
-        return pF1->getCurrFileIndex( ) + pF2->getCurrFileIndex( );
-    } // method
-
-    size_t getNumFiles( ) const
-    {
-        return pF1->getNumFiles( ) + pF2->getNumFiles( );
-    } // method
-
-    virtual const std::string status( )
-    {
-        return std::string( this->pF1->status( ) ).append( ";" ).append( this->pF2->status( ) );
+        if( bRevCompMate )
+        {
+            pRet->back( )->vReverse( );
+            pRet->back( )->vSwitchAllBasePairsToComplement( );
+        } // if
+        return pRet;
     } // method
 }; // class
 

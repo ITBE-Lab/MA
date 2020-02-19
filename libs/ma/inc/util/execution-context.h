@@ -9,7 +9,7 @@
 
 using namespace libMA;
 
-using nlohmann::json; // might be better: namespace json = nlohmann; 
+using nlohmann::json; // might be better: namespace json = nlohmann;
 
 /* Manages Pack and FMD-Index of genomes */
 class GenomeManager
@@ -259,7 +259,7 @@ class OutputManager
     std::string SAMFullFileName( void )
     {
         if( this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputTypeChoice->uiSelection == 2 )
-            return this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputFileName->get().string();
+            return this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputFileName->get( ).string( );
         // SAM filename generation according to parameter settings.
         auto sFullFileName = ( this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputTypeChoice->uiSelection == 0
                                    ? pxReadsManager->getReadsFolderPath( )
@@ -293,6 +293,7 @@ class ExecutionContext
              std::function<void( const std::string& )> fCheckCallBack =
                  []( const std::string& rS ) { std::cout << rS << std::endl; } )
     {
+#if 0
         size_t uiConcurency = xParameterSetManager.pGeneralParameterSet->getNumThreads();
 
         // For now, we build a computational graph for each call of doAlign
@@ -390,14 +391,12 @@ class ExecutionContext
                                      } // lambda
         ); // function call
 
-        // Destroy computational graph; release memory
-        // @Markus: Is this really necessary?
-        // aGraphSinks.clear( );
+#endif
     } // method
 
-    void doAlignCallbackLess()
+    void doAlignCallbackLess( )
     {
-        this->doAlign();
+        this->doAlign( );
     } // method
 }; // class
 

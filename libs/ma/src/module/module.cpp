@@ -16,20 +16,14 @@ void exportModuleClass( py::module& rxPyModuleId )
      */
     py::class_<PyModule<false>, ModuleWrapperPyToCpp<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
         .def( py::init<>( ) ) // default constructor
-        .def( "execute", &PyModule<false>::execute )
-        .def( "requires_lock", &PyModule<false>::requiresLock )
-        .def( "is_finished", &PyModule<false>::isFinished );
+        .def( "execute", &PyModule<false>::execute );
 
     py::class_<PyModule<true>, ModuleWrapperPyToCpp<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId,
                                                                                              "VolatileModule" )
         .def( py::init<>( ) ) // default constructor
-        .def( "execute", &PyModule<true>::execute )
-        .def( "requires_lock", &PyModule<true>::requiresLock )
-        .def( "set_finished", &PyModule<true>::setFinished )
-        .def( "is_finished", &PyModule<true>::isFinished );
+        .def( "execute", &PyModule<true>::execute );
 
-    py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" )
-        .def( "is_finished", &BasePledge::isFinished );
+    py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" );
 
     py::class_<PyPledgeVector, std::shared_ptr<PyPledgeVector>>( rxPyModuleId, "VectorPledge" )
         .def( py::init<>( ) ) // default constructor

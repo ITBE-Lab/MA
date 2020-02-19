@@ -63,13 +63,10 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
         iCurrStart++;
         if( ( iCurrStart / 2 ) * iSectionSize >= iRefSize )
-            setFinished( );
+        {
+            //@todo
+        }
         return pRet;
-    } // method
-
-    virtual bool requiresLock( ) const
-    {
-        return true;
     } // method
 }; // class
 

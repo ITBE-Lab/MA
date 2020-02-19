@@ -99,6 +99,27 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
 }; // class
 
 /**
+ * @brief Get a specific pair element
+ * @details
+ * the pair element must contain shared pointers of type TP_PAIR::value_type
+ * the pair must have ->first and ->second
+ */
+template <typename TP_PAIR, bool bFirst>
+class PairGet : public Module<typename TP_PAIR::value_type::element_type, false, TP_PAIR>
+{
+  public:
+    PairGet( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    virtual typename TP_PAIR::value_type EXPORTED execute( std::shared_ptr<TP_PAIR> pIn )
+    {
+        if( bFirst )
+            return pIn->first;
+        return pIn->second;
+    } // method
+}; // class
+
+/**
  * @brief Split a ContainerVector into its elements
  * @details
  */
@@ -108,12 +129,6 @@ template <typename TP> class Splitter : public Module<TP, true, ContainerVector<
     Splitter( const ParameterSetManager& rParameters )
     {} // constructor
 
-    // @override
-    virtual bool requiresLock( ) const
-    {
-        return true;
-    } // function
-
     virtual typename std::shared_ptr<TP> EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
     {
         if( pIn->empty( ) )
@@ -122,7 +137,9 @@ template <typename TP> class Splitter : public Module<TP, true, ContainerVector<
         auto pBack = pIn->back( );
         pIn->pop_back( );
         if( pIn->empty( ) )
-            this->setFinished( );
+        {
+            //@todo
+        }
         return pBack;
     } // method
 }; // class
@@ -139,12 +156,6 @@ template <typename TP> class StaticSplitter : public Module<TP, true>
         : pIn( pIn )
     {} // constructor
 
-    // @override
-    virtual bool requiresLock( ) const
-    {
-        return true;
-    } // function
-
     typename std::shared_ptr<TP> execute( void )
     {
         if( pIn->empty( ) )
@@ -153,7 +164,9 @@ template <typename TP> class StaticSplitter : public Module<TP, true>
         auto pBack = pIn->back( );
         pIn->pop_back( );
         if( pIn->empty( ) )
-            this->setFinished( );
+        {
+            //@todo
+        }
         return pBack;
     } // method
 }; // class
@@ -243,11 +256,11 @@ class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, Nu
           uiSeedSize( rParameters.getSelected( )->xMinSeedSizeSV->get( ) )
     {} // constructor
 
-    typename std::shared_ptr<Seeds>
-    execute( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<FMIndex> pFmIndex, std::shared_ptr<NucSeq> pQuery )
+    typename std::shared_ptr<Seeds> execute( std::shared_ptr<SegmentVector> pSegments,
+                                             std::shared_ptr<FMIndex> pFmIndex, std::shared_ptr<NucSeq> pQuery )
     {
         std::shared_ptr<Seeds> pRet = std::make_shared<Seeds>( );
-        pSegments->forEachSeed( *pFmIndex, pQuery->length(), uiMaxAmbiguity, uiSeedSize, true,
+        pSegments->forEachSeed( *pFmIndex, pQuery->length( ), uiMaxAmbiguity, uiSeedSize, true,
                                 [&]( Seed& s ) {
                                     s.uiDelta = (nucSeqIndex)pQuery->iId;
                                     if( s.start_ref( ) <= uiStart + uiSize && s.end_ref( ) >= uiStart )
