@@ -4,6 +4,10 @@ from .analyzeRuntimes import *
 
 def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_queue_2=None,
                  runtime_file=None):
+    #parameter_set.by_name("Number of Threads").set(1)
+    #parameter_set.by_name("Use all Processor Cores").set(False)
+    #assert parameter_set.get_num_threads() == 1
+
     combined_queue = file_queue
     if not file_queue_2 is None:
         combined_queue = libMA.combine_file_streams(file_queue, file_queue_2)

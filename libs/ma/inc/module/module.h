@@ -596,25 +596,23 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         TP_INPUT tInput;
         // this if condition has the sideffect of filling tInput
         if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
-        {
             /*
              * if one dependency returns a nullptr then stop executing
              * We have a volatile module that's dry.
              * In such cases we cannot compute the next element and therefore set
              * the content of this module to EoF as well.
              */
-            if( !IS_VOLATILE )
-                pContent = nullptr;
             return nullptr;
-        } // if
         decltype( pContent ) pRet = nullptr;
 
         auto timeStamp = std::chrono::system_clock::now( );
 
         // actually execute the module
         pRet = pPledger->executeTup( tInput );
-        if( !IS_VOLATILE )
-            pContent = pRet; // actually set the content of the pledge
+        // assignment needs to be seperated, so that simultaneous get() in volatile modules do not mess up
+        // the return type.
+        // @todo there should be no volatile modules -> loops should be done by containers...
+        pContent = pRet; // actually set the content of the pledge
 
         std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
         // increase the total executing time for this pledge
@@ -802,7 +800,7 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
   private:
     template <size_t IDX> struct TupleFiller
     {
-        bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn, TP_MODULE& xModule )
+        bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn )
         {
             if( vIn[ IDX ] == nullptr )
                 return false; // break the loop
@@ -832,9 +830,11 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
                 std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->size( ) ) );
 
         typename TP_MODULE::TP_TUPLE_ARGS tTyped;
-        if( TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn, xModule ) )
+        // iterate returns true if tTyped is filled correctly
+        if( TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn ) )
             return xModule.executeTup( tTyped );
         else
+            // tTyped could not be filled, since one module returned a nullptr
             return nullptr;
     } // method
 }; // class

@@ -18,11 +18,12 @@ using PairedReadTableType = SQLTable<DBCon, // DB connector type
                                      PriKeyDefaultType // second read (foreign key)
                                      >;
 
-const json jPairedReadTableDef = {{TABLE_NAME, "paired_read_table"},
-                                  {TABLE_COLUMNS,
-                                   {{{COLUMN_NAME, "first_read"}, {CONSTRAINTS, "REFERENCES read_table(id)"}},
-                                    {{COLUMN_NAME, "second_read"}, {CONSTRAINTS, "REFERENCES read_table(id)"}}}},
-                                  {PRIMARY_KEY, "first_read, second_read"}};
+const json jPairedReadTableDef = {
+    {TABLE_NAME, "paired_read_table"},
+    {TABLE_COLUMNS, {{{COLUMN_NAME, "first_read"}}, {{COLUMN_NAME, "second_read"}}}},
+    {PRIMARY_KEY, "first_read, second_read"},
+    {FOREIGN_KEY, {{COLUMN_NAME, "first_read"}, {REFERENCES, "read_table(id) ON DELETE CASCADE"}}},
+    {FOREIGN_KEY, {{COLUMN_NAME, "second_read"}, {REFERENCES, "read_table(id) ON DELETE CASCADE"}}}};
 
 /**
  * @brief contains the name of a sequencer run
@@ -46,6 +47,9 @@ template <typename DBCon> class PairedReadTable : public PairedReadTableType<DBC
 
     ~PairedReadTable( )
     {} // deconstructor
+
+    // increase the bulk inserter size on this table
+    using uiBulkInsertSize = std::integral_constant<size_t, 1000>;
 
     inline std::pair<int64_t, int64_t> insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pReadA,
                                                    std::shared_ptr<NucSeq> pReadB )

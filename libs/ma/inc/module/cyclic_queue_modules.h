@@ -32,7 +32,9 @@ class QueuePlacer : public Module<ContentType, false, ContentType, CyclicQueue<C
     std::shared_ptr<ContentType>
     execute( std::shared_ptr<ContentType> pContainer, std::shared_ptr<CyclicQueue<ContentType>> pQueue )
     {
-        if( !pContainer->eof( ) )
+        if( pContainer->eof( ) )
+            pQueue->informThatContainerIsFinished( );
+        else
             pQueue->push( pContainer );
         return pContainer;
     } // method
