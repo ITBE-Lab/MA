@@ -70,6 +70,13 @@ class FileStream : public Container
     {
         throw std::runtime_error( "This function should have been overridden" );
     }
+    virtual std::string status( )
+    {
+        return std::string( fileName( ) )
+            .append( ": " )
+            .append( std::to_string( 100.0 * tellg( ) / (double)fileSize( ) ) )
+            .append( "%" );
+    } // method
 }; // class
 
 class StdFileStream : public FileStream
@@ -124,7 +131,7 @@ class StdFileStream : public FileStream
 
     virtual size_t fileSize( )
     {
-        throw uiFileSize;
+        return uiFileSize;
     } // method
 
     /**
@@ -217,7 +224,7 @@ class StringStream : public FileStream
 
     virtual size_t fileSize( )
     {
-        throw uiFileSize;
+        return uiFileSize;
     } // method
 
     /**
@@ -274,14 +281,14 @@ class GzFileStream : public FileStream
     std::string sFileName;
 
   public:
-    GzFileStream( fs::path sFilename ) : sFileName( sFilename.string( ) )
+    GzFileStream( fs::path xFilename ) : sFileName( xFilename.stem( ).string( ) )
     {
         {
-            std::ifstream xFileEnd( sFilename, std::ifstream::ate | std::ifstream::binary );
+            std::ifstream xFileEnd( xFilename, std::ifstream::ate | std::ifstream::binary );
             uiFileSize = xFileEnd.tellg( );
         } // scope for xFileEnd
         // open the file in reading and binary mode
-        pFile = gzopen( sFilename.string( ).c_str( ), "rb" );
+        pFile = gzopen( xFilename.string( ).c_str( ), "rb" );
         if( pFile != nullptr )
             // fill internal buffer
             lastReadReturn = gzread( pFile, &cBuff, 1 );
@@ -317,7 +324,7 @@ class GzFileStream : public FileStream
 
     virtual size_t fileSize( )
     {
-        throw uiFileSize;
+        return uiFileSize;
     } // method
 
     char peek( )
@@ -374,9 +381,7 @@ class FileStreamFromPath : public FileStream
 #endif
             pStream = std::make_unique<StdFileStream>( sFileName );
         if( !pStream->is_open( ) )
-        {
             throw std::runtime_error( "Unable to open file" + sFileName.string( ) );
-        } // if
     } // contstructor
 
     FileStreamFromPath( std::string sFileName ) : FileStreamFromPath( fs::path( sFileName ) )
@@ -421,62 +426,6 @@ class FileStreamFromPath : public FileStream
         pStream->safeGetLine( t );
     }
 }; // class
-
-
-#if 0
-class Reader
-{
-  public:
-    virtual size_t getCurrPosInFile( ) = 0;
-    virtual size_t getFileSize( ) = 0;
-    virtual size_t getCurrFileIndex( ) = 0;
-    virtual size_t getNumFiles( ) const = 0;
-    size_t getCurrPosInFile( )
-    {
-        if( pFile->eof( ) )
-            return uiFileSize;
-        return pFile->tellg( );
-    } // function
-
-    size_t getFileSize( )
-    {
-        // prevent floating point exception here (this is only used for progress bar...)
-        if( uiFileSize == 0 )
-            return 1;
-        return uiFileSize;
-    } // function
-
-    size_t getCurrFileIndex( )
-    {
-        return 0;
-    } // method
-
-    size_t getNumFiles( ) const
-    {
-        return 1;
-    } // method
-
-    virtual const std::string status( )
-    {
-        return std::string( xFileName.string( ) )
-            .append( ":" )
-            .append( std::to_string( this->getCurrPosInFile( ) ) )
-            .append( "/" )
-            .append( std::to_string( this->getFileSize( ) ) );
-    } // method
-
-    virtual void reset( )
-    {
-        pFile->close( );
-#ifdef WITH_ZLIB
-        if( xFileName.extension( ).string( ) == ".gz" )
-            pFile = std::make_shared<GzFileStream>( xFileName );
-        else
-#endif
-            pFile = std::make_shared<StdFileStream>( xFileName );
-    } // method
-}; // class
-#endif
 
 /**
  * @brief Reads Queries from a file.
@@ -544,13 +493,13 @@ inline std::shared_ptr<PairedFileStreamQueue>
 combineFileStreams( std::shared_ptr<FileStreamQueue> pA, std::shared_ptr<FileStreamQueue> pB )
 {
     auto pRet = std::make_shared<PairedFileStreamQueue>( );
-    while( pA->uiUnfinishedContainers > 0 && pB->uiUnfinishedContainers > 0 )
+    while( pA->numUnifinished( ) > 0 && pB->numUnifinished( ) > 0 )
     {
         pRet->add( std::make_shared<PairedFileStream>( pA->pop( ), pB->pop( ) ) );
         pA->informThatContainerIsFinished( );
         pB->informThatContainerIsFinished( );
     } // while
-    if( pA->uiUnfinishedContainers != pB->uiUnfinishedContainers )
+    if( pA->numUnifinished( ) != pB->numUnifinished( ) )
         throw std::runtime_error( "@todo" );
     return pRet;
 } // function
@@ -610,6 +559,48 @@ class PairedFileReader : public Module<PairedReadsContainer, true, PairedFileStr
             pRet->back( )->vSwitchAllBasePairsToComplement( );
         } // if
         return pRet;
+    } // method
+}; // class
+
+/** @brief prints the progrss of a FileStreamQueue or PairedFileStreamQueue
+ * @details
+ * Prints out the files that are currently open and how far they are read
+ */
+template <typename FileStreamQueue> class ProgressPrinter : public Module<Container, false, Container, FileStreamQueue>
+{
+    std::mutex xMutex;
+    using duration = std::chrono::duration<double>;
+    using time_point = std::chrono::time_point<std::chrono::steady_clock, duration>;
+    time_point xLastTime;
+    double dPrintTime = 3;
+
+  public:
+    ProgressPrinter( const ParameterSetManager& rParameters ) : xLastTime( std::chrono::steady_clock::now( ) )
+    {} // constructor
+
+    std::shared_ptr<Container> execute( std::shared_ptr<Container> pContainer, std::shared_ptr<FileStreamQueue> pQueue )
+    {
+        std::unique_lock<std::mutex> xLock( xMutex );
+        auto xNow = std::chrono::steady_clock::now( );
+        duration xElapsedTime = xNow - xLastTime;
+        if( xElapsedTime.count( ) > dPrintTime )
+        {
+            xLastTime = xNow;
+            std::cout << "Open files:" << std::endl;
+            size_t uiRemaining = 0;
+            size_t uiDone = 0;
+            pQueue->iter( [&]( auto pStream ) {
+                if( pStream->tellg( ) <= 10 )
+                    uiRemaining++;
+                else if( pStream->tellg( ) == pStream->fileSize( ) )
+                    uiDone++;
+                else
+                    std::cout << pStream->status( ) << std::endl;
+            } // lambda
+            );
+            std::cout << "Remaining files: " << uiRemaining << " Finished files: " << uiDone << std::endl;
+        } // if
+        return pContainer;
     } // method
 }; // class
 

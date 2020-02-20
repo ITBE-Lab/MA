@@ -695,7 +695,7 @@ class MySQLConDB
         } // method
 
         /** @brief as bind, but using a runtime offset */
-        template <typename... ArgTypes> inline void bindRuntime( size_t OFFSET, ArgTypes&&... args )
+        template <typename... ArgTypes> inline void bindRuntime( int OFFSET, ArgTypes&&... args )
         {
             assert( ( sizeof...( args ) == 0 ) || ( ( iStmtParamCount % (int)( sizeof...( args ) ) == 0 ) &&
                                                     ( OFFSET * (int)( sizeof...( args ) ) < iStmtParamCount ) ) );

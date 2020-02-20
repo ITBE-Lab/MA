@@ -661,7 +661,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             for( size_t uiI = 0; uiI < N; uiI++ ) // the runtime bind loop
                 STD_APPLY( [&]( auto&... args ) //
-                           { pBulkInsertStmt->bindRuntime( uiI, args... ); },
+                           { pBulkInsertStmt->bindRuntime( (int)uiI, args... ); },
                            a[ uiI ] );
         } // meta
 

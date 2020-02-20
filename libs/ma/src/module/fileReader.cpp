@@ -212,13 +212,15 @@ void exportFileReader( py::module& rxPyModuleId )
     py::bind_vector_ext<PairedReadsContainer, Container, std::shared_ptr<PairedReadsContainer>>(
         rxPyModuleId, "ContainerVectorNucSeq", "docstr" );
 
-    exportCyclicQueue<FileStream>( rxPyModuleId, "File" );
-    exportCyclicQueue<PairedFileStream>( rxPyModuleId, "PairedFile" );
+    exportCyclicQueue<FileStream, NucSeq>( rxPyModuleId, "File", {"NucSeq"} );
+    exportCyclicQueue<PairedFileStream, PairedReadsContainer>( rxPyModuleId, "PairedFile", {"NucSeq"} );
 
     // export the FileReader class
     exportModule<FileReader>( rxPyModuleId, "FileReader" );
     // export the PairedFileReader class
     exportModule<PairedFileReader>( rxPyModuleId, "PairedFileReader" );
+    exportModule<ProgressPrinter<FileStreamQueue>>( rxPyModuleId, "ProgressPrinterFileStreamQueue" );
+    exportModule<ProgressPrinter<PairedFileStreamQueue>>( rxPyModuleId, "ProgressPrinterPairedFileStreamQueue" );
 
     rxPyModuleId.def( "combine_file_streams", &combineFileStreams );
 } // function

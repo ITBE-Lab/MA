@@ -9,6 +9,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     #assert parameter_set.get_num_threads() == 1
 
     combined_queue = file_queue
+    lock = Lock(parameter_set)
     if not file_queue_2 is None:
         combined_queue = libMA.combine_file_streams(file_queue, file_queue_2)
         module_get_first = GetFirstQuery(parameter_set)
@@ -16,17 +17,19 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
 
         #set up modules for paired read insert
         queue_picker = libMA.PairedFilePicker(parameter_set)
-        queue_placer = libMA.PairedFilePlacer(parameter_set)
+        queue_placer = libMA.PairedFileNucSeqPlacer(parameter_set)
         file_reader = PairedFileReader(parameter_set)
         get_read_inserter = GetPairedReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
         read_inserter_module = PairedReadInserterModule(parameter_set)
+        printer = libMA.ProgressPrinterPairedFileStreamQueue(parameter_set)
     else:
         #set up modules for single read insert
         queue_picker = libMA.FilePicker(parameter_set)
-        queue_placer = libMA.FilePlacer(parameter_set)
+        queue_placer = libMA.FileNucSeqPlacer(parameter_set)
         file_reader = FileReader(parameter_set)
         get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
         read_inserter_module = ReadInserterModule(parameter_set)
+        printer = libMA.ProgressPrinterFileStreamQueue(parameter_set)
 
     queue_pledge = Pledge()
     queue_pledge.set(combined_queue)
@@ -42,25 +45,33 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     for _ in range(parameter_set.get_num_threads()):
         picked_file = promise_me(queue_picker, queue_pledge)
         analyze.register("queue_picker", picked_file, True)
+        locked_file = promise_me(lock, picked_file)
+        analyze.register("lock", locked_file, True)
 
-        locked_file = promise_me(queue_placer, picked_file, queue_pledge)
+        query_ = promise_me(file_reader, locked_file)
+        analyze.register("file_reader", query_, True)
 
-        query = promise_me(file_reader, locked_file)
-        analyze.register("file_reader", query, True)
+        query = promise_me(queue_placer, query_, locked_file, queue_pledge)
+        analyze.register("queue_placer", query, True)
 
         read_inserter = promise_me(get_read_inserter, pool_pledge)
+        analyze.register("get_read_inserter", read_inserter, True)
         inserter_vec.append(read_inserter)
 
         if not file_queue_2 is None:
             query_primary = promise_me(module_get_first, query)
+            analyze.register("get_first", query_primary, True)
             query_mate = promise_me(module_get_second, query)
+            analyze.register("get_second", query_mate, True)
 
             empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query_primary, query_mate)
         else:
             empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query)
         analyze.register("read_inserter", empty, True)
 
-        unlock = promise_me(UnLock(parameter_set, locked_file), empty)
+        empty_2 = promise_me(printer, empty, queue_pledge)
+
+        unlock = promise_me(UnLock(parameter_set, locked_file), empty_2)
         res.append(unlock)
 
     # run the graph
