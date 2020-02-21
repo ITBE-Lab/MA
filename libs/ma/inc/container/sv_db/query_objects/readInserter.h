@@ -23,9 +23,11 @@ template <typename DBCon> class ReadInserterContainer : public BulkInserterConta
     using ParentType = BulkInserterContainer<DBCon, ReadTable, NucSeq>;
     using ParentType::BulkInserterContainer;
 
-    virtual void EXPORTED insert( std::shared_ptr<NucSeq> pRead )
+  protected:
+    virtual size_t EXPORTED insert_override( std::shared_ptr<NucSeq> pRead )
     {
         ParentType::pInserter->insert( ParentType::iId, pRead->sName, makeSharedCompNucSeq( *pRead ) );
+        return 1;
     } // method
 }; // class
 
@@ -37,7 +39,6 @@ template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserter
 /**
  * @brief inserts reads into a DB
  * @details
- * @todo ask arne if we can somehow use a bulk inserter here
  */
 template <typename DBCon>
 class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
@@ -48,24 +49,31 @@ class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTabl
     const static size_t BUFFER_SIZE = 500;
     std::shared_ptr<BulkInserterType<PairedReadTable<DBCon>>> pPairedReadInserter;
 
-    PairedReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        : ParentType::BulkInserterContainer( pPool, iId ),
+    PairedReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool,
+                                 int64_t iId,
+                                 std::shared_ptr<SharedInserterProfiler>
+                                     pSharedProfiler )
+        : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler ),
           pPairedReadInserter( pPool->xPool.run(
               ParentType::iConnectionId,
               []( auto pConnection ) //
               {
-                  return std::make_shared<BulkInserterType<PairedReadTable<DBCon>>>( PairedReadTable<DBCon>(
-                      pConnection, nullptr /* @todo nullptr is bad practice but save in this context */ ) );
+                  return std::make_shared<BulkInserterType<PairedReadTable<DBCon>>>(
+                      PairedReadTable<DBCon>( pConnection,
+                                              /* nullptr is save in this context since PairedReadTable only uses it's
+                                                 second constructor argument if insert is called. */
+                                              nullptr ) );
               } ) )
     {} // constructor
-
-    virtual void EXPORTED insert( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+  protected:
+    virtual size_t EXPORTED insert_override( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
         auto iReadIdA =
             ParentType::pInserter->insert( ParentType::iId, pReadA->sName, makeSharedCompNucSeq( *pReadA ) );
         auto iReadIdB =
             ParentType::pInserter->insert( ParentType::iId, pReadB->sName, makeSharedCompNucSeq( *pReadB ) );
         pPairedReadInserter->insert( iReadIdA, iReadIdB );
+        return 3;
     } // method
 }; // class
 

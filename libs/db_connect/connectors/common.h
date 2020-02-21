@@ -107,7 +107,6 @@ template <typename F> inline bool doNoExcept( F&& func, std::string sInfo = "" )
     } // catch
 } // method
 
-// @todo discuss with arne
 using PriKeyDefaultType = uint64_t; // Default type of a primary key column
 
 /** @brief Class definition for single master sync object managing concurrent access and primary key counters. */
@@ -509,10 +508,6 @@ const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
 
 // generated columns; see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
-// @todo talk with arne about design here
-// part of ColTypes?:
-// yes: problem with inserters
-// no: TYPE keyword required... (currently this is implemented)
 const std::string GENERATED_COLUMNS = "GENERATED_COLUMNS";
 // the following keywords do only have an effect on generated columns
 const std::string TYPE = "TYPE";
@@ -605,6 +600,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // inner class SQL Index
 
   public:
+
+    using uiBulkInsertSize = std::integral_constant<size_t, 500>;
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
      */
@@ -679,8 +676,31 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             ( doSingleBind<Idx>( a[ Idx ] ), ... );
         } // meta
 
-        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row) */
-        template <typename T, std::size_t N> void forAllDoBind( const std::array<T, N>& a )
+#define MAX_COMPILETIME_BIND_N 1200
+        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
+         * @details
+         * This function is only used if the template parameter is N > MAX_COMPILETIME_BIND_N.
+         * In that case we bind the parameters via a runtime loop.
+         */
+        template <typename T, std::size_t N>
+        typename std::enable_if</* condition -> */ ( N > MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
+        forAllDoBind( const std::array<T, N>& a )
+        {
+            for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
+                STD_APPLY( [&]( auto&... args ) //
+                           { pBulkInsertStmt->bindRuntime( (int)uiOffset, args... ); },
+                           a[ uiOffset ] );
+        } // meta
+
+        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
+         * @details
+         * This function is only used if the template parameter is N <= MAX_COMPILETIME_BIND_N.
+         * In that case we bind the parameters via a compiletime loop.
+         * @note If this would be compiled with N > 1000 GCC would compile forever and MSVC would throw an exception.
+         */
+        template <typename T, std::size_t N>
+        typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
+        forAllDoBind( const std::array<T, N>& a )
         {
             forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
         } // meta
@@ -1175,7 +1195,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     inline std::string getValuesStmt( ) const
     {
         std::string sStmtText( "(" );
-        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+        getValueStmtImpl( sStmtText, std::index_sequence_for<ColTypes...>{} );
 
         // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated explicitly,
         // the only permitted value is DEFAULT. this assumes that the create table statement always appends all
@@ -1554,7 +1574,7 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
      *        auto xBulkInserter = table.template getBulkInserter< size >();
      */
     template <size_t BUF_SIZE>
-    std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( bool bReserveBatchOfPriKeys = false )
+    std::shared_ptr<SQLBulkInserterType<BUF_SIZE>> getBulkInserter( bool bReserveBatchOfPriKeys = true )
     {
         return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this, pPriKeyCntr, bReserveBatchOfPriKeys );
     } // method
@@ -1688,7 +1708,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( const json& jDBConData = json{ } )
+    SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
@@ -1711,7 +1731,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     ~SQLDB( )
     {
         // Throwing an exception in a destructor results in undefined behavior.
-        doNoExcept( [ this ] {
+        doNoExcept( [this] {
             // Unregister the schema in the global visor
             auto uiRemainCons = xSQLDBGlobalSync.unregisterSchema( sSchemaName );
 
@@ -1719,7 +1739,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             // it is my job to do it now ...
             if( ( uiRemainCons == 0 ) && this->bDropOnClosure )
             {
-                xSQLDBGlobalSync.doSynchronized( [ this ] {
+                xSQLDBGlobalSync.doSynchronized( [this] {
                     // DEBUG: std::cout << "Do schema drop synchronized in Destructor" << std::endl;
                     this->dropSchema( this->sSchemaName );
                 } ); // doSynchronized

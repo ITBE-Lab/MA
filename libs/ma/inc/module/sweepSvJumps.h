@@ -35,6 +35,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
     int64_t iRefSize;
     int64_t iSectionSize;
     int64_t iCurrStart;
+    std::mutex xMutex;
     /**
      * @brief
      * @details
@@ -51,6 +52,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
     virtual std::shared_ptr<GenomeSection> EXPORTED execute( )
     {
+        std::unique_lock<std::mutex> xLock(xMutex);
         // setFinished( );
         // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
@@ -63,13 +65,8 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
         iCurrStart++;
         if( ( iCurrStart / 2 ) * iSectionSize >= iRefSize )
-            setFinished( );
+            return nullptr;
         return pRet;
-    } // method
-
-    virtual bool requiresLock( ) const
-    {
-        return true;
     } // method
 }; // class
 
@@ -82,7 +79,6 @@ class CompleteBipartiteSubgraphSweep
     : public Module<CompleteBipartiteSubgraphClusterVector, false, PoolContainer<DBCon>, GenomeSection, Pack>
 {
   public:
-    const ParameterSetManager& rParameters;
     int64_t iSvCallerRunId;
     int64_t iMaxFuzziness;
     size_t uiSqueezeFactor;
@@ -99,12 +95,11 @@ class CompleteBipartiteSubgraphSweep
      * @details
      */
     CompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters, int64_t iSvCallerRunId )
-        : rParameters( rParameters ), // @todo rParameters should never be saved within a object
-          iSvCallerRunId( iSvCallerRunId ),
+        : iSvCallerRunId( iSvCallerRunId ),
           // @todo this does not consider tail edges (those should be limited in size and then here we should use the
           // max of both limits)
           // also this should be the maximal cluster width not the maximal CBSG width
-          iMaxFuzziness( (int64_t)rParameters.getSelected( )->xJumpH->get( ) * 10 ),
+          iMaxFuzziness( (int64_t)pGlobalParams->xJumpH->get( ) * 10 ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
           uiCenterStripDown( 1000 )
@@ -122,7 +117,7 @@ class CompleteBipartiteSubgraphSweep
                 auto xInitStart = std::chrono::high_resolution_clock::now( );
                 // std::cout << "SortedSvJumpFromSql (" << pSection->iStart << ")" << std::endl;
                 SortedSvJumpFromSql<DBCon> xEdges(
-                    rParameters, pConnection, iSvCallerRunId,
+                    pConnection, iSvCallerRunId,
                     // make sure we overlap the start of the next interval, so that clusters that span over two
                     // intervals are being collected. -> for this we just keep going after the end of the interval
                     pSection->start( ) > iMaxFuzziness ? pSection->start( ) - iMaxFuzziness : 0,
@@ -493,10 +488,12 @@ class AbstractFilter
     ~AbstractFilter( )
     {
         if( uiFilterTotal > 0 )
-            std::cout << "~" << sName << ": filter kept and eliminated " << uiFilterKept << " and "
-                      << uiFilterTotal - uiFilterKept << " elements respectiveley.\n\tThat's "
-                      << ( ( 1000 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% and "
-                      << 100.0 - ( ( 1000 * uiFilterKept ) / uiFilterTotal ) / 10.0 << "% respectiveley." << std::endl;
+            std::cout << std::fixed << std::setprecision( 2 ) << "~" << sName << ": filter kept and eliminated "
+                      << uiFilterKept << " and " << uiFilterTotal - uiFilterKept
+                      << " elements respectiveley.\n\tThat's " << 100.0 * uiFilterKept / (double)uiFilterTotal
+                      << "% and " << 100.0 - 100.0 * uiFilterKept / (double)uiFilterTotal << "% respectiveley."
+                      << std::endl
+                      << std::defaultfloat;
     } // deconstructor
 #endif
 }; // class

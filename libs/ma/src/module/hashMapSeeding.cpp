@@ -2,13 +2,10 @@
  * @file hashMapSeeding.cpp
  * @author Markus Schmidt
  */
-#include "util/default_parameters.h"
 #include "module/hashMapSeeding.h"
 #include <limits>
 
 using namespace libMA;
-
-using namespace libMA::defaults;
 
 
 std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2,

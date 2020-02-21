@@ -1,85 +1,99 @@
 from .aligner import *
 from .analyzeRuntimes import *
 
-def to_file_path_vec(string_vec):
-    return libMA.filePathVector([libMA.path(x) for x in string_vec])
 
-def insert_paired_reads(parameter_set, dataset_name, sequencer_name, filename_vec1, filename_vec2, runtime_file=None):
-    file_reader = PairedFileReader(parameter_set, to_file_path_vec(filename_vec1), to_file_path_vec(filename_vec2))
-    get_read_inserter = GetPairedReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
-    read_inserter_module = PairedReadInserterModule(parameter_set)
-    module_lock = Lock(parameter_set)
-    module_get_first = GetFirstQuery(parameter_set)
-    module_get_second = GetSecondQuery(parameter_set)
+def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_queue_2=None,
+                 runtime_file=None):
+    #parameter_set.by_name("Number of Threads").set(16)
+    #parameter_set.by_name("Use all Processor Cores").set(False)
+    #assert parameter_set.get_num_threads() == 16
 
-    pool_pledge = Pledge()
-    pool_pledge.set(PoolContainer(parameter_set.get_num_threads() + 1, dataset_name))
+    combined_queue = file_queue
+    lock = Lock(parameter_set)
+    if not file_queue_2 is None:
+        combined_queue = libMA.combine_file_streams(file_queue, file_queue_2)
+        module_get_first = GetFirstQuery(parameter_set)
+        module_get_second = GetSecondQuery(parameter_set)
 
-    analyze = AnalyzeRuntimes()
+        #set up modules for paired read insert
+        queue_picker = libMA.PairedFilePicker(parameter_set)
+        queue_placer = libMA.PairedFileNucSeqPlacer(parameter_set)
+        file_reader = PairedFileReader(parameter_set)
+        get_read_inserter = GetPairedReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
+        read_inserter_module = PairedReadInserterModule(parameter_set)
+        printer = libMA.ProgressPrinterPairedFileStreamQueue(parameter_set)
+    else:
+        #set up modules for single read insert
+        queue_picker = libMA.FilePicker(parameter_set)
+        queue_placer = libMA.FileNucSeqPlacer(parameter_set)
+        file_reader = FileReader(parameter_set)
+        get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
+        read_inserter_module = ReadInserterModule(parameter_set)
+        printer = libMA.ProgressPrinterFileStreamQueue(parameter_set)
 
-    res = VectorPledge()
-    inserter_vec = []
-    queries_pledge = promise_me(file_reader)
-    analyze.register("PairedFileReader", queries_pledge, False)
-    for _ in range(parameter_set.get_num_threads()):
-        locked_query_pair = promise_me(module_lock, queries_pledge)
-        locked_query_primary = promise_me(module_get_first, locked_query_pair)
-        locked_query_mate = promise_me(module_get_second, locked_query_pair)
-        read_inserter = promise_me(get_read_inserter, pool_pledge)
-        inserter_vec.append(read_inserter)
-        # insert the queries
-        empty = promise_me(read_inserter_module, read_inserter, pool_pledge, locked_query_primary, locked_query_mate)
-        analyze.register("PairedReadInserterModule", empty, True)
-        # unlock the locked query
-        unlock = promise_me(UnLock(parameter_set, locked_query_pair), empty)
-        res.append(unlock)
-
-    res.simultaneous_get(parameter_set.get_num_threads())
-
-    for inserter in inserter_vec:
-        inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
-
-    analyze.analyze(runtime_file)
-
-    return get_read_inserter.cpp_module.id
-
-def insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name, queries_pledge, runtime_file=None):
-    get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
-    read_inserter_module = ReadInserterModule(parameter_set)
-    module_lock = Lock(parameter_set)
+    queue_pledge = Pledge()
+    queue_pledge.set(combined_queue)
 
     pool_pledge = Pledge()
     pool_pledge.set(PoolContainer(parameter_set.get_num_threads() + 1, dataset_name))
 
     analyze = AnalyzeRuntimes()
 
+    # put together the graph
     res = VectorPledge()
     inserter_vec = []
-    analyze.register("GetQueries", queries_pledge, False)
     for _ in range(parameter_set.get_num_threads()):
-        locked_query = promise_me(module_lock, queries_pledge)
+        picked_file = promise_me(queue_picker, queue_pledge)
+        analyze.register("queue_picker", picked_file, True)
+        locked_file = promise_me(lock, picked_file)
+        analyze.register("lock", locked_file, True)
+
+        query_ = promise_me(file_reader, locked_file)
+        analyze.register("file_reader", query_, True)
+
+        query = promise_me(queue_placer, query_, locked_file, queue_pledge)
+        analyze.register("queue_placer", query, True)
+
         read_inserter = promise_me(get_read_inserter, pool_pledge)
+        analyze.register("get_read_inserter", read_inserter, True)
         inserter_vec.append(read_inserter)
-        # insert the queries
-        empty = promise_me(read_inserter_module, read_inserter, pool_pledge, locked_query)
-        analyze.register("ReadInserterModule", empty, True)
-        unlock = promise_me(UnLock(parameter_set, locked_query), empty)
+
+        if not file_queue_2 is None:
+            query_primary = promise_me(module_get_first, query)
+            analyze.register("get_first", query_primary, True)
+            query_mate = promise_me(module_get_second, query)
+            analyze.register("get_second", query_mate, True)
+
+            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query_primary, query_mate)
+        else:
+            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query)
+        analyze.register("read_inserter", empty, True)
+
+        empty_2 = promise_me(printer, empty, queue_pledge)
+        analyze.register("printer", empty_2, True)
+
+        unlock = promise_me(UnLock(parameter_set, locked_file), empty_2)
         res.append(unlock)
 
+    # run the graph
     res.simultaneous_get(parameter_set.get_num_threads())
 
     for inserter in inserter_vec:
-        inserter.get().close() # @todo for some reason the destructor does not trigger automatically :(
+        inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
     analyze.analyze(runtime_file)
 
     return get_read_inserter.cpp_module.id
 
-def insert_reads(parameter_set, dataset_name, sequencer_name, filename_vec1, runtime_file=None):
-    file_reader = FileReader(parameter_set, to_file_path_vec(filename_vec1))
-    return insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name, promise_me(file_reader), runtime_file)
+def insert_reads_path_string_vec(parameter_set, dataset_name, sequencer_name, string_vec, string_vec_2=None,
+                                 runtime_file=None):
+    def to_file_queue(string_vec):
+        if string_vec is None:
+            return None
+        file_queue = libMA.FileQueue()
+        for string in string_vec:
+            file_queue.add(libMA.FileStreamFromPath(string))
+        return file_queue
 
-def insert_reads_vec(parameter_set, dataset_name, sequencer_name, query_vec, runtime_file=None):
-    splitter = StaticNucSeqSplitter(parameter_set, query_vec)
-    return insert_reads_from_pledge(parameter_set, dataset_name, sequencer_name,
-                                    promise_me(splitter), runtime_file)
+    return insert_reads(parameter_set, dataset_name, sequencer_name, to_file_queue(string_vec),
+                        to_file_queue(string_vec_2), runtime_file)

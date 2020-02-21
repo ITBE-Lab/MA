@@ -510,7 +510,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return pOverlapCache->numInvalidCalls( iCallerRunIdA, dMinScore, iAllowedDist );
     } // method
 
-    using NextCallType = ExplainedSQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
+    using NextCallType = SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
 
     /** @brief returns call id, jump start pos, next context, next from position, jump end position
      *  @details helper function for reconstructSequencedGenome */
@@ -524,7 +524,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> xRet;
         std::get<0>( xRet ) = -1;
         std::get<2>( xRet ) = bForwardContext; // does nothing...
-        if( bForwardContext && xNextCallForwardContext.execAndFetch( iCallerRun, uiFrom ) )
+        if( bForwardContext && xNextCallForwardContext.execAndFetch( uiFrom ) )
         {
             auto xQ = xNextCallForwardContext.get( );
             std::get<0>( xRet ) = std::get<0>( xQ );
@@ -533,7 +533,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             std::get<3>( xRet ) = std::get<4>( xQ );
             std::get<4>( xRet ) = std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
         } // if
-        else if( !bForwardContext && xNextCallBackwardContext.execAndFetch( iCallerRun, uiFrom ) )
+        else if( !bForwardContext && xNextCallBackwardContext.execAndFetch( uiFrom ) )
         {
             auto xQ = xNextCallBackwardContext.get( );
             std::get<0>( xRet ) = std::get<0>( xQ );
@@ -545,90 +545,97 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xRet;
     } // method
 
+    /** @brief reconstruct a sequenced genome from a reference and the calls of the run with id iCallerRun.
+     *  @details
+     *  @todo at the moment this does not deal with jumped over sequences
+     *  @todo at the moment this does not check the regex (?)
+     *  Creates a reconstruction_table that is filled with all unused calls from iCallerRun and then deletes the calls
+     *  one by one until the sequenced genome is reconstructed
+     */
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, int64_t iCallerRun )
     {
-        // SQL for checking how much work remains:
-        // SELECT COUNT(*) FROM minimal2.sv_call_table WHERE id NOT IN (SELECT call_id FROM
-        // minimal2.reconstruction_table);
         auto pRet = std::make_shared<Pack>( );
+        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
+        SQLTable<DBCon, int64_t, uint32_t, uint32_t> xReconstructionTable(
+            this->pConnection,
+            json{{TABLE_NAME, "reconstruction_table"},
+                 {CPP_EXTRA, "DROP ON DESTRUCTION"},
+                 {TABLE_COLUMNS,
+                  {
+                      {{COLUMN_NAME, "call_id"},
+                       {REFERENCES, "sv_call_table(id)"},
+                       {CONSTRAINTS, "NOT NULL PRIMARY KEY"}},
+                      {{COLUMN_NAME, "from_pos"}},
+                      {{COLUMN_NAME, "to_pos"}}
+                      //
+                  }}} );
+
+        metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) {
+            this->pConnection->execSQL( "INSERT INTO reconstruction_table (call_id, from_pos, to_pos) "
+                                        "SELECT id, from_pos, to_pos "
+                                        "FROM sv_call_table "
+                                        "WHERE sv_caller_run_id = ?",
+                                        iCallerRun );
+        } );
+
+        metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
+            xReconstructionTable.addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "from_pos"}} );
+            xReconstructionTable.addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "to_pos"}} );
+        } );
+
+        NextCallType xNextCallForwardContext(
+            this->pConnection,
+            "SELECT id, switch_strand, sv_call_table.to_pos, to_size, inserted_sequence, "
+            "       sv_call_table.from_pos + from_size "
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "WHERE reconstruction_table.from_pos >= ? "
+            "ORDER BY reconstruction_table.from_pos ASC "
+            "LIMIT 1 " );
+        NextCallType xNextCallBackwardContext(
+            this->pConnection,
+            "SELECT id, switch_strand, sv_call_table.from_pos, from_size, "
+            "       inserted_sequence, sv_call_table.to_pos "
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "WHERE reconstruction_table.to_pos <= ? "
+            "ORDER BY reconstruction_table.to_pos DESC "
+            "LIMIT 1 " );
+
+#if DEBUG_LEVEL > 0
+        std::set<int64_t> xVisitedCalls;
+#endif
+
+        NucSeq xCurrChrom;
+        uint32_t uiCurrPos = 0;
+        uint32_t uiContigCnt = 1;
+        bool bForwContext = true;
+        while( true )
         {
-            // auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-            SQLTable<DBCon, int64_t> xReconstructionTable( this->pConnection,
-                                                           json{{TABLE_NAME, "reconstruction_table"},
-                                                                {CPP_EXTRA, "DROP ON DESTRUCTION"},
-                                                                {TABLE_COLUMNS,
-                                                                 {{{COLUMN_NAME, "call_id"},
-                                                                   {REFERENCES, "sv_call_table(id)"},
-                                                                   {CONSTRAINTS, "NOT NULL PRIMARY KEY"}}}}} );
-
-            //this->addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "sv_caller_run_id, from_pos"}} );
-
-            //this->addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "sv_caller_run_id, to_pos"}} );
-
-            //this->pConnection->execSQL( "ANALYZE TABLE sv_call_table" );
-            //this->pConnection->execSQL( "ANALYZE TABLE reconstruction_table" );
-
-            NextCallType xNextCallForwardContext(
-                this->pConnection,
-                "SELECT sv_call_table.id, switch_strand, to_pos, to_size, inserted_sequence, from_pos + from_size "
-                "FROM sv_call_table "
-                "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
-                "AND sv_call_table.from_pos >= ? " // dim 2
-                "AND id NOT IN ( "
-                "  SELECT call_id "
-                "  FROM reconstruction_table "
-                ") "
-                "ORDER BY sv_call_table.from_pos ASC "
-                "LIMIT 1 " );
-            NextCallType xNextCallBackwardContext( this->pConnection,
-                                                   "SELECT sv_call_table.id, switch_strand, from_pos, from_size, "
-                                                   "       inserted_sequence, to_pos "
-                                                   "FROM sv_call_table "
-                                                   "WHERE sv_call_table.sv_caller_run_id = ? " // dim 1
-                                                   "AND sv_call_table.to_pos <= ? " // dim 2
-                                                   "AND id NOT IN ( "
-                                                   "  SELECT call_id "
-                                                   "  FROM reconstruction_table "
-                                                   ") "
-                                                   "ORDER BY sv_call_table.to_pos DESC "
-                                                   "LIMIT 1 " );
-
-            // @todo at the moment this does not deal with jumped over sequences
-            // @todo at the moment this does not check the regex (?)
-#if DEBUG_LEVEL > 0
-            std::set<int64_t> xVisitedCalls;
-#endif
-
-            NucSeq xCurrChrom;
-            uint32_t uiCurrPos = 0;
-            uint32_t uiContigCnt = 1;
-            bool bForwContext = true;
-            while( true )
+            // get the next call
+            std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> tNextCall;
+            uint32_t uiIntermediatePos = uiCurrPos;
+            do
             {
-                // get the next call
-                std::tuple<int64_t, uint32_t, bool, NucSeqSql, uint32_t> tNextCall;
-                uint32_t uiIntermediatePos = uiCurrPos;
-                do
-                {
-                    // search for the next call that we have not visited yet...
-                    metaMeasureAndLogDuration<false>( "SQL", [&]( ) {
-                        tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext,
-                                                       xNextCallForwardContext, xNextCallBackwardContext );
-                    } );
+                // search for the next call that we have not visited yet...
+                metaMeasureAndLogDuration<false>( "SQL", [&]( ) {
+                    tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext, xNextCallForwardContext,
+                                                   xNextCallBackwardContext );
+                } );
 #if DEBUG_LEVEL > 0
-                    if( std::get<0>( tNextCall ) == -1 || // there is no next call
-                                                          // we have not visited the next call
-                        xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
+                if( std::get<0>( tNextCall ) == -1 || // there is no next call
+                                                      // we have not visited the next call
+                    xVisitedCalls.find( std::get<0>( tNextCall ) ) == xVisitedCalls.end( ) )
 #endif
-                        break;
-                    // we have visited the next call and need to search again
-                    std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl;
-                    assert( false );
+                    break;
+                // we have visited the next call and need to search again
+                std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl;
+                assert( false );
 
-                    // this is extremely inefficient (if we have cylces in our graph which we do not at the
-                    // moment)
-                    uiIntermediatePos += bForwContext ? 1 : -1;
-                } while( true );
+                // this is extremely inefficient (if we have cylces in our graph which we do not at the
+                // moment)
+                uiIntermediatePos += bForwContext ? 1 : -1;
+            } while( true );
 #if 0
                 std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
                           << " to: " << std::get<4>( tNextCall )
@@ -640,84 +647,82 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                            : std::get<3>( tNextCall ).pNucSeq->toString( ) ) )
                           << std::endl;
 #endif
-                if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
-                {
-                    metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
-                        // for jumps to the end of the genome we do not want to extract the last contig...
-                        // this check becomes necessary since the with the current index system,
-                        // we would either extract the last nucleotide of the genome twice or extract the
-                        // reverse complement of the last contig...
-                        if( pRef->uiUnpackedSizeForwardStrand != uiCurrPos )
-                            pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+            if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
+            {
+                metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
+                    // for jumps to the end of the genome we do not want to extract the last contig...
+                    // this check becomes necessary since the with the current index system,
+                    // we would either extract the last nucleotide of the genome twice or extract the
+                    // reverse complement of the last contig...
+                    if( pRef->uiUnpackedSizeForwardStrand != uiCurrPos )
+                        pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
 
-                        pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
-                                               "no_description_given", xCurrChrom );
-                        xCurrChrom.vClear( );
+                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
+                                           xCurrChrom );
+                    xCurrChrom.vClear( );
 
-                        // part of the if above...
-                        if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
-                            return;
+                    // part of the if above...
+                    if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
+                        return;
 
-                        /*
-                         * for this we make use of the id system of contigs.
-                         * the n forwards contigs have the ids: x*2 | 0 <= x <= n
-                         * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
-                         */
-                        for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
-                             uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
-                             uiI += ( bForwContext ? 2 : -2 ) )
-                        {
-                            pRef->vExtractContig( uiI, xCurrChrom, true );
-                            pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
-                                                   "no_description_given", xCurrChrom );
-                            xCurrChrom.vClear( );
-                        } // for
-                    } );
-                    break;
-                } // if
-
-                // we reach this point if there are more calls, so tNextCall is set properly here
-                metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
-                    // if the next call is in a different chromosome
-                    while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                    /*
+                     * for this we make use of the id system of contigs.
+                     * the n forwards contigs have the ids: x*2 | 0 <= x <= n
+                     * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
+                     */
+                    for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
+                         uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
+                         uiI += ( bForwContext ? 2 : -2 ) )
                     {
-                        // extract the remaining chromosome into xCurrChrom
-                        uiCurrPos = (uint32_t)pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
-                        // append xCurrChrom to the pack
+                        pRef->vExtractContig( uiI, xCurrChrom, true );
                         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ),
                                                "no_description_given", xCurrChrom );
-                        // clear xCurrChrom
                         xCurrChrom.vClear( );
-                        // if the next call is several chromosomes over this loops keeps going
-                    } // while
-                    // the call is in the current chromosome / we have appended all skipped chromosomes
-                    if( bForwContext )
-                        pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ) + 1, xCurrChrom, true );
-                    else
-                        pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
-                                                   pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
-                                                   xCurrChrom,
-                                                   true );
-                    // append the skipped over sequence
-                    if( std::get<3>( tNextCall ).pNucSeq != nullptr && std::get<3>( tNextCall ).pNucSeq->uiSize > 0 )
-                        xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
-                                            std::get<3>( tNextCall ).pNucSeq->length( ) );
-
-                    metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
-                        // remember that we used this call
-                        xReconstructionTable.insert( std::get<0>( tNextCall ) );
-#if DEBUG_LEVEL > 0
-                        xVisitedCalls.insert( std::get<0>( tNextCall ) );
-#endif
-                        bForwContext = std::get<2>( tNextCall );
-                        uiCurrPos = std::get<4>( tNextCall );
-                    } );
+                    } // for
                 } );
-            } // while
-        } // scope xReconstructionTable
+                break;
+            } // if
 
-        //this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_1 ON sv_call_table" );
-        //this->pConnection->execSQL( "DROP INDEX tmp_reconstruct_seq_index_2 ON sv_call_table" );
+            // we reach this point if there are more calls, so tNextCall is set properly here
+            metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
+                // if the next call is in a different chromosome
+                while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                {
+                    // extract the remaining chromosome into xCurrChrom
+                    uiCurrPos = (uint32_t)pRef->vExtractContext( uiCurrPos, xCurrChrom, true, bForwContext );
+                    // append xCurrChrom to the pack
+                    pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
+                                           xCurrChrom );
+                    // clear xCurrChrom
+                    xCurrChrom.vClear( );
+                    // if the next call is several chromosomes over this loops keeps going
+                } // while
+                // the call is in the current chromosome / we have appended all skipped chromosomes
+                if( bForwContext )
+                    pRef->vExtractSubsectionN( uiCurrPos, std::get<1>( tNextCall ) + 1, xCurrChrom, true );
+                else
+                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( uiCurrPos ),
+                                               pRef->uiPositionToReverseStrand( std::get<1>( tNextCall ) ) + 1, //
+                                               xCurrChrom,
+                                               true );
+                // append the skipped over sequence
+                if( std::get<3>( tNextCall ).pNucSeq != nullptr && std::get<3>( tNextCall ).pNucSeq->uiSize > 0 )
+                    xCurrChrom.vAppend( std::get<3>( tNextCall ).pNucSeq->pxSequenceRef,
+                                        std::get<3>( tNextCall ).pNucSeq->length( ) );
+
+                metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
+                    // remember that we used this call
+                    this->pConnection->execSQL( "DELETE FROM reconstruction_table "
+                                                "WHERE call_id = ? ",
+                                                std::get<0>( tNextCall ) );
+#if DEBUG_LEVEL > 0
+                    xVisitedCalls.insert( std::get<0>( tNextCall ) );
+#endif
+                    bForwContext = std::get<2>( tNextCall );
+                    uiCurrPos = std::get<4>( tNextCall );
+                } );
+            } );
+        } // while
 
         return pRet;
     } // method

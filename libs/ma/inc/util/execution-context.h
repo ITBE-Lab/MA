@@ -9,7 +9,7 @@
 
 using namespace libMA;
 
-using nlohmann::json; // might be better: namespace json = nlohmann; 
+using nlohmann::json; // might be better: namespace json = nlohmann;
 
 /* Manages Pack and FMD-Index of genomes */
 class GenomeManager
@@ -258,12 +258,12 @@ class OutputManager
     /* Creates full path for SAM output */
     std::string SAMFullFileName( void )
     {
-        if( this->pxParameterSetManager->pGlobalParameterSet->xSAMOutputTypeChoice->uiSelection == 2 )
-            return this->pxParameterSetManager->pGlobalParameterSet->xSAMOutputFileName->get().string();
+        if( this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputTypeChoice->uiSelection == 2 )
+            return this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputFileName->get( ).string( );
         // SAM filename generation according to parameter settings.
-        auto sFullFileName = ( this->pxParameterSetManager->pGlobalParameterSet->xSAMOutputTypeChoice->uiSelection == 0
+        auto sFullFileName = ( this->pxParameterSetManager->pGeneralParameterSet->xSAMOutputTypeChoice->uiSelection == 0
                                    ? pxReadsManager->getReadsFolderPath( )
-                                   : pxParameterSetManager->pGlobalParameterSet->xSAMOutputPath->get( ) );
+                                   : pxParameterSetManager->pGeneralParameterSet->xSAMOutputPath->get( ) );
         ( ( ( sFullFileName /= pxReadsManager->getReadsFileNameStem( ) ) += '-' ) += this->dateTimeString( ) ) +=
             ".sam";
         return sFullFileName.string( );
@@ -293,7 +293,8 @@ class ExecutionContext
              std::function<void( const std::string& )> fCheckCallBack =
                  []( const std::string& rS ) { std::cout << rS << std::endl; } )
     {
-        size_t uiConcurency = xParameterSetManager.pGlobalParameterSet->getNumThreads();
+#if 0
+        size_t uiConcurency = xParameterSetManager.pGeneralParameterSet->getNumThreads();
 
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
@@ -390,14 +391,12 @@ class ExecutionContext
                                      } // lambda
         ); // function call
 
-        // Destroy computational graph; release memory
-        // @Markus: Is this really necessary?
-        // aGraphSinks.clear( );
+#endif
     } // method
 
-    void doAlignCallbackLess()
+    void doAlignCallbackLess( )
     {
-        this->doAlign();
+        this->doAlign( );
     } // method
 }; // class
 

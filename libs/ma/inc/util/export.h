@@ -164,7 +164,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/stripOfConsideration.h"
 #include "module/svJumpsFromSeeds.h"
 #include "module/sweepSvJumps.h"
-#include "util/default_parameters.h"
 
 namespace libMA
 {
@@ -183,16 +182,17 @@ std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( const Paramete
                                                                       pWriter,
                                                                   unsigned int uiThreads );
 
-std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraphPaired( const ParameterSetManager& rParameters,
-                                                                        std::shared_ptr<Pledge<Pack>>
-                                                                            pPack,
-                                                                        std::shared_ptr<Pledge<FMIndex>>
-                                                                            pFMDIndex,
-                                                                        std::shared_ptr<Pledge<TP_PAIRED_READS, true>>
-                                                                            pQueries,
-                                                                        std::shared_ptr<TP_PAIRED_WRITER>
-                                                                            pWriter,
-                                                                        unsigned int uiThreads );
+std::vector<std::shared_ptr<BasePledge>>
+    EXPORTED setUpCompGraphPaired( const ParameterSetManager& rParameters,
+                                   std::shared_ptr<Pledge<Pack>>
+                                       pPack,
+                                   std::shared_ptr<Pledge<FMIndex>>
+                                       pFMDIndex,
+                                   std::shared_ptr<Pledge<PairedReadsContainer, true>>
+                                       pQueries,
+                                   std::shared_ptr<TP_PAIRED_WRITER>
+                                       pWriter,
+                                   unsigned int uiThreads );
 
 
 } // namespace libMA

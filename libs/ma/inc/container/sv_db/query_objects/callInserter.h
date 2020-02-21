@@ -14,22 +14,36 @@
 namespace libMA
 {
 
+
+#if DEBUG_LEVEL == 0
+// in release mode, we can use a BulkInserter since foreign_key_checks are
+// disabled
+#define BulkOrNot BulkInserterContainer
+#else
+// if we are in debug mode, calls need to be inserted immediately since
+// the sv_call_support_table references the primary key of the call_table
+#define BulkOrNot InserterContainer
+#endif
+
 /**
  * @brief A transaction based structural variant call inserter
  * @details
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
- * @todo ask arne if we can somehow use a bulk inserter here
  */
 template <typename CallOrVector, typename DBCon>
-class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTable, CallOrVector>
+class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, SvCallTable, CallOrVector>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, SvCallTable, CallOrVector>;
+    using ParentType = BulkOrNot<DBCon, SvCallTable, CallOrVector>;
+
     std::shared_ptr<BulkInserterType<SvCallSupportTable<DBCon>>> pSupportInserter;
 
 
-    SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId )
-        : ParentType::BulkInserterContainer( pPool, iId ),
+    SvCallInserterContainerTmpl( std::shared_ptr<PoolContainer<DBCon>> pPool,
+                                 int64_t iId,
+                                 std::shared_ptr<SharedInserterProfiler>
+                                     pSharedProfiler )
+        : ParentType::BulkOrNot( pPool, iId, pSharedProfiler ),
           pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
               return std::make_shared<BulkInserterType<SvCallSupportTable<DBCon>>>(
                   SvCallSupportTable<DBCon>( pConnection ) );
@@ -42,7 +56,7 @@ class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTa
      * Makes use of the libMA::SvCallInserter::CallContex.
      * Expects that rCall does NOT exist in the DB yet.
      */
-    inline void insertCall( SvCall& rCall )
+    inline size_t insertCall( SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
         int64_t iCallId = ParentType::pInserter->insert( ParentType::iId, //
@@ -60,23 +74,26 @@ class SvCallInserterContainerTmpl : public BulkInserterContainer<DBCon, SvCallTa
         rCall.iId = iCallId;
         for( int64_t iId : rCall.vSupportingJumpIds )
             pSupportInserter->insert( iCallId, iId );
+        return 1 + rCall.vSupportingJumpIds.size();
+    } // method
+  protected:
+    virtual size_t EXPORTED insert_override( std::shared_ptr<SvCall> pCall )
+    {
+        return insertCall( *pCall );
     } // method
 
-    virtual void EXPORTED insert( std::shared_ptr<SvCall> pCall )
+    virtual size_t EXPORTED insert_override( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
     {
-        insertCall( *pCall );
-    } // method
-
-    virtual void EXPORTED insert( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
-    {
+        size_t uiTotal = 0;
         for( auto pCall : pCalls->vContent )
-            insertCall( *pCall );
+            uiTotal += insertCall( *pCall );
+        return uiTotal;
     } // method
-
-    virtual void close( )
+  public:
+    virtual void close( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
         pSupportInserter.reset( );
-        ParentType::close( );
+        ParentType::close( pPool );
     } // method
 }; // class
 

@@ -16,20 +16,14 @@ void exportModuleClass( py::module& rxPyModuleId )
      */
     py::class_<PyModule<false>, ModuleWrapperPyToCpp<false>, std::shared_ptr<PyModule<false>>>( rxPyModuleId, "Module" )
         .def( py::init<>( ) ) // default constructor
-        .def( "execute", &PyModule<false>::execute )
-        .def( "requires_lock", &PyModule<false>::requiresLock )
-        .def( "is_finished", &PyModule<false>::isFinished );
+        .def( "execute", &PyModule<false>::execute );
 
     py::class_<PyModule<true>, ModuleWrapperPyToCpp<true>, std::shared_ptr<PyModule<true>>>( rxPyModuleId,
                                                                                              "VolatileModule" )
         .def( py::init<>( ) ) // default constructor
-        .def( "execute", &PyModule<true>::execute )
-        .def( "requires_lock", &PyModule<true>::requiresLock )
-        .def( "set_finished", &PyModule<true>::setFinished )
-        .def( "is_finished", &PyModule<true>::isFinished );
+        .def( "execute", &PyModule<true>::execute );
 
-    py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" )
-        .def( "is_finished", &BasePledge::isFinished );
+    py::class_<BasePledge, std::shared_ptr<BasePledge>>( rxPyModuleId, "BasePledge" );
 
     py::class_<PyPledgeVector, std::shared_ptr<PyPledgeVector>>( rxPyModuleId, "VectorPledge" )
         .def( py::init<>( ) ) // default constructor
@@ -44,7 +38,7 @@ void exportModuleClass( py::module& rxPyModuleId )
     typedef Pledge<Container, false, PyPledgeVector> TP_MODULE_PLEDGE;
     py::class_<TP_MODULE_PLEDGE, BasePledge, std::shared_ptr<TP_MODULE_PLEDGE>>( rxPyModuleId, "ModulePledge" )
         .def( py::init<std::shared_ptr<PyModule<false>>, std::shared_ptr<PyPledgeVector>>( ) )
-        .def_readonly("exec_time", &TP_MODULE_PLEDGE::execTime)
+        .def("exec_time", &TP_MODULE_PLEDGE::execTime)
         .def( "get", &TP_MODULE_PLEDGE::get );
 
     py::implicitly_convertible<TP_MODULE_PLEDGE, BasePledge>( );
@@ -54,7 +48,7 @@ void exportModuleClass( py::module& rxPyModuleId )
     py::class_<TP_VOLATILE_PLEDGE, BasePledge, std::shared_ptr<TP_VOLATILE_PLEDGE>>( rxPyModuleId,
                                                                                      "VolatileModulePledge" )
         .def( py::init<std::shared_ptr<PyModule<true>>, std::shared_ptr<PyPledgeVector>>( ) )
-        .def_readonly("exec_time", &TP_VOLATILE_PLEDGE::execTime)
+        .def("exec_time", &TP_VOLATILE_PLEDGE::execTime)
         .def( "get", &TP_VOLATILE_PLEDGE::get );
 
     py::implicitly_convertible<TP_VOLATILE_PLEDGE, BasePledge>( );
@@ -63,8 +57,8 @@ void exportModuleClass( py::module& rxPyModuleId )
     typedef Pledge<Container, false> TP_PLEDGE;
     py::class_<TP_PLEDGE, BasePledge, std::shared_ptr<TP_PLEDGE>>( rxPyModuleId, "Pledge" )
         .def( py::init<>( ) ) // default constructor
-        .def_readonly("exec_time", &TP_PLEDGE::execTime)
-        .def_readonly("wait_on_lock_time", &TP_PLEDGE::waitOnLockTime)
+        .def("exec_time", &TP_PLEDGE::execTime)
+        .def("wait_on_lock_time", &TP_PLEDGE::waitTime)
         .def( "set", &TP_PLEDGE::set )
         .def( "get", &TP_PLEDGE::get );
     py::implicitly_convertible<TP_PLEDGE, BasePledge>( );

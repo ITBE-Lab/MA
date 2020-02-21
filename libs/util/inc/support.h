@@ -16,8 +16,8 @@
 #include "system.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include <fstream>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -92,7 +92,7 @@ void vRangeCheckAndThrowExclusive( const std::string& sText, const ParameterType
     } // if
 } // template function
 
-bool EXPORTED is_number(const std::string& s);
+bool EXPORTED is_number( const std::string& s );
 
 /**
  * @brief Loop where the counter value is known during compiletime.
@@ -155,21 +155,21 @@ template <template <size_t> class Func> struct TemplateLoop<0, Func>
 
 std::string EXPORTED demangle( const char* name );
 
-template <class X> std::string type_name( X* pType )
+template <class X> std::string type_name( X* pType, bool bBare = false )
 {
     if( pType == nullptr )
-        return "[static type] " + demangle( typeid( X ).name( ) );
-    return "[dynamic type] " + demangle( typeid( *pType ).name( ) );
+        return ( bBare ? "" : "[static type] " ) + demangle( typeid( X ).name( ) );
+    return ( bBare ? "" : "[dynamic type] " ) + demangle( typeid( *pType ).name( ) );
 } // function
 
-template <class X> std::string type_name( std::shared_ptr<X> pType )
+template <class X> std::string type_name( std::shared_ptr<X> pType, bool bBare = false )
 {
-    return type_name( pType.get( ) );
+    return type_name( pType.get( ), bBare );
 } // function
 
-template <class X> std::string type_name( )
+template <class X> std::string type_name( bool bBare = false )
 {
-    return type_name<X>( nullptr );
+    return type_name<X>( nullptr, bBare );
 } // function
 
 bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
@@ -182,6 +182,6 @@ std::vector<std::string> EXPORTED split( const std::string& sSubject, const std:
  * Taken from here: https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program.
  * Once we move to C++20 we can use https://en.cppreference.com/w/cpp/types/endian instead.
  */
-bool /* EXPORTED */ is_big_endian();
+bool /* EXPORTED */ is_big_endian( );
 
 #endif

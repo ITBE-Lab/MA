@@ -31,7 +31,7 @@ def render_jumps(self, jump_list=[]):
         })
     if not self.do_render_call_jumps_only:
         with self.measure("SortedSvJumpFromSql"):
-            sweeper = SortedSvJumpFromSql(self.params, self.db_conn, 
+            sweeper = SortedSvJumpFromSql(self.db_conn, 
                                           SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
                                           int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
     with self.measure("render jumps"):

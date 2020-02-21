@@ -73,7 +73,7 @@ void exportParameter( py::module& rxPyModuleId )
     // Export ParameterSetManager Class
     py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
-        .def_readwrite( "global_settings", &ParameterSetManager::pGlobalParameterSet ) //
+        .def_readwrite( "global_settings", &ParameterSetManager::pGeneralParameterSet ) //
         .def( "get", &ParameterSetManager::get )
         .def( "add_setting", &ParameterSetManager::addSetting )
         .def( "get_num_threads", &ParameterSetManager::getNumThreads )
@@ -190,21 +190,22 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     return aRet;
 } // function
 
-std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
-                                                                      std::shared_ptr<Pledge<Pack>>
-                                                                          pPack,
-                                                                      std::shared_ptr<Pledge<FMIndex>>
-                                                                          pFMDIndex,
-                                                                      std::shared_ptr<Pledge<TP_PAIRED_READS, true>>
-                                                                          pQueries,
-                                                                      std::shared_ptr<TP_PAIRED_WRITER>
-                                                                          pWriter,
-                                                                      unsigned int uiThreads )
+std::vector<std::shared_ptr<BasePledge>>
+libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
+                             std::shared_ptr<Pledge<Pack>>
+                                 pPack,
+                             std::shared_ptr<Pledge<FMIndex>>
+                                 pFMDIndex,
+                             std::shared_ptr<Pledge<PairedReadsContainer, true>>
+                                 pQueries,
+                             std::shared_ptr<TP_PAIRED_WRITER>
+                                 pWriter,
+                             unsigned int uiThreads )
 {
     // set up the modules
-    auto pLock = std::make_shared<Lock<TP_PAIRED_READS>>( rParameters );
-    auto pGetFirst = std::make_shared<TupleGet<TP_PAIRED_READS, 0>>( rParameters );
-    auto pGetSecond = std::make_shared<TupleGet<TP_PAIRED_READS, 1>>( rParameters );
+    auto pLock = std::make_shared<Lock<PairedReadsContainer>>( rParameters );
+    auto pGetFirst = std::make_shared<TupleGet<PairedReadsContainer, 0>>( rParameters );
+    auto pGetSecond = std::make_shared<TupleGet<PairedReadsContainer, 1>>( rParameters );
     auto pSeeding = std::make_shared<BinarySeeding>( rParameters );
     auto pSOC = std::make_shared<StripOfConsideration>( rParameters );
     auto pHarmonization = std::make_shared<Harmonization>( rParameters );

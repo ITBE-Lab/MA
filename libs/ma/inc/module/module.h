@@ -71,10 +71,6 @@ template <int... S> struct gens<0, S...>
  */
 template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> class Module
 {
-  private:
-    std::bitset<1> xFlags;
-    static constexpr size_t uiFinishedFlag = 0;
-
   public:
     typedef TP_RETURN_ TP_RETURN;
     static constexpr bool IS_VOLATILE = IS_VOLATILE_;
@@ -107,14 +103,6 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
         return nullptr;
     } // method
 
-    inline void setFinished( )
-    {
-        if( IS_VOLATILE )
-            xFlags.set( uiFinishedFlag );
-        else
-            throw std::runtime_error( "only volatile modules are allowed to call setFinished()" );
-    } // method
-
   private:
     template <int... S> std::shared_ptr<TP_RETURN> callFunc( const TP_TUPLE_ARGS& tParams, seq<S...> )
     {
@@ -132,17 +120,6 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
         return this->callFunc( tParams, typename gens<sizeof...( TP_ARGUMENTS )>::type( ) );
     } // method
 
-    virtual bool isFinished( ) const
-    {
-        if( !IS_VOLATILE )
-            return false;
-        return xFlags[ uiFinishedFlag ];
-    } // method
-
-    virtual bool requiresLock( ) const
-    {
-        return false;
-    } // method
 }; // class
 
 /**
@@ -263,12 +240,6 @@ class BasePledge
     virtual bool hasVolatile( ) const
     {
         throw std::runtime_error( type_name( this ) + " did not implement hasVolatile" );
-        return false;
-    } // method
-
-    virtual bool isFinished( ) const
-    {
-        throw std::runtime_error( type_name( this ) + " did not implement isFinished" );
         return false;
     } // method
 
@@ -414,8 +385,8 @@ class BasePledge
 template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> class Pledge : public BasePledge
 {
   public:
-    double execTime = 0;
-    double waitOnLockTime = 0;
+    std::chrono::duration<double> xExecTime = std::chrono::duration<double>::zero( );
+    std::chrono::duration<double> xWaitOnLockTime = std::chrono::duration<double>::zero( );
     typedef TP_TYPE TP_CONTENT;
     /*
      * typename TP_DEPENDENCIES::TP_CONTENT...
@@ -438,6 +409,16 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     TP_PREDECESSORS tPredecessors;
 
   public:
+    double waitTime( ) const
+    {
+        return xWaitOnLockTime.count( );
+    }
+
+    double execTime() const
+    {
+        return xExecTime.count();
+    }
+
     void addSuccessor( BasePledge* pX )
     {
         vSuccessors.push_back( pX );
@@ -486,19 +467,6 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     }; // struct
 
     /**
-     * @brief calls the isFinished function of the predecessor IDX.
-     * @details
-     * Can be used with template loops.
-     */
-    template <size_t IDX> struct NotFinishedCaller
-    {
-        bool operator( )( const TP_PREDECESSORS& tPredecessors )
-        {
-            return !std::get<IDX>( tPredecessors )->isFinished( );
-        } // operator
-    }; // struct
-
-    /**
      * @brief calls the addSuccessor function of the predecessor IDX.
      * @details
      * Can be used with template loops.
@@ -525,35 +493,6 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
             return true;
         } // operator
     }; // struct
-
-    /**
-     * @brief Used to synchronize the execution of pledges in the comp. graph.
-     * @details
-     * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
-     * Does not lock otherwise.
-     * In either case fDo is called.
-     */
-    template <typename FUNCTOR> inline std::shared_ptr<TP_CONTENT> lockIfNecessary( FUNCTOR&& fDo )
-    {
-        // if(vSuccessors.size() > 1) @todo @fixme this should be here
-        if( pPledger->requiresLock( ) )
-        {
-            auto timeStamp = std::chrono::system_clock::now( );
-            // multithreading is possible thus a guard is required here.
-            // deadlock prevention is trivial,
-            // since computational graphs are essentially trees.
-            std::lock_guard<std::mutex> xGuard( *pMutex );
-
-            std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
-            // record how long we took to obtain the lock
-            // the increment operation has to be done within the scope of xGuard
-            waitOnLockTime += duration.count( );
-
-            return fDo( );
-        } // if
-        else
-            return fDo( );
-    } // function
 
   public:
     /**
@@ -643,13 +582,6 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         return !TemplateLoop<sizeof...( TP_DEPENDENCIES ), NonVolatileCaller>::iterate( tPredecessors );
     } // method
 
-    virtual bool isFinished( ) const
-    {
-        if( pPledger != nullptr && pPledger->isFinished( ) )
-            return true;
-        return !TemplateLoop<sizeof...( TP_DEPENDENCIES ), NotFinishedCaller>::iterate( tPredecessors );
-    } // method
-
     /**
      * @brief Get the promised container.
      * @details
@@ -663,47 +595,42 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
             throw std::runtime_error( "No pledger known for unfulfilled pledge of type " + type_name( this ) +
                                       "; With container type: " + type_name( pContent ) );
         // in this case there is no need to execute again
-        if( pContent != nullptr && !IS_VOLATILE )
+        if( !IS_VOLATILE && pContent != nullptr )
             return pContent;
 
-        // locks a mutex if this pledge can be reached from multiple leaves in the graph
-        // does not lock otherwise...
-        return lockIfNecessary( [&]( ) {
-            TP_INPUT tInput;
-            // execute all dependencies
-            if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
-                /*
-                 * if one dependency returns EoF then stop executing
-                 * We have a volatile module that's dry.
-                 * In such cases we cannot compute the next element and therefore set
-                 * the content of this module to EoF as well.
-                 */
-                pContent = nullptr;
-            // handle the EoF case for this module
-            else if( IS_VOLATILE && pPledger->isFinished( ) )
-                pContent = nullptr;
-            else
-            {
-                auto timeStamp = std::chrono::system_clock::now( );
+        TP_INPUT tInput;
+        // this if condition has the sideffect of filling tInput
+        if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
+            /*
+             * if one dependency returns a nullptr then stop executing
+             * We have a volatile module that's dry.
+             * In such cases we cannot compute the next element and therefore set
+             * the content of this module to EoF as well.
+             */
+            return nullptr;
+        decltype( pContent ) pRet = nullptr;
 
-                // actually execute the module
-                pContent = pPledger->executeTup( tInput );
+        auto timeStamp = std::chrono::system_clock::now( );
 
-                std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
-                // increase the total executing time for this pledge
-                execTime += duration.count( );
+        // actually execute the module
+        pRet = pPledger->executeTup( tInput );
+        // assignment needs to be seperated, so that simultaneous get() in volatile modules do not mess up
+        // the return type.
+        // @todo there should be no volatile modules -> loops should be done by containers...
+        pContent = pRet; // actually set the content of the pledge
 
-                // safety check
-                if( pContent == nullptr )
-                    throw std::runtime_error( "A module is not allowed to return nullpointers in execute; throw an "
-                                              "exception instead or return an empty container! Module type:" +
-                                              type_name( pPledger ) );
-            } // else
+        std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
+        // increase the total executing time for this pledge
+        xExecTime += duration;
 
-            // return must be here and returned throught the lambda to avoid data race...
-            return pContent;
-        } // lambda
-        ); // function call
+        // safety check
+        if( pRet == nullptr && !IS_VOLATILE )
+            throw std::runtime_error( "An non-volatile module is not allowed to return nullpointers "
+                                      "in execute; throw an exception instead or return an empty container! "
+                                      "Module type:" +
+                                      type_name( pPledger ) );
+        // return must be here and returned throught the lambda to avoid data race...
+        return pRet;
     } // function
 
     virtual std::shared_ptr<Container> getAsBaseType( )
@@ -742,50 +669,6 @@ template <class TP_CONTAINER, class... TP_ARGS> std::shared_ptr<Pledge<TP_CONTAI
     return pRet;
 } // function
 
-/**
- * @brief executes a volatile module over and over.
- * @note cannot deal with modules that have an input at the moment.
- */
-template <typename TP_MODULE, typename... TP_CONSTR_PARAMS>
-class Cyclic : public Module<typename TP_MODULE::TP_RETURN, true>
-{
-    const ParameterSetManager& rParameters;
-    std::tuple<TP_CONSTR_PARAMS...> tParams;
-    std::unique_ptr<TP_MODULE> pModule;
-
-    template <int... S> void resetHelper( seq<S...> )
-    {
-        pModule = std::make_unique<TP_MODULE>( rParameters, std::get<S>( tParams )... );
-        assert( !pModule->isFinished( ) );
-    } // method
-
-    void reset( )
-    {
-        resetHelper( typename gens<sizeof...( TP_CONSTR_PARAMS )>::type( ) );
-    } // method
-
-  public:
-    Cyclic( const ParameterSetManager& rParameters, TP_CONSTR_PARAMS... params )
-        : rParameters( rParameters ), tParams( params... )
-    {
-        static_assert( TP_MODULE::IS_VOLATILE == true, "can only declare Cyclic on volatile modules!" );
-        reset( );
-    } // constructor
-
-    std::shared_ptr<typename TP_MODULE::TP_RETURN> execute( )
-    {
-        auto pRet = pModule->execute( );
-        if( pModule->isFinished( ) )
-            reset( );
-        return pRet;
-    } // method
-
-    // override
-    bool requiresLock( ) const
-    {
-        return true;
-    } // method
-}; // class
 
 /**
  * @brief casts a container to a supertype
@@ -902,24 +785,14 @@ class PyPledgeVector : public Pledge<PyContainerVector>
         return false;
     } // method
 
-    virtual bool isFinished( ) const
-    {
-        // if( Pledge<PyContainerVector>::isFinished( ) )
-        //    return true;
-        for( std::shared_ptr<BasePledge> pPledge : vPledges )
-            if( pPledge->isFinished( ) )
-                return true;
-        return false;
-    } // method
-
     inline void simultaneousGetPy( unsigned int numThreads = 0 )
     {
         BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
     } // method
 
-    inline void clear()
+    inline void clear( )
     {
-        vPledges.clear();
+        vPledges.clear( );
     } // method
 }; // class
 
@@ -935,10 +808,7 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
         bool operator( )( typename TP_MODULE::TP_TUPLE_ARGS& tTup, PyContainerVector& vIn )
         {
             if( vIn[ IDX ] == nullptr )
-                throw std::runtime_error( "Wrong type for module (" + type_name<TP_MODULE>( ) +
-                                          ") input (parameter index: " + std::to_string( IDX ) +
-                                          "). Expected: " + type_name( std::get<IDX>( tTup ) ) +
-                                          " but got: nullptr of type " + type_name( vIn[ IDX ] ) );
+                return false; // break the loop
             // convert the content in the vector to the element types of the tuple
             auto pCasted = std::dynamic_pointer_cast<
                 typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>( vIn[ IDX ] );
@@ -965,18 +835,12 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
                 std::to_string( TP_MODULE::NUM_ARGUMENTS ) + " but got: " + std::to_string( pIn->size( ) ) );
 
         typename TP_MODULE::TP_TUPLE_ARGS tTyped;
-        TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn );
-        return xModule.executeTup( tTyped );
-    } // method
-
-    virtual bool isFinished( ) const
-    {
-        return xModule.isFinished( );
-    } // method
-
-    virtual bool requiresLock( ) const
-    {
-        return xModule.requiresLock( );
+        // iterate returns true if tTyped is filled correctly
+        if( TemplateLoop<TP_MODULE::NUM_ARGUMENTS, TupleFiller>::iterate( tTyped, *pIn ) )
+            return xModule.executeTup( tTyped );
+        else
+            // tTyped could not be filled, since one module returned a nullptr
+            return nullptr;
     } // method
 }; // class
 
@@ -1040,45 +904,6 @@ void exportModuleAlternateConstructor( pybind11::module& xPyModuleId, // pybind 
 } // function
 
 #endif
-
-/*
- * @brief for testing purposes
- */
-class Test : public Module<Container, true>
-{
-    size_t uiNumIt = 5;
-    int iTest;
-    std::mutex xMutex;
-
-  public:
-    Test( const ParameterSetManager& rParameters )
-    {} // constructor
-
-    std::shared_ptr<Container> execute( )
-    {
-        int iTestCpy = std::rand( );
-        {
-            std::lock_guard<std::mutex> xGuard( xMutex );
-            iTest = iTestCpy;
-        } // scope of xGuard
-        std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-        {
-            std::lock_guard<std::mutex> xGuard( xMutex );
-            if( iTest != iTestCpy )
-                exit( EXIT_FAILURE );
-        } // scope of xGuard
-        uiNumIt--;
-        if( uiNumIt == 0 )
-            setFinished( );
-        return std::make_shared<Container>( );
-    } // method
-
-    // override
-    bool requiresLock( ) const
-    {
-        return true;
-    } // method
-}; // class
 
 } // namespace libMA
 

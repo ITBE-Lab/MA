@@ -22,7 +22,9 @@ class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, C
     using ParentType = BulkInserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
     using ParentType::BulkInserterContainer;
 
-    virtual void EXPORTED insert( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
+  protected:
+    virtual size_t EXPORTED insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps,
+                                           std::shared_ptr<NucSeq> pRead )
     {
         const int64_t iReadId = pRead->iId;
         for( SvJump& rJump : *pJumps )
@@ -37,12 +39,12 @@ class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, C
 
             if( rJump.does_switch_strand( ) )
                 assert( rJump.from_start( ) >= std::numeric_limits<int64_t>::max( ) / 2 );
-            rJump.iId = ParentType::pInserter->insert( ParentType::iId /* <- id of the sv jump run */, rJump.iReadId,
-                                           rJump.from_start( ), rJump.from_end( ), (uint32_t)rJump.uiFrom,
-                                           (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
-                                           (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward,
-                                           rJump.bFromSeedStart );
+            rJump.iId = ParentType::pInserter->insert(
+                ParentType::iId /* <- id of the sv jump run */, rJump.iReadId, rJump.from_start( ), rJump.from_end( ),
+                (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
+                (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
         } // for
+        return pJumps->size();
     } // method
 }; // class
 

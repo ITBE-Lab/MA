@@ -34,8 +34,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
                 pRefSeq->startOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rNext.start_ref( ) ) ); // inclusive
             // estimate size fo rectangle based on query position of existing seed
             int64_t iQueryDistance = ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2 )
-                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2;
+            if( iQueryDistance > iMaxSizeReseed / 2 )
+                iQueryDistance = iMaxSizeReseed / 2;
             iLastRef = std::max( iStartOfContig, (int64_t)rNext.start_ref( ) - iQueryDistance );
         } // if
         else
@@ -45,8 +45,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
                 pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rNext.start_ref( ) + 1 ) ); // exclusive
             // estimate size fo rectangle based on query position of existing seed
             int64_t iQueryDistance = ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2 )
-                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2;
+            if( iQueryDistance > iMaxSizeReseed / 2 )
+                iQueryDistance = iMaxSizeReseed / 2;
             iLastRef = std::min( iEndOfContig, (int64_t)rNext.start_ref( ) + 1 + iQueryDistance );
         } // else
     } // if
@@ -64,8 +64,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
                 pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rLast.end_ref( ) ) ); // exclusive
             // estimate size fo rectangle based on query position of existing seed
             int64_t iQueryDistance = ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2 )
-                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2;
+            if( iQueryDistance > iMaxSizeReseed / 2 )
+                iQueryDistance = iMaxSizeReseed / 2;
             iNextRef = std::min( iEndOfContig, (int64_t)rLast.end_ref( ) + iQueryDistance );
         } // if
         else
@@ -75,8 +75,8 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
                 pRefSeq->uiSequenceIdForPosition( rLast.start_ref( ) + 1 - rLast.size( ) ) ); // inclusive
             // estimate size fo rectangle based on query position of existing seed
             int64_t iQueryDistance = ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2 )
-                iQueryDistance = (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) / 2;
+            if( iQueryDistance > iMaxSizeReseed / 2 )
+                iQueryDistance = iMaxSizeReseed / 2;
             iNextRef = std::max( iStartOfContig,
                                  (int64_t)rLast.start_ref( ) + 1 - ( int64_t )( rLast.size( ) + iQueryDistance ) );
         } // else
@@ -98,7 +98,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
         else
             iRefSize = -1; // seeds on different strands always need separate rectangles.
 
-        if( iRefSize > (int64_t)pSelectedSetting->xMaxSizeReseed->get( ) || // check for too large rectangle
+        if( iRefSize > iMaxSizeReseed || // check for too large rectangle
             iRefSize < 0 || // check for seeds pointing the wrong direction
             // check for rectangle bridging multiple contigs
             pRefSeq->uiSequenceIdForPosition( iLastRef ) != pRefSeq->uiSequenceIdForPosition( iNextRef - 1 ) )
@@ -296,17 +296,17 @@ void SvJumpsFromSeeds::makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, 
     {
         // we have to insert a dummy jump if the seed is far enough from the end/start of the query
         if( &rNext != &xDummySeed && rNext.start( ) > uiMinDistDummy )
-            pRet->emplace_back( pSelectedSetting, rNext, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
+            pRet->emplace_back( rNext, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
         if( &rLast != &xDummySeed && rLast.end( ) + uiMinDistDummy <= pQuery->length( ) )
-            pRet->emplace_back( pSelectedSetting, rLast, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
+            pRet->emplace_back( rLast, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
     } // if
     else
     {
         // we have to insert a jump between two seeds
         if( SvJump::validJump( rNext, rLast, true ) )
-            pRet->emplace_back( pSelectedSetting, rNext, rLast, true, pQuery->iId );
+            pRet->emplace_back( rNext, rLast, true, pQuery->iId );
         if( SvJump::validJump( rLast, rNext, false ) )
-            pRet->emplace_back( pSelectedSetting, rLast, rNext, false, pQuery->iId );
+            pRet->emplace_back( rLast, rNext, false, pQuery->iId );
     } // else
 } // function
 

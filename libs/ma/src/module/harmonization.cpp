@@ -2,7 +2,6 @@
  * @file harmonization.cpp
  * @author Markus Schmidt
  */
-#include "util/default_parameters.h"
 #include "module/harmonization.h"
 #include "module/stripOfConsideration.h"
 #include "util/pybind11.h"
@@ -11,14 +10,6 @@
 #endif
 using namespace libMA;
 #include "util/pybind11.h"
-
-
-using namespace libMA::defaults;
-extern int libMA::defaults::iGap;
-extern int libMA::defaults::iExtend;
-extern int libMA::defaults::iMatch;
-extern int libMA::defaults::iMissMatch;
-// extern nucSeqIndex libMA::defaults::uiMaxGapArea;
 
 std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>& pIn ) const
 {
@@ -37,7 +28,7 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
     if( bDoGapCostEstimationCutting )
     {
         // running score
-        int64_t iScore = iMatch * pIn->front( ).size( );
+        int64_t iScore = pGlobalParams->iMatch->get( ) * pIn->front( ).size( );
         // maximal score
         nucSeqIndex uiMaxScore = iScore;
         // points to the last seed that had a score of 0
@@ -54,7 +45,7 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
         {
             assert( pSeed->start( ) <= pSeed->end( ) );
             // adjust the score correctly
-            iScore += iMatch * pSeed->size( );
+            iScore += pGlobalParams->iMatch->get( ) * pSeed->size( );
             /*
              * we need to extract the gap between the seeds in order to do that.
              * we will assume that any gap can be spanned by a single indel
@@ -72,35 +63,35 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
                 {
                     uiGap -= pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( );
                     if( optimisticGapEstimation )
-                        iScore += iMatch * ( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) );
+                        iScore += pGlobalParams->iMatch->get( ) * ( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) );
                 } // if
                 else
                 {
                     if( optimisticGapEstimation )
-                        iScore += iMatch * uiGap;
+                        iScore += pGlobalParams->iMatch->get( ) * uiGap;
                     uiGap = ( pSeed->start_ref( ) - ( pSeed - 1 )->start_ref( ) ) - uiGap;
                 } // else
             } // if
-            uiGap *= iExtend;
+            uiGap *= pGlobalParams->iExtend->get( );
             if( uiGap > 0 )
-                uiGap += iGap;
+                uiGap += pGlobalParams->iGap->get( );
             if( uiGap > uiSVPenalty && uiSVPenalty != 0 )
                 uiGap = uiSVPenalty;
             if( // check for the maximal allowed gap area
-            // check for negative score
-                    iScore < (int64_t)uiGap
-                )
-                    {
-                        iScore = 0;
-                        pLastStart = pSeed;
-                    } // if
-                    else iScore -= uiGap;
-                    if( iScore > (int64_t)uiMaxScore )
-                    {
-                        uiMaxScore = iScore;
-                        pOptimalStart = pLastStart;
-                        pOptimalEnd = pSeed;
-                    } // if
+                // check for negative score
+                iScore < (int64_t)uiGap )
+            {
+                iScore = 0;
+                pLastStart = pSeed;
+            } // if
+            else
+                iScore -= uiGap;
+            if( iScore > (int64_t)uiMaxScore )
+            {
+                uiMaxScore = iScore;
+                pOptimalStart = pLastStart;
+                pOptimalEnd = pSeed;
+            } // if
         } // for
 
         /*

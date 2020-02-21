@@ -83,7 +83,7 @@ if __name__ == "__main__":
     for x in call_rectangles:
         print(x)
 
-    sweeper = SortedSvJumpFromSql(parameter_set, db_conn, jump_id)
+    sweeper = SortedSvJumpFromSql(db_conn, jump_id)
     while sweeper.has_next_start():
         jump = sweeper.get_next_start()
         print(("jump", jump.from_start_same_strand(), jump.to_start(), jump.from_size(), jump.to_size()))

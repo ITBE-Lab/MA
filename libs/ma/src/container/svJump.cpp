@@ -8,8 +8,8 @@ void exportSVJump( py::module& rxPyModuleId )
 {
     // export the SvJump class
     py::class_<SvJump, std::shared_ptr<SvJump>>( rxPyModuleId, "SvJump" )
-        .def( py::init<std::shared_ptr<Presetting>, const Seed&, const Seed&, const bool, int64_t>( ) )
-        .def( py::init<std::shared_ptr<Presetting>, const Seed&, nucSeqIndex, const bool, int64_t, nucSeqIndex>( ) )
+        .def( py::init<const Seed&, const Seed&, const bool, int64_t>( ) )
+        .def( py::init<const Seed&, nucSeqIndex, const bool, int64_t, nucSeqIndex>( ) )
         .def( "does_switch_strand", &SvJump::does_switch_strand )
         .def( "switch_strand_known", &SvJump::switch_strand_known )
         .def( "from_start", &SvJump::from_start )

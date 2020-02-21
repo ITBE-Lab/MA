@@ -17,13 +17,10 @@ class SvJump : public Container
         return uiA < uiB ? uiB - uiA : uiA - uiB;
     } // method
 
-    // @todo this should not be here....
-    const double s, s_neg;
-    const double h;
-    const double m;
-    const nucSeqIndex uiSeedDirFuzziness;
-    const nucSeqIndex uiSDFActivate;
-
+    nucSeqIndex sDFActivate() const
+    {
+        return (nucSeqIndex)pGlobalParams->xSeedDirFuzziness->get() * 2;
+    } //method
   public:
     static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
@@ -55,8 +52,7 @@ class SvJump : public Container
     size_t uiSeedAId = 0, uiSeedBId = 0;
 #endif
 
-    SvJump( std::shared_ptr<Presetting> pSelectedSetting,
-            const nucSeqIndex uiFrom,
+    SvJump( const nucSeqIndex uiFrom,
             const nucSeqIndex uiTo,
             const nucSeqIndex uiQueryFrom,
             const nucSeqIndex uiQueryTo,
@@ -66,13 +62,7 @@ class SvJump : public Container
             const nucSeqIndex uiNumSupportingNt,
             int64_t iId = -1, /* -1 == no id obtained */
             int64_t iReadId = -1 /* -1 == no id obtained */ )
-        : s( pSelectedSetting->xJumpS->get( ) ),
-          s_neg( pSelectedSetting->xJumpSNeg->get( ) ),
-          h( pSelectedSetting->xJumpH->get( ) ),
-          m( pSelectedSetting->xJumpM->get( ) ),
-          uiSeedDirFuzziness( pSelectedSetting->xSeedDirFuzziness->get( ) ),
-          uiSDFActivate( uiSeedDirFuzziness * 2 ),
-          uiFrom( uiFrom ),
+        : uiFrom( uiFrom ),
           uiTo( uiTo ),
           uiQueryFrom( uiQueryFrom ),
           uiQueryTo( uiQueryTo ),
@@ -88,10 +78,9 @@ class SvJump : public Container
         assert( uiFrom * 2 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
-    SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const Seed& rB, const bool bFromSeedStart,
+    SvJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart,
             int64_t iReadId )
         : SvJump(
-              pSelectedSetting,
               /* uiFrom = */
               bFromSeedStart
                   ? rA.start_ref( )
@@ -121,10 +110,9 @@ class SvJump : public Container
 #endif
     } // constructor
 
-    SvJump( std::shared_ptr<Presetting> pSelectedSetting, const Seed& rA, const nucSeqIndex qLen,
+    SvJump( const Seed& rA, const nucSeqIndex qLen,
             const bool bFromSeedStart, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
-        : SvJump( pSelectedSetting,
-                  /* uiFrom = */
+        : SvJump( /* uiFrom = */
                   bFromSeedStart
                       // if we jump to the start of the first seed we don't know where we are coming from
                       ? std::numeric_limits<uint32_t>::max( )
@@ -189,8 +177,11 @@ class SvJump : public Container
         assert( x >= 0 );
         double h_min = 0;
         return (nucSeqIndex)std::min(
-            h, h_min + std::max( 0.0, x - ( uiTo >= uiFrom || uiQueryTo - uiQueryFrom >= uiFrom - uiTo ? s : s_neg ) ) *
-                           m );
+            pGlobalParams->xJumpH->get( ),
+            h_min + std::max( 0.0, x - ( uiTo >= uiFrom || uiQueryTo - uiQueryFrom >= uiFrom - uiTo
+                                             ? pGlobalParams->xJumpS->get( )
+                                             : pGlobalParams->xJumpSNeg->get( ) ) ) *
+                        pGlobalParams->xJumpM->get( ) );
     } // method
 
     // down == left
@@ -211,8 +202,8 @@ class SvJump : public Container
     int64_t getSeedDirFuzziness( ) const
     {
         if( !from_known( ) || !to_known( ) )
-            return query_distance( ) > uiSDFActivate ? (int64_t)uiSeedDirFuzziness : 0;
-        return fuzziness( ) > uiSDFActivate ? (int64_t)uiSeedDirFuzziness : 0;
+            return query_distance( ) > sDFActivate() ? (int64_t)pGlobalParams->xSeedDirFuzziness->get() : 0;
+        return fuzziness( ) > sDFActivate() ? (int64_t)pGlobalParams->xSeedDirFuzziness->get() : 0;
     }
 
     int64_t from_start_same_strand( ) const
