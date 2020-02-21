@@ -4,9 +4,9 @@ from .analyzeRuntimes import *
 
 def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_queue_2=None,
                  runtime_file=None):
-    #parameter_set.by_name("Number of Threads").set(1)
+    #parameter_set.by_name("Number of Threads").set(16)
     #parameter_set.by_name("Use all Processor Cores").set(False)
-    #assert parameter_set.get_num_threads() == 1
+    #assert parameter_set.get_num_threads() == 16
 
     combined_queue = file_queue
     lock = Lock(parameter_set)
@@ -70,6 +70,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         analyze.register("read_inserter", empty, True)
 
         empty_2 = promise_me(printer, empty, queue_pledge)
+        analyze.register("printer", empty_2, True)
 
         unlock = promise_me(UnLock(parameter_set, locked_file), empty_2)
         res.append(unlock)

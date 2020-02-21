@@ -44,9 +44,13 @@ class SharedInserterProfiler
 
     ~SharedInserterProfiler( )
     {
-        size_t uiNum = ( size_t )( uiNumInsertsTotal / xTotalTime.count( ) );
-        std::cout << sName << ": Averaged " << withCommas( uiNum ) << " rows per second over " << uiNumTotalInserters
-                  << " containers." << std::endl;
+        if( uiNumTotalInserters > 0 )
+        {
+            double dAverageTime = xTotalTime.count( ) / (double)uiNumTotalInserters;
+            size_t uiNum = ( size_t )( uiNumInsertsTotal / dAverageTime );
+            std::cout << sName << ": Averaged " << withCommas( uiNum ) << " rows per second (accumulated over "
+                      << uiNumTotalInserters << " containers.)" << std::endl;
+        } // if
     } // destructor
 
     inline void inc( size_t uiNumInsertsTotal, time_point xStartTime )

@@ -75,7 +75,7 @@ class FileStream : public Container
         return std::string( fileName( ) )
             .append( ": " )
             .append( std::to_string( 100.0 * tellg( ) / (double)fileSize( ) ) )
-            .append( "%" );
+            .append( " %" );
     } // method
 }; // class
 
@@ -590,7 +590,7 @@ template <typename FileStreamQueue> class ProgressPrinter : public Module<Contai
             size_t uiRemaining = 0;
             size_t uiDone = 0;
             pQueue->iter( [&]( auto pStream ) {
-                if( pStream->tellg( ) <= 10 )
+                if( pStream->tellg( ) * 100 <= pStream->fileSize( ) )
                     uiRemaining++;
                 else if( pStream->tellg( ) == pStream->fileSize( ) )
                     uiDone++;

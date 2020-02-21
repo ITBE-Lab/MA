@@ -572,8 +572,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // inner class SQL Index
 
   public:
-    using uiBulkInsertSize = std::integral_constant<size_t, 500>;
 
+    using uiBulkInsertSize = std::integral_constant<size_t, 500>;
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
      */
