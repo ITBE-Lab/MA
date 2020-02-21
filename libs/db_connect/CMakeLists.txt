@@ -23,7 +23,7 @@ set_property( TARGET dbSQL PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions( dbSQL PRIVATE EXPORT )
 
 # Insert the sqlite3 object file
-target_link_libraries ( dbSQL LINK_PUBLIC sqlite3 ${MYSQL_LIBRARIES} )
+target_link_libraries ( dbSQL LINK_PUBLIC sqlite3 fort ${MYSQL_LIBRARIES} )
 
 # location of all includes 
 target_include_directories( dbSQL PUBLIC connectors . ${MYSQL_INCLUDE_DIRS})

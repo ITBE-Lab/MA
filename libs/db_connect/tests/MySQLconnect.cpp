@@ -583,9 +583,36 @@ int mySQLStorageResultTest( )
     return 0;
 } // function (mySQLStorageResultTest)
 
+int mySQLExplainTest( )
+{
+    // doNoExcept( [ & ] {
+    std::cout << "Do mySQLExplainTest ..." << std::endl;
+    std::shared_ptr<SQLDB<MySQLConDB>> pDBCon(
+        std::make_shared<SQLDB<MySQLConDB>>( json{ { SCHEMA, { { NAME, "storage_result_test" } } } } ) );
+
+    json xTestTableWithStringsDef =
+        json{ { TABLE_NAME, "TEST_TABLE_WITH_STRINGS" }, { TABLE_COLUMNS, { { { COLUMN_NAME, "string_col" } } } } };
+
+    SQLTableWithLibIncrPriKey<SQLDB<MySQLConDB>, std::string> xTestTableWithStrings( pDBCon, xTestTableWithStringsDef );
+
+
+    // Verify the xVerificationMap
+    std::cout << "Do execute query ..." << std::endl;
+    SQLQuery<SQLDB<MySQLConDB>, std::string> xQuery(
+        pDBCon, "SELECT string_col FROM TEST_TABLE_WITH_STRINGS" );
+
+    // size_t uiCount = 0;
+    // xQuery.execAndForAll( [ & ]( auto& iTxt ) { std::cout << iTxt << std::endl; } );
+
+    xQuery.explain( );
+    //} );
+
+    return 0;
+}
+
 int main( int argc, char** argv )
 {
-    priKeyTest( );
+    mySQLExplainTest( );
     return 0;
 
     try

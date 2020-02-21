@@ -22,3 +22,6 @@ if(WITH_PYTHON)
     endif()
 endif()
 
+# Add pretty printing for tables
+# https://github.com/seleznevae/libfort
+add_subdirectory(libfort/lib)

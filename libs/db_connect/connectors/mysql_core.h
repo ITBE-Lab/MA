@@ -59,6 +59,9 @@ namespace fs = std::filesystem;
 #include <json.hpp>
 using nlohmann::json;
 
+// Pretty printing for tables
+#include <fort.hpp>
+
 // Constants for definitions via json
 const std::string CONNECTION = "CONNECTION";
 const std::string HOSTNAME = "HOSTNAME";
@@ -121,7 +124,7 @@ typedef bool my_bool;
 template <class F, class... Ts, std::size_t... Is>
 void for_each_in_tuple( std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ) ), 0 )...};
+    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ) ), 0 )... };
 } // meta
 
 template <class F, class... Ts> void for_each_in_tuple( std::tuple<Ts...>& tuple, F&& func )
@@ -136,7 +139,7 @@ template <class F, class... Ts, std::size_t... Is, class... Tss>
 void for_each_in_tuple_pairwise( std::tuple<Ts...>& tuple, F func, std::tuple<Tss...>& tuple1,
                                  std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )...};
+    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )... };
 } // meta
 
 template <class F, class... Ts, class... Tss>
@@ -407,6 +410,142 @@ template <> struct RowCell<std::string> : public RowCellBase<std::string>
 }; // specialized class
 
 
+/**@brief Simple table, where all cells keep text. */
+class SimpleTextTable
+{
+    std::vector<std::string> vColHeads;
+    std::vector<std::vector<std::string>> vTblBody;
+
+  public:
+    /** @brief Constructs a simple text table. */
+    SimpleTextTable( const std::vector<std::string>& rvColHeads ) : vColHeads( rvColHeads )
+    {}
+
+    /** @brief Add a fresh row to the table. */
+    void addRow( const std::vector<std::string>& rvRow )
+    {
+        assert( rvRow.size( ) == vColHeads.size( ) );
+        vTblBody.push_back( rvRow );
+    } // method
+
+    /** @brief Print the table in formated layout. */
+    void print( )
+    {
+        fort::char_table xTable;
+        xTable << fort::header;
+        // print table head
+        for( auto& rsStr : vColHeads )
+            xTable << rsStr;
+        xTable << fort::endr;
+        // print table rows
+        for( auto& rvRow : vTblBody )
+        {
+            for( auto& rsStr : rvRow )
+                xTable << rsStr;
+            xTable << fort::endr;
+        } // for
+        std::cout << xTable.to_string( ) << std::endl;
+    } // method
+}; // class ( SimpleTextTable )
+
+
+/** @brief Models an "immediate" (not prepared) query. This kind of queries is fully parsed with each execution.
+ *  Some statements in MySQL can not be executed via prepared queries. In this case it is necessary to use an
+ *  immediate query.
+ */
+template <typename DBConPtrType> class ImmediateQueryTmpl
+{
+  private:
+    DBConPtrType pMySQLDBCon; // MySQL DB Connection // TODO make getter in DBCON class
+    std::string sQueryTxt; // statement text of query
+    MYSQL_RES* pQueryRes; // pointer to result of query
+
+    /** @brief Get MySQL erroe as text. */
+    std::string errMsg( )
+    {
+        std::string sErrTxt = "MySQL:: Query error:\n";
+#ifdef VERBOSE_ERROR_MESG
+        sErrTxt.append( "Affected query: " ).append( sQueryTxt ).append( "\n" );
+        sErrTxt.append( "Detailed MySQL error msg:\n" );
+#endif
+        sErrTxt.append( mysql_error( this->pMySQLDBCon->pMySQLHandler ) ).append( "\n" );
+        return sErrTxt;
+    } // method
+
+  public:
+    /** @brief Constructs an immediate query. */
+    ImmediateQueryTmpl( DBConPtrType pMySQLDBCon, const std::string& rsQueryTxt )
+        : pMySQLDBCon( pMySQLDBCon ), sQueryTxt( rsQueryTxt ), pQueryRes( NULL )
+    {}
+
+    /** @brief Executes the query and stores the result on the client. */
+    SimpleTextTable exec( )
+    {
+        // Execute query
+        if( mysql_query( this->pMySQLDBCon->pMySQLHandler, sQueryTxt.c_str( ) ) )
+            throw std::runtime_error( "MySQL:: mysql_query() failed\n" + this->errMsg( ) );
+
+        // Store the outcome on client side
+        this->pQueryRes = mysql_store_result( this->pMySQLDBCon->pMySQLHandler );
+        if( !this->pQueryRes )
+            throw std::runtime_error( "MySQL::mysql_store_result() failed\n" + this->errMsg( ) );
+
+        // Count the number of fields (columns) of the output
+        int num_fields = mysql_num_fields( pQueryRes );
+
+        // Get the column names and store them in returned table
+        MYSQL_FIELD* pField;
+        std::vector<std::string> vFieldNames;
+        while( ( pField = mysql_fetch_field( pQueryRes ) ) )
+            vFieldNames.emplace_back( std::string( pField->name ) );
+
+        // Get the rows of the returned table
+        SimpleTextTable xretTbl( vFieldNames );
+        MYSQL_ROW ppRow; // return data as array of strings
+        while( ( ppRow = mysql_fetch_row( this->pQueryRes ) ) )
+        {
+            std::vector<std::string> vRow;
+            for( size_t uiItr = 0; uiItr < num_fields; uiItr++ )
+                vRow.emplace_back( ppRow[ uiItr ] ? std::string( ppRow[ uiItr ] ) : "NULL" );
+            xretTbl.addRow( vRow );
+        } // while
+
+        return xretTbl;
+    } // method
+
+    /** @brief Frees all allocated resources. */
+    ~ImmediateQueryTmpl( )
+    {
+        if( pQueryRes )
+            mysql_free_result( pQueryRes );
+    } // destructor
+}; // class ( ImmediateQueryTmpl )
+
+
+/** @brief Explains MySQL queries and statements. Required for query optimization purposes. */
+template <typename DBConPtrType> class QueryExplainer
+{
+    DBConPtrType pMySQLDBCon; // keeps MySQL connection
+
+  public:
+    /** @brief Explains the execution strategy for a MySQL statement.
+     *  The statement delivered for inspection must be free of placeholders.
+     */
+    void explain( std::string rsStmtText )
+    {
+        // Create and execute EXPLAIN-statement.
+        std::string sExplStmtText = "EXPLAIN " + rsStmtText;
+        ImmediateQueryTmpl<DBConPtrType> xExplainQuery( pMySQLDBCon, sExplStmtText );
+        auto xTbl = xExplainQuery.exec( );
+        xTbl.print( );
+    } // method
+
+    /** @brief Constructs query explainer using the MySQL connection given as argument */
+    QueryExplainer( DBConPtrType pMySQLDBCon ) : pMySQLDBCon( pMySQLDBCon )
+    {}
+}; // class ( QueryExplainer )
+
+
 /** @brief MqSQL connection to database
  */
 class MySQLConDB
@@ -481,9 +620,7 @@ class MySQLConDB
         } // private method
     }; // class
 
-    /** @brief Input argument of a MySQL query
-     *  @details
-     */
+    /** @brief Input argument of a prepared MySQL query. */
     class StmtArg
     {
       private:
@@ -670,8 +807,8 @@ class MySQLConDB
 
         /** @brief Binds the arguments args to the parameter block indicated by OFFSET.
          *  Parameter blocks are used for bulk inserts merely. In this case, the SQL-statement arguments are
-         *  a repetitive pattern of equal types (the ypes of a single row). OFFSET N represent represents the
-         *  N'th occurrence of such repetitive pattern. The parameter args will be injected (binded) at this N'th
+         *  a repetitive pattern of equal types (the types of a single row). OFFSET N represent represents the
+         *  N'th occurrence of such repetitive pattern. The parameters args will be injected (binded) at this N'th
          *  occurrence.
          */
         template <int OFFSET, typename... ArgTypes> inline void bind( ArgTypes&&... args )
@@ -734,8 +871,7 @@ class MySQLConDB
 
         int iStatus; // informs about the outcome of the last fetch; initially -1 representing unknown
 
-        /** @brief Performs: 1. Query execution, 2. binding of results.
-         */
+        /** @brief Performs: 1. Query execution, 2. Binding of results (outcome of query). */
         template <typename... ArgTypes> inline void execBind( ArgTypes... args )
         {
             this->bindAndExec( std::forward<ArgTypes>( args )... );
@@ -770,10 +906,11 @@ class MySQLConDB
         /** @brief Constructs a predefined query using the passed SQL statement.
          *  The behavior of the query can be additionally controlled by an optionally passed JSON object.
          */
-        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{} )
+        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{ } )
             : PreparedStmtTmpl<DBPtrType>( pMySQLDB,
                                            rsStmtText ), // class superclass constructor
               tCellWrappers( ), // initialized via default constructors (couldn't find better way :-( )
+              pPrepareMetaResult( NULL ),
               doStoreResult( true ),
               iStatus( -1 ) // initially unknown
         {
@@ -794,19 +931,20 @@ class MySQLConDB
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
-            for_each_in_tuple_pairwise( tCellWrappers,
-                                        [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
-                                            // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
-                                            rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
-                                        },
-                                        tCellValues );
+            for_each_in_tuple_pairwise(
+                tCellWrappers,
+                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                    // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
+                    rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
+                },
+                tCellValues );
 
             // Parse the JSON configuration of the query.
             parseJsonConfig( rjConfig );
         } // constructor
 
         /** @brief Performs argument binding before fetching. Has to called after statement execution and
-         * before fetching table rows.
+         *  before fetching table rows.
          */
         inline void bindResult( )
         {
@@ -845,7 +983,7 @@ class MySQLConDB
 #ifdef REPORT_ROWS_WITH_NULL_VALUES
             // Check for possible NULL values
             // Currently, there is no solution for these cases.
-            for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+            for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                 if( rCell.is_null )
                     throw std::runtime_error( "fetchNextRow reports a cell with NULL value." );
             } ); // for each tuple
@@ -854,7 +992,7 @@ class MySQLConDB
             if( this->iStatus == MYSQL_DATA_TRUNCATED )
             {
                 // Find the column(s) responsible and resize the buffer appropriately.
-                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                     if( rCell.error ) // error identifies the cell(s), where we have truncation
                     {
                         // Truncation can occur for variable size data only.
@@ -883,7 +1021,7 @@ class MySQLConDB
             // Pick variable size data (Text or Blob) from cell buffers.
             if( this->iStatus == 0 )
             {
-                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                     if( rCell.bIsVarSizeCell )
                         rCell.storeVarSizeCell( );
                 } ); // for each tuple
@@ -928,6 +1066,13 @@ class MySQLConDB
             return !( uiRowCount < mysql_stmt_num_rows( this->pStmt ) );
         } // method
 
+        /** @brief explains the execution strategy for the query */
+        void explain( )
+        {
+            QueryExplainer<DBPtrType> xQueryExplainer( this->pMySQLDB );
+            xQueryExplainer.explain( this->sStmtText );
+        } // method
+
         /* Destructor */
         ~PreparedQueryTmpl( )
         {
@@ -935,13 +1080,14 @@ class MySQLConDB
             if( this->pPrepareMetaResult )
                 mysql_free_result( pPrepareMetaResult );
         } // destructor
-    }; // inner class (PreparedQuery)
+    }; // class ( PreparedQuery )
 
     template <typename... ColTypes> using PreparedQuery = PreparedQueryTmpl<std::shared_ptr<MySQLConDB>, ColTypes...>;
 
-  private:
-    MYSQL* pMySQLHandler; // MySQL handler belonging to the current connection.
 
+  public:
+    MYSQL* pMySQLHandler; // MySQL handler belonging to the current connection.
+  private:
     /** @brief Generate a detailed MySQL error message
      */
     std::string errMsg( )
@@ -1043,22 +1189,22 @@ class MySQLConDB
     MySQLConDB& operator=( const MySQLConDB& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    MySQLConDB( const json& jDBConfig = {} ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
+    MySQLConDB( const json& jDBConfig = { } ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
         if( !( pMySQLHandler = mysql_init( NULL ) ) )
             throw MySQLConException( "Initialization of MySQL connection failed" );
 
         // Establish connection to database
-        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
+        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
 
         // Compile the statement that checks for the existence of an index.
         // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
-        this->pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, int64_t>>(
-            this, std::string( "SELECT COUNT( 1 ) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS "
-                               "WHERE table_schema = \"" )
-                      .append( jDBConfig[ "SCHEMA" ][ "NAME" ].get<std::string>( ) )
-                      .append( "\" AND table_name = ? AND index_name = ?" ) );
+        // this->pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, int64_t>>(
+        //    this, std::string( "SELECT COUNT( 1 ) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS "
+        //                       "WHERE table_schema = \"" )
+        //              .append( jDBConfig[ "SCHEMA" ][ "NAME" ].get<std::string>( ) )
+        //              .append( "\" AND table_name = ? AND index_name = ?" ) );
 
         // Mirror all client side MySQL variables locally.
         this->mirrorMySQLVars( );
@@ -1074,7 +1220,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [&]( ) { this->close( ); } );
+        do_exception_safe( [ & ]( ) { this->close( ); } );
     } // destructor
 
     /** @brief: Immediately execute the SQL statement giver as argument.
@@ -1118,6 +1264,15 @@ class MySQLConDB
         // DEL: Tell MySQL to USE this database
         // DEL: sSchemaInUse = rsSchemaName;
         execSQL( "USE " + rsSchemaName );
+
+        // Each time a connection uses a new schema, the index existence check has to be compiled for the new schema.
+        // Compile the statement that checks for the existence of an index.
+        // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
+        this->pIndexExistStmt = std::make_unique<PreparedQueryTmpl<MySQLConDB*, int64_t>>(
+            this, std::string( "SELECT COUNT( 1 ) IndexIsThere FROM INFORMATION_SCHEMA.STATISTICS "
+                               "WHERE table_schema = \"" )
+                      .append( rsSchemaName )
+                      .append( "\" AND table_name = ? AND index_name = ?" ) );
     } // method
 
     /** @brief Reads a MySQL variable and returns it value in rVal.
@@ -1209,128 +1364,6 @@ class MySQLConDB
                                     sCSVFileName.generic_string( ) + "\" INTO TABLE " + sTblName +
                                     " FIELDS TERMINATED BY '\t' ENCLOSED BY '\\\'' ESCAPED BY '\\\\'" ) );
     } // method
-
-    std::string string_to_hex( const std::string& input )
-    {
-        static const char hex_digits[] = "0123456789ABCDEF";
-
-        std::string output;
-        output.reserve( input.length( ) * 2 );
-        for( unsigned char c : input )
-        {
-            output.push_back( hex_digits[ c >> 4 ] );
-            output.push_back( hex_digits[ c & 15 ] );
-            output.push_back( ' ' );
-        }
-        return output;
-    }
-    std::string buf_to_hex( uint8_t* pBuf, size_t uiSize )
-    {
-        static const char hex_digits[] = "0123456789ABCDEF";
-
-        std::string output;
-        output.reserve( uiSize * 2 );
-        for( auto pItr = pBuf; pItr < pBuf + uiSize; pItr++ )
-        {
-            uint8_t c = *pItr;
-            // std::cout << "1: " << int( c >> 4 ) << " 2: " << int( c & 15 ) << std::endl;
-            output.push_back( hex_digits[ c >> 4 ] );
-            output.push_back( hex_digits[ c & 15 ] );
-            output.push_back( ' ' );
-        }
-        return output;
-    }
-    // 00 00 00 00 00 00 00 32 02 02 43 84 40 DF EC 00 00 40 C5 9F 00 00 40 FD AB D8 0F B6 00 02 40
-    // 00 00 00 00 00 00 00 32 02 02 43 84 40 DF EC 5C 30 00 40 C5 9F 00 00 40 FD AB D8 0F B6 00 02 40
-
-    // 00 00 00 00 00 00 00 32 B5 02 41 BD 03 41 E6 27 42 EA 27 43 A3 BF 41 00 01 46
-    // 00 00 00 00 00 00 00 32 B5 02 41 BD 03 41 E6 5C 27 42 EA 5C 27 43 A3 BF 41 00 01 46
-
-    // 00 00 00 00 00 00 00 32 00 01 42 B0 01 41 B0 95 43 C2 60 43 C2 09 49 01
-    // 00 00 00 00 00 00 00 32 00 01 42 B0 01 41 B0 95 43 C2 60 43 C2
-
-    // 00 00 00 00 00 00 00 32 41 E1 27 03 01 40 A3 02 42 9B 47 D8 07 89 88 41 98 02 02
-    // 00 00 00 00 00 00 00 32 41 E1 5C 27 03 01 40 A3 02 42 9B 47 D8 07 89 88 41 98 02 02
-
-    std::string blobEncodeAsString( uint8_t* pFrom, size_t uiLength )
-    {
-        std::string sEncodedText;
-        for( auto pItr = pFrom; pItr < pFrom + uiLength; pItr++ )
-        {
-            switch( *pItr )
-            {
-                // case '\0':
-                //     sEncodedText.append( "\\0" );
-                //     break;
-                // case '\'':
-                //     sEncodedText.append( "\\'" );
-                //     break;
-                case '\t':
-                    sEncodedText.append( "\\t" );
-                    break;
-                // case '"':
-                //    sEncodedText.append( "\\\"" );
-                //    break;
-                // case '\b':
-                //    sEncodedText.append( "\\b" );
-                //    break;
-                // case '\n':
-                //    sEncodedText.append( "\\n" );
-                //    break;
-                // case '\r':
-                //    sEncodedText.append( "\\r" );
-                //    break;
-                // case '\t':
-                //    sEncodedText.append( "\\t" );
-                //    break;
-                // case '\26':
-                //    sEncodedText.append( "\\Z" );
-                //    break;
-                // case '\\':
-                //     sEncodedText.append( "\\\\" );
-                //     break;
-                // case '%':
-                //    sEncodedText.append( "\\%" );
-                //    break;
-                // case '_':
-                //    sEncodedText.append( "\\_" );
-                //    break;
-                default:
-                    sEncodedText.push_back( *pItr );
-            } // switch
-        } // for
-        // std::cout << string_to_hex(sEncodedText) << std::endl;
-        std::cout << buf_to_hex( pFrom, uiLength ) << std::endl;
-        return sEncodedText;
-    } // method
-
-    /** @brief Represents a BLOB as string for safe output in a CSV file.
-     * @details See: https://dev.mysql.com/doc/refman/8.0/en/mysql-real-escape-string-quote.html
-     */
-    std::string blobAsQuotedSafeString( uint8_t* pFrom, size_t uiLength )
-    {
-        return blobEncodeAsString( pFrom, uiLength );
-#if 0
-        ByteBuffer xByteBuf;
-        xByteBuf.resize( uiLength * 2 + 3 ); // + 3 = "'" at the beginning and end plus finishing NULL
-        auto pBufStart = xByteBuf.get( );
-
-        // Regarding mysql_real_escape_string_quote see:
-        // https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-6.html#mysqld-5-7-6-feature
-#ifdef MARIADB_BASE_VERSION
-        auto uiEncSize = mysql_real_escape_string( pMySQLHandler, pBufStart + 1, pFrom, (unsigned long)uiLength );
-#else
-        auto uiEncSize =
-            mysql_real_escape_string_quote( pMySQLHandler, pBufStart + 1, pFrom, (unsigned long)uiLength, '\'' );
-#endif
-
-        pBufStart[ 0 ] = '\'';
-        pBufStart[ uiEncSize + 1 ] = '\'';
-        pBufStart[ uiEncSize + 2 ] = '\0';
-        return std::string( pBufStart ); // mysql_real_escape_string_quote()
-#endif
-    } // method
-
 
   protected:
     void checkDBCon( )
