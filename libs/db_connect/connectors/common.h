@@ -648,21 +648,20 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             ( doSingleBind<Idx>( a[ Idx ] ), ... );
         } // meta
 
-#define MAX_COMPILETIME_BIND_N 800
+#define MAX_COMPILETIME_BIND_N 1200
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
          * @details
          * This function is only used if the template parameter is N > MAX_COMPILETIME_BIND_N.
          * In that case we bind the parameters via a runtime loop.
-         * @todo show arne
          */
         template <typename T, std::size_t N>
         typename std::enable_if</* condition -> */ ( N > MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
         forAllDoBind( const std::array<T, N>& a )
         {
-            for( size_t uiI = 0; uiI < N; uiI++ ) // the runtime bind loop
+            for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
                 STD_APPLY( [&]( auto&... args ) //
-                           { pBulkInsertStmt->bindRuntime( (int)uiI, args... ); },
-                           a[ uiI ] );
+                           { pBulkInsertStmt->bindRuntime( (int)uiOffset, args... ); },
+                           a[ uiOffset ] );
         } // meta
 
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)

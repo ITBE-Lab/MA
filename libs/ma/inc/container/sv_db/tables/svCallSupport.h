@@ -34,7 +34,7 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
     SQLStatement<DBCon> xDeleteCall;
 
   public:
-#if DEBUG_LEVEL == 0 // @todo discuss with arne
+#if DEBUG_LEVEL == 0 
     // increase the bulk inserter size on this table
     using uiBulkInsertSize = std::integral_constant<size_t, 5000>;
 #endif

@@ -19,29 +19,50 @@ namespace libMA
  *  There are two goals:
  *  - provide the threads with separate queue elements with as little locking as possible.
  *  - don't use more elements than necessary
+ * To achieve this, there are two queues in this class:
+ * - a priority queue for elements that have already been touched
+ * - a low priority queue for elements that are un touched
  */
 template <class ContentType> class CyclicQueueBase : public Container
 {
+    /** @brief low priority queue */
     std::shared_ptr<ContainerVector<std::shared_ptr<ContentType>>> pUntouchedContainers;
+    /** @brief used for this->iter() */
     std::shared_ptr<ContainerVector<std::shared_ptr<ContentType>>> pAllContainers;
 
     std::mutex xMutex;
     std::condition_variable xCondition; // For wait, notify synchronization purposes.
+
+    /** @brief high priority queue */
     std::queue<std::shared_ptr<ContentType>> xTouchedContainers;
 
   public:
+    /** @brief number of elements that have been removed from the queue but not returned */
     size_t uiUnfinishedContainers;
 
+    /** @brief construct a cyclic queue
+     * @details
+     * Inserts all elements in pContent into the low priority queue
+     */
     CyclicQueueBase( std::shared_ptr<ContainerVector<std::shared_ptr<ContentType>>> pContent )
-        : pUntouchedContainers( pContent ), pAllContainers(pContent), uiUnfinishedContainers( pContent->size( ) )
+        : pUntouchedContainers( pContent ), pAllContainers( pContent ), uiUnfinishedContainers( pContent->size( ) )
     {} // constructor
-
+    /** @brief construct a cyclic queue
+     * @details
+     * Both queues are empty in this case
+     */
     CyclicQueueBase( )
         : pUntouchedContainers( std::make_shared<ContainerVector<std::shared_ptr<ContentType>>>( ) ),
           pAllContainers( std::make_shared<ContainerVector<std::shared_ptr<ContentType>>>( ) ),
           uiUnfinishedContainers( 0 )
     {} // constructor
 
+    /** @brief removed and returns the head of the queue
+     * @details
+     * If the priority queue is not empty it's head is removed and returned.
+     * Otherwise the head of the low priority queue is removed and returned.
+     * If both queues are empty an exception is thrown
+     */
     inline std::shared_ptr<ContentType> pop( )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
@@ -66,6 +87,11 @@ template <class ContentType> class CyclicQueueBase : public Container
         throw std::runtime_error( "should never be able to read this line" );
     } // method
 
+    /** @brief puts an element into the queue
+     * @details
+     * The element is appended to the priority queue
+     * @note this can only be called with elements that are taken from this queue via pop()
+     */
     inline void push( std::shared_ptr<ContentType> pContainer )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
@@ -73,6 +99,11 @@ template <class ContentType> class CyclicQueueBase : public Container
         xCondition.notify_one( );
     } // method
 
+    /** @brief puts an element into the queue
+     * @details
+     * The element is appended to the low priority queue.
+     * @note this cannot be called with elements that have been taken from this queue via pop()
+     */
     inline void add( std::shared_ptr<ContentType> pContainer )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
@@ -108,24 +139,22 @@ template <class ContentType> class CyclicQueueBase : public Container
         return uiUnfinishedContainers;
     } // method
 
-    template<typename F>
-    inline void iterTouched( F&& func )
+    template <typename F> inline void iterTouched( F&& func )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
-        for(size_t uiI = 0; uiI < xTouchedContainers.size(); uiI++)
+        for( size_t uiI = 0; uiI < xTouchedContainers.size( ); uiI++ )
         {
-            func(xTouchedContainers.front());
+            func( xTouchedContainers.front( ) );
             // there is no regular iteration through the queue so we cycle all elements
-            xTouchedContainers.push(xTouchedContainers.front());
-            xTouchedContainers.pop();
+            xTouchedContainers.push( xTouchedContainers.front( ) );
+            xTouchedContainers.pop( );
         } // for
     } // method
-    template<typename F>
-    inline void iter( F&& func )
+    template <typename F> inline void iter( F&& func )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
-        for(auto pContainer : *pAllContainers)
-            func(pContainer);
+        for( auto pContainer : *pAllContainers )
+            func( pContainer );
     } // method
 
 }; // class

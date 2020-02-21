@@ -52,7 +52,7 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
     SQLStatement<DBCon> xDeleteRun;
 
   public:
-#if DEBUG_LEVEL == 0 // @todo discuss with arne
+#if DEBUG_LEVEL == 0
     // increase the bulk inserter size on this table
     using uiBulkInsertSize = std::integral_constant<size_t, 5000>;
 #endif
