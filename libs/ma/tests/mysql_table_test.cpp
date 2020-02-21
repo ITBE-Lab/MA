@@ -1,8 +1,8 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#include "MySQL_con.h" // MySQL connector
-#include "common.h"
+#include "mysql_con.h" // MySQL connector
+#include "sql_api.h"
 #include "container/sv_db/tables/sequencer.h"
 #include "db_con_pool.h"
 #include <cstdlib>

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <MySQL_con.h>
+#include <mysql_con.h>
 #include <db_con_pool.h>
-#include <common.h>
+#include <sql_api.h>
 
 /// @brief configure the database connection type that is exported to python graph related classes
 using DBCon = PooledSQLDBCon<MySQLConDB>;

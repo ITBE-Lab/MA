@@ -6,9 +6,8 @@
  */
 #pragma once
 
-#include "common.h" // NEW DATABASE INTERFACE
+#include "sql_api.h" // NEW DATABASE INTERFACE
 #include "container/svJump.h"
-#include "db_sql.h"
 
 namespace libMA
 {

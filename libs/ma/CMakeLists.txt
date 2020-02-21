@@ -8,7 +8,7 @@ project("MA Lib" VERSION 1.1.1 DESCRIPTION "Core library of MA")
 # set(BOOST_ROOT "/opt/dev/")
 # find_package( Boost 1.60.0 COMPONENTS python3 )
 
-# Get all .cpp files in the src folder
+# Get all .cpp files in the src folder 
 file(GLOB_RECURSE MA_SRC
     "src/*.cpp"
 ) # file

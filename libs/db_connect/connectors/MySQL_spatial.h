@@ -2,7 +2,7 @@
  * Created: Nov. 2019
  * This file is part of the ITBE-Lab code collection.
  * MIT License
- * @file MySQL_con.h
+ * @file mysql_spatial.h
  * @brief Spatial datatype support for the MySQL engine support.
  *        NOTICE: This file is intended to be included via mysql.h merely.
  */

@@ -5,9 +5,8 @@
  */
 #pragma once
 
-#include "MySQL_con.h" // NEW DATABASE INTERFACE
+#include "mysql_con.h" // NEW DATABASE INTERFACE
 #include "container/seed.h"
-#include "db_sql.h"
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
 #include <array>

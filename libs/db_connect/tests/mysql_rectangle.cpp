@@ -8,8 +8,8 @@
 #include <iostream>
 
 // DB related includes
-#include "MySQL_con.h" // MySQL connector
-#include "common.h"
+#include "mysql_con.h" // MySQL connector
+#include "sql_api.h"
 #include "wkb_spatial.h"
 
 auto jDBConfig = json

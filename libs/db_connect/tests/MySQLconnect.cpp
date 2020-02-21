@@ -5,11 +5,11 @@
  */
 #include <iostream>
 // First include the connector
-#include <MySQL_con.h>
+#include <mysql_con.h>
 // Then include the SQL common stuff that is currently below
 // #define SQL_VERBOSE
 
-#include <common.h>
+#include <sql_api.h>
 #include <db_con_pool.h>
 #include <threadPool.h>
 

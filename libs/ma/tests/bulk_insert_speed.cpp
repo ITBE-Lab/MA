@@ -5,8 +5,8 @@
 #include <iostream>
 #include <time.h>
 
-#include <MySQL_con.h>
-#include <common.h>
+#include <mysql_con.h>
+#include <sql_api.h>
 #include <db_con_pool.h>
 
 #include "container/sv_db/tables/pairedRead.h"

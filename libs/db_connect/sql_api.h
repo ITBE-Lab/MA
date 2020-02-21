@@ -1,7 +1,7 @@
 /* Authors: Arne Kutzner and Markus Schmidt
  * Created: Jan. 2020
  * MIT License
- * @file common.h
+ * @file sql_api.h
  * @brief General API for SQL-like databases. Use this API in combination with a connector to work with SQL databases.
  */
 
@@ -676,7 +676,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             ( doSingleBind<Idx>( a[ Idx ] ), ... );
         } // meta
 
-#define MAX_COMPILETIME_BIND_N 1200
+#define MAX_COMPILETIME_BIND_N 800
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
          * @details
          * This function is only used if the template parameter is N > MAX_COMPILETIME_BIND_N.

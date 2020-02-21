@@ -6,8 +6,6 @@ cmake_minimum_required (VERSION 3.8)
 
 # Include contributed (external) projects.
 
-message( "Include sqlite3 ..." )
-add_subdirectory (sqlite3)
 
 # Define a header only library as taeget
 add_library(contrib_CPP_header INTERFACE)

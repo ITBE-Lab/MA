@@ -5,7 +5,7 @@
  * One table of the database.
  */
 #pragma once
-#include "common.h"
+#include "sql_api.h"
 
 namespace libMA
 {

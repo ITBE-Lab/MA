@@ -6,8 +6,7 @@
  */
 #pragma once
 
-#include "common.h" // NEW DATABASE INTERFACE
-#include "db_sql.h"
+#include "sql_api.h" // NEW DATABASE INTERFACE
 
 namespace libMA
 {

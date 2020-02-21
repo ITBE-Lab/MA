@@ -12,21 +12,14 @@ if( MySQL_FOUND )
 endif()
 
 # Define the target (library CppSQLite3)
-add_library(dbSQL STATIC
-	connectors/CppSQLite3.cpp db_sql.cpp
-)
-# cmake will add the -fPIC for compilation with GCC
-set_property( TARGET dbSQL PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(dbSQL INTERFACE)
 
-# Activate __declspec(dllexport) for DLL export 
-# PRIVATE => depending projects will not inherit the EXPORT definition
-target_compile_definitions( dbSQL PRIVATE EXPORT )
 
-# Insert the sqlite3 object file
-target_link_libraries ( dbSQL LINK_PUBLIC sqlite3 fort ${MYSQL_LIBRARIES} )
+# link to the fort object file
+target_link_libraries ( dbSQL INTERFACE fort ${MYSQL_LIBRARIES} )
 
 # location of all includes 
-target_include_directories( dbSQL PUBLIC connectors . ${MYSQL_INCLUDE_DIRS})
+target_include_directories( dbSQL INTERFACE connectors . ${MYSQL_INCLUDE_DIRS})
 
 # # Define a header only library as taeget
 # add_library(dbSQL INTERFACE)
