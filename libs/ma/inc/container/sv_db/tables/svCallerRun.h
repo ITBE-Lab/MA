@@ -25,8 +25,9 @@ const json jSvCallerRunTableDef = {
      {{{COLUMN_NAME, "name"}},
       {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
       {{COLUMN_NAME, "time_stamp"}},
-      {{COLUMN_NAME, "sv_jump_run_id"}}}},
-    {FOREIGN_KEY, {{COLUMN_NAME, "sv_jump_run_id"}, {REFERENCES, "sv_jump_run_table(id)"}}}};
+      {{COLUMN_NAME, "sv_jump_run_id"}}}}
+      // @todo ask arne about inserting NULL
+    /*,{FOREIGN_KEY, {{COLUMN_NAME, "sv_jump_run_id"}, {REFERENCES, "sv_jump_run_table(id)"}}}*/};
 
 template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<DBCon>
 {

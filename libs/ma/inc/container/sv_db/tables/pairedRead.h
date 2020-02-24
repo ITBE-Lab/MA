@@ -12,16 +12,24 @@
 namespace libMA
 {
 
+/*
+@todo show arne bug: PriKeyDefaultType as first column sql_api.h:835
+
+using PairedReadTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
+                                                      PriKeyDefaultType, // first read (foreign key)
+                                                      PriKeyDefaultType // second read (foreign key)
+                                                      >;
+*/
+
 template <typename DBCon>
-using PairedReadTableType = SQLTable<DBCon, // DB connector type
-                                     PriKeyDefaultType, // first read (foreign key)
-                                     PriKeyDefaultType // second read (foreign key)
-                                     >;
+using PairedReadTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
+                                                      PriKeyDefaultType, // first read (foreign key)
+                                                      PriKeyDefaultType // second read (foreign key)
+                                                      >;
 
 const json jPairedReadTableDef = {
     {TABLE_NAME, "paired_read_table"},
     {TABLE_COLUMNS, {{{COLUMN_NAME, "first_read"}}, {{COLUMN_NAME, "second_read"}}}},
-    {PRIMARY_KEY, "first_read, second_read"},
     {FOREIGN_KEY, {{COLUMN_NAME, "first_read"}, {REFERENCES, "read_table(id) ON DELETE CASCADE"}}},
     {FOREIGN_KEY, {{COLUMN_NAME, "second_read"}, {REFERENCES, "read_table(id) ON DELETE CASCADE"}}}};
 

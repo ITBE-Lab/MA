@@ -9,7 +9,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 2
 
-    # creates scope so that deconstructor of call inserter is triggered (commits insert transaction)
+    # creates scope so that destructor of call inserter is triggered (commits insert transaction)
     def graph():
         analyze = AnalyzeRuntimes()
         print("\tsetting up graph...")
@@ -111,7 +111,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
     print("computing score index...")
     start = datetime.datetime.now()
-    call_table.add_score_index(sv_caller_run_id) # does nothing at the moment
+    call_table.add_score_index(sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("compute_score_index", delta.total_seconds(), False, lambda x: x)

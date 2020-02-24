@@ -14,7 +14,7 @@
 // Part1 : Specify the corresponding MySQL-type for your blob.
 template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<WKBUint64Rectangle>( )
 {
-    return "BLOB"; // WKB data are passed as BLOB
+    return "POLYGON"; // WKB data are passed as BLOB
 } // specialized method
 
 // Part1b : Spatial types require an indication that the argument passed at a placeholder's

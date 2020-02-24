@@ -6,10 +6,10 @@
  */
 #pragma once
 
-#include "sql_api.h"
 #include "container/pack.h"
 #include "container/svJump.h"
 #include "geom.h"
+#include "sql_api.h"
 #include "system.h"
 #include "threadPool.h"
 #include "wkb_spatial.h"
@@ -334,16 +334,16 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "supporting_reads"}},
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
-              {{COLUMN_NAME, "rectangle"}}}},
+              {{COLUMN_NAME, "rectangle"}, {CONSTRAINTS, "NOT NULL SRID 0"}}}},
             {GENERATED_COLUMNS,
-             {{{COLUMN_NAME, "score"},
-               {TYPE, "DOUBLE"},
-               {AS, "(supporting_reads * 1.0) / reference_ambiguity"},
-               // stored true raises errors... :(
-               {STORED, false}}}},
-            {FOREIGN_KEY,
-             {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},
-            {FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}};
+             {{{COLUMN_NAME, "score"}, {TYPE, "DOUBLE"}, {AS, "(supporting_reads * 1.0) / reference_ambiguity"}}}},
+            // @todo how to insert NULL into sv_caller_run_id ?
+            // @todo ask arne about inserting NULL
+            /*{FOREIGN_KEY,
+             {{COLUMN_NAME, "sv_caller_run_id"}, {REFERENCES, "sv_caller_run_table(id) ON DELETE CASCADE"}}},*/
+            // @todo regex_id is unused at the moment
+            /*{FOREIGN_KEY, {{COLUMN_NAME, "regex_id"}, {REFERENCES, "sv_call_reg_ex_table(id) ON DELETE SET NULL"}}}*/
+        };
     }; // method
 
     SvCallTable( std::shared_ptr<DBCon> pConnection )
@@ -393,6 +393,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline void addScoreIndex( int64_t iCallerRunId )
     {
+        this->addIndex( json{{INDEX_NAME, "rectangle_index"}, {INDEX_COLUMNS, "rectangle"}, {INDEX_TYPE, "SPATIAL"}} );
+
 #if 0 // @todo apparently the mysql docs are lying? get errors doing this...
     // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
     // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html

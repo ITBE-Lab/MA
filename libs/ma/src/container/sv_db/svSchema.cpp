@@ -33,7 +33,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<DBConSingle> pConnection, std::sha
                                             "SELECT COUNT(*) "
                                             "FROM sv_call_table "
                                             "WHERE sv_caller_run_id = ? " // dim 1
-                                            "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
                                             "AND score >= ? " );
 
 
