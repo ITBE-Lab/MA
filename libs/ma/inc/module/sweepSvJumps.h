@@ -753,7 +753,7 @@ class FilterLowScoreCalls
       public AbstractFilter
 {
   public:
-    double dMinScore = 2.0;
+    double dMinScore = 0.5;
 
     FilterLowScoreCalls( const ParameterSetManager& rParameters ) : AbstractFilter( "FilterLowScoreCalls" )
     {} // constructor

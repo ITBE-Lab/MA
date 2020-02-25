@@ -6,30 +6,33 @@ namespace libMA
 // @todo this can be done via a linesweep...
 template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
 {
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
+    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
         pConnection,
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
         "FROM sv_call_table "
         "WHERE sv_caller_run_id = ? "
-        "ORDER BY id " );
+        "ORDER BY id ",
+        json{}, "combineOverlappingCalls::xQuery" );
 
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
+    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
         pConnection,
         "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
         "       inserted_sequence, supporting_reads "
         "FROM sv_call_table "
         "WHERE sv_caller_run_id = ? "
-        "AND ST_Overlaps(rectangle, ST_PolyFromWKB(?, 0)) "
+        "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
         "AND id > ? "
-        "AND switch_strand = ? " );
+        "AND switch_strand = ? ",
+        json{}, "combineOverlappingCalls::xQuery2" );
 
-    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
+    ExplainedSQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
         pConnection,
         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
         "sv_jump_table.id "
         "FROM sv_call_support_table "
         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-        "WHERE sv_call_support_table.call_id = ? " );
+        "WHERE sv_call_support_table.call_id = ? ",
+        json{}, "combineOverlappingCalls::xQuerySupport" );
 
     SvCallTable<DBCon> xSvTable( pConnection );
     SvCallSupportTable<DBCon> xSvCallSupportTable( pConnection );
@@ -86,12 +89,9 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
                 uiPrimInsertSizeAvg /= xPrim.vSupportingJumps.size( );
 
 
-                // DEL: while( !xIt2.eof( ) )
                 while( !xQuery2.eof( ) )
                 {
-                    // DEL: auto xTup2 = xIt2.get( );
                     auto xTup2 = xQuery2.get( );
-                    // DEL: xIt2.next( );
                     xQuery2.next( );
 
                     if( sDeleted.find( std::get<0>( xTup2 ) ) != sDeleted.end( ) )

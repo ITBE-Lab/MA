@@ -35,6 +35,7 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
 
 template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
+#if 0
     class OverlapCache
     {
         typedef SQLTable<DBCon, // DB connector type
@@ -78,7 +79,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                   sTableName( "overlap_cache_table_" + std::to_string( iCallerRunIdA ) + "_" +
                               std::to_string( iCallerRunIdB ) ),
                   xNumOverlaps( pDatabase,
-                                // each inner call can overlap an outer call at most once
+                                // each inner_table call can overlap an outer call at most once
                                 "SELECT id, score, from_pos, from_size, "
                                 "       to_pos, to_size, switch_strand "
                                 "FROM sv_call_table "
@@ -173,7 +174,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                         [&]( size_t, size_t uiJobId_ ) {
                             SQLQuery<DBCon, int64_t> xNumOverlapsHelper1(
                                 pDatabase,
-                                // make sure that inner overlaps the outer:
+                                // make sure that inner_table overlaps the outer:
                                 "SELECT id "
                                 "FROM sv_call_table "
                                 "WHERE sv_caller_run_id = ? "
@@ -182,7 +183,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                 "LIMIT 1 " );
                             SQLQuery<DBCon, int64_t> xNumOverlapsHelper2(
                                 pDatabase,
-                                // make sure that inner does not overlap with any other call with higher score
+                                // make sure that inner_table does not overlap with any other call with higher score
                                 "SELECT id "
                                 "FROM sv_call_table"
                                 "WHERE id != ? "
@@ -305,6 +306,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             return uiRet;
         } // method
     }; // class
+#endif
 
     std::shared_ptr<DBCon> pConnection;
     SQLQuery<DBCon, uint32_t> xQuerySize;
@@ -315,7 +317,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xSetCoverageForCall;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
-    std::shared_ptr<OverlapCache> pOverlapCache;
+    ExplainedSQLQuery<DBCon, uint32_t> xNumOverlaps;
+    ExplainedSQLQuery<DBCon, uint32_t> xNumInvalidCalls;
+    // std::shared_ptr<OverlapCache> pOverlapCache;
 
   public:
     // Consider: Place the table on global level
@@ -372,7 +376,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
           xSetCoverageForCall( pConnection,
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
-                               "WHERE id = ?" ),
+                               "WHERE id = ? " ),
           xDeleteCall( pConnection,
                        "DELETE FROM sv_call_table "
                        "WHERE id = ? " ),
@@ -387,21 +391,64 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    supporting_reads = ?, "
                        "    reference_ambiguity = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
-                       "WHERE id = ? " )
-    //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo reenable this..
+                       "WHERE id = ? " ),
+          xNumOverlaps( pConnection,
+                        "SELECT COUNT(*) "
+                        "FROM sv_call_table AS outer_table "
+                        "WHERE sv_caller_run_id = ? "
+                        "AND score >= ? "
+                        "AND EXISTS ( " // check for run B
+                        "   SELECT * "
+                        "   FROM sv_call_table AS inner_table "
+                        "   WHERE inner_table.sv_caller_run_id = ? "
+                        "   AND MBRIntersects(inner_table.rectangle, outer_table.rectangle) "
+                        "   AND outer_table.switch_strand = inner_table.switch_strand "
+                        ") "
+                        // check that the call does not overlap with a call of higher score from the same run
+                        "AND NOT EXISTS ( "
+                        "   SELECT * "
+                        "   FROM sv_call_table AS inner_table "
+                        "   WHERE inner_table.sv_caller_run_id = outer_table.sv_caller_run_id "
+                        "   AND MBRIntersects(inner_table.rectangle, outer_table.rectangle) "
+                        "   AND outer_table.switch_strand = inner_table.switch_strand "
+                        "   AND (inner_table.score, inner_table.id) > (outer_table.score, outer_table.id) "
+                        ") ",
+                        json{}, "SvCallTable::xNumOverlaps" ),
+          xNumInvalidCalls( pConnection,
+                            "SELECT COUNT(*) "
+                            "FROM sv_call_table AS outer_table "
+                            "WHERE sv_caller_run_id = ? "
+                            "AND score >= ? "
+                            // check that the call does overlap with a call of higher score from the same run
+                            "AND EXISTS ( "
+                            "   SELECT * "
+                            "   FROM sv_call_table AS inner_table "
+                            "   WHERE inner_table.sv_caller_run_id = outer_table.sv_caller_run_id "
+                            "   AND MBRIntersects(inner_table.rectangle, outer_table.rectangle) "
+                            "   AND outer_table.switch_strand = inner_table.switch_strand "
+                            "   AND (inner_table.score, inner_table.id) > (outer_table.score, outer_table.id) "
+                            ") ",
+                            json{}, "SvCallTable::xNumInvalidCalls" )
+    //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo delete this..
     {} // default constructor
 
-    inline void addScoreIndex( int64_t iCallerRunId )
-    {
-        this->addIndex( json{{INDEX_NAME, "rectangle_index"}, {INDEX_COLUMNS, "rectangle"}, {INDEX_TYPE, "SPATIAL"}} );
 
-#if 0 // @todo apparently the mysql docs are lying? get errors doing this...
-    // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
-    // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
-        this->addIndex( json{{INDEX_NAME, "sv_call_table_score_index_" + std::to_string( iCallerRunId )},
-                             {INDEX_COLUMNS, "score"},
-                             {WHERE, "sv_caller_run_id = " + std::to_string( iCallerRunId )}} );
-#endif
+    SvCallTable( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iId ) : SvCallTable( pConnection )
+    {} // constructor
+
+    inline void genIndices( int64_t iCallerRunId )
+    {
+        this->addIndex( json{{INDEX_NAME, "rectangle"}, {INDEX_COLUMNS, "rectangle"}, {INDEX_TYPE, "SPATIAL"}} );
+
+        // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
+        // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
+        this->addIndex( json{{INDEX_NAME, "run_id_and_score"}, {INDEX_COLUMNS, "sv_caller_run_id, score"}} );
+    } // method
+
+    inline void dropIndices( int64_t iCallerRunId )
+    {
+        this->dropIndex( json{{INDEX_NAME, "rectangle"}} );
+        this->dropIndex( json{{INDEX_NAME, "run_id_and_score"}} );
     } // method
 
     inline uint32_t numCalls( )
@@ -482,10 +529,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
      * Calls that are no further away than iAllowedDist are considered overlapping (can be used to add some fuzziness).
      * If two calls in run A overlap, only the one with higher score counts; If both have the same score the one with
      * the higher id is kept.
+     * @todo split into two queries...
      */
     inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
     {
-        return pOverlapCache->numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iAllowedDist );
+        if( iAllowedDist != 0 )
+            std::cout << "WARNING: iAllowedDist is ignored at the moment." << std::endl;
+        return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB );
     } // method
 
     /**
@@ -509,7 +559,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
      */
     inline uint32_t numInvalidCalls( int64_t iCallerRunIdA, double dMinScore, int64_t iAllowedDist )
     {
-        return pOverlapCache->numInvalidCalls( iCallerRunIdA, dMinScore, iAllowedDist );
+        if( iAllowedDist != 0 )
+            std::cout << "WARNING: iAllowedDist is ignored at the moment." << std::endl;
+        return xNumInvalidCalls.scalar( iCallerRunIdA, dMinScore );
     } // method
 
     using NextCallType = SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;

@@ -6,8 +6,8 @@
  */
 #pragma once
 
-#include "sql_api.h" // NEW DATABASE INTERFACE
 #include "container/svJump.h"
+#include "sql_api.h" // NEW DATABASE INTERFACE
 
 namespace libMA
 {
@@ -15,10 +15,10 @@ namespace libMA
 
 template <typename DBCon>
 using ReadTableType = SQLTableWithLibIncrPriKey<DBCon,
-                                             PriKeyDefaultType, // sequencer id (foreign key)
-                                             std::string, // read name
-                                             std::shared_ptr<CompressedNucSeq> // read sequence
-                                             >;
+                                                PriKeyDefaultType, // sequencer id (foreign key)
+                                                std::string, // read name
+                                                std::shared_ptr<CompressedNucSeq> // read sequence
+                                                >;
 const json jReadTableDef = {
     {TABLE_NAME, "read_table"},
     {TABLE_COLUMNS, {{{COLUMN_NAME, "sequencer_id"}}, {{COLUMN_NAME, "name"}}, {{COLUMN_NAME, "sequence"}}}},
@@ -39,6 +39,9 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
           xGetReadId( pDB, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ? " ),
           xGetRead( pDB, "SELECT sequence, name FROM read_table WHERE id = ? " )
     {} // default constructor
+
+    ReadTable( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iId ) : ReadTable( pConnection )
+    {} // constructor
 
 
     inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )

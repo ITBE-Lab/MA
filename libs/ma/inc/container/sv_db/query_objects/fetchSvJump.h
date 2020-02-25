@@ -37,28 +37,27 @@ template <typename DBCon> class SortedSvJumpFromSql
         xQueryEnd;
 
     /// @brief called from the other constructors of this class only
-    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, std::string sQueryStart, std::string sQueryEnd )
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iSvCallerRunId, std::string sQueryStart,
+                         std::string sQueryEnd )
         : pConnection( pConnection ),
-          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
+          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection, iSvCallerRunId ) ),
           xQueryStart( pConnection, sQueryStart ),
           xQueryEnd( pConnection, sQueryEnd )
     {} // constructor
 
   public:
     /// @brief fetches libMA::SvJump objects from the run with id = iSvCallerRunId sorted by their start/end positions.
-    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection,
-                         int64_t iSvCallerRunId )
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId )
         : SortedSvJumpFromSql(
               pConnection,
+              iSvCallerRunId,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table "
-              "WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
               "ORDER BY sort_pos_start",
               "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table "
-              "WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
               "ORDER BY sort_pos_end" )
     {
         xQueryStart.execAndFetch( iSvCallerRunId );
@@ -73,21 +72,20 @@ template <typename DBCon> class SortedSvJumpFromSql
      * - are sorted by their start/end position
      * - are within the rectangle iX,iY,uiW,uiH
      */
-    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection,
-                         int64_t iSvCallerRunId, int64_t iX, int64_t iY, uint32_t uiW, uint32_t uiH )
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iX, int64_t iY,
+                         uint32_t uiW, uint32_t uiH )
         : SortedSvJumpFromSql(
               pConnection,
+              iSvCallerRunId,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table "
-              "WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
               "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
               "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
               "ORDER BY sort_pos_start",
               "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table "
-              "WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
               "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
               "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
               "ORDER BY sort_pos_end" )
@@ -106,21 +104,19 @@ template <typename DBCon> class SortedSvJumpFromSql
      * - start after iS (on ref)
      * - end after iE (on ref)
      */
-    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection,
-                         int64_t iSvCallerRunId, int64_t iS, int64_t iE )
+    SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iS, int64_t iE )
         : SortedSvJumpFromSql(
               pConnection,
+              iSvCallerRunId,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table "
-              "WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
               "AND sort_pos_start >= ? "
               "AND sort_pos_start <= ? "
               "ORDER BY sort_pos_start",
               "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "      from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table "
-              "WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
               "AND sort_pos_end >= ? "
               "AND sort_pos_end <= ? "
               "ORDER BY sort_pos_end" )

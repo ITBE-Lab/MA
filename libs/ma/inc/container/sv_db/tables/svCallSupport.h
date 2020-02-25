@@ -50,8 +50,6 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
                        "DELETE FROM sv_call_support_table "
                        "WHERE call_id = ? " )
     {
-        // @todo reenable via some function
-        // this->addIndex( json{{"INDEX_NAME", "sv_call_support_index"}, {"INDEX_COLUMNS", "call_id, jump_id"}} );
     } // default constructor
 
     inline void deleteRun( std::string& rS )
@@ -62,6 +60,16 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
     inline void deleteCall( int64_t iCallId )
     {
         xDeleteCall.exec( iCallId );
+    } // method
+
+    inline void addIndices()
+    {
+        this->addIndex( json{{"INDEX_NAME", "call_to_jump"}, {"INDEX_COLUMNS", "call_id, jump_id"}} );
+    } // method
+
+    inline void dropIndices()
+    {
+        this->dropIndex( json{{"INDEX_NAME", "call_to_jump"}} );
     } // method
 
     inline void deleteCall( SvCall& rCall )

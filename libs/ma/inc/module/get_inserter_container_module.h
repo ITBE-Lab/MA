@@ -263,7 +263,7 @@ class BulkInserterContainer
         // This construction makes sure that the table exists in the database.
         : AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
-                                [this]( auto pConnection ) //
+                                [this, iId]( auto pConnection ) //
                                 {
 #if DEBUG_LEVEL == 0
                                     // disable foreign_key_checks for this connection
@@ -272,7 +272,7 @@ class BulkInserterContainer
                                     return std::make_tuple(
                                         pConnection->sharedGuardedTrxn( ),
                                         (int)pConnection->getTaskId( ),
-                                        TableType<DBCon>( pConnection )
+                                        TableType<DBCon>( pConnection, iId )
                                             .template getBulkInserter<TableType<DBCon>::uiBulkInsertSize::value>( ),
                                         pConnection );
                                 } ),

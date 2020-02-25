@@ -33,7 +33,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<DBConSingle> pConnection, std::sha
                                             "SELECT COUNT(*) "
                                             "FROM sv_call_table "
                                             "WHERE sv_caller_run_id = ? " // dim 1
-                                            "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
+                                            "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
                                             "AND score >= ? " );
 
 
@@ -149,7 +149,12 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
         .def( "max_score", &SvCallTable<DBConSingle>::maxScore )
         .def( "min_score", &SvCallTable<DBConSingle>::minScore )
-        .def( "add_score_index", &SvCallTable<DBConSingle>::addScoreIndex );
+        .def( "call_area", &SvCallTable<DBConSingle>::callArea )
+        .def( "num_overlaps", &SvCallTable<DBConSingle>::numOverlaps )
+        .def( "num_invalid_calls", &SvCallTable<DBConSingle>::numInvalidCalls )
+        .def( "blur_on_overlaps", &SvCallTable<DBConSingle>::blurOnOverlaps )
+        .def( "drop_indices", &SvCallTable<DBConSingle>::dropIndices )
+        .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices );
 
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( rxPyModuleId,
                                                                                            "JumpRunTable" )
@@ -158,6 +163,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( rxPyModuleId, "SvJumpTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "create_indices", &SvJumpTable<DBConSingle>::createIndices )
+        .def( "drop_indices", &SvJumpTable<DBConSingle>::dropIndices )
         .def( "num_jumps", &SvJumpTable<DBConSingle>::numJumps );
 
     py::class_<ReadTable<DBConSingle>, std::shared_ptr<ReadTable<DBConSingle>>>( rxPyModuleId, "ReadTable" )
@@ -175,6 +181,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "getName", &SvCallerRunTable<DBConSingle>::getName )
         .def( "getDesc", &SvCallerRunTable<DBConSingle>::getDesc )
         .def( "jump_run_id", &SvCallerRunTable<DBConSingle>::getSvJumpRunId )
+        .def( "newest_unique_runs", &SvCallerRunTable<DBConSingle>::getNewestUnique )
         .def( "getDate", &SvCallerRunTable<DBConSingle>::getDate );
 
     py::class_<rect>( rxPyModuleId, "rect" ) //

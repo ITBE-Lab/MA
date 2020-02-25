@@ -89,7 +89,7 @@ template <typename DBCon> class SvCallsFromDb
                   "     SELECT outer.id "
                   "     FROM sv_call_table AS outer "
                   "     WHERE idx_outer.sv_caller_run_id = ? "
-                  "     AND ST_Distance(outer.rectangle, inner.rectangle) <= ? "
+                  "     AND MBRIntersects(outer.rectangle, inner.rectangle) "
                   "     AND outer.switch_strand = inner.switch_strand "
                   ") "
                   // make sure that inner does not overlap with any other call with higher score
@@ -100,7 +100,7 @@ template <typename DBCon> class SvCallsFromDb
                   "     AND inner2.score >= inner.score "
                   "     AND idx_inner2.run_id_b >= inner.id " // dim 1
                   "     AND idx_inner2.run_id_a <= inner.id " // dim 1
-                  "     AND ST_Distance(inner2.rectangle, inner.rectangle) <= ? "
+                  "     AND MBRIntersects(inner2.rectangle, inner.rectangle) "
                   "     AND inner2.switch_strand = inner.switch_strand "
                   ") ",
               "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
@@ -110,7 +110,9 @@ template <typename DBCon> class SvCallsFromDb
               "WHERE sv_call_support_table.call_id = ? ",
               WKBUint64Rectangle( ) )
     {
-        xQuery.execAndFetch( iSvCallerIdA, iSvCallerIdB, iAllowedDist );
+        if(iAllowedDist != 0)
+            std::cout << "WARNING: iAllowedDist is ignored at the moment." << std::endl;
+        xQuery.execAndFetch( iSvCallerIdA, iSvCallerIdB );
     } // constructor
 
     /**
@@ -146,7 +148,7 @@ template <typename DBCon> class SvCallsFromDb
               "       reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
-              "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 ",
+              "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) ",
               "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
               "       num_supporting_nt, sv_jump_table.id, read_id "
               "FROM sv_call_support_table "
@@ -167,7 +169,7 @@ template <typename DBCon> class SvCallsFromDb
                          "       supporting_reads, reference_ambiguity "
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
-                         "AND ST_Distance(rectangle, ST_PolyFromWKB(?, 0)) = 0 "
+                         "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
                          "AND score >= ? ",
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "

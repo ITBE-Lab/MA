@@ -12,6 +12,7 @@
 #pragma warning( disable : 4996 ) // suppress warnings regarding the use of strerror
 #endif
 
+#include "fort.hpp"
 #include "support.h"
 #include <atomic> // atomic fetch_add
 #include <cerrno> // error management for file I/O
@@ -230,8 +231,25 @@ template <typename DBConPtrType> class _SQLStatement
     } // method
 }; // class
 
+/** @brief helper function for the explained query
+ * @details some columns return empty strings, in that case we ant to print "NULL".
+ */
+template <typename Type> inline void printWNull( Type& xEle, fort::char_table& xTable )
+{
+    xTable << xEle;
+} // method
+
+template <> inline void printWNull<std::string>( std::string& xEle, fort::char_table& xTable )
+{
+    if( xEle.size( ) == 0 )
+        xTable << "NULL";
+    else
+        xTable << xEle;
+} // method
+
 template <typename DBConType> using SQLStatement = _SQLStatement<std::shared_ptr<DBConType>>;
 #define EXPLAINED_QUERY_IN_COMMON
+
 
 /** @brief An instance of this class models a single SQL query
  *  @details
@@ -251,18 +269,21 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
 
     std::unique_ptr<typename DBConType::template PreparedQuery<ColTypes...>> pQuery; // pointer to query statement
     const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
+    const std::string sQueryName;
 
 #ifdef EXPLAINED_QUERY_IN_COMMON
     // type of the explain query
     using ExplainQType = typename DBConType::template PreparedQuery<int64_t, // id
                                                                     std::string, // select_type
                                                                     std::string, // table
+                                                                    std::string, // partitions
                                                                     std::string, // type
                                                                     std::string, // possible_keys
                                                                     std::string, // key
                                                                     std::string, // key_len
                                                                     std::string, // ref
                                                                     uint64_t, // rows
+                                                                    double, // filtered
                                                                     std::string // Extra
                                                                     >;
     std::unique_ptr<ExplainQType> pExplainQuery; // pointer to explain statement
@@ -271,19 +292,19 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
     /** @brief helper for printing the result rows of the explain query */
     template <size_t IDX> struct PrintExplainResults
     {
-        template <typename TupleType> bool operator( )( TupleType& xRow )
+        template <typename TupleType> bool operator( )( TupleType& xRow, fort::char_table& xTable )
         {
-            std::cout << std::get<IDX>( xRow ) << "\t"; // print the cell
+            printWNull( std::get<IDX>( xRow ), xTable ); // print the cell
             return true; // continue the iteration
         } // operator
     }; // struct
 
     /** @brief print the result rows of the explain query */
-    template <typename TupleType> void printExplainRow( TupleType& xRow )
+    template <typename TupleType> void printExplainRow( TupleType& xRow, fort::char_table& xTable )
     {
         // print cells
-        TemplateLoop<std::tuple_size<TupleType>::value, PrintExplainResults>::iterate( xRow );
-        std::cout << std::endl;
+        TemplateLoop<std::tuple_size<TupleType>::value, PrintExplainResults>::iterate( xRow, xTable );
+        xTable << fort::endr;
     } // method
 #endif
 
@@ -300,14 +321,17 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
      *  a JSON  passed via rjConfig.
      */
 #ifdef EXPLAINED_QUERY_IN_COMMON
-    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{} )
+    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
+                   std::string sQueryName = "UnnamedQuery" )
 #else
-    _SQLQuery( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{} )
+    _SQLQuery( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
+               std::string sQueryName = "UnnamedQuery" )
 #endif
         : pDB( pDB ),
           pQuery( std::make_unique<typename DBConType::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText,
                                                                                              rjConfig ) ),
-          sStmtText( rsStmtText )
+          sStmtText( rsStmtText ),
+          sQueryName( sQueryName )
 #ifdef EXPLAINED_QUERY_IN_COMMON
           ,
           pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText, json{} ) : nullptr ),
@@ -319,22 +343,36 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
     template <typename... ArgTypes> void exec( ArgTypes&&... args )
     {
 #ifdef EXPLAINED_QUERY_IN_COMMON
-        // explain the query if requested
+        // explain the query if requested @todo use std::enable_if ?
         if( bExplain /* <- template parameter, so that whole if can be optimized out */ && !bIsExplained )
         {
             bIsExplained = true;
-            std::cout << "Explaining query:" << std::endl;
+            std::cout << "Explaining " << sQueryName << ":" << std::endl;
             // print query
             std::cout << sStmtText << std::endl;
             // print header
-            std::cout << "id\tselect_type\ttable\ttype\tpossible_keys\tkey\tkey_len\tref\trows\tExtra\t" << std::endl;
+            fort::char_table xTable;
+            xTable << fort::header //
+                   << "id"
+                   << "select_type"
+                   << "table"
+                   << "partitions"
+                   << "type"
+                   << "possible_keys"
+                   << "key"
+                   << "key_len"
+                   << "ref"
+                   << "rows"
+                   << "filtered"
+                   << "extra" << fort::endr;
             // Execute statement
             pExplainQuery->bindAndExec( std::forward<ArgTypes>( args )... );
             // Bind outcome of statement execution for later fetching
             pExplainQuery->bindResult( );
             // Fetch all rows and print them
             while( pExplainQuery->fetchNextRow( ) )
-                printExplainRow( pExplainQuery->tCellValues );
+                printExplainRow( pExplainQuery->tCellValues, xTable );
+            std::cout << xTable.to_string( ) << std::endl;
         } // if
 #endif
         // Execute statement
@@ -596,7 +634,47 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 #ifdef SQL_VERBOSE
                     std::cout << "Index exists already, skip creation." << std::endl;
 #endif
-                }
+                } // else
+            } ); // doPoolSafe
+        } // constructor
+    }; // inner class SQL Index
+
+    /** @brief: Inner class for representing view to drop an index.
+     * { "INDEX_NAME", "name_of_your_index" } - item is option
+     */
+    class SQLIndexDropView
+    {
+        const json jIndexDef; // copy of JSON index definition
+
+        std::string makeIndexDropStmt( const std::string& rsTblName, const std::string& rsIdxName )
+        {
+            std::string sStmt = "DROP INDEX " + rsIdxName + " ON " + rsTblName;
+            return sStmt;
+        } // method
+
+      public:
+        SQLIndexDropView( const SQLTable<DBCon, ColTypes...>* pTable,
+                          const json& rjIndexDef ) // index definition in JSON)
+            : jIndexDef( rjIndexDef ) // copy the index def. to attribute
+        {
+            // If there is no index name in the JSON, generate one.
+            std::string sIdxName = jIndexDef.count( INDEX_NAME ) ? std::string( jIndexDef[ INDEX_NAME ] )
+                                                                 : pTable->getTableName( ) + "_idx";
+
+            // In a pooled environment the creation of indexes should be serialized.
+            pTable->pDB->doPoolSafe( [&] {
+                // When we check the existence of the index as well as during creation,
+                // we require an exclusive lock on the database connection.
+                if( pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
+                {
+                    pTable->pDB->execSQL( makeIndexDropStmt( pTable->getTableName( ), sIdxName ) );
+                } // if
+                else
+                {
+#ifdef SQL_VERBOSE
+                    std::cout << "Index does not exist, skip dropping." << std::endl;
+#endif
+                } // else
             } ); // doPoolSafe
         } // constructor
     }; // inner class SQL Index
@@ -1404,7 +1482,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /** @brief: Creates requested index if not already existing. */
     void addIndex( const json& rjIndexDef )
     {
-        SQLIndexView test( this, rjIndexDef );
+        SQLIndexView( this, rjIndexDef );
+    } // method
+
+    /** @brief: drops requested index if existing. */
+    void dropIndex( const json& rjIndexDef )
+    {
+        SQLIndexDropView( this, rjIndexDef );
     } // method
 
     SQLTable( const SQLTable& ) = delete; // no table copies

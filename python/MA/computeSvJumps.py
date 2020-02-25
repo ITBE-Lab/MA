@@ -62,6 +62,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
 
         return get_jump_inserter.cpp_module.id
 
+    SvJumpTable(DbConn(dataset_name)).drop_indices(0) # number does nothing at the moment
+
     jump_id = scope()
 
     analyze = AnalyzeRuntimes()

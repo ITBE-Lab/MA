@@ -44,11 +44,13 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
             sweep1_pledge = promise_me(sweep1, pool_pledge, section_pledge, pack_pledge)
             #analyze.register("CompleteBipartiteSubgraphSweep", sweep1_pledge) this would cause duplicate time
-            analyze.register("CompleteBipartiteSubgraphSweep::init", sweep1, True, lambda x: x.cpp_module.time_init)
+            analyze.register("CompleteBipartiteSubgraphSweep::init", sweep1, True,
+                             lambda x: x.cpp_module.time_init / parameter_set_manager.get_num_threads())
             analyze.register("CompleteBipartiteSubgraphSweep::outer_while", sweep1, True,
-                             lambda x: x.cpp_module.time_complete_while - x.cpp_module.time_inner_while)
+                             lambda x: (x.cpp_module.time_complete_while - x.cpp_module.time_inner_while) /      \
+                             parameter_set_manager.get_num_threads())
             analyze.register("CompleteBipartiteSubgraphSweep::inner_while", sweep1, True,
-                             lambda x: x.cpp_module.time_inner_while)
+                             lambda x: x.cpp_module.time_inner_while / parameter_set_manager.get_num_threads())
             sweep2_pledge = promise_me(sweep2, sweep1_pledge, pack_pledge)
             analyze.register("ExactCompleteBipartiteSubgraphSweep", sweep2_pledge, True)
 
@@ -92,14 +94,24 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
         return get_call_inserter.cpp_module.id
 
+    conn = DbConn(dataset_name)
+    SvCallTable(conn).drop_indices(0) # number does nothing at the moment
+
     sv_caller_run_id = graph()
     print("done sweeping")
     analyze = AnalyzeRuntimes()
 
-    conn = DbConn(dataset_name)
     call_table = SvCallTable(conn)
 
     print("num calls:", call_table.num_calls(sv_caller_run_id, 0))
+
+    print("computing index...")
+    start = datetime.datetime.now()
+    call_table.gen_indices(sv_caller_run_id)
+    end = datetime.datetime.now()
+    delta = end - start
+    analyze.register("compute_index", delta.total_seconds(), False, lambda x: x)
+    print("done computing index")
 
     print("overlapping...")
     start = datetime.datetime.now()
@@ -109,13 +121,6 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
     print("done overlapping; combined", num_combined, "calls")
 
-    print("computing score index...")
-    start = datetime.datetime.now()
-    call_table.add_score_index(sv_caller_run_id)
-    end = datetime.datetime.now()
-    delta = end - start
-    analyze.register("compute_score_index", delta.total_seconds(), False, lambda x: x)
-    print("done computing score index")
 
     analyze.analyze(out_file)
     if not out_file is None:
