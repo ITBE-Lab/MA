@@ -308,6 +308,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     }; // class
 #endif
 
+
     std::shared_ptr<DBCon> pConnection;
     SQLQuery<DBCon, uint32_t> xQuerySize;
     SQLQuery<DBCon, uint32_t> xQuerySizeSpecific;
@@ -317,8 +318,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xSetCoverageForCall;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
-    ExplainedSQLQuery<DBCon, uint32_t> xNumOverlaps;
-    ExplainedSQLQuery<DBCon, uint32_t> xNumInvalidCalls;
+    SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType> xNumOverlaps;
+    SQLQuery<DBCon, uint32_t> xNumOverlapsHelper1;
+    SQLQuery<DBCon, uint32_t> xNumOverlapsHelper2;
     // std::shared_ptr<OverlapCache> pOverlapCache;
 
   public:
@@ -393,42 +395,28 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    rectangle = ST_PolyFromWKB(?, 0) "
                        "WHERE id = ? " ),
           xNumOverlaps( pConnection,
-                        "SELECT COUNT(*) "
+                        "SELECT ST_AsBinary(rectangle), switch_strand, score, id "
                         "FROM sv_call_table AS outer_table "
                         "WHERE sv_caller_run_id = ? "
-                        "AND score >= ? "
-                        "AND EXISTS ( " // check for run B
-                        "   SELECT * "
-                        "   FROM sv_call_table AS inner_table "
-                        "   WHERE inner_table.sv_caller_run_id = ? "
-                        "   AND MBRIntersects(inner_table.rectangle, outer_table.rectangle) "
-                        "   AND outer_table.switch_strand = inner_table.switch_strand "
-                        ") "
-                        // check that the call does not overlap with a call of higher score from the same run
-                        "AND NOT EXISTS ( "
-                        "   SELECT * "
-                        "   FROM sv_call_table AS inner_table "
-                        "   WHERE inner_table.sv_caller_run_id = outer_table.sv_caller_run_id "
-                        "   AND MBRIntersects(inner_table.rectangle, outer_table.rectangle) "
-                        "   AND outer_table.switch_strand = inner_table.switch_strand "
-                        "   AND (inner_table.score, inner_table.id) > (outer_table.score, outer_table.id) "
-                        ") ",
+                        "AND score >= ? ",
                         json{}, "SvCallTable::xNumOverlaps" ),
-          xNumInvalidCalls( pConnection,
-                            "SELECT COUNT(*) "
-                            "FROM sv_call_table AS outer_table "
-                            "WHERE sv_caller_run_id = ? "
-                            "AND score >= ? "
-                            // check that the call does overlap with a call of higher score from the same run
-                            "AND EXISTS ( "
-                            "   SELECT * "
-                            "   FROM sv_call_table AS inner_table "
-                            "   WHERE inner_table.sv_caller_run_id = outer_table.sv_caller_run_id "
-                            "   AND MBRIntersects(inner_table.rectangle, outer_table.rectangle) "
-                            "   AND outer_table.switch_strand = inner_table.switch_strand "
-                            "   AND (inner_table.score, inner_table.id) > (outer_table.score, outer_table.id) "
-                            ") ",
-                            json{}, "SvCallTable::xNumInvalidCalls" )
+          xNumOverlapsHelper1( pConnection,
+                               "SELECT COUNT(*) "
+                               "FROM sv_call_table "
+                               "WHERE sv_caller_run_id = ? "
+                               "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                               "AND switch_strand = ? "
+                               "AND (score, id) > (?, ?) "
+                               "LIMIT 1 ",
+                               json{}, "SvCallTable::xNumOverlapsHelper1" ),
+          xNumOverlapsHelper2( pConnection,
+                               "SELECT COUNT(*) "
+                               "FROM sv_call_table "
+                               "WHERE sv_caller_run_id = ? "
+                               "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                               "AND switch_strand = ? "
+                               "LIMIT 1 ",
+                               json{}, "SvCallTable::xNumOverlapsHelper2" )
     //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo delete this..
     {} // default constructor
 
@@ -436,19 +424,80 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SvCallTable( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iId ) : SvCallTable( pConnection )
     {} // constructor
 
+    /**
+     * @brief returns how many calls of run A are overlapped by a call in run B
+     * @details
+     * Only considers calls of run A with score >= to dMinScore.
+     * Calls that are no further away than iAllowedDist are considered overlapping (can be used to add some
+     * fuzziness). If two calls in run A overlap, only the one with higher score counts; If both have the same score
+     * the one with the higher id is kept.
+     * @todo split into two queries...
+     */
+    inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
+    {
+        uint32_t uiRet = 0;
+        xNumOverlaps.execAndForAll(
+            [this, &uiRet, iCallerRunIdA, iCallerRunIdB, iAllowedDist]( WKBUint64Rectangle xWKB, bool bSwitchStrand,
+                                                                        double fScore, PriKeyDefaultType iId ) {
+                auto xRect = xWKB.getRect( );
+                xRect.resize( iAllowedDist );
+                WKBUint64Rectangle xWKBResized( xRect );
+                if( xNumOverlapsHelper1.scalar( iCallerRunIdA, xWKBResized, bSwitchStrand, fScore, iId ) == 0 )
+                    if( xNumOverlapsHelper2.scalar( iCallerRunIdB, xWKBResized, bSwitchStrand ) > 0 )
+                        uiRet++;
+            },
+            iCallerRunIdA, dMinScore );
+        return uiRet;
+    } // method
+
+    /**
+     * @brief returns the average distance of class from the overlapped (due to fuzziness) SV
+     */
+    inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
+    {
+        int64_t uiSum = 0;
+        int64_t uiCount = 0;
+        for( int64_t iI = 0; iI <= iAllowedDist; iI++ )
+        {
+            uint32_t uiAmount = numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iI );
+            uiSum += uiAmount * iI;
+            uiCount += uiAmount;
+        } // for
+        return uiSum / (double)uiCount;
+    } // method
+
+    /**
+     * @brief returns how many calls are invalid because they overlap another call with higher score
+     */
+    inline uint32_t numInvalidCalls( int64_t iCallerRunIdA, double dMinScore, int64_t iAllowedDist )
+    {
+        uint32_t uiRet = 0;
+        xNumOverlaps.execAndForAll(
+            [this, &uiRet, iCallerRunIdA, iAllowedDist]( WKBUint64Rectangle xWKB, bool bSwitchStrand, double fScore,
+                                                         PriKeyDefaultType iId ) {
+                auto xRect = xWKB.getRect( );
+                xRect.resize( iAllowedDist );
+                WKBUint64Rectangle xWKBResized( xRect );
+                if( xNumOverlapsHelper1.scalar( iCallerRunIdA, xWKBResized, bSwitchStrand, fScore, iId ) > 0 )
+                    uiRet++;
+            },
+            iCallerRunIdA, dMinScore );
+        return uiRet;
+    } // method
+
     inline void genIndices( int64_t iCallerRunId )
     {
         this->addIndex( json{{INDEX_NAME, "rectangle"}, {INDEX_COLUMNS, "rectangle"}, {INDEX_TYPE, "SPATIAL"}} );
 
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
-        this->addIndex( json{{INDEX_NAME, "run_id_and_score"}, {INDEX_COLUMNS, "sv_caller_run_id, score"}} );
+        this->addIndex( json{{INDEX_NAME, "runId_score"}, {INDEX_COLUMNS, "sv_caller_run_id, score"}} );
     } // method
 
     inline void dropIndices( int64_t iCallerRunId )
     {
         this->dropIndex( json{{INDEX_NAME, "rectangle"}} );
-        this->dropIndex( json{{INDEX_NAME, "run_id_and_score"}} );
+        this->dropIndex( json{{INDEX_NAME, "runId_score"}} );
     } // method
 
     inline uint32_t numCalls( )
@@ -522,47 +571,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xMinScore.scalar( iCallerRunId );
     } // method
 
-    /**
-     * @brief returns how many calls of run A are overlapped by a call in run B
-     * @details
-     * Only considers calls of run A with score >= to dMinScore.
-     * Calls that are no further away than iAllowedDist are considered overlapping (can be used to add some fuzziness).
-     * If two calls in run A overlap, only the one with higher score counts; If both have the same score the one with
-     * the higher id is kept.
-     * @todo split into two queries...
-     */
-    inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
-    {
-        if( iAllowedDist != 0 )
-            std::cout << "WARNING: iAllowedDist is ignored at the moment." << std::endl;
-        return xNumOverlaps.scalar( iCallerRunIdA, dMinScore, iCallerRunIdB );
-    } // method
-
-    /**
-     * @brief returns the average distance of class from the overlapped (due to fuzziness) SV
-     */
-    inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
-    {
-        int64_t uiSum = 0;
-        int64_t uiCount = 0;
-        for( int64_t iI = 0; iI <= iAllowedDist; iI++ )
-        {
-            uint32_t uiAmount = numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iI );
-            uiSum += uiAmount * iI;
-            uiCount += uiAmount;
-        } // for
-        return uiSum / (double)uiCount;
-    } // method
-
-    /**
-     * @brief returns how many calls are invalid because they overlap another call with higher score
-     */
-    inline uint32_t numInvalidCalls( int64_t iCallerRunIdA, double dMinScore, int64_t iAllowedDist )
-    {
-        if( iAllowedDist != 0 )
-            std::cout << "WARNING: iAllowedDist is ignored at the moment." << std::endl;
-        return xNumInvalidCalls.scalar( iCallerRunIdA, dMinScore );
-    } // method
 
     using NextCallType = SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, NucSeqSql, uint32_t>;
 

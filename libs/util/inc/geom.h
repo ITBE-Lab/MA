@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include <stdexcept>
 #include "support.h"
+#include <stdexcept>
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
@@ -227,11 +227,19 @@ template <typename T> class Rectangle
         return xXAxis == rxOther.xXAxis && xYAxis == rxOther.xYAxis;
     } // operator
 
+    inline void resize( T iBy )
+    {
+        xXAxis.iStart -= iBy;
+        xXAxis.iSize += iBy * 2;
+        xYAxis.iStart -= iBy;
+        xYAxis.iSize += iBy * 2;
+    } // method
+
 }; // class
 
 inline std::ostream& operator<<( std::ostream& xOS, const Rectangle<uint64_t>& xRect )
 {
-	xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
+    xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
     return xOS;
 } // operator
 
