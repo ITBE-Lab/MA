@@ -6,26 +6,26 @@ namespace libMA
 // @todo this can be done via a linesweep...
 template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
 {
-    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery(
-        pConnection,
-        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
-        "FROM sv_call_table "
-        "WHERE sv_caller_run_id = ? "
-        "ORDER BY id ",
-        json{}, "combineOverlappingCalls::xQuery" );
+    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>, uint32_t>
+        xQuery( pConnection,
+                "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
+                "FROM sv_call_table "
+                "WHERE sv_caller_run_id = ? "
+                "ORDER BY id ",
+                json{}, "combineOverlappingCalls::xQuery" );
 
-    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t> xQuery2(
-        pConnection,
-        "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
-        "       inserted_sequence, supporting_reads "
-        "FROM sv_call_table "
-        "WHERE sv_caller_run_id = ? "
-        "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-        "AND id > ? "
-        "AND switch_strand = ? ",
-        json{}, "combineOverlappingCalls::xQuery2" );
+    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>, uint32_t>
+        xQuery2( pConnection,
+                 "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
+                 "       inserted_sequence, supporting_reads "
+                 "FROM sv_call_table "
+                 "WHERE sv_caller_run_id = ? "
+                 "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                 "AND id > ? "
+                 "AND switch_strand = ? ",
+                 json{}, "combineOverlappingCalls::xQuery2" );
 
-    ExplainedSQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
+    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
         pConnection,
         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
         "sv_jump_table.id "
@@ -69,7 +69,7 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
             if( !xQuery2.eof( ) ) // FIXME: avoid using eof - work with next() and get() merely
             {
 
-                xPrim.pInsertedSequence = std::get<6>( xTup ).pNucSeq;
+                xPrim.pInsertedSequence = std::get<6>( xTup ) == nullptr ? nullptr : std::get<6>( xTup )->pUncomNucSeq;
                 xPrim.iId = std::get<0>( xTup );
                 xQuerySupport.execAndFetch( std::get<0>( xTup ) );
                 nucSeqIndex uiPrimInsertSizeAvg = 0;
@@ -104,7 +104,8 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
                                  std::get<5>( xTup2 ), // bSwitchStrand
                                  std::get<7>( xTup2 ) // supporting_reads
                     );
-                    xSec.pInsertedSequence = std::get<6>( xTup2 ).pNucSeq;
+                    xSec.pInsertedSequence =
+                        std::get<6>( xTup2 ) == nullptr ? nullptr : std::get<6>( xTup2 )->pUncomNucSeq;
                     xSec.iId = std::get<0>( xTup2 );
                     xQuerySupport.execAndFetch( std::get<0>( xTup2 ) );
                     nucSeqIndex uiSecInsertSizeAvg = 0;

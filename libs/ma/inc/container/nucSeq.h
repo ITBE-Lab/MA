@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "mysql_con.h" // NEW DATABASE INTERFACE
 #include "container/seed.h"
+#include "mysql_con.h" // NEW DATABASE INTERFACE
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
 #include <array>
@@ -1159,6 +1159,14 @@ inline std::shared_ptr<CompressedNucSeq> makeSharedCompNucSeq( const NucSeq& rxN
     return pCompdNucSeq;
 } // function
 
+/** @brief like makeSharedCompNucSeq( const NucSeq& rxNucSeq ) but can deal with nullptrs */
+inline std::shared_ptr<CompressedNucSeq> makeSharedCompNucSeq( const std::shared_ptr<NucSeq> pNucSeq )
+{
+    if( pNucSeq == nullptr )
+        return nullptr;
+    return makeSharedCompNucSeq( *pNucSeq );
+} // function
+
 } // namespace libMA
 
 inline std::string buf_to_hex( char* pBuf, size_t uiSize )
@@ -1200,14 +1208,22 @@ template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<CompNu
 // Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
 template <> inline void MySQLConDB::StmtArg::set( const CompNucSeqSharedPtr& rxCompSeq )
 {
-    // On MSVC the size of unsigned long is 32 bit merely ...
-    if( rxCompSeq->size( ) > static_cast<size_t>( std::numeric_limits<unsigned long>::max( ) ) )
-        std::runtime_error( "MySQLConDB::StmtArg::set: Overflow for rxCompSeq.size() " );
-    unsigned long uiCompSeqSize = static_cast<unsigned long>( rxCompSeq->size( ) );
-    this->uiLength = uiCompSeqSize;
-    pMySQLBind->buffer_length = uiCompSeqSize;
-    pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
-    pMySQLBind->buffer = (void*)( rxCompSeq->get( ) );
+    if( rxCompSeq != nullptr )
+    {
+        // On MSVC the size of unsigned long is 32 bit merely ...
+        if( rxCompSeq->size( ) > static_cast<size_t>( std::numeric_limits<unsigned long>::max( ) ) )
+            std::runtime_error( "MySQLConDB::StmtArg::set: Overflow for rxCompSeq.size() " );
+        unsigned long uiCompSeqSize = static_cast<unsigned long>( rxCompSeq->size( ) );
+        this->uiLength = uiCompSeqSize;
+        pMySQLBind->buffer_length = uiCompSeqSize;
+        pMySQLBind->buffer = (void*)( rxCompSeq->get( ) );
+        pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
+    } // if
+    else // @todo discuss with arne
+    {
+        pMySQLBind->buffer = NULL;
+        pMySQLBind->buffer_type = MYSQL_TYPE_NULL; // this type must be equal to the type in Part 3.
+    } // else
 } // specialized method
 
 // Part 3: Code for supporting query output:
@@ -1226,7 +1242,7 @@ struct /* MySQLConDB:: */ RowCell<CompNucSeqSharedPtr> : public /* MySQLConDB::*
     inline void storeVarSizeCell( )
     {
         // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
-        if( !(this->is_null) )
+        if( !( this->is_null ) )
             ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class

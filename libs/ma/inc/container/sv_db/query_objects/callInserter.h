@@ -65,8 +65,8 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, SvCallTable, CallOrV
                                                          (uint32_t)rCall.xXAxis.size( ), //
                                                          (uint32_t)rCall.xYAxis.size( ), //
                                                          rCall.bSwitchStrand, //
-                                                         // NucSeqSql can deal with nullpointers
-                                                         NucSeqSql( rCall.pInsertedSequence ), //
+                                                         // can deal with nullpointers
+                                                         makeSharedCompNucSeq( rCall.pInsertedSequence ), //
                                                          (uint32_t)rCall.uiNumSuppReads, //
                                                          (uint32_t)rCall.uiReferenceAmbiguity, //
                                                          -1, //

@@ -36,7 +36,8 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
         return pPool->xPool.run(
             [this]( auto pConnection, std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls,
                     std::shared_ptr<Pack> pRef ) {
-                SQLQuery<DBCon, NucSeqSql> xGetRead( pConnection, "SELECT sequence FROM read_table WHERE id = ? " );
+                SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>> xGetRead(
+                    pConnection, "SELECT sequence FROM read_table WHERE id = ? " );
                 AlignedMemoryManager xMemoryManager;
 
                 auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
@@ -105,7 +106,7 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
                     for( auto pJump : pCall->vSupportingJumps )
                     {
                         // this db select puts quite the strain on the system...
-                        auto pRead = xGetRead.scalar( pJump->iReadId ).pNucSeq;
+                        auto pRead = xGetRead.scalar( pJump->iReadId )->pUncomNucSeq;
                         assert( pRead != nullptr );
                         pRead->iId = pJump->iReadId;
 

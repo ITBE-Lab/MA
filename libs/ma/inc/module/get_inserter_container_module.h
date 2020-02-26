@@ -188,12 +188,6 @@ class AbstractInserterContainer : public Container
      */
     virtual void close( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-#if DEBUG_LEVEL == 0
-        // reenable foreign_key_checks for this connection
-        pPool->xPool.run( iConnectionId, []( std::shared_ptr<DBCon> pConnection ) {
-            pConnection->execSQL( "SET foreign_key_checks=1" );
-        } );
-#endif
         pInserter.reset( );
         pTransaction.reset( );
         pProfiler.reset( );
@@ -222,10 +216,6 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
-#if DEBUG_LEVEL == 0
-                                    // disable foreign_key_checks for this connection
-                                    pConnection->execSQL( "SET foreign_key_checks=0" );
-#endif
                                     return std::make_tuple( pConnection->sharedGuardedTrxn( ),
                                                             (int)pConnection->getTaskId( ),
                                                             std::make_shared<TableType<DBCon>>( pConnection ),
@@ -265,10 +255,6 @@ class BulkInserterContainer
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this, iId]( auto pConnection ) //
                                 {
-#if DEBUG_LEVEL == 0
-                                    // disable foreign_key_checks for this connection
-                                    pConnection->execSQL( "SET foreign_key_checks=0" );
-#endif
                                     return std::make_tuple(
                                         pConnection->sharedGuardedTrxn( ),
                                         (int)pConnection->getTaskId( ),
