@@ -160,7 +160,7 @@ class AbstractInserterContainer : public Container
     } // method
 
   public:
-    inline void insert( std::shared_ptr<InsertTypes>... pArgs )
+    virtual void insert( std::shared_ptr<InsertTypes>... pArgs )
     {
         pProfiler->inc( insert_override( pArgs... ) );
     } // method
@@ -193,16 +193,48 @@ class AbstractInserterContainer : public Container
         pProfiler.reset( );
         pConnection.reset( );
     } // method
+
+    static bool requiresLock( )
+    {
+        return false;
+    } // method
 }; // class
 
+/**
+ * @brief container that holds a inserter for a table
+ * @details
+ * Makes the insert function threadsave
+ * @see AbstractInserterContainer for docu
+ */
+template <typename DBCon, typename TableType, typename... InsertTypes>
+class ThreadSaveAbstractInserterContainer : public AbstractInserterContainer<DBCon, TableType, InsertTypes...>
+{
+    std::mutex xMutex;
+
+  public:
+    // use the constructor from the parent
+    using AbstractInserterContainer<DBCon, TableType, InsertTypes...>::AbstractInserterContainer;
+
+    virtual void insert( std::shared_ptr<InsertTypes>... pArgs )
+    {
+        std::unique_lock<std::mutex> xLock( xMutex );
+        AbstractInserterContainer<DBCon, TableType, InsertTypes...>::insert( pArgs... );
+    } // method
+
+    static bool requiresLock( )
+    {
+        return true;
+    } // method
+}; // class
 
 /**
  * @brief container that holds a regular inserter for a table
  * @details
  * @see AbstractInserterContainer for docu
  */
-template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
-class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>
+template <typename DBCon, template <typename _1, typename _2, typename... _3> typename InserterContainerType,
+          template <typename _> typename TableType, typename... InsertTypes>
+class InserterContainer : public InserterContainerType<DBCon, TableType<DBCon>, InsertTypes...>
 {
   public:
     static std::string getName( )
@@ -212,7 +244,7 @@ class InserterContainer : public AbstractInserterContainer<DBCon, TableType<DBCo
 
     InserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
                        std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
-        : AbstractInserterContainer<DBCon, TableType<DBCon>, InsertTypes...>(
+        : InserterContainerType<DBCon, TableType<DBCon>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this]( auto pConnection ) //
                                 {
@@ -237,9 +269,9 @@ using BulkInserterType = typename TableType::template SQLBulkInserterType<TableT
  * This class does the same thing as InserterContainer. But instead of supplying the table it supplies a bulk inserter
  * to the table via pInserter.
  */
-template <typename DBCon, template <typename T> typename TableType, typename... InsertTypes>
-class BulkInserterContainer
-    : public AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>
+template <typename DBCon, template <typename _1, typename _2, typename... _3> typename InserterContainerType,
+          template <typename _> typename TableType, typename... InsertTypes>
+class BulkInserterContainer : public InserterContainerType<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>
 {
   public:
     static std::string getName( )
@@ -251,14 +283,14 @@ class BulkInserterContainer
                            std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         // here we create the bulk inserter. This forces us to construct an object of the table that is inserter to
         // This construction makes sure that the table exists in the database.
-        : AbstractInserterContainer<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>(
+        : InserterContainerType<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
                                 [this, iId]( auto pConnection ) //
                                 {
                                     return std::make_tuple(
                                         pConnection->sharedGuardedTrxn( ),
                                         (int)pConnection->getTaskId( ),
-                                        TableType<DBCon>( pConnection, iId )
+                                        TableType<DBCon>( pConnection )
                                             .template getBulkInserter<TableType<DBCon>::uiBulkInsertSize::value>( ),
                                         pConnection );
                                 } ),
@@ -282,16 +314,16 @@ class BulkInserterContainer
  * This module has two constructors: one where the value of the foreign key can be given explicitly.
  * The other inserts a new row and therefore creates a new value for the foreign key.
  */
-template <template <typename T> typename InserterContainerType, typename DBCon, typename DBConInit,
-          template <typename T> typename TableType, typename = typename TableType<DBConInit>::ColTypesForw>
+template <template <typename _> typename InserterContainerType, typename DBCon, typename DBConInit,
+          template <typename _> typename TableType, typename = typename TableType<DBConInit>::ColTypesForw>
 class GetInserterContainerModule
 {}; // class
 
-template <template <typename T> typename InserterContainerType, typename DBCon, typename DBConInit,
+template <template <typename _> typename InserterContainerType, typename DBCon, typename DBConInit,
           // we want to extract ColumnTypes from TableType::ColTypesForw
           // in order to achieve this we use TypePack<ColumnTypes...> in combination with the template above
           // the above template makes it so, that the compiler can infer ColumnTypes on it's own.
-          template <typename T> typename TableType, typename... ColumnTypes>
+          template <typename _> typename TableType, typename... ColumnTypes>
 class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableType, TypePack<ColumnTypes...>>
     : public Module<InserterContainerType<DBCon>, false, PoolContainer<DBCon>>
 {
@@ -324,6 +356,12 @@ class GetInserterContainerModule<InserterContainerType, DBCon, DBConInit, TableT
     std::shared_ptr<InserterContainerType<DBCon>> execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
         return std::make_shared<InserterContainerType<DBCon>>( pPool, iId, pSharedProfiler );
+    } // method
+
+    // override
+    virtual bool requiresLock( ) const
+    {
+        return InserterContainerTypeForw::requiresLock( );
     } // method
 }; // class
 

@@ -90,6 +90,8 @@ class StdFileStream : public FileStream
     StdFileStream( fs::path sFilename ) : xStream( sFilename ), sFileName( sFilename.string( ) )
     {
         std::ifstream xFileEnd( sFilename, std::ifstream::ate | std::ifstream::binary );
+        if( !xFileEnd.is_open( ) )
+            throw std::runtime_error( "Unable to open file " + sFilename.string( ) );
         uiFileSize = xFileEnd.tellg( );
     } // constructor
 
@@ -270,30 +272,43 @@ class StringStream : public FileStream
 }; // class
 
 #ifdef WITH_ZLIB
+/** @brief a file stream that reads from a .gz or regular file
+ * @details
+ * delays opening the file until it really becomes necessary
+ * @todo use internal buffer
+ */
 class GzFileStream : public FileStream
 {
   private:
     // gzFile is a pointer type
-    gzFile pFile;
-    int lastReadReturn = 1; // 1 == last read was ok; 0 == eof; -1 == error
+    gzFile pFile = nullptr;
+    int lastReadReturn = 0; // 1 == last read was ok; 0 == eof; -1 == error
     unsigned char cBuff;
     size_t uiFileSize = 0;
-    std::string sFileName;
+    fs::path xFileName;
+
+    // open the file once we need it
+    inline void open( )
+    {
+        if( pFile == nullptr )
+        {
+            // open the file in reading and binary mode
+            pFile = gzopen( xFileName.string( ).c_str( ), "rb" );
+            if( pFile != nullptr )
+                // fill internal buffer
+                lastReadReturn = gzread( pFile, &cBuff, 1 );
+            else
+                lastReadReturn = -1; // if the file could net be opened set error immediately
+        } // if
+    } // method
 
   public:
-    GzFileStream( fs::path xFilename ) : sFileName( xFilename.stem( ).string( ) )
+    GzFileStream( fs::path xFileName ) : xFileName( xFileName )
     {
-        {
-            std::ifstream xFileEnd( xFilename, std::ifstream::ate | std::ifstream::binary );
-            uiFileSize = xFileEnd.tellg( );
-        } // scope for xFileEnd
-        // open the file in reading and binary mode
-        pFile = gzopen( xFilename.string( ).c_str( ), "rb" );
-        if( pFile != nullptr )
-            // fill internal buffer
-            lastReadReturn = gzread( pFile, &cBuff, 1 );
-        else
-            lastReadReturn = -1; // if the file could net be opened set error immediately
+        std::ifstream xFileEnd( xFileName, std::ifstream::ate | std::ifstream::binary );
+        if( !xFileEnd.is_open( ) )
+            throw std::runtime_error( "Unable to open file " + xFileName.string( ) );
+        uiFileSize = xFileEnd.tellg( );
     } // constructor
 
     bool eof( ) const
@@ -303,7 +318,7 @@ class GzFileStream : public FileStream
 
     ~GzFileStream( )
     {
-        DEBUG( if( !eof( ) ) std::cout << "StdFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
+        DEBUG( if( !eof( ) ) std::cout << "GzFileStream read " << uiNumLinesRead << " lines in total." << std::endl;
                if( !eof( ) ) std::cerr << "WARNING: Did abort before end of File." << std::endl; ) // DEBUG
     } // deconstructor
 
@@ -314,12 +329,13 @@ class GzFileStream : public FileStream
 
     void close( )
     {
-        gzclose( pFile );
+        if( pFile != nullptr )
+            gzclose( pFile );
     } // method
 
     size_t tellg( )
     {
-        return gzoffset( pFile );
+        return pFile == nullptr ? 0 : gzoffset( pFile );
     } // method
 
     virtual size_t fileSize( )
@@ -329,16 +345,18 @@ class GzFileStream : public FileStream
 
     char peek( )
     {
+        open( );
         return cBuff;
     } // method
 
     virtual std::string fileName( )
     {
-        return sFileName;
+        return xFileName.stem( ).string( );
     } // method
 
     void safeGetLine( std::string& t )
     {
+        open( );
         t.clear( );
         DEBUG( uiNumLinesRead++; ) // DEBUG
 
@@ -380,8 +398,6 @@ class FileStreamFromPath : public FileStream
         else
 #endif
             pStream = std::make_unique<StdFileStream>( sFileName );
-        if( !pStream->is_open( ) )
-            throw std::runtime_error( "Unable to open file" + sFileName.string( ) );
     } // contstructor
 
     FileStreamFromPath( std::string sFileName ) : FileStreamFromPath( fs::path( sFileName ) )
@@ -580,7 +596,7 @@ template <typename FileStreamQueue> class ProgressPrinter : public Module<Contai
 
     std::shared_ptr<Container> execute( std::shared_ptr<Container> pContainer, std::shared_ptr<FileStreamQueue> pQueue )
     {
-        std::unique_lock<std::mutex> xLock( xMutex );
+        std::lock_guard<std::mutex> xLock( xMutex );
         auto xNow = std::chrono::steady_clock::now( );
         duration xElapsedTime = xNow - xLastTime;
         if( xElapsedTime.count( ) > dPrintTime )
@@ -590,7 +606,7 @@ template <typename FileStreamQueue> class ProgressPrinter : public Module<Contai
             size_t uiRemaining = 0;
             size_t uiDone = 0;
             pQueue->iter( [&]( auto pStream ) {
-                if( pStream->tellg( ) * 100 <= pStream->fileSize( ) )
+                if( pStream->tellg( ) == 0 )
                     uiRemaining++;
                 else if( pStream->tellg( ) == pStream->fileSize( ) )
                     uiDone++;

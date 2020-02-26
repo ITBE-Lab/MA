@@ -34,7 +34,7 @@ size_t lenq( std::string& sLine )
 
 std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream )
 {
-    std::unique_lock<std::mutex> xLock( pStream->xMutex );
+    std::lock_guard<std::mutex> xLock( pStream->xMutex );
     pStream->peek( );
     if( pStream->eof( ) ) // eof case
         return nullptr;
@@ -192,7 +192,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
     // if we reach this point we do not know how to interpret the next line in the file.
     throw std::runtime_error(
         "Error while reading file.\nIs your input really in FASTA/Q format?\nError occurred in file: " +
-        pStream->fileName( ) );
+        pStream->fileName( ) + "\npeek was:" + pStream->peek( ) );
 } // function
 
 #ifdef WITH_PYTHON

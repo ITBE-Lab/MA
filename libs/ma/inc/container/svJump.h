@@ -432,10 +432,11 @@ class SvCall : public Container, public geom::Rectangle<nucSeqIndex>
         vDown.clear( );
     } // method
 
+    // @todo there is a glitch/bug in here
     inline void addJumpToEstimateClusterSize( std::shared_ptr<SvJump> pJump )
     {
         nucSeqIndex uiF = pJump->uiFrom;
-        nucSeqIndex uiT = pJump->uiTo;
+        nucSeqIndex uiT = pJump->uiTo + 1; // @todo figure out why we are off by one here
         if( !pJump->from_known( ) )
             uiF = uiT;
         else if( !pJump->to_known( ) )

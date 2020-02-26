@@ -40,9 +40,6 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
           xGetRead( pDB, "SELECT sequence, name FROM read_table WHERE id = ? " )
     {} // default constructor
 
-    ReadTable( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iId ) : ReadTable( pConnection )
-    {} // constructor
-
 
     inline int64_t insertRead( int64_t uiSequencerId, std::shared_ptr<NucSeq> pRead )
     {

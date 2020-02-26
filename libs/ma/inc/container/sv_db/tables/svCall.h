@@ -421,9 +421,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {} // default constructor
 
 
-    SvCallTable( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iId ) : SvCallTable( pConnection )
-    {} // constructor
-
     /**
      * @brief returns how many calls of run A are overlapped by a call in run B
      * @details

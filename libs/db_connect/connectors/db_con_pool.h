@@ -285,66 +285,66 @@ template <typename DBImpl> class SQLDBConPool
         // Create an initialize all workers.
         for( size_t uiThreadId = 0; uiThreadId < uiPoolSize; ++uiThreadId )
             vWorkers.emplace_back( [this, uiThreadId] {
-                // Treads are not allowed to throw exceptions or we face crashes.
-                // Therefore the swallowing of exceptions.
-                doNoExcept(
-                    [&] {
-                        // Get a reference to the connection manager belonging to this thread.
-                        auto pConManager = vConPool[ uiThreadId ];
-                        pConManager->uiThreadId = uiThreadId; // inform connector about corresponding taskid
+                // Get a reference to the connection manager belonging to this thread.
+                auto pConManager = vConPool[ uiThreadId ];
+                pConManager->uiThreadId = uiThreadId; // inform connector about corresponding taskid
 
-                        // The loop continues until the stop flags indicates termination.
-                        while( true )
-                        {
-                            // Synchronization of mutual access to the task queue.
-                            // Start of scope of exclusive access for a single thread.
-                            std::unique_lock<std::mutex> xLock( this->xQueueMutex );
+                // The loop continues until the stop flags indicates termination.
+                while( true )
+                {
+                    // Synchronization of mutual access to the task queue.
+                    // Start of scope of exclusive access for a single thread.
+                    std::unique_lock<std::mutex> xLock( this->xQueueMutex );
 
-                            // If there is no indication for termination and if there is nothing to do now,
-                            // the lock is released so that some producer can push a fresh task into the queue.
-                            // After inserting a fresh task, the producer calls notify_one() for awaking one of the
-                            // waiting (sleeping) threads. This can be this thread or another in the pool.
-                            while( !this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
-                                   this->vqTasks[ uiThreadId ].empty( ) )
-                            {
-                                goingToSleep( uiThreadId );
-                                this->xCondition.wait( xLock );
-                                // When we continue here, we have exclusive access once again.
-                                wakingUp( uiThreadId );
-                            } // while
+                    // If there is no indication for termination and if there is nothing to do now,
+                    // the lock is released so that some producer can push a fresh task into the queue.
+                    // After inserting a fresh task, the producer calls notify_one() for awaking one of the
+                    // waiting (sleeping) threads. This can be this thread or another in the pool.
+                    while( !this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
+                           this->vqTasks[ uiThreadId ].empty( ) )
+                    {
+                        goingToSleep( uiThreadId );
+                        this->xCondition.wait( xLock );
+                        // When we continue here, we have exclusive access once again.
+                        wakingUp( uiThreadId );
+                    } // while
 
-                            // If there is an indication for termination and if there is nothing to do any more, we
-                            // terminate the thread by returning.
-                            if( this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
-                                this->vqTasks[ uiThreadId ].empty( ) )
-                                return;
+                    // If there is an indication for termination and if there is nothing to do any more, we
+                    // terminate the thread by returning.
+                    if( this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
+                        this->vqTasks[ uiThreadId ].empty( ) )
+                        return;
 
-                            // We now have exclusive access to a non-empty task queue.
-                            // Search for a matching task in the queues of tasks. Check the queue for this specific
-                            // thread first, if there is no task in this queue then check the general queue.
-                            size_t uiQueueId = uiThreadId;
-                            if( this->vqTasks[ uiThreadId ].empty( ) )
-                                uiQueueId = this->uiPoolSize;
-                            assert( !this->vqTasks[ uiQueueId ].empty( ) );
+                    // We now have exclusive access to a non-empty task queue.
+                    // Search for a matching task in the queues of tasks. Check the queue for this specific
+                    // thread first, if there is no task in this queue then check the general queue.
+                    size_t uiQueueId = uiThreadId;
+                    if( this->vqTasks[ uiThreadId ].empty( ) )
+                        uiQueueId = this->uiPoolSize;
+                    assert( !this->vqTasks[ uiQueueId ].empty( ) );
 
-                            updateTime( );
+                    updateTime( );
 
-                            // We pick the matching task for execution and remove it from the respective queue.
-                            TaskType fTaskToBeExecuted( this->vqTasks[ uiQueueId ].front( ) );
-                            this->vqTasks[ uiQueueId ].pop( );
+                    // We pick the matching task for execution and remove it from the respective queue.
+                    TaskType fTaskToBeExecuted( this->vqTasks[ uiQueueId ].front( ) );
+                    this->vqTasks[ uiQueueId ].pop( );
 
-                            // Exclusive access to the task queue is not required any longer.
-                            xLock.unlock( );
+                    // Exclusive access to the task queue is not required any longer.
+                    xLock.unlock( );
 
+                    // Treads are not allowed to throw exceptions or we face crashes.
+                    // Therefore the swallowing of exceptions.
+                    doNoExcept(
+                        [&] {
                             // Execute the task delivering its connection manager as argument.
                             // If the task throws an exception, this exception has to be caught via the future.
                             // (See the notice in the description of this class.)
                             fTaskToBeExecuted( pConManager );
-                        } // while
-                    }, // lambda ( doNoExcept )
-                    // doNoExcept error message:
-                    "SQLDBConPool:: The worker with Id " + std::to_string( uiThreadId ) +
-                        "failed due to an internal error and terminated." );
+                        }, // lambda ( doNoExcept )
+                        // doNoExcept error message:
+                        "SQLDBConPool:: The worker with Id " + std::to_string( uiThreadId ) +
+                            "failed due to an internal error and terminated." );
+                } // while
             } ); // emplace_back
     } // constructor
 
@@ -362,7 +362,7 @@ template <typename DBImpl> class SQLDBConPool
             bStop = true;
         } // end of scope for queue_mutex, so we unlock the mutex
 
-        //std::cout << "Pool shutdown started ..." << std::endl;
+        // std::cout << "Pool shutdown started ..." << std::endl;
         // Notify all waiting threads to continue so that they recognize the stop flag and terminate.
         xCondition.notify_all( );
 
@@ -372,13 +372,13 @@ template <typename DBImpl> class SQLDBConPool
         for( size_t uiItr = 0; uiItr < vWorkers.size( ); ++uiItr )
             vWorkers[ uiItr ].join( );
 
-        //std::cout << "Pool shutdown finished ..." << std::endl;
+        // std::cout << "Pool shutdown finished ..." << std::endl;
     } // method
 
     /** @brief The destructor blocks until all workers terminated. */
     ~SQLDBConPool( )
     {
-        //std::cout << "SQLDBConPool Destructor." << std::endl;
+        // std::cout << "SQLDBConPool Destructor." << std::endl;
         this->shutdown( );
         updateTime( );
         printTime( std::cout );

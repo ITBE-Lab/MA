@@ -16,15 +16,17 @@ namespace libMA
  * @brief Insertion of libMA::SvJump into the database.
  */
 template <typename DBCon>
-class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>
+class JumpInserterContainer
+    : public BulkInserterContainer<DBCon, AbstractInserterContainer, SvJumpTable, ContainerVector<SvJump>, NucSeq>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
+    using ParentType =
+        BulkInserterContainer<DBCon, AbstractInserterContainer, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
     using ParentType::BulkInserterContainer;
 
   protected:
-    virtual size_t EXPORTED insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps,
-                                           std::shared_ptr<NucSeq> pRead )
+    virtual size_t EXPORTED
+    insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         const int64_t iReadId = pRead->iId;
         for( SvJump& rJump : *pJumps )
@@ -44,7 +46,7 @@ class JumpInserterContainer : public BulkInserterContainer<DBCon, SvJumpTable, C
                 (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
                 (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
         } // for
-        return pJumps->size();
+        return pJumps->size( );
     } // method
 }; // class
 

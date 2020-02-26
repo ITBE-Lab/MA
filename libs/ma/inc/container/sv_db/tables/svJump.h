@@ -68,9 +68,6 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
                                  "sv_jump_run_table WHERE name = ?)" )
     {} // default constructor
 
-    SvJumpTable( std::shared_ptr<DBCon> pDatabase, PriKeyDefaultType iJumpRunId ) : SvJumpTable( pDatabase )
-    {} // constructor
-
 
     // @todo make the jumps rectangles as well and then use an r-tree for the sweep?
     inline void createIndices( int64_t uiRun )

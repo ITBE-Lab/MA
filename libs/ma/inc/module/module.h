@@ -120,6 +120,10 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
         return this->callFunc( tParams, typename gens<sizeof...( TP_ARGUMENTS )>::type( ) );
     } // method
 
+    virtual bool requiresLock( ) const
+    {
+        return false;
+    } // method
 }; // class
 
 /**
@@ -414,9 +418,9 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         return xWaitOnLockTime.count( );
     }
 
-    double execTime() const
+    double execTime( ) const
     {
-        return xExecTime.count();
+        return xExecTime.count( );
     }
 
     void addSuccessor( BasePledge* pX )
@@ -493,6 +497,36 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
             return true;
         } // operator
     }; // struct
+
+    /**
+     * @brief Used to synchronize the execution of pledges in the comp. graph.
+     * @details
+     * Locks a mutex if this pledge can be reached from multiple leaves in the graph;
+     * Does not lock otherwise.
+     * In either case fDo is called.
+     * @todo this should be done via std::enable_if
+     */
+    template <typename FUNCTOR> inline std::shared_ptr<TP_CONTENT> lockIfNecessary( FUNCTOR&& fDo )
+    {
+        // if(vSuccessors.size() > 1) @todo @fixme this should be here
+        if( pPledger != nullptr && pPledger->requiresLock( ) )
+        {
+            auto xTimeStamp = std::chrono::system_clock::now( );
+            // multithreading is possible thus a guard is required here.
+            // deadlock prevention is trivial,
+            // since computational graphs are essentially trees.
+            std::lock_guard<std::mutex> xGuard( *pMutex );
+
+            std::chrono::duration<double> xDuration = std::chrono::system_clock::now( ) - xTimeStamp;
+            // record how long we took to obtain the lock
+            // the increment operation has to be done within the scope of xGuard
+            xWaitOnLockTime += xDuration;
+
+            return fDo( );
+        } // if
+        else
+            return fDo( );
+    } // function
 
   public:
     /**
@@ -594,43 +628,48 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
         if( pPledger == nullptr && pContent == nullptr )
             throw std::runtime_error( "No pledger known for unfulfilled pledge of type " + type_name( this ) +
                                       "; With container type: " + type_name( pContent ) );
-        // in this case there is no need to execute again
-        if( !IS_VOLATILE && pContent != nullptr )
-            return pContent;
+        // locks a mutex if this pledge can be reached from multiple leaves in the graph
+        // does not lock otherwise...
+        return lockIfNecessary( [&]( ) {
+            // in this case there is no need to execute again
+            if( !IS_VOLATILE && pContent != nullptr )
+                return pContent;
 
-        TP_INPUT tInput;
-        // this if condition has the sideffect of filling tInput
-        if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
-            /*
-             * if one dependency returns a nullptr then stop executing
-             * We have a volatile module that's dry.
-             * In such cases we cannot compute the next element and therefore set
-             * the content of this module to EoF as well.
-             */
-            return nullptr;
-        decltype( pContent ) pRet = nullptr;
+            TP_INPUT tInput;
+            // this if condition has the sideffect of filling tInput
+            if( !TemplateLoop<sizeof...( TP_DEPENDENCIES ), GetCaller>::iterate( tPredecessors, tInput ) )
+                /*
+                 * if one dependency returns a nullptr then stop executing
+                 * We have a volatile module that's dry.
+                 * In such cases we cannot compute the next element and therefore set
+                 * the content of this module to EoF as well.
+                 */
+                return std::shared_ptr<TP_CONTENT>( nullptr );
+            decltype( pContent ) pRet = nullptr;
 
-        auto timeStamp = std::chrono::system_clock::now( );
+            auto timeStamp = std::chrono::system_clock::now( );
 
-        // actually execute the module
-        pRet = pPledger->executeTup( tInput );
-        // assignment needs to be seperated, so that simultaneous get() in volatile modules do not mess up
-        // the return type.
-        // @todo there should be no volatile modules -> loops should be done by containers...
-        pContent = pRet; // actually set the content of the pledge
+            // actually execute the module
+            pRet = pPledger->executeTup( tInput );
+            // assignment needs to be seperated, so that simultaneous get() in volatile modules do not mess up
+            // the return type.
+            // @todo there should be no volatile modules -> loops should be done by containers...
+            pContent = pRet; // actually set the content of the pledge
 
-        std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
-        // increase the total executing time for this pledge
-        xExecTime += duration;
+            std::chrono::duration<double> duration = std::chrono::system_clock::now( ) - timeStamp;
+            // increase the total executing time for this pledge
+            xExecTime += duration;
 
-        // safety check
-        if( pRet == nullptr && !IS_VOLATILE )
-            throw std::runtime_error( "An non-volatile module is not allowed to return nullpointers "
-                                      "in execute; throw an exception instead or return an empty container! "
-                                      "Module type:" +
-                                      type_name( pPledger ) );
-        // return must be here and returned throught the lambda to avoid data race...
-        return pRet;
+            // safety check
+            if( pRet == nullptr && !IS_VOLATILE )
+                throw std::runtime_error( "An non-volatile module is not allowed to return nullpointers "
+                                          "in execute; throw an exception instead or return an empty container! "
+                                          "Module type:" +
+                                          type_name( pPledger ) );
+            // return must be here and returned throught the lambda to avoid data race...
+            return pRet;
+        } // lambda
+        ); // function call
     } // function
 
     virtual std::shared_ptr<Container> getAsBaseType( )
@@ -841,6 +880,11 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
         else
             // tTyped could not be filled, since one module returned a nullptr
             return nullptr;
+    } // method
+
+    virtual bool requiresLock( ) const
+    {
+        return xModule.requiresLock( );
     } // method
 }; // class
 

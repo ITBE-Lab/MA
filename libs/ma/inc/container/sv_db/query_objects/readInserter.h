@@ -17,10 +17,12 @@ namespace libMA
 {
 
 /// @brief inserts reads into a DB
-template <typename DBCon> class ReadInserterContainer : public BulkInserterContainer<DBCon, ReadTable, NucSeq>
+template <typename DBCon>
+class ReadInserterContainer
+    : public BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, ReadTable, NucSeq>;
+    using ParentType = BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>;
     using ParentType::BulkInserterContainer;
 
   protected:
@@ -41,10 +43,11 @@ template <typename DBCon> using ReadInserterModule = InserterModule<ReadInserter
  * @details
  */
 template <typename DBCon>
-class PairedReadInserterContainer : public BulkInserterContainer<DBCon, ReadTable, NucSeq, NucSeq>
+class PairedReadInserterContainer
+    : public BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq, NucSeq>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, ReadTable, NucSeq, NucSeq>;
+    using ParentType = BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq, NucSeq>;
 
     const static size_t BUFFER_SIZE = 500;
     std::shared_ptr<BulkInserterType<PairedReadTable<DBCon>>> pPairedReadInserter;

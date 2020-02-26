@@ -179,8 +179,19 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                              pParameter->sDescription,
                              sIndentDesc );
         } // for
+        // global options
+        for( auto xPair : pGlobalParams->xpParametersByCategory )
+        {
+            std::cout << xPair.first.second << " options:" << std::endl;
+            for( auto pParameter : xPair.second )
+                printOption( pParameter->sName,
+                             pParameter->cShort,
+                             pParameter->type_name( ),
+                             pParameter->asText( ),
+                             pParameter->sDescription,
+                             sIndentDesc );
+        } // for
     } // if
-    // @todo print global options here
 
     std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
     std::cout << "Compiled with following switches:";

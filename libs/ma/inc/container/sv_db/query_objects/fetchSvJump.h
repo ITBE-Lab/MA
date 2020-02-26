@@ -40,7 +40,7 @@ template <typename DBCon> class SortedSvJumpFromSql
     SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, PriKeyDefaultType iSvCallerRunId, std::string sQueryStart,
                          std::string sQueryEnd )
         : pConnection( pConnection ),
-          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection, iSvCallerRunId ) ),
+          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
           xQueryStart( pConnection, sQueryStart ),
           xQueryEnd( pConnection, sQueryEnd )
     {} // constructor

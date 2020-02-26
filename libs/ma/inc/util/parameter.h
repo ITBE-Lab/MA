@@ -948,11 +948,11 @@ class GlobalParameter : public ParameterSetBase
 
     /* Constructor */
     GlobalParameter( )
-        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),
-          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
-          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
-          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
+        : xJumpS( this, "fuzziness-s", "@todo", GLOBAL_PARAMETER, 25 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "@todo", GLOBAL_PARAMETER, 10 ),
+          xJumpM( this, "fuzziness-m", "@todo", GLOBAL_PARAMETER, 0.5 ),
+          xJumpH( this, "fuzziness-h", "@todo", GLOBAL_PARAMETER, 10 ),
+          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", GLOBAL_PARAMETER, 3, checkPositiveValue ),
           iMatch( this, "Match", "score for a DP match (used in SoC width computation)", GLOBAL_PARAMETER, 2 ),
           iMissMatch( this, "MissMatch", "penalty for a DP missmatch", GLOBAL_PARAMETER, 4 ),
           iGap( this, "Gap", "penalty for a DP gap opening (used in SoC width computation)", GLOBAL_PARAMETER, 4 ),
