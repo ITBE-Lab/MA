@@ -28,10 +28,6 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
     const size_t uiZDrop;
     const size_t uiZDropInversion;
     const size_t uiBandwidth;
-    const int iMatch;
-    const int iMissMatch;
-    const int iExtend;
-    const int iGap;
     const bool bDisableHeuristics;
     const int iHarmScoreMin;
     const double dHarmScoreMinRel;
@@ -40,20 +36,16 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
     bool bLocal = false;
 
     SmallInversions( const ParameterSetManager& rParameters )
-        : xKswParameters( rParameters.getSelected( )->xMatch->get( ),
-                          rParameters.getSelected( )->xMisMatch->get( ),
-                          rParameters.getSelected( )->xGap->get( ),
-                          rParameters.getSelected( )->xExtend->get( ),
-                          rParameters.getSelected( )->xGap2->get( ),
-                          rParameters.getSelected( )->xExtend2->get( ) ),
+        : xKswParameters( pGlobalParams->iMatch->get( ),
+                          pGlobalParams->iMissMatch->get( ),
+                          pGlobalParams->iGap->get( ),
+                          pGlobalParams->iExtend->get( ),
+                          pGlobalParams->iGap2->get( ),
+                          pGlobalParams->iExtend2->get( ) ),
           uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
           uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
           uiZDropInversion( rParameters.getSelected( )->xZDropInversion->get( ) ),
           uiBandwidth( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ),
-          iMatch( rParameters.getSelected( )->xMatch->get( ) ),
-          iMissMatch( rParameters.getSelected( )->xMisMatch->get( ) ),
-          iExtend( rParameters.getSelected( )->xExtend->get( ) ),
-          iGap( rParameters.getSelected( )->xGap->get( ) ),
           bDisableHeuristics( rParameters.getSelected( )->xDisableHeuristics->get( ) ),
           iHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
           dHarmScoreMinRel( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ){}; // default constructor
@@ -87,21 +79,21 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
                     iCurrScore = 0;
                     iMaxScore = std::numeric_limits<int>::min( );
                 case MatchType::match:
-                    iCurrScore += iMatch * (int)section.second;
+                    iCurrScore += pGlobalParams->iMatch->get( ) * (int)section.second;
                     uiPosQ += section.second;
                     uiPosR += section.second;
                     break;
                 case MatchType::missmatch:
-                    iCurrScore -= iMissMatch * (int)section.second;
+                    iCurrScore -= pGlobalParams->iMissMatch->get( ) * (int)section.second;
                     uiPosQ += section.second;
                     uiPosR += section.second;
                     break;
                 case MatchType::insertion:
-                    iCurrScore -= iGap + iExtend * (int)section.second;
+                    iCurrScore -= pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * (int)section.second;
                     uiPosQ += section.second;
                     break;
                 case MatchType::deletion:
-                    iCurrScore -= iGap + iExtend * (int)section.second;
+                    iCurrScore -= pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * (int)section.second;
                     uiPosR += section.second;
                     break;
                 default:
@@ -117,7 +109,7 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
             else
             {
                 int uiDiff = (int)std::max( uiPosQ - uiMaxScorePosQ, uiPosR - uiMaxScorePosR );
-                int iZDropCurr = iMaxScore - iCurrScore - uiDiff * iExtend;
+                int iZDropCurr = iMaxScore - iCurrScore - uiDiff * pGlobalParams->iExtend->get( );
                 iMaxDrop = std::max( iMaxDrop, iZDropCurr );
             } // else
         } // for
@@ -199,7 +191,7 @@ class SmallInversions : public Module<ContainerVector<std::shared_ptr<Alignment>
                     auto uiEndRRevStr = pRefPack->uiPositionToReverseStrand( uiStartR );
                     auto pRef = pRefPack->vExtract( uiStartRRevStr, uiEndRRevStr );
                     auto pInvAlignment = tryInversionExtension( uiStartQ, uiEndQ, pQuery, pRef, xMemoryManager );
-                    if( bDisableHeuristics || pInvAlignment->score( ) > iHarmScoreMin * iMatch )
+                    if( bDisableHeuristics || pInvAlignment->score( ) > iHarmScoreMin * pGlobalParams->iMatch->get( ) )
                     {
                         pInvAlignment->uiBeginOnQuery += uiStartQ;
                         pInvAlignment->uiEndOnQuery += uiStartQ;

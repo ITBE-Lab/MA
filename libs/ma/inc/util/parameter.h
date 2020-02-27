@@ -61,6 +61,7 @@ class AlignerParameterBase
     const char cShort; // Shorthand character for parameter in command line interface.
     std::string sDescription; // Description of parameter
     const std::pair<size_t, std::string> sCategory; // Description of parameter
+    const std::string sSetDesc; // Description of the set this parameter belongs to
 
     /* Delete copy constructor */
     AlignerParameterBase( const AlignerParameterBase& rxOtherSet ) = delete;
@@ -72,9 +73,9 @@ class AlignerParameterBase
     // By default a parameter is always active.
     std::function<bool( void )> fEnabled = []( ) { return true; };
 
-    AlignerParameterBase( const std::string& sName, const char cShort, const std::string& sDescription,
-                          const std::pair<size_t, std::string>& sCategory )
-        : sName( sName ), cShort( cShort ), sDescription( sDescription ), sCategory( sCategory )
+    AlignerParameterBase( const std::string& sSetDesc, const std::string& sName, const char cShort,
+                          const std::string& sDescription, const std::pair<size_t, std::string>& sCategory )
+        : sName( sName ), cShort( cShort ), sDescription( sDescription ), sCategory( sCategory ), sSetDesc( sSetDesc )
     {} // constructor
 
     virtual void mirror( const std::shared_ptr<AlignerParameterBase> pOther )
@@ -112,25 +113,28 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
     std::function<void( const VALUE_TYPE&, const std::string& )> fPredicate;
 
     /* Constructor */
-    AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
-                      const std::pair<size_t, std::string>& sCategory, const VALUE_TYPE value, // initial value
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const char cShort,
+                      const std::string& sDescription, const std::pair<size_t, std::string>& sCategory,
+                      const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE&, const std::string& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameterBase( sName, cShort, sDescription, sCategory ), value( value ), fPredicate( fPredicate )
+        : AlignerParameterBase( sSetDesc, sName, cShort, sDescription, sCategory ),
+          value( value ),
+          fPredicate( fPredicate )
     {} // constructor
 
     /* Constructor */
-    AlignerParameter( const std::string& sName, const std::string& sDescription,
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const std::string& sDescription,
                       const std::pair<size_t, std::string>& sCategory,
                       const VALUE_TYPE value, // initial value
                       std::function<void( const VALUE_TYPE&, const std::string& )> fPredicate = predicateAlwaysOK )
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, value, fPredicate )
+        : AlignerParameter( sSetDesc, sName, NO_SHORT_DEFINED, sDescription, sCategory, value, fPredicate )
     {} // constructor
 
     /* Constructor */
-    AlignerParameter( const std::string& sName, const std::string& sDescription, const size_t& uiCategoryIndex,
-                      const std::string& sCategoryName, const VALUE_TYPE value )
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, std::make_pair( uiCategoryIndex, sCategoryName ),
-                            value )
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const std::string& sDescription,
+                      const size_t& uiCategoryIndex, const std::string& sCategoryName, const VALUE_TYPE value )
+        : AlignerParameter( sSetDesc, sName, NO_SHORT_DEFINED, sDescription,
+                            std::make_pair( uiCategoryIndex, sCategoryName ), value )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -199,20 +203,20 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     AlignerParameterBase::ChoicesType vChoices; // Possible text values of the parameter
     unsigned int uiSelection; // integral value of the selected choice (0 for first choice, 1 for second etc.)
 
-    AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
-                      const std::pair<size_t, std::string>& sCategory,
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const char cShort,
+                      const std::string& sDescription, const std::pair<size_t, std::string>& sCategory,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( sName, cShort, sDescription, sCategory ),
+        : AlignerParameterBase( sSetDesc, sName, cShort, sDescription, sCategory ),
           vChoices( rvChoices ),
           uiSelection( uiSelection )
     {} // constructor
 
-    AlignerParameter( const std::string& sName, const std::string& sDescription,
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const std::string& sDescription,
                       const std::pair<size_t, std::string>& sCategory,
                       const AlignerParameterBase::ChoicesType& rvChoices, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, rvChoices, uiSelection )
+        : AlignerParameter( sSetDesc, sName, NO_SHORT_DEFINED, sDescription, sCategory, rvChoices, uiSelection )
     {} // constructor
 
     /* Throws an exception if something goes wrong */
@@ -279,19 +283,19 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
   public:
     fs::path xPath; // Current path
 
-    AlignerParameter( const std::string& sName, const char cShort, const std::string& sDescription,
-                      const std::pair<size_t, std::string>& sCategory,
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const char cShort,
+                      const std::string& sDescription, const std::pair<size_t, std::string>& sCategory,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 ) // initially selected choice
-        : AlignerParameterBase( sName, cShort, sDescription, sCategory ), xPath( rxPath )
+        : AlignerParameterBase( sSetDesc, sName, cShort, sDescription, sCategory ), xPath( rxPath )
     {} // constructor
 
     /* Constructor */
-    AlignerParameter( const std::string& sName, const std::string& sDescription,
+    AlignerParameter( const std::string& sSetDesc, const std::string& sName, const std::string& sDescription,
                       const std::pair<size_t, std::string>& sCategory,
                       const fs::path& rxPath, // choices of the parameter
                       unsigned int uiSelection = 0 )
-        : AlignerParameter( sName, NO_SHORT_DEFINED, sDescription, sCategory, rxPath, uiSelection )
+        : AlignerParameter( sSetDesc, sName, NO_SHORT_DEFINED, sDescription, sCategory, rxPath, uiSelection )
     {} // constructor
 
     /* Set path to argument.
@@ -353,13 +357,14 @@ template <typename VALUE_TYPE> class AlignerParameterPointer
 {
   private:
     void do_register( ParameterSetBase* pPresetting );
+    std::string get_desc( ParameterSetBase* pPresetting );
 
   public:
     std::shared_ptr<AlignerParameter<VALUE_TYPE>> pContent;
 
     template <typename... ARGUMENT_TYPES>
     AlignerParameterPointer( ParameterSetBase* pPresetting, ARGUMENT_TYPES&&... arguments )
-        : pContent( std::make_shared<AlignerParameter<VALUE_TYPE>>( arguments... ) )
+        : pContent( std::make_shared<AlignerParameter<VALUE_TYPE>>( get_desc( pPresetting ), arguments... ) )
     {
         do_register( pPresetting );
     } // constructor
@@ -395,6 +400,11 @@ class ParameterSetBase
             std::remove_if( sSearch.begin( ), sSearch.end( ), []( const char cX ) { return cX == ' ' || cX == '_'; } ),
             sSearch.end( ) );
         return sSearch;
+    } // method
+
+    virtual std::string getSetDescription( )
+    {
+        throw std::runtime_error( "This function should have been overloaded!" );
     } // method
 
     /**
@@ -489,7 +499,6 @@ const std::pair<size_t, std::string> SOC_PARAMETERS = std::make_pair( 2, "Strip 
 const std::pair<size_t, std::string> PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
 const std::pair<size_t, std::string> SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
 const std::pair<size_t, std::string> GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );
-const std::pair<size_t, std::string> GLOBAL_PARAMETER = std::make_pair( 0, "Global Parameter" );
 const std::pair<size_t, std::string> SV_PARAMETERS = std::make_pair( 6, "SV Parameter" );
 
 
@@ -498,12 +507,6 @@ class Presetting : public ParameterSetBase
   public:
     const std::string sName;
     // DP options:
-    AlignerParameterPointer<int> xMatch; // Match Score
-    AlignerParameterPointer<int> xMisMatch; // Mismatch Penalty
-    AlignerParameterPointer<int> xGap; // Gap penalty
-    AlignerParameterPointer<int> xExtend; // Extend penalty
-    AlignerParameterPointer<int> xGap2; // Second gap penalty
-    AlignerParameterPointer<int> xExtend2; // Second extend penalty
     AlignerParameterPointer<int> xPadding; // Padding
     AlignerParameterPointer<int> xBandwidthDPExtension; // Bandwidth for extensions
     AlignerParameterPointer<int> xMinBandwidthGapFilling; // Minimal bandwidth in gaps
@@ -574,7 +577,6 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMinDeltaDist; //
     AlignerParameterPointer<bool> xDisableGapCostEstimationCutting; //
     AlignerParameterPointer<bool> xOptimisticGapCostEstimation; //
-    AlignerParameterPointer<int> xSVPenalty; //
     AlignerParameterPointer<int> xMaxGapArea; //
     AlignerParameterPointer<int> xGenomeSizeDisable; //
     AlignerParameterPointer<bool> xDisableHeuristics; //
@@ -596,19 +598,6 @@ class Presetting : public ParameterSetBase
     Presetting( const std::string sName )
         : //
           sName( sName ),
-          // DP:
-          xMatch( this, "Match Score",
-                  "Match score. (Used in the context of Dynamic Programming and for SoC width computation.)",
-                  DP_PARAMETERS, 2, checkPositiveValue ),
-          xMisMatch( this, "Mismatch Penalty", "Penalty for mismatch. ", DP_PARAMETERS, 4, checkPositiveValue ),
-          xGap( this, "Gap penalty", "First penalty for gap opening. (Two piece affine gap costs)", DP_PARAMETERS, 4,
-                checkPositiveValue ),
-          xExtend( this, "Extend Penalty", "First penalty for gap extension.  (Two piece affine gap costs)",
-                   DP_PARAMETERS, 2, checkPositiveValue ),
-          xGap2( this, "Second Gap Penalty", "Second penalty for gap opening. (Two piece affine gap costs)",
-                 DP_PARAMETERS, 24, checkPositiveValue ),
-          xExtend2( this, "Second Extend Penalty", "Second penalty for gap extension. (Two piece affine gap costs)",
-                    DP_PARAMETERS, 1, checkPositiveValue ),
           xPadding( this, "Padding",
                     "If an alignment does not reach its read's endpoints, the missing parts can be computed via "
                     "dynamic programming. If the length of the missing parts is smaller than 'Padding', dynamic "
@@ -806,9 +795,6 @@ class Presetting : public ParameterSetBase
               "the gap can be filled using matches and mismatches that add up to a score of 0 and a single "
               "insertion/deletion.",
               HEURISTIC_PARAMETERS, true ),
-          xSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
-                      "Maximal gap cost penalty during local seed set computation.", HEURISTIC_PARAMETERS, 100,
-                      checkPositiveValue ),
           xMaxGapArea(
               this, "Maximal Gap Size",
               "If the gap between seeds is larger than <val> on query or reference, a dual extension "
@@ -845,6 +831,11 @@ class Presetting : public ParameterSetBase
         this->mirror( rxOtherSet );
     } // copy constructor
 
+    virtual std::string getSetDescription( )
+    {
+        return "Part of the " + sName + " presetting.";
+    } // method
+
     /* True if the parameter-set uses paired reads */
     bool usesPairedReads( void )
     {
@@ -852,11 +843,17 @@ class Presetting : public ParameterSetBase
     } // method
 }; // class
 
-template <typename VALUE_TYPE> // @todo maybe this can be part of the constructor ?
-void AlignerParameterPointer<VALUE_TYPE>::do_register( ParameterSetBase* pPresetting )
+template <typename VALUE_TYPE> void AlignerParameterPointer<VALUE_TYPE>::do_register( ParameterSetBase* pPresetting )
 {
     if( pPresetting != nullptr )
         pPresetting->registerParameter( this->pContent );
+} // method
+template <typename VALUE_TYPE>
+std::string AlignerParameterPointer<VALUE_TYPE>::get_desc( ParameterSetBase* pPresetting )
+{
+    if( pPresetting != nullptr )
+        return pPresetting->getSetDescription( );
+    return "";
 } // method
 
 /* Parameter which occur only once.
@@ -906,6 +903,11 @@ class GeneralParameter : public ParameterSetBase
         mirror( rxOtherSet );
     } // copy constructor
 
+    virtual std::string getSetDescription( )
+    {
+        return "Independent of presettings.";
+    } // method
+
     size_t getNumThreads( ) const
     {
         size_t uiConcurency = std::thread::hardware_concurrency( );
@@ -921,7 +923,6 @@ class GeneralParameter : public ParameterSetBase
 /** @brief master class for Global Parameters.
  *  @details
  *  there will only ever be one instance of this class.
- *  @todo move remaining GlobalParameters
  */
 class GlobalParameter : public ParameterSetBase
 {
@@ -939,40 +940,40 @@ class GlobalParameter : public ParameterSetBase
     AlignerParameterPointer<int> iExtend;
     AlignerParameterPointer<int> iGap2;
     AlignerParameterPointer<int> iExtend2;
-    AlignerParameterPointer<double> dUnpaired;
-    AlignerParameterPointer<size_t> uiMean;
-    AlignerParameterPointer<double> fStd;
     AlignerParameterPointer<size_t> uiSVPenalty;
-    AlignerParameterPointer<int> iBandwidthDPExtension;
-    AlignerParameterPointer<size_t> uiZDrop;
 
     /* Constructor */
     GlobalParameter( )
-        : xJumpS( this, "fuzziness-s", "@todo", GLOBAL_PARAMETER, 25 ),
-          xJumpSNeg( this, "fuzziness-s-neg", "@todo", GLOBAL_PARAMETER, 10 ),
-          xJumpM( this, "fuzziness-m", "@todo", GLOBAL_PARAMETER, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", GLOBAL_PARAMETER, 10 ),
-          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", GLOBAL_PARAMETER, 3, checkPositiveValue ),
-          iMatch( this, "Match", "score for a DP match (used in SoC width computation)", GLOBAL_PARAMETER, 2 ),
-          iMissMatch( this, "MissMatch", "penalty for a DP missmatch", GLOBAL_PARAMETER, 4 ),
-          iGap( this, "Gap", "penalty for a DP gap opening (used in SoC width computation)", GLOBAL_PARAMETER, 4 ),
-          iExtend( this, "Extend", "penalty for a DP gap extension (used in SoC width computation)", GLOBAL_PARAMETER,
-                   2 ),
-          iGap2( this, "Gap2", "penalty for a DP gap opening (used in SoC width computation)", GLOBAL_PARAMETER, 24 ),
-          iExtend2( this, "Extend2", "penalty for a DP gap extension (used in SoC width computation)", GLOBAL_PARAMETER,
-                    1 ),
-          dUnpaired( this, "Unpaired", "penalty for unpaired reads", GLOBAL_PARAMETER, 1.25 ),
-          uiMean( this, "Mean", "mean distance for paired reads", GLOBAL_PARAMETER, 400 ),
-          fStd( this, "Std", "standard deviation for distance of paired reads", GLOBAL_PARAMETER, 150 ),
-          uiSVPenalty( this, "SVPenalty", "@todo", GLOBAL_PARAMETER, 100 ),
-          iBandwidthDPExtension( this, "BandwidthDPExtension",
-                                 "When extending the end of a alignment we use this bandwidth.", GLOBAL_PARAMETER,
-                                 512 ),
-          uiZDrop( this, "ZDrop", "@todo", GLOBAL_PARAMETER, 200 )
+        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
+          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
+          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
+          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
+          // DP:
+          iMatch( this, "Match Score",
+                  "Match score. (Used in the context of Dynamic Programming and for SoC width computation.)",
+                  DP_PARAMETERS, 2, checkPositiveValue ),
+          iMissMatch( this, "Mismatch Penalty", "Penalty for mismatch. ", DP_PARAMETERS, 4, checkPositiveValue ),
+          iGap( this, "Gap penalty", "First penalty for gap opening. (Two piece affine gap costs)", DP_PARAMETERS, 4,
+                checkPositiveValue ),
+          iExtend( this, "Extend Penalty", "First penalty for gap extension.  (Two piece affine gap costs)",
+                   DP_PARAMETERS, 2, checkPositiveValue ),
+          iGap2( this, "Second Gap Penalty", "Second penalty for gap opening. (Two piece affine gap costs)",
+                 DP_PARAMETERS, 24, checkPositiveValue ),
+          iExtend2( this, "Second Extend Penalty", "Second penalty for gap extension. (Two piece affine gap costs)",
+                    DP_PARAMETERS, 1, checkPositiveValue ),
+          uiSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
+                       "Maximal gap cost penalty during local seed set computation.", HEURISTIC_PARAMETERS, 100,
+                       checkPositiveValue )
     {} // constructor
 
     /* Named copy Constructor */
     GlobalParameter( const GlobalParameter& rxOtherSet ) = delete;
+
+    virtual std::string getSetDescription( )
+    {
+        return "Independent of presettings.";
+    } // method
 }; // class
 
 

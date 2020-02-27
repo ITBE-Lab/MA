@@ -75,8 +75,8 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
             uiGap *= pGlobalParams->iExtend->get( );
             if( uiGap > 0 )
                 uiGap += pGlobalParams->iGap->get( );
-            if( uiGap > uiSVPenalty && uiSVPenalty != 0 )
-                uiGap = uiSVPenalty;
+            if( uiGap > pGlobalParams->uiSVPenalty->get( ) && pGlobalParams->uiSVPenalty->get( ) != 0 )
+                uiGap = pGlobalParams->uiSVPenalty->get( );
             if( // check for the maximal allowed gap area
                 // check for negative score
                 iScore < (int64_t)uiGap )

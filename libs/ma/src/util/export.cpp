@@ -23,7 +23,12 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
         AlignerParameterBase, //
         std::shared_ptr<AlignerParameter<TP_VALUE>> //
         >( rxPyModuleId, sName.c_str( ) ) //
-        .def( py::init<const std::string, const std::string, const size_t, const std::string, const TP_VALUE>( ) )
+        .def( py::init<const std::string,
+                       const std::string,
+                       const std::string,
+                       const size_t,
+                       const std::string,
+                       const TP_VALUE>( ) )
         .def( "set", &AlignerParameter<TP_VALUE>::set ) //
         .def( "get", &AlignerParameter<TP_VALUE>::get_py );
 } // function

@@ -969,8 +969,8 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
              (int)pRef->length( ),
              pRef->pGetSequenceRef( ),
              xParams,
-             pGlobalParams->iBandwidthDPExtension->get(),
-             pGlobalParams->uiZDrop->get(),
+             512,
+             200,
              ez.ez, // return value
              xMemoryManager,
              false );

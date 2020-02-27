@@ -88,15 +88,15 @@ class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>
     bool bLocal = false;
 
     NeedlemanWunsch( const ParameterSetManager& rParameters )
-        : xKswParameters( rParameters.getSelected( )->xMatch->get( ),
-                          rParameters.getSelected( )->xMisMatch->get( ),
-                          rParameters.getSelected( )->xGap->get( ),
-                          rParameters.getSelected( )->xExtend->get( ),
-                          rParameters.getSelected( )->xGap2->get( ),
-                          rParameters.getSelected( )->xExtend2->get( ) ),
+        : xKswParameters( pGlobalParams->iMatch->get( ),
+                          pGlobalParams->iMissMatch->get( ),
+                          pGlobalParams->iGap->get( ),
+                          pGlobalParams->iExtend->get( ),
+                          pGlobalParams->iGap2->get( ),
+                          pGlobalParams->iExtend2->get( ) ),
           uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
           uiPadding( rParameters.getSelected( )->xPadding->get( ) ),
-          uiMissMatch( rParameters.getSelected( )->xMisMatch->get( ) ),
+          uiMissMatch( pGlobalParams->iMissMatch->get( ) ),
           uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
           iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get( ) ),
           iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ){}; // default constructor

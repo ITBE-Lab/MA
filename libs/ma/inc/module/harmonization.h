@@ -157,8 +157,6 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
 
     // const nucSeqIndex uiMaxGapArea;
 
-    const size_t uiSVPenalty;
-
     const nucSeqIndex uiMaxDeltaDistanceInCLuster;
 
     HarmonizationSingle( const ParameterSetManager& rParameters )
@@ -178,7 +176,6 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
           // dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
           // iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
           // uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
-          uiSVPenalty( rParameters.getSelected( )->xSVPenalty->get( ) ),
           uiMaxDeltaDistanceInCLuster( rParameters.getSelected( )->xMaxDeltaDistanceInCLuster->get( ) )
     {} // default constructor
 
