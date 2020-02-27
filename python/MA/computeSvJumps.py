@@ -34,7 +34,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
             nuc_seq_query_getter = GetNucSeqFromSqlQuery(parameter_set_manager, seq_id, idx, jobs, True, True)
             nuc_seq_query = promise_me(nuc_seq_query_getter, pool_pledge)
             analyze.register("GetNucSeqFromSqlQuery", nuc_seq_query, True)
-            queries_pledge = promise_me(nuc_seq_fetcher, nuc_seq_query)
+            queries_pledge = promise_me(nuc_seq_fetcher, pool_pledge, nuc_seq_query)
             analyze.register("NucSeqFetcher", queries_pledge, True)
             query_pledge = promise_me(lock_module, queries_pledge)
             analyze.register("Lock", query_pledge, True)

@@ -6,15 +6,17 @@ namespace libMA
 // @todo this can be done via a linesweep...
 template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
 {
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>, uint32_t>
-        xQuery( pConnection,
-                "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
-                "FROM sv_call_table "
-                "WHERE sv_caller_run_id = ? "
-                "ORDER BY id ",
-                json{}, "combineOverlappingCalls::xQuery" );
+    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
+                      uint32_t>
+        xQuery1( pConnection,
+                 "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
+                 "FROM sv_call_table "
+                 "WHERE sv_caller_run_id = ? "
+                 "ORDER BY id ASC ",
+                 json{}, "combineOverlappingCalls::xQuery1" );
 
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>, uint32_t>
+    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
+                      uint32_t>
         xQuery2( pConnection,
                  "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
                  "       inserted_sequence, supporting_reads "
@@ -25,7 +27,7 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
                  "AND switch_strand = ? ",
                  json{}, "combineOverlappingCalls::xQuery2" );
 
-    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
+    ExplainedSQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
         pConnection,
         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
         "sv_jump_table.id "
@@ -37,7 +39,14 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
     SvCallTable<DBCon> xSvTable( pConnection );
     SvCallSupportTable<DBCon> xSvCallSupportTable( pConnection );
 
-    auto vQuery1Res = xQuery.executeAndStoreAllInVector( iSvCallerId );
+#define LOG true
+
+    std::vector<
+        std::tuple<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>, uint32_t>>
+        vQuery1Res;
+    metaMeasureAndLogDuration<LOG>( "xQuery1",
+                                    [&]( ) { vQuery1Res = xQuery1.executeAndStoreAllInVector( iSvCallerId ); } );
+
 
     size_t uiRet = 0;
     // iterate over all calls
@@ -62,11 +71,14 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
 
             auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( std::get<1>( xTup ), std::get<2>( xTup ),
                                                                           std::get<3>( xTup ), std::get<4>( xTup ) ) );
-            xQuery2.execAndFetch( iSvCallerId,
-                                  xWkb, // rectangle
-                                  std::get<0>( xTup ), // id
-                                  std::get<5>( xTup ) ); // bSwitchStrand)
-            if( !xQuery2.eof( ) ) // FIXME: avoid using eof - work with next() and get() merely
+
+            metaMeasureAndLogDuration<LOG>( "xQuery2", [&]( ) {
+                xQuery2.execAndFetch( iSvCallerId,
+                                      xWkb, // rectangle
+                                      std::get<0>( xTup ), // id
+                                      std::get<5>( xTup ) ); // bSwitchStrand)
+            } );
+            if( !xQuery2.eof( ) )
             {
 
                 xPrim.pInsertedSequence = std::get<6>( xTup ) == nullptr ? nullptr : std::get<6>( xTup )->pUncomNucSeq;
@@ -107,7 +119,8 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
                     xSec.pInsertedSequence =
                         std::get<6>( xTup2 ) == nullptr ? nullptr : std::get<6>( xTup2 )->pUncomNucSeq;
                     xSec.iId = std::get<0>( xTup2 );
-                    xQuerySupport.execAndFetch( std::get<0>( xTup2 ) );
+                    metaMeasureAndLogDuration<LOG>( "xQuerySupport",
+                                                    [&]( ) { xQuerySupport.execAndFetch( std::get<0>( xTup2 ) ); } );
                     nucSeqIndex uiSecInsertSizeAvg = 0;
                     while( !xQuerySupport.eof( ) )
                     {
@@ -143,13 +156,15 @@ template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon>
         {
             for( int64_t iId : vToDel )
             {
-                xSvCallSupportTable.deleteCall( iId );
-                xSvTable.deleteCall( iId );
+                metaMeasureAndLogDuration<LOG>( "deleteCall", [&]( ) {
+                    xSvCallSupportTable.deleteCall( iId );
+                    xSvTable.deleteCall( iId );
+                } );
                 sDeleted.insert( iId );
                 uiRet++;
             } // for
             xPrim.reEstimateClusterSize( );
-            xSvTable.updateCall( iSvCallerId, xPrim );
+            metaMeasureAndLogDuration<LOG>( "updateCall", [&]( ) { xSvTable.updateCall( iSvCallerId, xPrim ); } );
         } // if
 
     } // for

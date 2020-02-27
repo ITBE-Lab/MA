@@ -23,7 +23,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
         section_fac = libMA.GenomeSectionFactory(parameter_set_manager, pack)
         lock_module = Lock(parameter_set_manager)
-        sweep1 = libMA.CompleteBipartiteSubgraphSweep(parameter_set_manager, sequencer_ids[0])
+        sweep1 = libMA.CompleteBipartiteSubgraphSweep(parameter_set_manager, run_id)
         sweep2 = libMA.ExactCompleteBipartiteSubgraphSweep(parameter_set_manager)
 
         filter1 = libMA.FilterLowSupportShortCalls(parameter_set_manager)

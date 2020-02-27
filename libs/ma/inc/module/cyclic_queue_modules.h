@@ -36,7 +36,10 @@ class QueuePlacer : public Module<ReturnType, false, ReturnType, ContentType, Cy
                                              pQueue )
     {
         if( pContainer->eof( ) )
+        {
+            pContainer->close();
             pQueue->informThatContainerIsFinished( );
+        } // if
         else
             pQueue->push( pContainer );
         return pRet;

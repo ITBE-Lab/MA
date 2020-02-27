@@ -110,13 +110,15 @@ template <typename DBCon> class SortedSvJumpFromSql
               iSvCallerRunId,
               "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "       from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
               "AND sort_pos_start >= ? "
               "AND sort_pos_start <= ? "
               "ORDER BY sort_pos_start",
               "SELECT sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
               "      from_seed_start, num_supporting_nt, id, read_id "
-              "FROM sv_jump_table WHERE sv_jump_run_id = ? "
+              "FROM sv_jump_table "
+              "WHERE sv_jump_run_id = ? "
               "AND sort_pos_end >= ? "
               "AND sort_pos_end <= ? "
               "ORDER BY sort_pos_end" )

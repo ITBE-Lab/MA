@@ -331,6 +331,7 @@ class GzFileStream : public FileStream
     {
         if( pFile != nullptr )
             gzclose( pFile );
+        pFile = nullptr;
     } // method
 
     size_t tellg( )
