@@ -340,7 +340,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "supporting_reads"}},
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
-              {{COLUMN_NAME, "rectangle"}, {CONSTRAINTS, "NOT NULL SRID 0"}}}},
+              {{COLUMN_NAME, "rectangle"}, {CONSTRAINTS, "NOT NULL"}}}},
             {GENERATED_COLUMNS,
              {{{COLUMN_NAME, "score"}, {TYPE, "DOUBLE"}, {AS, "(supporting_reads * 1.0) / reference_ambiguity"}}}},
             // @todo how to insert NULL into sv_caller_run_id ?

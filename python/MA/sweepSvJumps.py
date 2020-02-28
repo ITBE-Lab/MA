@@ -10,14 +10,14 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     #assert parameter_set_manager.get_num_threads() == 2
 
     # creates scope so that destructor of call inserter is triggered (commits insert transaction)
-    def graph():
+    def graph(pool):
         analyze = AnalyzeRuntimes()
         print("\tsetting up graph...")
 
         pack_pledge = Pledge()
         pack_pledge.set(pack)
         pool_pledge = Pledge()
-        pool_pledge.set(PoolContainer(parameter_set_manager.get_num_threads() + 1, dataset_name))
+        pool_pledge.set(pool)
 
         assert len(sequencer_ids) == 1
 
@@ -97,7 +97,8 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     conn = DbConn(dataset_name)
     SvCallTable(conn).drop_indices(0) # number does nothing at the moment
 
-    sv_caller_run_id = graph()
+    pool = PoolContainer(parameter_set_manager.get_num_threads() + 1, dataset_name)
+    sv_caller_run_id = graph(pool)
     print("done sweeping")
     analyze = AnalyzeRuntimes()
 
@@ -115,7 +116,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
     print("overlapping...")
     start = datetime.datetime.now()
-    num_combined = libMA.combine_overlapping_calls(conn, sv_caller_run_id)
+    num_combined = libMA.combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)

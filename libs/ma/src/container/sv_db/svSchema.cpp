@@ -197,7 +197,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
     rxPyModuleId.def( "get_call_overview", &getCallOverview );
     rxPyModuleId.def( "get_call_overview_area", &getCallOverviewArea );
 
-    rxPyModuleId.def( "combine_overlapping_calls", &combineOverlappingCalls<DBConSingle> );
+    rxPyModuleId.def( "combine_overlapping_calls", &combineOverlappingCalls<DBCon> );
 
     exportSvCallInserter( rxPyModuleId );
     exportCallsFromDb( rxPyModuleId );

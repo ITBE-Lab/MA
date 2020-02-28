@@ -1,176 +1,231 @@
 #pragma once
+#include "container/sv_db/pool_container.h"
 #include "container/sv_db/query_objects/callInserter.h"
 
 namespace libMA
 {
-// @todo this can be done via a linesweep...
-template <typename DBCon> size_t combineOverlappingCalls( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
+
+#define LOG false
+
+/** @brief helper function for combine overlapping calls
+ * @details
+ * Fetches a call and its supporting jumps.
+ * Also computes the average insert size of the supporting jumps.
+ */
+std::pair<SvCall, size_t>
+fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
+                    uint32_t>& xGetCall,
+           SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t>& xGetSupportingJumps,
+           PriKeyDefaultType iId )
 {
-    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
-                      uint32_t>
-        xQuery1( pConnection,
-                 "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, supporting_reads "
-                 "FROM sv_call_table "
-                 "WHERE sv_caller_run_id = ? "
-                 "ORDER BY id ASC ",
-                 json{}, "combineOverlappingCalls::xQuery1" );
+    metaMeasureAndLogDuration<LOG>( "xGetCall", [&]( ) { xGetCall.execAndFetch( iId ); } );
+    auto xCallTup = xGetCall.get( );
+    auto xRet = std::make_pair<SvCall, size_t>( SvCall( std::get<1>( xCallTup ), // uiFromStart
+                                                        std::get<2>( xCallTup ), // uiToStart
+                                                        std::get<3>( xCallTup ), // uiFromSize
+                                                        std::get<4>( xCallTup ), // uiToSize
+                                                        std::get<5>( xCallTup ), // bSwitchStrand
+                                                        std::get<7>( xCallTup ) // supporting_reads
+                                                        ),
+                                                0 );
+    xRet.first.pInsertedSequence = std::get<6>( xCallTup ) == nullptr ? nullptr : std::get<6>( xCallTup )->pUncomNucSeq;
+    xRet.first.iId = std::get<0>( xCallTup );
 
-    ExplainedSQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
-                      uint32_t>
-        xQuery2( pConnection,
-                 "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, "
-                 "       inserted_sequence, supporting_reads "
-                 "FROM sv_call_table "
-                 "WHERE sv_caller_run_id = ? "
-                 "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                 "AND id > ? "
-                 "AND switch_strand = ? ",
-                 json{}, "combineOverlappingCalls::xQuery2" );
-
-    ExplainedSQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xQuerySupport(
-        pConnection,
-        "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
-        "sv_jump_table.id "
-        "FROM sv_call_support_table "
-        "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-        "WHERE sv_call_support_table.call_id = ? ",
-        json{}, "combineOverlappingCalls::xQuerySupport" );
-
-    SvCallTable<DBCon> xSvTable( pConnection );
-    SvCallSupportTable<DBCon> xSvCallSupportTable( pConnection );
-
-#define LOG true
-
-    std::vector<
-        std::tuple<int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>, uint32_t>>
-        vQuery1Res;
-    metaMeasureAndLogDuration<LOG>( "xQuery1",
-                                    [&]( ) { vQuery1Res = xQuery1.executeAndStoreAllInVector( iSvCallerId ); } );
-
-
-    size_t uiRet = 0;
-    // iterate over all calls
-
-    std::set<int64_t> sDeleted;
-    for( auto& xTup : vQuery1Res )
+    metaMeasureAndLogDuration<LOG>( "xGetSupprotingJumps",
+                                    [&]( ) { xGetSupportingJumps.exec( std::get<0>( xCallTup ) ); } );
+    while( xGetSupportingJumps.next( ) )
     {
-        if( sDeleted.find( std::get<0>( xTup ) ) != sDeleted.end( ) )
-            continue;
+        auto xSupportTup = xGetSupportingJumps.get( );
+        xRet.first.vSupportingJumpIds.push_back( std::get<7>( xSupportTup ) );
+        auto pNewJump = std::make_shared<SvJump>( std::get<0>( xSupportTup ), std::get<1>( xSupportTup ),
+                                                  std::get<2>( xSupportTup ), std::get<3>( xSupportTup ),
+                                                  std::get<4>( xSupportTup ), std::get<5>( xSupportTup ),
+                                                  std::get<6>( xSupportTup ), std::get<7>( xSupportTup ) );
+        xRet.first.vSupportingJumps.push_back( pNewJump );
+        xRet.first.addJumpToEstimateClusterSize( pNewJump );
+        xRet.second += xRet.first.vSupportingJumps.back( )->query_distance( );
+    } // while
+    xRet.second /= xRet.first.vSupportingJumps.size( );
+    return xRet;
+} // function
 
-        SvCall xPrim( std::get<1>( xTup ), // uiFromStart
-                      std::get<2>( xTup ), // uiToStart
-                      std::get<3>( xTup ), // uiFromSize
-                      std::get<4>( xTup ), // uiToSize
-                      std::get<5>( xTup ), // bSwitchStrand
-                      std::get<7>( xTup ) // supporting_reads
-        );
+/** @brief combine overlapping calls
+ * @details
+ * Combines all calls that rectangles are overlapping.
+ * Multithreads the initial detection of overlapping calls.
+ * The actual combination of overlapping calls is single threaded though.
+ */
+template <typename DBCon>
+size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<PoolContainer<DBCon>> pConPool,
+                                int64_t iSvCallerId )
+{
+    size_t uiNumCombines = 0;
+    pConPool->xPool.run( [&]( std::shared_ptr<DBCon> pOuterConnection ) {
+        // @todo discuss arne
+        SQLStatement<DBCon>( pOuterConnection, "DROP TABLE IF EXISTS call_overlap_table " ).exec( );
+        SQLTableWithAutoPriKey<DBCon, PriKeyDefaultType, PriKeyDefaultType> xOverlapTable(
+            pOuterConnection,
+            json{{TABLE_NAME, "call_overlap_table"},
+                 // {CPP_EXTRA, "DROP ON DESTRUCTION"},
+                 {TABLE_COLUMNS,
+                  {
+                      {{COLUMN_NAME, "from_call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}},
+                      {{COLUMN_NAME, "to_call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}} //
+                  }}} );
 
-        std::vector<int64_t> vToDel;
-        {
-            // get all overlapping calls
+        metaMeasureAndLogDuration<LOG>( "xInsertIntoOverlapTable", [&]( ) {
+            // fill call_overlap_table
+            size_t uiNumTasks = rParameters.getNumThreads( ) * 100;
+            std::vector<std::future<void>> vFutures;
+            vFutures.reserve( uiNumTasks );
+            for( size_t uiI = 0; uiI < uiNumTasks; uiI++ )
+                vFutures.push_back( pConPool->xPool.enqueue(
+                    [&]( std::shared_ptr<DBCon> pConnection, size_t uiI ) {
+                        SQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
+                            pConnection,
+                            "SELECT id, ST_AsBinary(rectangle), switch_strand "
+                            "FROM sv_call_table "
+                            "WHERE sv_caller_run_id = ? "
+                            "AND id % ? = ? ",
+                            "combineOverlappingCalls::xFetchCalls" );
+                        // split into two queries, so that mysql uses the spatial index for MBRIntersects
+                        // stupid query optimizer...
+                        SQLStatement<DBCon> xInsertIntoOverlapTable(
+                            pConnection,
+                            "INSERT INTO call_overlap_table (from_call_id, to_call_id) "
+                            "SELECT ?, id "
+                            "FROM sv_call_table "
+                            "WHERE sv_caller_run_id = ? "
+                            "AND ? < id "
+                            "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                            "AND switch_strand = ? ",
+                            "combineOverlappingCalls::xInsertIntoOverlapTable" );
+                        xFetchCalls.execAndForAll(
+                            [&]( PriKeyDefaultType iOuterId, WKBUint64Rectangle& xRect, bool bSwitchStrand ) {
+                                xInsertIntoOverlapTable.exec( iOuterId, iSvCallerId, iOuterId, xRect, bSwitchStrand );
+                            }, // lambda
+                            iSvCallerId, uiNumTasks, uiI );
+                    },
+                    uiI ) );
+            for( size_t uiI = 0; uiI < uiNumTasks; uiI++ )
+                vFutures[ uiI ].get( );
+        } );
 
-            auto xWkb = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( std::get<1>( xTup ), std::get<2>( xTup ),
-                                                                          std::get<3>( xTup ), std::get<4>( xTup ) ) );
+        auto xTransaction = pOuterConnection->sharedGuardedTrxn( );
 
-            metaMeasureAndLogDuration<LOG>( "xQuery2", [&]( ) {
-                xQuery2.execAndFetch( iSvCallerId,
-                                      xWkb, // rectangle
-                                      std::get<0>( xTup ), // id
-                                      std::get<5>( xTup ) ); // bSwitchStrand)
-            } );
-            if( !xQuery2.eof( ) )
+        // create index on overlap table  (mysql cannot deal with empty tables apparently)
+        metaMeasureAndLogDuration<LOG>( "xOverlapTable.addIndex", [&]( ) {
+            if( SQLQuery<DBCon, uint32_t>( pOuterConnection, "SELECT COUNT(*) FROM call_overlap_table" ).scalar( ) > 0 )
+                xOverlapTable.addIndex( json{{INDEX_NAME, "from_to"}, {INDEX_COLUMNS, "from_call_id, to_call_id"}} );
+        } );
+
+        // overlap the calls in call_overlap_table
+        SQLQuery<DBCon, PriKeyDefaultType> xGetLowestOverlappingCall(
+            pOuterConnection,
+            "SELECT from_call_id "
+            "FROM call_overlap_table "
+            "ORDER BY from_call_id ASC "
+            "LIMIT 1 ",
+            json{}, "combineOverlappingCalls::xGetLowestOverlappingCall" );
+        SQLQuery<DBCon, PriKeyDefaultType> xGetOverlappingCalls( pOuterConnection,
+                                                                 "SELECT to_call_id "
+                                                                 "FROM call_overlap_table "
+                                                                 "WHERE from_call_id = ? ",
+                                                                 json{},
+                                                                 "combineOverlappingCalls::xGetOverlappingCalls" );
+
+        SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
+                 uint32_t>
+            xGetCall( pOuterConnection,
+                      "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
+                      "supporting_reads "
+                      "FROM sv_call_table "
+                      "WHERE id = ? ",
+                      json{}, "combineOverlappingCalls::xGetCall" );
+        SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xGetSupportingJumps(
+            pOuterConnection,
+            "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+            "sv_jump_table.id "
+            "FROM sv_call_support_table "
+            "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+            "WHERE sv_call_support_table.call_id = ? ",
+            json{}, "combineOverlappingCalls::xGetSupprotingJumps" );
+        SQLTable<DBCon, PriKeyDefaultType> xToDeleteTable( pOuterConnection,
+                                                           json{{TABLE_NAME, "to_delete_table"},
+                                                                {CPP_EXTRA, "DROP ON DESTRUCTION"},
+                                                                {TABLE_COLUMNS,
+                                                                 {
+                                                                     {{COLUMN_NAME, "call_id"},
+                                                                      {REFERENCES, "sv_call_table(id)"},
+                                                                      {CONSTRAINTS, "NOT NULL PRIMARY KEY"}}
+                                                                     //
+                                                                 }}} );
+        SQLStatement<DBCon> xDoneWithCall( pOuterConnection,
+                                           "DELETE FROM call_overlap_table "
+                                           "WHERE to_call_id = ? ",
+                                           "combineOverlappingCalls::xDoneWithCall" );
+        metaMeasureAndLogDuration<LOG>( "xOverlap", [&]( ) {
+            while( xGetLowestOverlappingCall.execAndFetch( ) )
             {
+                PriKeyDefaultType iLowestCallId = std::get<0>( xGetLowestOverlappingCall.get( ) );
+                std::set<PriKeyDefaultType> xIdsToCombineWith;
 
-                xPrim.pInsertedSequence = std::get<6>( xTup ) == nullptr ? nullptr : std::get<6>( xTup )->pUncomNucSeq;
-                xPrim.iId = std::get<0>( xTup );
-                xQuerySupport.execAndFetch( std::get<0>( xTup ) );
-                nucSeqIndex uiPrimInsertSizeAvg = 0;
-                while( !xQuerySupport.eof( ) )
+                // fill xIdsToCombineWith
+                std::queue<PriKeyDefaultType> xIdsToCheck;
+                xIdsToCheck.push( iLowestCallId );
+                while( !xIdsToCheck.empty( ) )
                 {
-                    auto xTup = xQuerySupport.get( );
-                    xPrim.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                    auto pNewJump = std::make_shared<SvJump>(
-                        std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                        std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
-                    xPrim.vSupportingJumps.push_back( pNewJump );
-                    xPrim.addJumpToEstimateClusterSize( pNewJump );
-                    uiPrimInsertSizeAvg += xPrim.vSupportingJumps.back( )->query_distance( );
-                    // DEL: xSupportIterator.next( );
-                    xQuerySupport.next( );
+                    xGetOverlappingCalls.execAndForAll(
+                        [&]( PriKeyDefaultType iId ) {
+                            if( xIdsToCombineWith.find( iId ) == xIdsToCombineWith.end( ) )
+                            {
+                                xIdsToCombineWith.insert( iId );
+                                xIdsToCheck.push( iId );
+                            } // if
+                        },
+                        xIdsToCheck.front( ) );
+                    xIdsToCheck.pop( );
                 } // while
-                uiPrimInsertSizeAvg /= xPrim.vSupportingJumps.size( );
 
+                auto xPrim = fetchCall( xGetCall, xGetSupportingJumps, iLowestCallId );
 
-                while( !xQuery2.eof( ) )
+                // combine calls
+                for( auto iId : xIdsToCombineWith )
                 {
-                    auto xTup2 = xQuery2.get( );
-                    xQuery2.next( );
-
-                    if( sDeleted.find( std::get<0>( xTup2 ) ) != sDeleted.end( ) )
-                        continue;
-
-                    SvCall xSec( std::get<1>( xTup2 ), // uiFromStart
-                                 std::get<2>( xTup2 ), // uiToStart
-                                 std::get<3>( xTup2 ), // uiFromSize
-                                 std::get<4>( xTup2 ), // uiToSize
-                                 std::get<5>( xTup2 ), // bSwitchStrand
-                                 std::get<7>( xTup2 ) // supporting_reads
-                    );
-                    xSec.pInsertedSequence =
-                        std::get<6>( xTup2 ) == nullptr ? nullptr : std::get<6>( xTup2 )->pUncomNucSeq;
-                    xSec.iId = std::get<0>( xTup2 );
-                    metaMeasureAndLogDuration<LOG>( "xQuerySupport",
-                                                    [&]( ) { xQuerySupport.execAndFetch( std::get<0>( xTup2 ) ); } );
-                    nucSeqIndex uiSecInsertSizeAvg = 0;
-                    while( !xQuerySupport.eof( ) )
-                    {
-                        auto xTup = xQuerySupport.get( );
-                        xSec.vSupportingJumpIds.push_back( std::get<7>( xTup ) );
-                        auto pNewJump = std::make_shared<SvJump>(
-                            std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
-                            std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ) );
-                        xSec.vSupportingJumps.push_back( pNewJump );
-                        xSec.addJumpToEstimateClusterSize( pNewJump );
-                        uiSecInsertSizeAvg += xSec.vSupportingJumps.back( )->query_distance( );
-                        xQuerySupport.next( );
-                    } // while
-                    uiSecInsertSizeAvg /= xSec.vSupportingJumps.size( );
+                    auto xToCombineWith = fetchCall( xGetCall, xGetSupportingJumps, iId );
 
                     nucSeqIndex uiMaxInsertSizeDiff = 150;
                     // make sure that the average insert size of the clusters is no more different than
-                    // uiMaxInsertSizeDiff this must be done since there could be two different sequences for the same
-                    // edge, in that case we should evaluate those sequences independently.
-                    if( uiPrimInsertSizeAvg + uiMaxInsertSizeDiff >= uiSecInsertSizeAvg &&
-                        uiSecInsertSizeAvg + uiMaxInsertSizeDiff >= uiPrimInsertSizeAvg )
+                    // uiMaxInsertSizeDiff this must be done since there could be two different sequences
+                    // for the same edge, in that case we should evaluate those sequences independently.
+                    if( xPrim.second + uiMaxInsertSizeDiff >= xToCombineWith.second &&
+                        xToCombineWith.second + uiMaxInsertSizeDiff >= xPrim.second )
                     {
-                        xPrim.join( xSec );
-
-                        vToDel.push_back( xSec.iId );
+                        xPrim.first.join( xToCombineWith.first );
+                        uiNumCombines++;
+                        xToDeleteTable.insert( xToCombineWith.second );
                     } // if
-                } // while
-            } // if
-        } // scope for xIt2
+                    xDoneWithCall.exec( xToCombineWith.second );
+                } // for
+            } // while
+        } );
 
-        // only replace the primary cluster if we actually made changes
-        if( vToDel.size( ) > 0 )
+        // delete calls that have been overlapped (mysql cannot deal with empty tables apparently)
+        if( SQLQuery<DBCon, uint32_t>( pOuterConnection, "SELECT COUNT(*) FROM to_delete_table" ).scalar( ) > 0 )
         {
-            for( int64_t iId : vToDel )
-            {
-                metaMeasureAndLogDuration<LOG>( "deleteCall", [&]( ) {
-                    xSvCallSupportTable.deleteCall( iId );
-                    xSvTable.deleteCall( iId );
-                } );
-                sDeleted.insert( iId );
-                uiRet++;
-            } // for
-            xPrim.reEstimateClusterSize( );
-            metaMeasureAndLogDuration<LOG>( "updateCall", [&]( ) { xSvTable.updateCall( iSvCallerId, xPrim ); } );
+            SQLStatement<DBCon> xDeleteOverlapped( pOuterConnection,
+                                                   "DELETE FROM sv_call_table "
+                                                   "WHERE id IN ( "
+                                                   "    SELECT call_id "
+                                                   "    FROM to_delete_table "
+                                                   ") ",
+                                                   "combineOverlappingCalls::xDeleteOverlapped" );
+
+            metaMeasureAndLogDuration<LOG>( "xDeleteOverlapped", [&]( ) { xDeleteOverlapped.exec( ); } );
         } // if
+    } ); // xPool.run call
 
-    } // for
-
-    return uiRet;
-    // end of scope for transaction context (via xInserter)
+    return uiNumCombines;
 
 } // function
 }; // namespace libMA

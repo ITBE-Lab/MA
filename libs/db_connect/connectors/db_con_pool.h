@@ -332,18 +332,10 @@ template <typename DBImpl> class SQLDBConPool
                     // Exclusive access to the task queue is not required any longer.
                     xLock.unlock( );
 
-                    // Treads are not allowed to throw exceptions or we face crashes.
-                    // Therefore the swallowing of exceptions.
-                    doNoExcept(
-                        [&] {
-                            // Execute the task delivering its connection manager as argument.
-                            // If the task throws an exception, this exception has to be caught via the future.
-                            // (See the notice in the description of this class.)
-                            fTaskToBeExecuted( pConManager );
-                        }, // lambda ( doNoExcept )
-                        // doNoExcept error message:
-                        "SQLDBConPool:: The worker with Id " + std::to_string( uiThreadId ) +
-                            "failed due to an internal error and terminated." );
+                    // Execute the task delivering its connection manager as argument.
+                    // If the task throws an exception, this exception has to be caught via the future.
+                    // (See the notice in the description of this class.)
+                    fTaskToBeExecuted( pConManager );
                 } // while
             } ); // emplace_back
     } // constructor

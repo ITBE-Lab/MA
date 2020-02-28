@@ -209,28 +209,6 @@ const std::string SCHEMA = "SCHEMA";
 const std::string NAME = "NAME";
 const std::string DROP_ON_CLOSURE = "DROP_ON_CLOSURE";
 
-
-/** @brief An instance of this class models a single SQL statement. */
-template <typename DBConPtrType> class _SQLStatement
-{
-  protected:
-    DBConPtrType pDB; // Database connection //--
-    using DBConType = typename std::remove_reference<decltype( *std::declval<DBConPtrType>( ) )>::type;
-    std::unique_ptr<typename DBConType::PreparedStmt> pStmt; // pointer to insert statement
-
-  public:
-    _SQLStatement( const _SQLStatement& ) = delete; // no statement copies
-
-    _SQLStatement( DBConPtrType pDB, const std::string& rsStmtText ) //--
-        : pDB( pDB ), pStmt( std::make_unique<typename DBConType::PreparedStmt>( this->pDB, rsStmtText ) )
-    {} // constructor
-
-    template <typename... ArgTypes> inline int exec( ArgTypes&&... args )
-    {
-        return static_cast<int>( pStmt->bindAndExec( std::forward<ArgTypes>( args )... ) );
-    } // method
-}; // class
-
 /** @brief helper function for the explained query
  * @details some columns return empty strings, in that case we ant to print "NULL".
  */
@@ -247,31 +225,11 @@ template <> inline void printWNull<std::string>( std::string& xEle, fort::char_t
         xTable << xEle;
 } // method
 
-template <typename DBConType> using SQLStatement = _SQLStatement<std::shared_ptr<DBConType>>;
-#define EXPLAINED_QUERY_IN_COMMON
-
-
-/** @brief An instance of this class models a single SQL query
- *  @details
- *  @param bExplain whether the query shall explain itself on it's first execution
- *  https://stackoverflow.com/questions/24314727/remove-pointer-analog-that-works-for-anything-that-supports-operator/24315093#24315093
- */
-#ifdef EXPLAINED_QUERY_IN_COMMON
-template <bool bExplain, typename DBConPtrType, typename... ColTypes> class _SQLQueryTmpl
-#else
-template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
-#endif
+template <bool bExplain, typename DBConType> class _QueryExplainer
 {
   private:
-    DBConPtrType pDB; // Database connection
-    // See: https://www.reddit.com/r/cpp_questions/comments/ddgc04/remove_pointert_for_smart_pointers/
-    using DBConType = typename std::remove_reference<decltype( *std::declval<DBConPtrType>( ) )>::type;
-
-    std::unique_ptr<typename DBConType::template PreparedQuery<ColTypes...>> pQuery; // pointer to query statement
     const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
     const std::string sQueryName;
-
-#ifdef EXPLAINED_QUERY_IN_COMMON
     // type of the explain query
     using ExplainQType = typename DBConType::template PreparedQuery<int64_t, // id
                                                                     std::string, // select_type
@@ -306,43 +264,18 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
         TemplateLoop<std::tuple_size<TupleType>::value, PrintExplainResults>::iterate( xRow, xTable );
         xTable << fort::endr;
     } // method
-#endif
-
-    template <typename F> void forAllRowsDo( F&& func )
-    {
-        // Fetch all rows and apply func to all of them
-        while( pQuery->fetchNextRow( ) )
-            // unpack the tuple and call func (C++17 fold expression)
-            STD_APPLY( func, pQuery->tCellValues );
-    } // method
 
   public:
-    /** @brief Constructs a query instance using the statement rsStmtText. The query can receive additional parameter by
-     *  a JSON  passed via rjConfig.
-     */
-#ifdef EXPLAINED_QUERY_IN_COMMON
-    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
-                   std::string sQueryName = "UnnamedQuery" )
-#else
-    _SQLQuery( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
-               std::string sQueryName = "UnnamedQuery" )
-#endif
-        : pDB( pDB ),
-          pQuery( std::make_unique<typename DBConType::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText,
-                                                                                             rjConfig ) ),
-          sStmtText( rsStmtText ),
-          sQueryName( sQueryName )
-#ifdef EXPLAINED_QUERY_IN_COMMON
-          ,
+    _QueryExplainer( std::shared_ptr<DBConType> pDB, const std::string& rsStmtText,
+                     std::string sQueryName = "UnnamedQuery" )
+        : sStmtText( rsStmtText ),
+          sQueryName( sQueryName ),
           pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText, json{} ) : nullptr ),
           bIsExplained( false )
-#endif
     {} // constructor
 
-    /** @brief Execute the query */
     template <typename... ArgTypes> void exec( ArgTypes&&... args )
     {
-#ifdef EXPLAINED_QUERY_IN_COMMON
         // explain the query if requested @todo use std::enable_if ?
         if( bExplain /* <- template parameter, so that whole if can be optimized out */ && !bIsExplained )
         {
@@ -374,6 +307,98 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
                 printExplainRow( pExplainQuery->tCellValues, xTable );
             std::cout << xTable.to_string( ) << std::endl;
         } // if
+    } // method
+}; // class
+
+/** @brief An instance of this class models a single SQL statement. */
+template <bool bExplain, typename DBConPtrType> class _SQLStatement
+{
+  protected:
+    DBConPtrType pDB; // Database connection //--
+    using DBConType = typename std::remove_reference<decltype( *std::declval<DBConPtrType>( ) )>::type;
+    std::unique_ptr<typename DBConType::PreparedStmt> pStmt; // pointer to insert statement
+    _QueryExplainer<bExplain, DBConType> xExplainer;
+
+  public:
+    _SQLStatement( const _SQLStatement& ) = delete; // no statement copies
+
+    _SQLStatement( DBConPtrType pDB, const std::string& rsStmtText,
+                   std::string sStatementName = "UnnamedStatement" ) //--
+        : pDB( pDB ),
+          pStmt( std::make_unique<typename DBConType::PreparedStmt>( this->pDB, rsStmtText ) ),
+          xExplainer( pDB, rsStmtText, sStatementName )
+    {} // constructor
+
+    template <typename... ArgTypes> inline int exec( ArgTypes&&... args )
+    {
+        xExplainer.exec( std::forward<ArgTypes>( args )... );
+        return static_cast<int>( pStmt->bindAndExec( std::forward<ArgTypes>( args )... ) );
+    } // method
+}; // class
+
+template <typename DBConType> using SQLStatement = _SQLStatement<false, std::shared_ptr<DBConType>>;
+template <typename DBConType> using ExplainedSQLStatement = _SQLStatement<true, std::shared_ptr<DBConType>>;
+#define EXPLAINED_QUERY_IN_COMMON
+
+
+/** @brief An instance of this class models a single SQL query
+ *  @details
+ *  @param bExplain whether the query shall explain itself on it's first execution
+ *  https://stackoverflow.com/questions/24314727/remove-pointer-analog-that-works-for-anything-that-supports-operator/24315093#24315093
+ */
+#ifdef EXPLAINED_QUERY_IN_COMMON
+template <bool bExplain, typename DBConPtrType, typename... ColTypes> class _SQLQueryTmpl
+#else
+template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
+#endif
+{
+  private:
+    DBConPtrType pDB; // Database connection
+    // See: https://www.reddit.com/r/cpp_questions/comments/ddgc04/remove_pointert_for_smart_pointers/
+    using DBConType = typename std::remove_reference<decltype( *std::declval<DBConPtrType>( ) )>::type;
+
+    std::unique_ptr<typename DBConType::template PreparedQuery<ColTypes...>> pQuery; // pointer to query statement
+    const std::string sStmtText; // backup of the query statement text. (used for verbose error reporting)
+
+#ifdef EXPLAINED_QUERY_IN_COMMON
+    _QueryExplainer<bExplain, DBConType> xExplainer;
+#endif
+
+    template <typename F> void forAllRowsDo( F&& func )
+    {
+        // Fetch all rows and apply func to all of them
+        while( pQuery->fetchNextRow( ) )
+            // unpack the tuple and call func (C++17 fold expression)
+            STD_APPLY( func, pQuery->tCellValues );
+    } // method
+
+  public:
+    /** @brief Constructs a query instance using the statement rsStmtText. The query can receive additional parameter by
+     *  a JSON  passed via rjConfig.
+     */
+#ifdef EXPLAINED_QUERY_IN_COMMON
+    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
+                   std::string sQueryName = "UnnamedQuery" )
+#else
+    _SQLQuery( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
+               std::string sQueryName = "UnnamedQuery" )
+#endif
+        : pDB( pDB ),
+          pQuery( std::make_unique<typename DBConType::template PreparedQuery<ColTypes...>>( this->pDB, rsStmtText,
+                                                                                             rjConfig ) ),
+          sStmtText( rsStmtText )
+#ifdef EXPLAINED_QUERY_IN_COMMON
+          ,
+          xExplainer( pDB, rsStmtText, sQueryName )
+#endif
+    {} // constructor
+
+    /** @brief Execute the query */
+    template <typename... ArgTypes> void exec( ArgTypes&&... args )
+    {
+#ifdef EXPLAINED_QUERY_IN_COMMON
+        // explain the query if requested
+        xExplainer.exec( std::forward<ArgTypes>( args )... );
 #endif
         // Execute statement
         pQuery->bindAndExec( std::forward<ArgTypes>( args )... );
@@ -1325,12 +1350,14 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         return "DELETE FROM  " + getTableName( );
     } // method
 
+  public:
     /** @brief Drop the table in DB. (Should only be done by the destructor.) */
     void drop( )
     {
         pDB->execSQL( makeTableDropStmt( ) );
     } // method
 
+  protected:
     /** @brief Get the name of the current table. */
     std::string getTableName( ) const
     {
