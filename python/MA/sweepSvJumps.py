@@ -77,6 +77,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             call_inserter = promise_me(get_call_inserter, pool_pledge)
             inserter_vec.append(call_inserter)
 
+            # filter6_pledge
             write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, filter6_pledge)
             analyze.register("CallInserterModule", write_to_db_pledge, True)
 

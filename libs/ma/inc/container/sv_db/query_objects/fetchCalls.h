@@ -26,9 +26,9 @@ template <typename DBCon> class SvCallsFromDb
     std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable;
     // rectangle for xQuery; stays uninitialized if unused
     WKBUint64Rectangle xWkb;
-    SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
+    ExplainedSQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
         xQuery;
-    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
+    ExplainedSQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
              PriKeyDefaultType>
         xQuerySupport;
 
@@ -89,7 +89,7 @@ template <typename DBCon> class SvCallsFromDb
                   "     SELECT outer.id "
                   "     FROM sv_call_table AS outer "
                   "     WHERE idx_outer.sv_caller_run_id = ? "
-                  "     AND MBRIntersects(outer.rectangle, inner.rectangle) "
+                  "     AND MBRIntersects(outer.rectangle, inner.rectangle) " // @todo this results in a full table scan
                   "     AND outer.switch_strand = inner.switch_strand "
                   ") "
                   // make sure that inner does not overlap with any other call with higher score
@@ -100,7 +100,7 @@ template <typename DBCon> class SvCallsFromDb
                   "     AND inner2.score >= inner.score "
                   "     AND idx_inner2.run_id_b >= inner.id " // dim 1
                   "     AND idx_inner2.run_id_a <= inner.id " // dim 1
-                  "     AND MBRIntersects(inner2.rectangle, inner.rectangle) "
+                  "     AND MBRIntersects(inner2.rectangle, inner.rectangle) " // @todo this results in a full table scan
                   "     AND inner2.switch_strand = inner.switch_strand "
                   ") ",
               "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "

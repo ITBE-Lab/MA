@@ -435,6 +435,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
     {
         uint32_t uiRet = 0;
+        // @todo parallelize this
         xNumOverlaps.execAndForAll(
             [this, &uiRet, iCallerRunIdA, iCallerRunIdB, iAllowedDist]( WKBUint64Rectangle xWKB, bool bSwitchStrand,
                                                                         double fScore, PriKeyDefaultType iId ) {

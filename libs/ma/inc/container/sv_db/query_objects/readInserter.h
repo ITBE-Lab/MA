@@ -18,8 +18,7 @@ namespace libMA
 
 /// @brief inserts reads into a DB
 template <typename DBCon>
-class ReadInserterContainer
-    : public BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>
+class ReadInserterContainer : public BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>
 {
   public:
     using ParentType = BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>;
@@ -49,7 +48,6 @@ class PairedReadInserterContainer
   public:
     using ParentType = BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq, NucSeq>;
 
-    const static size_t BUFFER_SIZE = 500;
     std::shared_ptr<BulkInserterType<PairedReadTable<DBCon>>> pPairedReadInserter;
 
     PairedReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool,
@@ -61,11 +59,11 @@ class PairedReadInserterContainer
               ParentType::iConnectionId,
               []( auto pConnection ) //
               {
-                  return std::make_shared<BulkInserterType<PairedReadTable<DBCon>>>(
-                      PairedReadTable<DBCon>( pConnection,
-                                              /* nullptr is save in this context since PairedReadTable only uses it's
-                                                 second constructor argument if insert is called. */
-                                              nullptr ) );
+                  return PairedReadTable<DBCon>( pConnection,
+                                                 /* nullptr is save in this context since PairedReadTable only uses it's
+                                                    second constructor argument if insert is called. */
+                                                 nullptr )
+                      .template getBulkInserter<PairedReadTable<DBCon>::uiBulkInsertSize::value>( );
               } ) )
     {} // constructor
   protected:

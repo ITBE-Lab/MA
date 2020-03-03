@@ -943,6 +943,8 @@ class MySQLConDB
 #if 0 // not having metadata does not actually cause trouble...
                 throw std::runtime_error( "mysql_stmt_result_metadata(), returned no meta information\n" +
                                           this->stmtErrMsg( ) );
+#else
+                // std::cerr << "mysql_stmt_result_metadata(), returned no meta information" << std::endl;
 #endif
             } // if
             else

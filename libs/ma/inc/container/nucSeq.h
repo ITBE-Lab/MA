@@ -1219,7 +1219,7 @@ template <> inline void MySQLConDB::StmtArg::set( const CompNucSeqSharedPtr& rxC
         pMySQLBind->buffer = (void*)( rxCompSeq->get( ) );
         pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
     } // if
-    else // @todo discuss with arne
+    else
     {
         pMySQLBind->buffer = NULL;
         pMySQLBind->buffer_type = MYSQL_TYPE_NULL; // this type must be equal to the type in Part 3.

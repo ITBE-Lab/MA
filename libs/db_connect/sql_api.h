@@ -1647,18 +1647,6 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyDefaultType, ColTypes...
                            // xPriKeyIndexViewType( this, json{ { "INDEX_NAME", "pri_key_idx" }, {
                            // "INDEX_COLUMNS", "id" } } )
     {
-        /*
-@todo show arne
-table creation in transaction causes this error o.O
-but in that case we know that we can set the value to zero...
-
-Drop exception (different thread threw already): mysql_stmt_execute, failed
-MySQL statement error:
-Affected stmt: SELECT COALESCE(MAX(id), 0) FROM sv_jump_table
-Detailed MySQL error msg:
-Table definition has changed, please retry transaction
-
-        */
         // Request the current maximum of the primary key counter.
         // If the table is empty, the initial primary key counter value is 0.
         // See: https://stackoverflow.com/questions/15475059/how-to-treat-max-of-an-empty-table-as-0-instead-of-null

@@ -29,7 +29,7 @@ uint32_t getCallOverviewArea( std::shared_ptr<DBConSingle> pConnection, std::sha
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
 
-    SQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
+    ExplainedSQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
                                             "SELECT COUNT(*) "
                                             "FROM sv_call_table "
                                             "WHERE sv_caller_run_id = ? " // dim 1

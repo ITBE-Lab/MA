@@ -12,17 +12,8 @@
 namespace libMA
 {
 
-/*
-@todo show arne bug: PriKeyDefaultType as first column sql_api.h:835
-
-using PairedReadTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
-                                                      PriKeyDefaultType, // first read (foreign key)
-                                                      PriKeyDefaultType // second read (foreign key)
-                                                      >;
-*/
-
 template <typename DBCon>
-using PairedReadTableType = SQLTableWithAutoPriKey<DBCon, // DB connector type
+using PairedReadTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                       PriKeyDefaultType, // first read (foreign key)
                                                       PriKeyDefaultType // second read (foreign key)
                                                       >;

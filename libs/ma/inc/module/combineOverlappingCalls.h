@@ -61,7 +61,6 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
 {
     size_t uiNumCombines = 0;
     pConPool->xPool.run( [&]( std::shared_ptr<DBCon> pOuterConnection ) {
-        // @todo discuss arne
         SQLStatement<DBCon>( pOuterConnection, "DROP TABLE IF EXISTS call_overlap_table " ).exec( );
         SQLTableWithAutoPriKey<DBCon, PriKeyDefaultType, PriKeyDefaultType> xOverlapTable(
             pOuterConnection,
@@ -75,13 +74,13 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
 
         metaMeasureAndLogDuration<LOG>( "xInsertIntoOverlapTable", [&]( ) {
             // fill call_overlap_table
-            size_t uiNumTasks = rParameters.getNumThreads( ) * 100;
+            size_t uiNumTasks = rParameters.getNumThreads( ) * 100; // @todo make a parameter out of this
             std::vector<std::future<void>> vFutures;
             vFutures.reserve( uiNumTasks );
             for( size_t uiI = 0; uiI < uiNumTasks; uiI++ )
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiI ) {
-                        SQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
+                        ExplainedSQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
                             pConnection,
                             "SELECT id, ST_AsBinary(rectangle), switch_strand "
                             "FROM sv_call_table "

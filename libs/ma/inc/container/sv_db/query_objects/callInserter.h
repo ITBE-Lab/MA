@@ -31,8 +31,7 @@ namespace libMA
  * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
  */
 template <typename CallOrVector, typename DBCon>
-class SvCallInserterContainerTmpl
-    : public BulkOrNot<DBCon, AbstractInserterContainer, SvCallTable, CallOrVector>
+class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterContainer, SvCallTable, CallOrVector>
 {
   public:
     using ParentType = BulkOrNot<DBCon, AbstractInserterContainer, SvCallTable, CallOrVector>;
@@ -46,8 +45,8 @@ class SvCallInserterContainerTmpl
                                      pSharedProfiler )
         : ParentType::BulkOrNot( pPool, iId, pSharedProfiler ),
           pSupportInserter( pPool->xPool.run( ParentType::iConnectionId, []( auto pConnection ) {
-              return std::make_shared<BulkInserterType<SvCallSupportTable<DBCon>>>(
-                  SvCallSupportTable<DBCon>( pConnection ) );
+              return SvCallSupportTable<DBCon>( pConnection )
+                  .template getBulkInserter<SvCallSupportTable<DBCon>::uiBulkInsertSize::value>( );
           } ) )
     {} // constructor
 
