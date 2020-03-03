@@ -194,6 +194,17 @@ template <typename T> class Interval
     {
         return iStart == rxOther.iStart && iSize == rxOther.iSize;
     } // operator
+
+    inline size_t distance( const Interval& rxOther ) const
+    {
+        if( iStart + iSize >= rxOther.iStart && rxOther.iStart + iSize >= iStart ) // overlapping case
+            return 0;
+
+        if( iStart + iSize < rxOther.iStart )
+            return rxOther.iStart - ( iStart + iSize );
+
+        return iStart - ( rxOther.iStart + rxOther.iSize );
+    } // method
 }; // class
 
 inline std::ostream& operator<<( std::ostream& xOS, const Interval<uint64_t>& xInterval )
@@ -229,10 +240,32 @@ template <typename T> class Rectangle
 
     inline void resize( T iBy )
     {
-        xXAxis.iStart -= iBy;
-        xXAxis.iSize += iBy * 2;
-        xYAxis.iStart -= iBy;
-        xYAxis.iSize += iBy * 2;
+        if( xXAxis.iStart >= iBy )
+        {
+            xXAxis.iStart -= iBy;
+            xXAxis.iSize += iBy * 2;
+        } // if
+        else
+        {
+            xXAxis.iSize += xXAxis.iStart;
+            xXAxis.iStart = 0;
+        } // else
+
+        if( xYAxis.iStart >= iBy )
+        {
+            xYAxis.iStart -= iBy;
+            xYAxis.iSize += iBy * 2;
+        } // if
+        else
+        {
+            xYAxis.iSize += xYAxis.iStart;
+            xYAxis.iStart = 0;
+        } // else
+    } // method
+
+    inline size_t manhattonDistance( const Rectangle<T>& rxOther ) const
+    {
+        return xXAxis.distance( rxOther.xXAxis ) + xYAxis.distance( rxOther.xYAxis );
     } // method
 
 }; // class

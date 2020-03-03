@@ -65,11 +65,15 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "max_score", &SvCallTable<DBConSingle>::maxScore )
         .def( "min_score", &SvCallTable<DBConSingle>::minScore )
         .def( "call_area", &SvCallTable<DBConSingle>::callArea )
-        .def( "num_overlaps", &SvCallTable<DBConSingle>::numOverlaps )
-        .def( "num_invalid_calls", &SvCallTable<DBConSingle>::numInvalidCalls )
-        .def( "blur_on_overlaps", &SvCallTable<DBConSingle>::blurOnOverlaps )
         .def( "drop_indices", &SvCallTable<DBConSingle>::dropIndices )
         .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices );
+
+    using X = SvCallTableAnalyzer<DBCon, false>;
+    py::class_<X, std::shared_ptr<X>>( rxPyModuleId, "SvCallTableAnalyzer" )
+        .def( py::init<std::shared_ptr<PoolContainer<DBCon>>>( ) )
+        .def( "num_overlaps", &X::numOverlaps )
+        .def( "num_invalid_calls", &X::numInvalidCalls )
+        .def( "blur_on_overlaps", &X::blurOnOverlaps );
 
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( rxPyModuleId,
                                                                                            "JumpRunTable" )

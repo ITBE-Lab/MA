@@ -14,6 +14,93 @@
 #include <iostream>
 /// @endcond DOXYGEN_SHOW_SYSTEM_INCLUDES
 
+class WKBPoint
+{
+  public:
+    const static size_t uiSizeWKBHeader = 1 + // big/little endian a 1 byte
+                                          4; // bytes for representation number of points in ring
+    const static size_t uiSizeWKB = uiSizeWKBHeader + 2 * sizeof( double );
+
+    std::array<uint8_t, uiSizeWKB> aData; // byte buffer
+
+  protected:
+    static size_t posOfPointX( size_t uiIdx )
+    {
+        assert( sizeof( double ) == 8 ); // assert that float has the correct size
+        return uiSizeWKBHeader + uiIdx * 2 * sizeof( double ); // each point is expressed by two doubles (x and y);
+    } // method
+
+    static size_t posOfPointY( size_t uiIdx )
+    {
+        return posOfPointX( uiIdx ) + sizeof( double );
+    } // method
+
+    /** @brief Set WKBPoint header */
+    void initHeader( )
+    {
+        set( 0, is_big_endian( ) ? 0x00 : 0x01 ); // big/little endian a 1 byte
+
+        set( 1, is_big_endian( ) ? 0x00 : 0x01 ); // geom type a 4 bytes
+        set( 2, 0 ); // geom type a 4 bytes
+        set( 3, 0 ); // geom type a 4 bytes
+        set( 4, is_big_endian( ) ? 0x01 : 0x00 ); // geom type a 4 bytes
+
+    } // method
+
+  public:
+    /** @brief Constructor initializes header */
+    WKBPoint( )
+    {
+        initHeader( );
+    } // constructor
+
+    WKBPoint( double fX, double fY ) : WKBPoint()
+    {
+        setPoint(0, fX, fY);
+    } // constructor
+
+    inline void set( size_t uiPos, uint8_t uiData )
+    {
+        aData[ uiPos ] = uiData;
+    } // method
+
+    inline void setDouble( size_t uiPos, double fData )
+    {
+        assert( uiSizeWKB >= uiPos + sizeof( double ) );
+        memcpy( &aData[ uiPos ], &fData, sizeof( double ) );
+    } // method
+
+    inline size_t get( size_t uiI ) const
+    {
+        return aData[ uiI ];
+    } // method
+
+    inline double getDouble( size_t uiI ) const
+    {
+        assert( uiSizeWKB >= uiI + sizeof( double ) );
+
+        double fRes;
+        memcpy( &fRes, &aData[ uiI ], sizeof( double ) );
+        return fRes;
+    } // method
+
+    inline void* getData( ) const
+    {
+        return (void*)&aData[ 0 ];
+    } // method
+
+    /** @brief Used by queries to set the WKBData */
+    inline void setData( void* auiData )
+    {
+        std::copy_n( reinterpret_cast<uint8_t*>( auiData ), uiSizeWKB, aData.begin( ) );
+    } // method
+
+    template <typename IntegralType> inline void setPoint( size_t uiPointIdx, IntegralType valX, IntegralType valY )
+    {
+        setDouble( posOfPointX( uiPointIdx ), static_cast<double>( valX ) );
+        setDouble( posOfPointY( uiPointIdx ), static_cast<double>( valY ) );
+    } // method
+}; // class
 
 template <size_t NUM_POINTS> class WKBPolygon
 {

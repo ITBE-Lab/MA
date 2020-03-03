@@ -434,6 +434,7 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
         return std::get<COL_NUM>( pQuery->tCellValues );
     } // method
 
+    using ColTupleType = std::tuple<ColTypes...>;
     /** @brief Executes the query and delivers the first value of the first row as result.
      *  WARNING: The type is automatically the type of the first column. (FIXME: fix this!)
      */

@@ -8,6 +8,7 @@
 
 #include "container/pack.h"
 #include "container/svJump.h"
+#include "container/sv_db/pool_container.h"
 #include "geom.h"
 #include "sql_api.h"
 #include "system.h"
@@ -15,6 +16,7 @@
 #include "wkb_spatial.h"
 #include <csignal>
 #include <string>
+#include <type_traits>
 
 namespace libMA
 {
@@ -45,10 +47,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xSetCoverageForCall;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
-    SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType> xNumOverlaps;
-    SQLQuery<DBCon, uint32_t> xHelperIntersecCallWHigherScore;
-    SQLQuery<DBCon, uint32_t> xHelperIntersectingCall;
-    // std::shared_ptr<OverlapCache> pOverlapCache;
 
   public:
     // Consider: Place the table on global level
@@ -120,99 +118,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    supporting_reads = ?, "
                        "    reference_ambiguity = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
-                       "WHERE id = ? " ),
-          xNumOverlaps( pConnection,
-                        "SELECT ST_AsBinary(rectangle), switch_strand, score, id "
-                        "FROM sv_call_table "
-                        "WHERE sv_caller_run_id = ? "
-                        "AND score >= ? ",
-                        json{}, "SvCallTable::xNumOverlaps" ),
-          xHelperIntersecCallWHigherScore( pConnection,
-                                           "SELECT COUNT(*) "
-                                           "FROM sv_call_table "
-                                           "WHERE sv_caller_run_id = ? "
-                                           "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                                           "AND switch_strand = ? "
-                                           "AND (score, id) > (?, ?) "
-                                           "LIMIT 1 ",
-                                           json{}, "SvCallTable::xHelperIntersecCallWHigherScore" ),
-          xHelperIntersectingCall( pConnection,
-                                   "SELECT COUNT(*) "
-                                   "FROM sv_call_table "
-                                   "WHERE sv_caller_run_id = ? "
-                                   "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                                   "AND switch_strand = ? "
-                                   "LIMIT 1 ",
-                                   json{}, "SvCallTable::xHelperIntersectingCall" )
-    //,pOverlapCache( std::make_shared<OverlapCache>( pDatabase, pWriteLock, sDBName ) ) //@todo delete this..
+                       "WHERE id = ? " )
     {} // default constructor
-
-
-    /**
-     * @brief returns how many calls of run A are overlapped by a call in run B
-     * @details
-     * Only considers calls of run A with score >= to dMinScore.
-     * Calls that are no further away than iAllowedDist are considered overlapping (can be used to add some
-     * fuzziness). If two calls in run A overlap, only the one with higher score counts; If both have the same score
-     * the one with the higher id is kept.
-     * UAAAAGGGH mysql is too stupid to use the rectangle spatial index if the queries in here are combined...
-     * splitting them up results in the desired behaviour.
-     * Even with FORCE INDEX hints the optimizer insists on making a full table scan
-     */
-    inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
-    {
-        uint32_t uiRet = 0;
-        // @todo parallelize this
-        xNumOverlaps.execAndForAll(
-            [this, &uiRet, iCallerRunIdA, iCallerRunIdB, iAllowedDist]( WKBUint64Rectangle xWKB, bool bSwitchStrand,
-                                                                        double fScore, PriKeyDefaultType iId ) {
-                auto xRect = xWKB.getRect( );
-                xRect.resize( iAllowedDist );
-                WKBUint64Rectangle xWKBResized( xRect );
-                if( xHelperIntersecCallWHigherScore.scalar( iCallerRunIdA, xWKBResized, bSwitchStrand, fScore, iId ) ==
-                    0 )
-                    if( xHelperIntersectingCall.scalar( iCallerRunIdB, xWKBResized, bSwitchStrand ) > 0 )
-                        uiRet++;
-            },
-            iCallerRunIdA, dMinScore );
-        return uiRet;
-    } // method
-
-    /**
-     * @brief returns the average distance of class from the overlapped (due to fuzziness) SV
-     */
-    inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, int64_t iAllowedDist )
-    {
-        int64_t uiSum = 0;
-        int64_t uiCount = 0;
-        for( int64_t iI = 0; iI <= iAllowedDist; iI++ )
-        {
-            uint32_t uiAmount = numOverlaps( iCallerRunIdA, iCallerRunIdB, dMinScore, iI );
-            uiSum += uiAmount * iI;
-            uiCount += uiAmount;
-        } // for
-        return uiSum / (double)uiCount;
-    } // method
-
-    /**
-     * @brief returns how many calls are invalid because they overlap another call with higher score
-     */
-    inline uint32_t numInvalidCalls( int64_t iCallerRunIdA, double dMinScore, int64_t iAllowedDist )
-    {
-        uint32_t uiRet = 0;
-        xNumOverlaps.execAndForAll(
-            [this, &uiRet, iCallerRunIdA, iAllowedDist]( WKBUint64Rectangle xWKB, bool bSwitchStrand, double fScore,
-                                                         PriKeyDefaultType iId ) {
-                auto xRect = xWKB.getRect( );
-                xRect.resize( iAllowedDist );
-                WKBUint64Rectangle xWKBResized( xRect );
-                if( xHelperIntersecCallWHigherScore.scalar( iCallerRunIdA, xWKBResized, bSwitchStrand, fScore, iId ) >
-                    0 )
-                    uiRet++;
-            },
-            iCallerRunIdA, dMinScore );
-        return uiRet;
-    } // method
 
     inline void genIndices( int64_t iCallerRunId )
     {
@@ -519,5 +426,224 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return pRet;
     } // method
 }; // namespace libMA
+
+
+template <typename DBCon, bool bLog> class SvCallTableAnalyzer
+{
+    class NumOverlapsQuery : public SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType>
+    {
+      public:
+        NumOverlapsQuery( std::shared_ptr<DBCon> pConnection )
+            : SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType>(
+                  pConnection,
+                  "SELECT ST_AsBinary(rectangle), switch_strand, score, id "
+                  "FROM sv_call_table "
+                  "WHERE sv_caller_run_id = ? "
+                  "AND score >= ? "
+                  "AND score < ? "
+                  "ORDER BY score DESC "
+                  "LIMIT 10000 ",
+                  json{}, "SvCallTable::xNumOverlaps" )
+        {} // constructor
+    }; // class
+
+    class HelperIntersecCallWHigherScore : public SQLQuery<DBCon, uint32_t>
+    {
+      public:
+        HelperIntersecCallWHigherScore( std::shared_ptr<DBCon> pConnection )
+            : SQLQuery<DBCon, uint32_t>( pConnection,
+                                         "SELECT COUNT(*) "
+                                         "FROM sv_call_table "
+                                         "WHERE sv_caller_run_id = ? "
+                                         "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                         "AND switch_strand = ? "
+                                         "AND (score, id) > (?, ?) "
+                                         "LIMIT 1 ",
+                                         json{}, "SvCallTable::xHelperIntersecCallWHigherScore" )
+        {} // constructor
+    }; // class
+
+    class HelperIntersectingCall : public SQLQuery<DBCon, WKBUint64Rectangle>
+    {
+      public:
+        HelperIntersectingCall( std::shared_ptr<DBCon> pConnection )
+            : SQLQuery<DBCon, WKBUint64Rectangle>( pConnection,
+                                                   "SELECT ST_AsBinary(rectangle) "
+                                                   "FROM sv_call_table "
+                                                   "WHERE sv_caller_run_id = ? "
+                                                   "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                                   "AND switch_strand = ? "
+                                                   // ST_Envelope returns MBR of rectangle
+                                                   // otherwise mysql throws an error - don't understand why
+                                                   "ORDER BY ST_Distance(ST_Envelope(rectangle), "
+                                                   "                     ST_PointFromWKB(?)) ASC "
+                                                   "LIMIT 1 ",
+                                                   json{}, "SvCallTable::xHelperIntersectingCall" )
+        {} // constructor
+    }; // class
+
+    std::shared_ptr<PoolContainer<DBCon>> pConPool;
+    std::vector<std::unique_ptr<NumOverlapsQuery>> vOverlapQuery;
+    std::vector<std::unique_ptr<HelperIntersecCallWHigherScore>> vIntersectScoreQueries;
+    std::vector<std::unique_ptr<HelperIntersectingCall>> vIntersectQueries;
+
+    template <typename ComputeData, typename E, typename F, typename G>
+    inline void forAllCalls( E&& fInit, F&& fCompute, G&& fCombine, int64_t iCallerRunId, double dMinScore,
+                             double dMaxScore )
+    {
+        std::vector<std::future<ComputeData>> vFutures;
+        std::vector<typename NumOverlapsQuery::ColTupleType> vRectangles( 0 );
+        size_t uiTasks = pConPool->xPool.uiPoolSize * 10;
+        if( uiTasks > 1000 )
+            uiTasks = 1000;
+        while( true )
+        {
+            // enqueue this to connection 0, so that is has priority over the other tasks
+            auto xRectangleFuture = pConPool->xPool.enqueue( 0, [&]( std::shared_ptr<DBCon> pConnection ) {
+                return vOverlapQuery[ pConnection->getTaskId( ) ]->executeAndStoreAllInVector( iCallerRunId, dMinScore,
+                                                                                               dMaxScore );
+            } );
+
+            for( auto& xFuture : vFutures )
+                fCombine( xFuture.get( ) );
+            vFutures.clear( );
+
+            vRectangles = xRectangleFuture.get( );
+            if( vRectangles.empty( ) )
+                break;
+
+            for( size_t uiT = 0; uiT < uiTasks; uiT++ )
+                vFutures.push_back( pConPool->xPool.enqueue(
+                    [&]( std::shared_ptr<DBCon> pConnection, size_t uiT ) {
+                        ComputeData x = fInit( );
+                        for( size_t uiI = uiT; uiI < vRectangles.size( ); uiI += uiTasks )
+                            STD_APPLY( [&]( auto&... tupleArgs ) { fCompute( x, pConnection, tupleArgs... ); },
+                                       vRectangles[ uiI ] );
+                        return x;
+                    },
+                    uiT ) );
+
+            dMaxScore = std::get<2>( vRectangles[ 0 ] );
+        } // while
+
+        for( auto& xFuture : vFutures )
+            fCombine( xFuture.get( ) );
+    } // class
+
+  public:
+    SvCallTableAnalyzer( std::shared_ptr<PoolContainer<DBCon>> pConPool ) : pConPool( pConPool )
+    {
+        for( size_t uiT = 0; uiT < pConPool->xPool.uiPoolSize; uiT++ )
+        {
+            vOverlapQuery.push_back( pConPool->xPool.run( uiT, []( std::shared_ptr<DBCon> pConnection ) {
+                return std::make_unique<NumOverlapsQuery>( pConnection );
+            } ) );
+            vIntersectScoreQueries.push_back( pConPool->xPool.run( uiT, []( std::shared_ptr<DBCon> pConnection ) {
+                return std::make_unique<HelperIntersecCallWHigherScore>( pConnection );
+            } ) );
+            vIntersectQueries.push_back( pConPool->xPool.run( uiT, []( std::shared_ptr<DBCon> pConnection ) {
+                return std::make_unique<HelperIntersectingCall>( pConnection );
+            } ) );
+        } // for
+    } // constructor
+
+    /**
+     * @brief returns how many calls of run A are overlapped by a call in run B
+     * @details
+     * Only considers calls of run A with score >= to dMinScore.
+     * Calls that are no further away than iAllowedDist are considered overlapping (can be used to add some
+     * fuzziness). If two calls in run A overlap, only the one with higher score counts; If both have the same score
+     * the one with the higher id is kept.
+     * UAAAAGGGH mysql is too stupid to use the rectangle spatial index if the queries in here are combined...
+     * splitting them up results in the desired behaviour.
+     * Even with FORCE INDEX hints the optimizer insists on making a full table scan
+     */
+    inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, double dMaxScore,
+                                 int64_t iAllowedDist )
+    {
+        uint32_t uiRet = 0;
+        metaMeasureAndLogDuration<bLog>( "numOverlaps", [&]( ) {
+            forAllCalls<uint32_t>(
+                []( ) { return 0; },
+                [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection, WKBUint64Rectangle& xWKB,
+                     bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
+                    auto xRect = xWKB.getRect( );
+                    WKBPoint xCenter( xRect.xXAxis.center( ), xRect.xYAxis.center( ) );
+                    xRect.resize( iAllowedDist );
+                    WKBUint64Rectangle xWKBResized( xRect );
+                    if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
+                                                                                     bSwitchStrand, fScore, iId ) == 0 )
+                        if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
+                                                                                          bSwitchStrand, xCenter ) )
+                            uiIntermediate++;
+                },
+                [&]( uint32_t uiIntermediate ) { uiRet += uiIntermediate; }, //
+                iCallerRunIdA, dMinScore, dMaxScore );
+        } );
+        return uiRet;
+    } // method
+
+    /**
+     * @brief returns the average distance of class from the overlapped (due to fuzziness) SV
+     */
+    inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, double dMaxScore,
+                                  int64_t iAllowedDist )
+    {
+        int64_t uiSum = 0;
+        int64_t uiCount = 0;
+
+        metaMeasureAndLogDuration<bLog>( "blurOnOverlaps", [&]( ) {
+            forAllCalls<std::pair<uint32_t, uint32_t>>(
+                []( ) { return std::make_pair<uint32_t, uint32_t>( 0, 0 ); },
+                [&]( std::pair<uint32_t, uint32_t>& xIntermediate, std::shared_ptr<DBCon> pConnection,
+                     WKBUint64Rectangle& xWKB, bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
+                    auto xRect = xWKB.getRect( );
+                    WKBPoint xCenter( xRect.xXAxis.center( ), xRect.xYAxis.center( ) );
+                    xRect.resize( iAllowedDist );
+                    WKBUint64Rectangle xWKBResized( xRect );
+                    if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
+                                                                                     bSwitchStrand, fScore, iId ) == 0 )
+                        if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
+                                                                                          bSwitchStrand, xCenter ) )
+                        {
+                            auto xRectInner = vIntersectQueries[ pConnection->getTaskId( ) ]->getVal( ).getRect( );
+                            xIntermediate.first += xRectInner.manhattonDistance( xRect );
+                            xIntermediate.second++;
+                        } // if
+                },
+                [&]( std::pair<uint32_t, uint32_t> xIntermediate ) {
+                    uiSum += xIntermediate.first;
+                    uiCount += xIntermediate.second;
+                }, //
+                iCallerRunIdA, dMinScore, dMaxScore );
+        } );
+        return uiSum / (double)uiCount;
+    } // method
+
+    /**
+     * @brief returns how many calls are invalid because they overlap another call with higher score
+     */
+    inline uint32_t numInvalidCalls( int64_t iCallerRunIdA, double dMinScore, double dMaxScore, int64_t iAllowedDist )
+    {
+
+        uint32_t uiRet = 0;
+        metaMeasureAndLogDuration<bLog>( "numInvalidCalls", [&]( ) {
+            forAllCalls<uint32_t>(
+                []( ) { return 0; },
+                [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection, WKBUint64Rectangle& xWKB,
+                     bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
+                    auto xRect = xWKB.getRect( );
+                    xRect.resize( iAllowedDist );
+                    WKBUint64Rectangle xWKBResized( xRect );
+                    if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
+                                                                                     bSwitchStrand, fScore, iId ) > 0 )
+                        uiIntermediate++;
+                },
+                [&]( uint32_t uiIntermediate ) { uiRet += uiIntermediate; }, //
+                iCallerRunIdA, dMinScore, dMaxScore );
+        } );
+        return uiRet;
+    } // method
+}; // class
 
 } // namespace libMA
