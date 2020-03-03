@@ -31,9 +31,13 @@ def render(self):
         return
 
     with self.measure("get_call_overview_area"):
-        num_ele = libMA.get_call_overview_area(self.db_conn, self.pack, self.get_run_id(),
+        if self.do_overview_cache():
+            num_ele = self.get_max_num_ele() + 1
+        else:
+            num_ele = libMA.get_call_overview_area(self.db_conn, self.pack, self.get_run_id(),
                                                self.get_min_score(),
-                                               int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
+                                               int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
+                                               self.get_max_num_ele() + 1)
     if num_ele > self.get_max_num_ele():
         self.render_overview()
     else:

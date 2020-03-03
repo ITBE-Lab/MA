@@ -16,6 +16,7 @@ class Renderer():
         self.pack = None
         self.fm_index = None
         self.db_conn = None
+        self.db_pool = None
         self.w = None
         self.h = None
         self.params = ParameterSetManager()
@@ -39,6 +40,11 @@ class Renderer():
         self.selected_call_id = set()
         self.selected_jump_id = set()
         self.read_plot_rects = {}  # dict of {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[]}
+        self.cached_global_overview = None
+        self.cached_overview_min_score = None
+        self.cached_overview_max_render = None
+        self.global_overview_threshold = 0.2
+        self._do_overview_cache = True
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:
@@ -78,6 +84,24 @@ class Renderer():
         self.nuc_plot.reset_cds()
         self.seed_plot.reset_cds()
         self.read_plot.reset_cds()
+
+    def get_global_overview(self):
+        if self.cached_global_overview is None or self.cached_overview_min_score != self.get_min_score() or \
+                self.cached_overview_max_render != self.get_max_num_ele():
+            div = int(math.sqrt(self.get_max_num_ele()/10))
+            self.cached_global_overview = libMA.get_call_overview(self.db_pool, self.pack,
+                                        self.get_run_id(), self.get_min_score(),
+                                        0, 0, self.pack.unpacked_size_single_strand,
+                                        self.pack.unpacked_size_single_strand,
+                                        self.pack.unpacked_size_single_strand//div,
+                                        self.pack.unpacked_size_single_strand//div, self.give_up_factor)
+            self.cached_overview_max_render = self.get_max_num_ele()
+            self.cached_overview_min_score = self.get_min_score()
+        return self.cached_global_overview
+
+    def do_overview_cache(self):
+        p_s = self.pack.unpacked_size_single_strand
+        return self._do_overview_cache and self.w*3 * self.h*3 >= p_s * p_s * self.global_overview_threshold
 
     # imported methdos
     from ._render import render
