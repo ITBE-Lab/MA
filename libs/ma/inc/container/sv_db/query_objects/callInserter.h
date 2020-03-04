@@ -69,7 +69,8 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
                                                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
                                                          (uint32_t)rCall.uiNumSuppReads, //
                                                          (uint32_t)rCall.uiReferenceAmbiguity, //
-                                                         -1, //
+                                                         -1, // regex_id
+                                                         -1, // filter_id
                                                          xRectangle );
         rCall.iId = iCallId;
         for( int64_t iId : rCall.vSupportingJumpIds )

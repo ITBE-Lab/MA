@@ -32,6 +32,7 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                   uint32_t, // supporting_reads
                                                   uint32_t, // reference_ambiguity
                                                   int64_t, // regex_id
+                                                  int64_t, // filter_id
                                                   WKBUint64Rectangle // rectangle (geometry)
                                                   >;
 
@@ -47,6 +48,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xSetCoverageForCall;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
+    SQLStatement<DBCon> xFilterCallsWithHighScore;
 
   public:
     // Consider: Place the table on global level
@@ -65,9 +67,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "supporting_reads"}},
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
+              {{COLUMN_NAME, "filter_id"}},
               {{COLUMN_NAME, "rectangle"}, {CONSTRAINTS, "NOT NULL"}}}},
             {GENERATED_COLUMNS,
-             {{{COLUMN_NAME, "score"}, {TYPE, "DOUBLE"}, {AS, "(supporting_reads * 1.0) / reference_ambiguity"}}}},
+             {{{COLUMN_NAME, "score"},
+               {TYPE, "DOUBLE"},
+               // @todo this is messy...
+               // filter_id must be >= 0 then we get supporting_reads/reference_ambiguity otherwise 0
+               {AS, " ( ( filter_id >= 0 ) * supporting_reads * 1.0 ) / reference_ambiguity "}}}},
             // @todo how to insert NULL into sv_caller_run_id ?
             // @todo ask arne about inserting NULL
             /*{FOREIGN_KEY,
@@ -118,7 +125,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    supporting_reads = ?, "
                        "    reference_ambiguity = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
-                       "WHERE id = ? " )
+                       "WHERE id = ? " ),
+          xFilterCallsWithHighScore( pConnection,
+                                     "UPDATE sv_call_table "
+                                     "SET filter_id = ? "
+                                     "WHERE sv_caller_run_id = ? "
+                                     // filters out ?% of the calls with the highest scores in sv_call_table
+                                     "AND score >= ? " )
     {} // default constructor
 
     inline void genIndices( int64_t iCallerRunId )
@@ -207,6 +220,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline double minScore( int64_t iCallerRunId )
     {
         return xMinScore.scalar( iCallerRunId );
+    } // method
+
+    inline int64_t filterCallsWithHighScore( int64_t iCallerRunId, double dPercentToFilter )
+    {
+        double dMinScore = minScore( iCallerRunId );
+        double dMaxScore = maxScore( iCallerRunId );
+        return xFilterCallsWithHighScore.exec( 1, iCallerRunId,
+                                               dMinScore + ( dMaxScore - dMinScore ) * ( 1 - dPercentToFilter ) );
     } // method
 
 

@@ -66,6 +66,7 @@ void exportSoCDbWriter( py::module& rxPyModuleId )
         .def( "min_score", &SvCallTable<DBConSingle>::minScore )
         .def( "call_area", &SvCallTable<DBConSingle>::callArea )
         .def( "drop_indices", &SvCallTable<DBConSingle>::dropIndices )
+        .def( "filter_calls_with_high_score", &SvCallTable<DBConSingle>::filterCallsWithHighScore )
         .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices );
 
     using X = SvCallTableAnalyzer<DBCon, false>;

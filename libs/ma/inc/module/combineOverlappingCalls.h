@@ -80,7 +80,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
             for( size_t uiI = 0; uiI < uiNumTasks; uiI++ )
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiI ) {
-                        ExplainedSQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
+                        SQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
                             pConnection,
                             "SELECT id, ST_AsBinary(rectangle), switch_strand "
                             "FROM sv_call_table "
