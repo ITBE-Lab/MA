@@ -428,8 +428,19 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 }; // namespace libMA
 
 
+/** @brief provides queries that can analyze the accuracy of a sv-caller
+ * @details
+ * uses a connection pool for multiprocessing.
+ */
 template <typename DBCon, bool bLog> class SvCallTableAnalyzer
 {
+    /** @brief returns calls
+     * @details
+     * of specific run_id and with score between x and y
+     * never returns more than 10000 calls.
+     * and sorts calls by score
+     * call multiple times using different x and y to obtain complete result
+     */
     class NumOverlapsQuery : public SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType>
     {
       public:
@@ -447,6 +458,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
         {} // constructor
     }; // class
 
+    /** @brief counts intersecting calls with higher score */
     class HelperIntersecCallWHigherScore : public SQLQuery<DBCon, uint32_t>
     {
       public:
@@ -463,6 +475,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
         {} // constructor
     }; // class
 
+    /** @brief returns the closest intersecting call */
     class HelperIntersectingCall : public SQLQuery<DBCon, WKBUint64Rectangle>
     {
       public:
@@ -487,6 +500,19 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     std::vector<std::unique_ptr<HelperIntersecCallWHigherScore>> vIntersectScoreQueries;
     std::vector<std::unique_ptr<HelperIntersectingCall>> vIntersectQueries;
 
+    /** @brief iterates over calls
+     * @details
+     * Iterates over calls of run_id iCallerRunId and with score between dMinScore and dMaxScore.
+     * Fetches batches of 10000 calls at a time.
+     * Then splits each batch into multiple tasks (number of tasks chosen according to number of connection in pool).
+     * For each task fInit is called to initialize one object of type ComputeData.
+     * Then fCompute is called for each call in the task.
+     * Once all tasks are finished fCombine is called once for each ComputeData.
+     * @note fCompute is called in parallel with itself, fInit, fCombine and the fetching of the next batch.
+     *       fInit and fCompute of the same task are called sequentially.
+     *       fCombine if only called on tasks that finished all fCompute calls.
+     * This parallelizes the work on the individual calls as well as the fetching of the next batch.
+     */
     template <typename ComputeData, typename E, typename F, typename G>
     inline void forAllCalls( E&& fInit, F&& fCompute, G&& fCombine, int64_t iCallerRunId, double dMinScore,
                              double dMaxScore )
@@ -498,20 +524,26 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
             uiTasks = 1000;
         while( true )
         {
+            // fetch the next batch of calls (this does NOT block until the batch is fetched)
             // enqueue this to connection 0, so that is has priority over the other tasks
             auto xRectangleFuture = pConPool->xPool.enqueue( 0, [&]( std::shared_ptr<DBCon> pConnection ) {
                 return vOverlapQuery[ pConnection->getTaskId( ) ]->executeAndStoreAllInVector( iCallerRunId, dMinScore,
                                                                                                dMaxScore );
             } );
 
+            // now we need all fCompute to finish
+            // we start calling fCombine on them once they are ready
             for( auto& xFuture : vFutures )
                 fCombine( xFuture.get( ) );
             vFutures.clear( );
 
+            // not we need the next batch of calls to finish
             vRectangles = xRectangleFuture.get( );
+            // no more calls -> we are done
             if( vRectangles.empty( ) )
                 break;
 
+            // enqueue the fInit and fCompute calls for each task (this does NOT block until the tasks are done)
             for( size_t uiT = 0; uiT < uiTasks; uiT++ )
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiT ) {
@@ -523,11 +555,10 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                     },
                     uiT ) );
 
-            dMaxScore = std::get<2>( vRectangles[ 0 ] );
+            // setup dMaxScore for the next batch
+            // dMaxScore gets smaller and smaller until there are no more calls
+            dMaxScore = std::get<2>( vRectangles.back( ) );
         } // while
-
-        for( auto& xFuture : vFutures )
-            fCombine( xFuture.get( ) );
     } // class
 
   public:
@@ -556,7 +587,8 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
      * the one with the higher id is kept.
      * UAAAAGGGH mysql is too stupid to use the rectangle spatial index if the queries in here are combined...
      * splitting them up results in the desired behaviour.
-     * Even with FORCE INDEX hints the optimizer insists on making a full table scan
+     * Even with FORCE INDEX hints the optimizer insists on making a full table scan.
+     * -> queries are split now and mysql uses the index correctly
      */
     inline uint32_t numOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, double dMaxScore,
                                  int64_t iAllowedDist )
@@ -571,11 +603,19 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                     WKBPoint xCenter( xRect.xXAxis.center( ), xRect.xYAxis.center( ) );
                     xRect.resize( iAllowedDist );
                     WKBUint64Rectangle xWKBResized( xRect );
-                    if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
-                                                                                     bSwitchStrand, fScore, iId ) == 0 )
-                        if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
-                                                                                          bSwitchStrand, xCenter ) )
+                    // check that call overlaps with at least one ground truth
+                    if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
+                                                                                      bSwitchStrand, xCenter ) )
+                    {
+                        // in order to check for overlapping calls from the same run_id we need to increase the size
+                        // twice, since both calls would have increased
+                        xRect.resize( iAllowedDist );
+                        WKBUint64Rectangle xWKBResized2( xRect );
+                        // check that call does not overlap other call with higher score
+                        if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar(
+                                iCallerRunIdA, xWKBResized2, bSwitchStrand, fScore, iId ) == 0 )
                             uiIntermediate++;
+                    }
                 },
                 [&]( uint32_t uiIntermediate ) { uiRet += uiIntermediate; }, //
                 iCallerRunIdA, dMinScore, dMaxScore );
@@ -589,8 +629,8 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     inline double blurOnOverlaps( int64_t iCallerRunIdA, int64_t iCallerRunIdB, double dMinScore, double dMaxScore,
                                   int64_t iAllowedDist )
     {
-        int64_t uiSum = 0;
-        int64_t uiCount = 0;
+        uint32_t uiSum = 0;
+        uint32_t uiCount = 0;
 
         metaMeasureAndLogDuration<bLog>( "blurOnOverlaps", [&]( ) {
             forAllCalls<std::pair<uint32_t, uint32_t>>(
@@ -601,15 +641,22 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                     WKBPoint xCenter( xRect.xXAxis.center( ), xRect.xYAxis.center( ) );
                     xRect.resize( iAllowedDist );
                     WKBUint64Rectangle xWKBResized( xRect );
-                    if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
-                                                                                     bSwitchStrand, fScore, iId ) == 0 )
-                        if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
-                                                                                          bSwitchStrand, xCenter ) )
+                    // check that call overlaps with at least one ground truth
+                    if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
+                                                                                      bSwitchStrand, xCenter ) )
+                    {
+                        // in order to check for overlapping calls from the same run_id we need to increase the size
+                        // twice, since both calls would have increased
+                        xRect.resize( iAllowedDist );
+                        WKBUint64Rectangle xWKBResized2( xRect );
+                        if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar(
+                                iCallerRunIdA, xWKBResized2, bSwitchStrand, fScore, iId ) == 0 )
                         {
                             auto xRectInner = vIntersectQueries[ pConnection->getTaskId( ) ]->getVal( ).getRect( );
-                            xIntermediate.first += xRectInner.manhattonDistance( xRect );
+                            xIntermediate.first += xRectInner.manhattonDistance( xWKB.getRect( ) );
                             xIntermediate.second++;
                         } // if
+                    } // if
                 },
                 [&]( std::pair<uint32_t, uint32_t> xIntermediate ) {
                     uiSum += xIntermediate.first;
@@ -633,8 +680,11 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                 [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection, WKBUint64Rectangle& xWKB,
                      bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
                     auto xRect = xWKB.getRect( );
-                    xRect.resize( iAllowedDist );
+                    // in order to check for overlapping calls from the same run_id we need to increase the size
+                    // twice, since both calls would have increased
+                    xRect.resize( iAllowedDist * 2 );
                     WKBUint64Rectangle xWKBResized( xRect );
+                    // check if call overlaps higher scored one
                     if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
                                                                                      bSwitchStrand, fScore, iId ) > 0 )
                         uiIntermediate++;

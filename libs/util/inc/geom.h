@@ -197,7 +197,7 @@ template <typename T> class Interval
 
     inline size_t distance( const Interval& rxOther ) const
     {
-        if( iStart + iSize >= rxOther.iStart && rxOther.iStart + iSize >= iStart ) // overlapping case
+        if( iStart + iSize >= rxOther.iStart && rxOther.iStart + rxOther.iSize >= iStart ) // overlapping case
             return 0;
 
         if( iStart + iSize < rxOther.iStart )
