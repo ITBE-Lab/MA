@@ -8,7 +8,10 @@
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/nameDesc.h"
 #include "msv/container/sv_db/tables/svJump.h"
-#include "msv/module/get_inserter_container_module.h"
+#include "ms/module/get_inserter_container_module.h"
+
+using namespace libMA;
+using namespace libMS;
 
 namespace libMSV
 {
@@ -21,7 +24,7 @@ class JumpInserterContainer
 {
   public:
     using ParentType =
-        BulkInserterContainer<DBCon, AbstractInserterContainer, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
+        BulkInserterContainer<DBCon, libMS::AbstractInserterContainer, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
     using ParentType::BulkInserterContainer;
 
   protected:

@@ -34,11 +34,11 @@
 #define _SAMPLE_CONSENSUS_SAC_H_
 
 #if 0
-#include <geometry_msgs/Point32.h> // ROS float point type
-#include <sensor_msgs/PointCloud.h> // ROS point cloud type
+#include <ma/geometry_msgs/Point32.h> // ROS float point type
+#include <ma/sensor_msgs/PointCloud.h> // ROS point cloud type
 #endif
 
-#include <sample_consensus/sac_model.h>
+#include <ma/sample_consensus/sac_model.h>
 #include <stdlib.h>
 
 namespace sample_consensus

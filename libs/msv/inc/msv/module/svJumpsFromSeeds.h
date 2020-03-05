@@ -26,7 +26,7 @@ class PerfectMatch;
  * @brief Computes Sv-Jumps from a given seed set
  * @note WARNING: DO USE EACH INSTANCE OF THIS MODULE ONLY ONCE IN THE COMPUTATIONAL GRAPH
  */
-class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
+class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
   public:
     const size_t uiMinSeedSizeSV;
@@ -157,7 +157,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      * otherwise the computed seeds, their layers and all reseeding rectangles are appended, respectiveley.
      */
     void makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
-                                        std::shared_ptr<Pack> pRefSeq, std::shared_ptr<ContainerVector<SvJump>>& pRet,
+                                        std::shared_ptr<Pack> pRefSeq, std::shared_ptr<libMS::ContainerVector<SvJump>>& pRet,
                                         size_t uiLayer, HelperRetVal* pOutExtra );
 
     /**
@@ -168,7 +168,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
      *
      * Uses makeJumpsByReseedingRecursive().
      */
-    std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments,
+    std::shared_ptr<libMS::ContainerVector<SvJump>> EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments,
                                                                       std::shared_ptr<Pack>
                                                                           pRefSeq,
                                                                       std::shared_ptr<FMIndex>
@@ -190,7 +190,7 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
         return xRet;
     } // method
 
-    virtual std::shared_ptr<ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
+    virtual std::shared_ptr<libMS::ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
                                                                        std::shared_ptr<Pack>
                                                                            pRefSeq,
                                                                        std::shared_ptr<FMIndex>

@@ -11,7 +11,7 @@
 
 #include <db_con_pool.h>
 #include <sql_api.h>
-#include <threadPool.h>
+#include <util/threadPool.h>
 
 using SQLStatement_ = SQLStatement<MySQLConDB>;
 template <typename... Types> using SQLQuery_ = SQLQuery<MySQLConDB, Types...>;

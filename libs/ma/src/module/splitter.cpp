@@ -4,12 +4,17 @@
  */
 #include "ma/module/splitter.h"
 #include "ms/module/splitter.h"
+#include "ma/container/nucSeq.h"
+#include "ma/container/alignment.h"
+#include "ma/container/soc.h"
+#include "ma/module/filter_seeds_by_area.h"
 
 using namespace libMS;
+using namespace libMA;
 
 
 #ifdef WITH_PYTHON
-#include "util/pybind11.h"
+#include "pybind11/pybind11.h"
 
 void exportSplitter( py::module& rxPyModuleId )
 {

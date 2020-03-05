@@ -1,4 +1,4 @@
-#include "ms/version.h"
+#include "ms/util/version.h"
 
 const std::string EXPORTED sLibMaVersion = MA_VERSION;
 

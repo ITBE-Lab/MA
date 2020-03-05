@@ -1,8 +1,7 @@
 #include "msv/container/svJump.h"
 
-using namespace libMSV;
-
 #ifdef WITH_PYTHON
+using namespace libMSV;
 
 void exportSVJump( py::module& rxPyModuleId )
 {

@@ -5,9 +5,11 @@
  */
 #pragma once
 
-#include "msv/container/pack.h"
-#include "msv/container/sv_db/pool_container.h"
+#include "ma/container/pack.h"
+#include "ms/container/sv_db/pool_container.h"
 #include "ms/module/module.h"
+
+using namespace libMA;
 
 namespace libMSV
 {
@@ -63,7 +65,7 @@ struct rect
 }; // struct
 
 template <typename DBCon>
-std::vector<rect> getCallOverview( std::shared_ptr<PoolContainer<DBCon>> pConPool, std::shared_ptr<Pack> pPack,
+std::vector<rect> getCallOverview( std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool, std::shared_ptr<Pack> pPack,
                                    int64_t iRunId, double dMinScore, int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH,
                                    uint64_t uiMaxW, uint64_t uiMaxH, uint32_t uiGiveUpFactor )
 {

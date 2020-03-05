@@ -1,5 +1,5 @@
 #pragma once
-#include "msv/container/sv_db/pool_container.h"
+#include "ms/container/sv_db/pool_container.h"
 #include "msv/container/sv_db/query_objects/callInserter.h"
 
 namespace libMSV
@@ -56,7 +56,7 @@ fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool
  * The actual combination of overlapping calls is single threaded though.
  */
 template <typename DBCon>
-size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<PoolContainer<DBCon>> pConPool,
+size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool,
                                 int64_t iSvCallerId )
 {
     size_t uiNumCombines = 0;

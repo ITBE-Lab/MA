@@ -5,11 +5,11 @@
  */
 #pragma once
 
-#include "msv/container/nucSeq.h"
-#include "msv/container/sv_db/pool_container.h"
+#include "ma/container/nucSeq.h"
+#include "ms/container/sv_db/pool_container.h"
+#include "ms/module/module.h"
 #include "msv/container/sv_db/tables/pairedRead.h"
 #include "msv/container/sv_db/tables/read.h"
-#include "ms/module/module.h"
 #include "sql_api.h"
 
 namespace libMSV
@@ -73,7 +73,7 @@ template <typename DBCon> class NucSeqQueryContainer : public Container
         exec( pConnection );
     } // constructor
 
-    inline void next( std::shared_ptr<PoolContainer<DBCon>> pPool )
+    inline void next( std::shared_ptr<libMS::PoolContainer<DBCon>> pPool )
     {
         if( !xQuery.next( ) )
             pPool->xPool.run( iConnectionId, [&]( auto pConnection ) { this->exec( pConnection ); } );
@@ -93,7 +93,7 @@ template <typename DBCon> class NucSeqQueryContainer : public Container
 }; // class
 
 template <typename DBCon>
-class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, PoolContainer<DBCon>>
+class GetNucSeqFromSqlQuery : public libMS::Module<NucSeqQueryContainer<DBCon>, false, libMS::PoolContainer<DBCon>>
 {
     int64_t iSequencerId;
     uint32_t uiRes;
@@ -115,7 +115,8 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
     } // constructor
 
     /// @brief returns a query that can fetch NucSeqs.
-    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>> EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool )
+    virtual std::shared_ptr<NucSeqQueryContainer<DBCon>>
+        EXPORTED execute( std::shared_ptr<libMS::PoolContainer<DBCon>> pPool )
     {
         int iConnectionId = pPool->xPool.getDedicatedConId( );
         return pPool->xPool.run( iConnectionId, [&]( auto pConnection ) {
@@ -130,15 +131,15 @@ class GetNucSeqFromSqlQuery : public Module<NucSeqQueryContainer<DBCon>, false, 
  * @brief fetches reads from a database
  */
 template <typename DBCon>
-class NucSeqFetcher : public Module<NucSeq, true, PoolContainer<DBCon>, NucSeqQueryContainer<DBCon>>
+class NucSeqFetcher : public libMS::Module<NucSeq, true, libMS::PoolContainer<DBCon>, NucSeqQueryContainer<DBCon>>
 {
   public:
     NucSeqFetcher( const ParameterSetManager& rParameters )
     {}
 
     /// @brief returns one read at a time until isFinished returns true.
-    virtual std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool,
-                                                      std::shared_ptr<NucSeqQueryContainer<DBCon>> pQuery )
+    virtual std::shared_ptr<NucSeq> EXPORTED
+    execute( std::shared_ptr<libMS::PoolContainer<DBCon>> pPool, std::shared_ptr<NucSeqQueryContainer<DBCon>> pQuery )
     {
         if( pQuery->eof( ) )
             return nullptr;

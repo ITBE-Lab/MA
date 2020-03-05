@@ -3,6 +3,7 @@
 
 #include "ma/util/execution-context.h"
 #include "ma/util/export.h"
+#include "ms/module/splitter.h"
 #include <cstdlib>
 #include <iostream>
 

@@ -13,7 +13,7 @@
 #endif
 
 #include "fort.hpp"
-#include "support.h"
+#include "util/support.h"
 #include <atomic> // atomic fetch_add
 #include <cerrno> // error management for file I/O
 #include <cstring> // error management for file I/O

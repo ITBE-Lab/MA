@@ -11,7 +11,7 @@ using namespace libMS;
 
 #ifdef WITH_PYTHON
 
-#include "container/sv_db/py_db_conf.h"
+#include "msv/container/sv_db/py_db_conf.h"
 
 void exportSweepSvJump( py::module& rxPyModuleId )
 {

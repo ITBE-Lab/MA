@@ -11,7 +11,11 @@
 #include "msv/container/sv_db/tables/pairedRead.h"
 #include "msv/container/sv_db/tables/read.h"
 #include "msv/container/sv_db/tables/sequencer.h"
-#include "msv/module/get_inserter_container_module.h"
+#include "ms/module/get_inserter_container_module.h"
+
+
+using namespace libMA;
+using namespace libMS;
 
 namespace libMSV
 {
@@ -21,7 +25,7 @@ template <typename DBCon>
 class ReadInserterContainer : public BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq>;
+    using ParentType = BulkInserterContainer<DBCon, libMS::AbstractInserterContainer, ReadTable, NucSeq>;
     using ParentType::BulkInserterContainer;
 
   protected:
@@ -46,7 +50,7 @@ class PairedReadInserterContainer
     : public BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq, NucSeq>
 {
   public:
-    using ParentType = BulkInserterContainer<DBCon, AbstractInserterContainer, ReadTable, NucSeq, NucSeq>;
+    using ParentType = BulkInserterContainer<DBCon, libMS::AbstractInserterContainer, ReadTable, NucSeq, NucSeq>;
 
     std::shared_ptr<BulkInserterType<PairedReadTable<DBCon>>> pPairedReadInserter;
 

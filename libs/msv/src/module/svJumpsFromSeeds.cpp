@@ -449,7 +449,7 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute_helper( std::
     return pRet;
 } // method
 
-std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
+std::shared_ptr<libMS::ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
                                                                     std::shared_ptr<Pack>
                                                                         pRefSeq,
                                                                     std::shared_ptr<FMIndex>

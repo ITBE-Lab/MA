@@ -3,15 +3,17 @@
  * @brief implements FilterSeedsByArea
  * @author Markus Schmidt
  */
-#include "ms/module/module.h"
+#include "ma/container/fMIndex.h"
 #include "ma/container/segment.h"
-namespace libMS
+#include "ms/module/module.h"
+
+namespace libMA
 {
 
 /**
  * @brief ?
  */
-class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, NucSeq>
+class FilterSeedsByArea : public libMS::Module<Seeds, false, SegmentVector, FMIndex, NucSeq>
 {
   public:
     nucSeqIndex uiStart;
@@ -41,4 +43,5 @@ class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, Nu
         return pRet;
     } // method
 }; // class
-} // namespace libMS
+
+} // namespace libMA

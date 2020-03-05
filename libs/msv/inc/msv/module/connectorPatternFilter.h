@@ -3,8 +3,8 @@
  */
 #pragma once
 
-#include "msv/container/sv_db/pool_container.h"
-#include "ms/module/needlemanWunsch.h"
+#include "ms/container/sv_db/pool_container.h"
+#include "ma/module/needlemanWunsch.h"
 #include "msv/module/sweepSvJumps.h"
 
 namespace libMSV
@@ -18,7 +18,7 @@ namespace libMSV
  */
 template <typename DBCon>
 class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVector, false,
-                                             CompleteBipartiteSubgraphClusterVector, Pack, PoolContainer<DBCon>>
+                                             CompleteBipartiteSubgraphClusterVector, Pack, libMS::PoolContainer<DBCon>>
 {
   public:
     nucSeqIndex uiMaxExtensionSize = 100;
@@ -31,7 +31,7 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
     execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pRef,
-             std::shared_ptr<PoolContainer<DBCon>> pPool )
+             std::shared_ptr<libMS::PoolContainer<DBCon>> pPool )
     {
         return pPool->xPool.run(
             [this]( auto pConnection, std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls,

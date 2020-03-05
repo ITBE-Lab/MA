@@ -5,11 +5,14 @@
  */
 #pragma once
 
+#include "ms/module/get_inserter_container_module.h"
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/svCall.h"
 #include "msv/container/sv_db/tables/svCallSupport.h"
 #include "msv/container/sv_db/tables/svCallerRun.h"
-#include "msv/module/get_inserter_container_module.h"
+
+using namespace libMA;
+using namespace libMS;
 
 namespace libMSV
 {
@@ -34,7 +37,7 @@ template <typename CallOrVector, typename DBCon>
 class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterContainer, SvCallTable, CallOrVector>
 {
   public:
-    using ParentType = BulkOrNot<DBCon, AbstractInserterContainer, SvCallTable, CallOrVector>;
+    using ParentType = BulkOrNot<DBCon, libMS::AbstractInserterContainer, SvCallTable, CallOrVector>;
 
     std::shared_ptr<BulkInserterType<SvCallSupportTable<DBCon>>> pSupportInserter;
 

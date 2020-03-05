@@ -33,8 +33,8 @@
 #ifndef _SAMPLE_CONSENSUS_RANSAC_H_
 #define _SAMPLE_CONSENSUS_RANSAC_H_
 
-#include <sample_consensus/sac.h>
-#include <sample_consensus/sac_model.h>
+#include <ma/sample_consensus/sac.h>
+#include <ma/sample_consensus/sac_model.h>
 
 namespace sample_consensus
 {

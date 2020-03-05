@@ -8,7 +8,7 @@
 #pragma once
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
-#include "geom.h" // import of rectangle class
+#include "util/geom.h" // import of rectangle class
 #include <algorithm>
 #include <functional>
 #include <iostream>

@@ -33,8 +33,8 @@
 #ifndef _SAMPLE_CONSENSUS_SACMODELLINE_H_
 #define _SAMPLE_CONSENSUS_SACMODELLINE_H_
 
-#include <sample_consensus/model_types.h>
-#include <sample_consensus/sac_model.h>
+#include <ma/sample_consensus/model_types.h>
+#include <ma/sample_consensus/sac_model.h>
 
 /** \brief Define the maximum number of iterations for selecting 2 unique points */
 #define MAX_ITERATIONS_UNIQUE 1000

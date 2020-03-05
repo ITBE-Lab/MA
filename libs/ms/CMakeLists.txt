@@ -21,7 +21,7 @@ function( ms_add_module_helper target_name )
         target_compile_definitions( ${target_name} PRIVATE WITH_PYTHON )
     else()
         # Build the plain shared library without Python support
-        add_library( ${target_name} SHARED ${MA_SRC} )
+        add_library( ${target_name} SHARED ${SRC} )
     endif()
 
     # Activate __declspec(dllexport) for DLL export 
@@ -34,12 +34,21 @@ function( ms_add_module_helper target_name )
     # CMake will add the -fPIC for compilation with GCC
     set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+    target_link_libraries ( ${target_name} PUBLIC util contrib_CPP_header )
+
     # Set includes and library dependencies 
     target_include_directories(${target_name} PUBLIC inc)
     
     # build the shared library in the folder of the .exe 
     set_target_properties( ${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
     set_target_properties( ${target_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+
+    # and for each of your dependent executable/library targets:
+    if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
+        # std::filesystem is still experimental and for linkage we need separated library
+        message( "libMA: Filesystem support for GCC below version 8" )
+        target_link_libraries( ${target_name} PUBLIC stdc++fs )
+    endif()
 
     # additionally link to python if available
     if( PythonLibs_FOUND )
@@ -91,7 +100,7 @@ endfunction()
 
 ms_add_module_helper( MS )
 target_include_directories( MS PUBLIC dbSQL )
-target_link_libraries ( MS LINK_PUBLIC dbSQL util )
+target_link_libraries ( MS PUBLIC dbSQL )
 
 # Generate a version of MS based on the current commit
 
@@ -131,7 +140,7 @@ endif()
 
 configure_file( # @todo so far this only triggers during configure not at build time
     inc/ms/util/version.h.in
-    ${CMAKE_BINARY_DIR}/generated/version.h
+    ${CMAKE_BINARY_DIR}/generated/ms/util/version.h
 )
 target_include_directories(MS PUBLIC ${CMAKE_BINARY_DIR}/generated)
 

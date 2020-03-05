@@ -1,6 +1,7 @@
 #include "msv/container/sv_db/query_objects/nucSeqSql.h"
 
 using namespace libMSV;
+using namespace libMS;
 
 #ifdef WITH_PYTHON
 

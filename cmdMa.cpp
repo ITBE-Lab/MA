@@ -32,8 +32,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ma/module/fileReader.h"
 #include "ma/module/fileWriter.h"
 #include "ma/util/export.h"
-#include "ms/util/execution-context.h"
-#include "ms/version.h"
+#include "ma/util/execution-context.h"
+#include "ms/util/version.h"
 #include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES

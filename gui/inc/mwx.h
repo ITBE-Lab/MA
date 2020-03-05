@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-#include "util/parameter.h"
+#include "ms/util/parameter.h"
 // Include all bitmaps (Note: All bitmaps are static)
 #include "png_bitmaps.c"
 

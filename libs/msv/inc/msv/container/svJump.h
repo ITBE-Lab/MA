@@ -1,16 +1,17 @@
 #pragma once
 
-#include "msv/container/nucSeq.h"
-#include "msv/container/seed.h"
+#include "ma/container/nucSeq.h"
+#include "ma/container/seed.h"
 #include "util/geom.h"
 #include "ms/util/parameter.h"
 #include <cmath>
 #include <limits>
 
+using namespace libMA;
 namespace libMSV
 {
 
-class SvJump : public Container
+class SvJump : public libMS::Container
 {
     static inline nucSeqIndex dist( nucSeqIndex uiA, nucSeqIndex uiB )
     {
@@ -293,7 +294,7 @@ class SvJump : public Container
 }; // class
 
 // @todo move this to it's own file
-class SvCall : public Container, public geom::Rectangle<nucSeqIndex>
+class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 {
   public:
 #if 0
@@ -628,7 +629,7 @@ class SvCall : public Container, public geom::Rectangle<nucSeqIndex>
 }; // class
 
 
-class CompleteBipartiteSubgraphClusterVector : public Container
+class CompleteBipartiteSubgraphClusterVector : public libMS::Container
 {
   public:
     std::vector<std::shared_ptr<SvCall>> vContent;

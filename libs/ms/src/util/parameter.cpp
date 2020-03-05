@@ -73,22 +73,22 @@ template <> EXPORTED std::string AlignerParameter<float>::asText( ) const
     return sText;
 } // method
 
-template <> std::string AlignerParameter<int>::asText( ) const
+template <> EXPORTED std::string AlignerParameter<int>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method
 
-template <> std::string AlignerParameter<short>::asText( ) const
+template <> EXPORTED std::string AlignerParameter<short>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method
 
-template <> std::string AlignerParameter<uint64_t>::asText( ) const
+template <> EXPORTED std::string AlignerParameter<uint64_t>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method
 
-template <> std::string AlignerParameter<std::string>::asText( ) const
+template <> EXPORTED std::string AlignerParameter<std::string>::asText( ) const
 {
     return this->get( );
 } // method

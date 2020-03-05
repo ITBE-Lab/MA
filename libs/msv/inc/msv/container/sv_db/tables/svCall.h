@@ -6,11 +6,11 @@
  */
 #pragma once
 
-#include "msv/container/pack.h"
+#include "ma/container/pack.h"
 #include "msv/container/svJump.h"
-#include "msv/container/sv_db/pool_container.h"
-#include "util/geom.h"
+#include "ms/container/sv_db/pool_container.h"
 #include "sql_api.h"
+#include "util/geom.h"
 #include "util/system.h"
 #include "util/threadPool.h"
 #include "wkb_spatial.h"
@@ -18,6 +18,7 @@
 #include <string>
 #include <type_traits>
 
+using namespace libMA;
 namespace libMSV
 {
 template <typename DBCon>
@@ -224,7 +225,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline int64_t filterCallsWithHighScore( int64_t iCallerRunId, double dPercentToFilter )
     {
-        auto xTransaction = this->pConnection->sharedGuardedTrxn();
+        auto xTransaction = this->pConnection->sharedGuardedTrxn( );
         double dMinScore = minScore( iCallerRunId );
         double dMaxScore = maxScore( iCallerRunId );
         return xFilterCallsWithHighScore.exec( 1, iCallerRunId,
@@ -517,7 +518,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
         {} // constructor
     }; // class
 
-    std::shared_ptr<PoolContainer<DBCon>> pConPool;
+    std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool;
     std::vector<std::unique_ptr<NumOverlapsQuery>> vOverlapQuery;
     std::vector<std::unique_ptr<HelperIntersecCallWHigherScore>> vIntersectScoreQueries;
     std::vector<std::unique_ptr<HelperIntersectingCall>> vIntersectQueries;
@@ -584,7 +585,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     } // class
 
   public:
-    SvCallTableAnalyzer( std::shared_ptr<PoolContainer<DBCon>> pConPool ) : pConPool( pConPool )
+    SvCallTableAnalyzer( std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool ) : pConPool( pConPool )
     {
         for( size_t uiT = 0; uiT < pConPool->xPool.uiPoolSize; uiT++ )
         {

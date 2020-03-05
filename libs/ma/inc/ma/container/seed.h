@@ -6,7 +6,7 @@
 #ifndef SEED_H
 #define SEED_H
 
-#include "ma/container/container.h"
+#include "ms/container/container.h"
 #include "util/geom.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES

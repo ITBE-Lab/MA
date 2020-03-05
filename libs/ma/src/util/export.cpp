@@ -7,8 +7,10 @@
 #include "ma/container/soc.h"
 #include "ma/util/execution-context.h"
 #include "ms/util/parameter.h"
+#include "ms/module/splitter.h"
 
 using namespace libMA;
+using namespace libMS;
 
 
 #ifdef WITH_PYTHON
@@ -54,7 +56,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportOtherSeeding( libMaModule );
     exportHashMapSeeding( libMaModule );
     exportMinimizerIndex( libMaModule );
-    exportExecutionContext( libMsvModule );
+    exportExecutionContext( libMaModule );
 } // function
 
 #endif

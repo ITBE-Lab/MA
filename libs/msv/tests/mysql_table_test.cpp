@@ -25,7 +25,7 @@ int main( void )
                             // pDBCon is of type std::shared_ptr<ConnectionType>
                             using ConnectionType = typename std::remove_reference<decltype( *pDBCon )>::type;
 
-                            libMA::SequencerTable<ConnectionType> xSequencerTable( pDBCon );
+                            libMSV::SequencerTable<ConnectionType> xSequencerTable( pDBCon );
 
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;
                             // checkDB( pDBCon, pDBCon->getTaskId( ) );
