@@ -240,6 +240,7 @@ template <typename... TP_VEC_CONTENT> class Join : public Module<Container, fals
 /**
  * @brief Split a ContainerVector into its elements
  * @details @note saves read id in uiDelta of seeds... bad code ...
+ * @todo move to own file
  */
 class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, NucSeq>
 {
