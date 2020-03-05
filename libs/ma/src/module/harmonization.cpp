@@ -768,12 +768,12 @@ void exportHarmonization( py::module& rxPyModuleId )
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 
-    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
+    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, libMS::Container,
                         std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "ContainerVectorSeeds",
                                                                                    "docstr" )
         .def( py::init<>( ) );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<ContainerVector<std::shared_ptr<Seeds>>, Container>( );
+    py::implicitly_convertible<ContainerVector<std::shared_ptr<Seeds>>, libMS::Container>( );
 } // function
 #endif

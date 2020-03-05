@@ -355,7 +355,7 @@ class TagGenerator
  * @note flushing of the outstream; this must be done in the deconstructor of OutStream
  *
  */
-class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>,
+class FileWriter : public libMS::Module<libMS::Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>,
                    private TagGenerator
 {
   public:
@@ -425,7 +425,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
           bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
+    virtual std::shared_ptr<libMS::Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
                                                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                                              pAlignments,
                                                          std::shared_ptr<Pack>
@@ -439,7 +439,7 @@ class FileWriter : public Module<Container, false, NucSeq, ContainerVector<std::
  *
  */
 class PairedFileWriter
-    : public Module<Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>,
+    : public libMS::Module<libMS::Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>,
       private TagGenerator
 {
   public:
@@ -524,7 +524,7 @@ class PairedFileWriter
           bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<Container>
+    virtual std::shared_ptr<libMS::Container>
         EXPORTED execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
                           std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
                           std::shared_ptr<Pack> pPack );

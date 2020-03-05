@@ -19,7 +19,7 @@ namespace libMA
  * Uses K-mer like seeding.
  * (this will produce many overlapping seeds)
  */
-class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
+class HashMapSeeding : public libMS::Module<Seeds, false, NucSeq, NucSeq>
 {
   public:
     nucSeqIndex uiSeedSize = 5;
@@ -66,7 +66,7 @@ class HashMapSeeding : public Module<Seeds, false, NucSeq, NucSeq>
  * @ingroup module
  * @details
  */
-class ReSeeding : public Module<Seeds, false, Seeds, NucSeq, Pack>
+class ReSeeding : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
 {
   public:
     HashMapSeeding xHashMapSeeder;
@@ -90,7 +90,7 @@ class ReSeeding : public Module<Seeds, false, Seeds, NucSeq, Pack>
  * @details
  * Fills in shorter seeds within gaps.
  */
-class FillSeedSet : public Module<Seeds, false, Seeds, NucSeq, FMIndex, Pack>
+class FillSeedSet : public libMS::Module<Seeds, false, Seeds, NucSeq, FMIndex, Pack>
 {
   public:
     HarmonizationSingle xSingle;
@@ -132,7 +132,7 @@ class FillSeedSet : public Module<Seeds, false, Seeds, NucSeq, FMIndex, Pack>
  * then fills in shorter seeds within gaps.
  */
 class ExtractFilledSeedSets
-    : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex, Pack>
+    : public libMS::Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex, Pack>
 {
   public:
     FillSeedSet xFill;

@@ -41,7 +41,7 @@ typedef int64_t t_bwtIndex; // IMPORTANT: We can have -1 in the context of occur
  * See http://en.wikipedia.org/wiki/FM-index (intervals within the F-L matrix )
  * @ingroup container
  */
-class SAInterval : public Container, public geom::Interval<t_bwtIndex>
+class SAInterval : public libMS::Container, public geom::Interval<t_bwtIndex>
 {
   private:
     t_bwtIndex startOfComplement;
@@ -58,7 +58,7 @@ class SAInterval : public Container, public geom::Interval<t_bwtIndex>
     {} // copy constructor
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<SAInterval>( c ) != nullptr;
     } // function
@@ -70,9 +70,9 @@ class SAInterval : public Container, public geom::Interval<t_bwtIndex>
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new SAInterval( ) );
+        return std::shared_ptr<libMS::Container>( new SAInterval( ) );
     } // function
 
     /**
@@ -120,7 +120,7 @@ class SAInterval : public Container, public geom::Interval<t_bwtIndex>
 typedef unsigned char ubyte_t;
 
 
-class SuffixArrayInterface : public Container
+class SuffixArrayInterface : public libMS::Container
 {
   public:
     virtual SAInterval EXPORTED extend_backward(
@@ -881,7 +881,7 @@ class FMIndex : public SuffixArrayInterface
     } // method
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<FMIndex>( c ) != nullptr;
     } // function
@@ -893,9 +893,9 @@ class FMIndex : public SuffixArrayInterface
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new FMIndex( ) );
+        return std::shared_ptr<libMS::Container>( new FMIndex( ) );
     } // function
 
     /* Default constructor. (Initializes the fix count-table)
@@ -968,7 +968,7 @@ class FMIndex : public SuffixArrayInterface
 
 #ifdef WITH_PYTHON
 /**
- * @brief function called in order to export this @ref libMA::Module "module"
+ * @brief function called in order to export this @ref libMS::Module "module"
  * @ingroup export
  */
 void exportFM_index( py::module& rxPyModuleId );

@@ -8,10 +8,6 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
-#include "container/alignment.h"
-#include "container/nucSeq.h"
-#include "container/segment.h"
-#include "container/soc.h"
 #include "module/module.h"
 #include <fstream>
 #include <mutex>
@@ -237,41 +233,6 @@ template <typename... TP_VEC_CONTENT> class Join : public Module<Container, fals
 }; // class
 
 
-/**
- * @brief Split a ContainerVector into its elements
- * @details @note saves read id in uiDelta of seeds... bad code ...
- * @todo move to own file
- */
-class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, NucSeq>
-{
-  public:
-    nucSeqIndex uiStart;
-    nucSeqIndex uiSize;
-    nucSeqIndex uiMaxAmbiguity;
-    nucSeqIndex uiSeedSize;
-
-    FilterSeedsByArea( const ParameterSetManager& rParameters, nucSeqIndex uiStart, nucSeqIndex uiSize )
-        : uiStart( uiStart ),
-          uiSize( uiSize ),
-          uiMaxAmbiguity( rParameters.getSelected( )->xMaxAmbiguitySv->get( ) ),
-          uiSeedSize( rParameters.getSelected( )->xMinSeedSizeSV->get( ) )
-    {} // constructor
-
-    typename std::shared_ptr<Seeds> execute( std::shared_ptr<SegmentVector> pSegments,
-                                             std::shared_ptr<FMIndex> pFmIndex, std::shared_ptr<NucSeq> pQuery )
-    {
-        std::shared_ptr<Seeds> pRet = std::make_shared<Seeds>( );
-        pSegments->forEachSeed( *pFmIndex, pQuery->length( ), uiMaxAmbiguity, uiSeedSize, true,
-                                [&]( Seed& s ) {
-                                    s.uiDelta = (nucSeqIndex)pQuery->iId;
-                                    if( s.start_ref( ) <= uiStart + uiSize && s.end_ref( ) >= uiStart )
-                                        pRet->push_back( s );
-                                    return true;
-                                } // lambda
-        ); // for each
-        return pRet;
-    } // method
-}; // class
 
 } // namespace libMS
 

@@ -19,7 +19,7 @@ namespace libMA
  * first alignment on the basis of the second
  * @note the name quality is missleading it rather is a mapping confidence
  */
-class MappingQuality : public Module<ContainerVector<std::shared_ptr<Alignment>>, false, NucSeq,
+class MappingQuality : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, false, NucSeq,
                                      ContainerVector<std::shared_ptr<Alignment>>>
 {
   public:

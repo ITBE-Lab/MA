@@ -31,7 +31,7 @@ class NucSeq;
  * @note the overloaded functions of Interval refer to the Interval on the query.
  * @ingroup container
  */
-class Seed : public Container, public geom::Interval<nucSeqIndex>
+class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
 {
   public:
     ///@brief the beginning of the match on the reference
@@ -176,7 +176,7 @@ class Seed : public Container, public geom::Interval<nucSeqIndex>
     } // operator
 
     // overload
-    inline bool canCast( const std::shared_ptr<Container>& c ) const
+    inline bool canCast( const std::shared_ptr<libMS::Container>& c ) const
     {
         return std::dynamic_pointer_cast<Seed>( c ) != nullptr;
     } // function
@@ -188,9 +188,9 @@ class Seed : public Container, public geom::Interval<nucSeqIndex>
     } // function
 
     // overload
-    inline std::shared_ptr<Container> getType( ) const
+    inline std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new Seed( ) );
+        return std::shared_ptr<libMS::Container>( new Seed( ) );
     } // function
 
 }; // class
@@ -253,7 +253,7 @@ class SVInfo
  * Also holds the summed up score of the seeds within the list.
  * @ingroup Container
  */
-class Seeds : public Container
+class Seeds : public libMS::Container
 {
   private:
     typedef std::vector<Seed> TP_VEC;
@@ -308,7 +308,7 @@ class Seeds : public Container
     } // method
 
     /// @brief return wether this seed set is larger according to getScore()
-    inline bool larger( const std::shared_ptr<Container> pOther ) const
+    inline bool larger( const std::shared_ptr<libMS::Container> pOther ) const
     {
         const std::shared_ptr<Seeds> pSeeds = std::dynamic_pointer_cast<Seeds>( pOther );
         if( pSeeds == nullptr )

@@ -545,7 +545,7 @@ void Pack::vAppendFastaFile( const char* pcFileName )
 #ifdef WITH_PYTHON
 void exportPack( py::module& rxPyModuleId )
 {
-    py::class_<Pack, Container, std::shared_ptr<Pack>>( rxPyModuleId, "Pack" )
+    py::class_<Pack, libMS::Container, std::shared_ptr<Pack>>( rxPyModuleId, "Pack" )
         .def( py::init<>( ) )
         .def( "unpacked_size", &Pack::uiUnpackedSizeForwardPlusReverse )
         .def( "append", &Pack::vAppendSequence_boost )
@@ -581,7 +581,7 @@ void exportPack( py::module& rxPyModuleId )
         .def( "contigStarts", &Pack::contigStarts );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<Pack, Container>( );
+    py::implicitly_convertible<Pack, libMS::Container>( );
 
     // required by contigNames
     py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector", "docstr" );

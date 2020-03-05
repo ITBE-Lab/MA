@@ -23,7 +23,7 @@ class PerfectMatch;
  * Can use either the extension scheme by Li et Al. or ours.
  * @ingroup module
  */
-class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, NucSeq>
+class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInterface, NucSeq>
 {
   public:
     const bool bLrExtension;

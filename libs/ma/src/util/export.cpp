@@ -109,10 +109,6 @@ void exportExecutionContext( py::module& rxPyModuleId )
 
 PYBIND11_MODULE( libMA, libMaModule )
 {
-    DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
-    exportParameter( libMaModule );
-    exportContainer( libMaModule );
-    exportModuleClass( libMaModule );
     exportFM_index( libMaModule );
     exportNucSeq( libMaModule );
     exportBinarySeeding( libMaModule );
@@ -139,7 +135,6 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSweepSvJump( libMaModule );
     exportConnectorPatternFilter( libMaModule );
     exportMinimizerIndex( libMaModule );
-    exportPoolContainer( libMaModule );
 } // function
 
 #endif
@@ -181,14 +176,14 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
             auto pAlignmentsWInv = promiseMe( pSmallInversions, pAlignmentsWQuality, pQuery, pPack );
             auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWInv, pPack );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQuery ), pEmptyContainer );
             aRet.push_back( pUnlockResult );
         } // if
         else
         {
             auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQuery ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQuery ), pEmptyContainer );
             aRet.push_back( pUnlockResult );
         } // else
     } // for
@@ -245,7 +240,7 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
                 promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWInvA, pAlignmentsWInvB, pPack );
             auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQueryTuple ), pEmptyContainer );
             aRet.push_back( pUnlockResult );
         } // if
         else
@@ -254,7 +249,7 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
                 promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
             auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQueryTuple ), pEmptyContainer );
             aRet.push_back( pUnlockResult );
         } // else
     } // for

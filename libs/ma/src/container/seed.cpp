@@ -119,7 +119,7 @@ void exportSeed( py::module& rxPyModuleId )
         .def_readwrite( "initial_r_end", &AlignmentStatistics::uiInitialRefEnd );
 
     // export the Seeds class
-    py::bind_vector_ext<Seeds, Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds", "docstr" )
+    py::bind_vector_ext<Seeds, libMS::Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds", "docstr" )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
         .def( py::init<>( ) )
         .def( "extractStrand", &Seeds::extractStrand )
@@ -131,6 +131,6 @@ void exportSeed( py::module& rxPyModuleId )
         .def( "sort_by_q_pos", &Seeds::sortByQPos );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<Seeds, Container>( );
+    py::implicitly_convertible<Seeds, libMS::Container>( );
 } // function
 #endif

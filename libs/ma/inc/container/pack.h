@@ -95,7 +95,7 @@ namespace libMA
  * Compresses the sequence.
  * @ingroup container
  */
-class Pack : public Container
+class Pack : public libMS::Container
 {
     /* Delete implicit copy constructor.
      * For performance reasons we do not want to risk unwanted copies of packs, although it is safe
@@ -583,7 +583,7 @@ class Pack : public Container
 
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<Pack>( c ) != nullptr;
     } // function
@@ -595,9 +595,9 @@ class Pack : public Container
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new Pack( ) );
+        return std::shared_ptr<libMS::Container>( new Pack( ) );
     } // function
 
     /**

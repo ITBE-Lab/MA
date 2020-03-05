@@ -19,7 +19,7 @@ namespace libMA
  * Given two vector of alignments this module picks one alignment of each vector,
  * so that their combined score and penalty for the insert size is maximal.
  */
-class PairedReads : public Module<ContainerVector<std::shared_ptr<Alignment>>, // out
+class PairedReads : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, // out
                                   false, // not volatile
                                   NucSeq, NucSeq, // Query 1 and 2
                                   ContainerVector<std::shared_ptr<Alignment>>, // alignments for first paired read

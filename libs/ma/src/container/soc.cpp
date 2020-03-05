@@ -25,7 +25,7 @@ void exportSoC( py::module& rxPyModuleId )
 #endif
     py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "seedVector", "docstr" );
     // export the SoCPriorityQueue class
-    py::class_<SoCPriorityQueue, Container, std::shared_ptr<SoCPriorityQueue>>( rxPyModuleId, "SoCPriorityQueue" )
+    py::class_<SoCPriorityQueue, libMS::Container, std::shared_ptr<SoCPriorityQueue>>( rxPyModuleId, "SoCPriorityQueue" )
         .def( py::init<>( ) )
         .def( "empty", &SoCPriorityQueue::empty )
         .def( "pop", &SoCPriorityQueue::pop )
@@ -40,6 +40,6 @@ void exportSoC( py::module& rxPyModuleId )
                       .def_readwrite( "vIngroup", &SoCPriorityQueue::vIngroup ) ) // DEBUG
         ;
     // tell python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<SoCPriorityQueue, Container>( );
+    py::implicitly_convertible<SoCPriorityQueue, libMS::Container>( );
 } // function
 #endif

@@ -7,7 +7,7 @@
 
 using namespace libMA;
 
-std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
+std::shared_ptr<libMS::Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
                                                 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
                                                     pAlignments,
                                                 std::shared_ptr<Pack>
@@ -144,10 +144,10 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         // flushing will be done in the outstream class
         *pOut << sCombined;
     } // scope xGuard
-    return std::shared_ptr<Container>( new Container( ) );
+    return std::shared_ptr<libMS::Container>( new libMS::Container( ) );
 } // function
 
-std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
+std::shared_ptr<libMS::Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
                                                       std::shared_ptr<NucSeq>
                                                           pQuery2,
                                                       std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
@@ -359,7 +359,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         // flushing will be done in the the outstream class
         *pOut << sCombined;
     } // if & scope xGuard
-    return std::shared_ptr<Container>( new Container( ) );
+    return std::shared_ptr<libMS::Container>( new libMS::Container( ) );
 } // function
 
 #ifdef WITH_PYTHON

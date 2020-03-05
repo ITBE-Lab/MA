@@ -92,7 +92,7 @@ class SoCOrder
 /**
  * @brief Acts as stack during collection of SoCs then turns into a max-heap for SoC extraction.
  */
-class SoCPriorityQueue : public Container
+class SoCPriorityQueue : public libMS::Container
 {
   public:
 #if DEBUG_LEVEL >= 1
@@ -169,7 +169,7 @@ class SoCPriorityQueue : public Container
     }
 
     // overload
-    inline bool canCast( const std::shared_ptr<Container>& c ) const
+    inline bool canCast( const std::shared_ptr<libMS::Container>& c ) const
     {
         return std::dynamic_pointer_cast<SoCPriorityQueue>( c ) != nullptr;
     } // method
@@ -181,9 +181,9 @@ class SoCPriorityQueue : public Container
     } // method
 
     // overload
-    inline std::shared_ptr<Container> getType( ) const
+    inline std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new SoCPriorityQueue( ) );
+        return std::shared_ptr<libMS::Container>( new SoCPriorityQueue( ) );
     } // method
 
     /// @brief Returns weather the queue is empty (usable in either state).

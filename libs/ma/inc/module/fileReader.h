@@ -25,7 +25,7 @@
 namespace libMA
 {
 
-class FileStream : public Container
+class FileStream : public libMS::Container
 {
   public:
     std::mutex xMutex;
@@ -449,7 +449,7 @@ class FileStreamFromPath : public FileStream
  * @details
  * Reads (multi-)fasta or fastaq format.
  */
-class FileReader : public Module<NucSeq, true, FileStream>
+class FileReader : public libMS::Module<NucSeq, true, FileStream>
 {
   public:
     /**
@@ -528,7 +528,7 @@ using PairedReadsContainer = ContainerVector<std::shared_ptr<NucSeq>>;
  * @details
  * Reads (multi-)fasta or fastaq format.
  */
-class PairedFileReader : public Module<PairedReadsContainer, true, PairedFileStream>
+class PairedFileReader : public libMS::Module<PairedReadsContainer, true, PairedFileStream>
 {
   public:
     FileReader xFileReader;
@@ -583,7 +583,7 @@ class PairedFileReader : public Module<PairedReadsContainer, true, PairedFileStr
  * @details
  * Prints out the files that are currently open and how far they are read
  */
-template <typename FileStreamQueue> class ProgressPrinter : public Module<Container, false, Container, FileStreamQueue>
+template <typename FileStreamQueue> class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Container, FileStreamQueue>
 {
     std::mutex xMutex;
     using duration = std::chrono::duration<double>;
@@ -595,7 +595,7 @@ template <typename FileStreamQueue> class ProgressPrinter : public Module<Contai
     ProgressPrinter( const ParameterSetManager& rParameters ) : xLastTime( std::chrono::steady_clock::now( ) )
     {} // constructor
 
-    std::shared_ptr<Container> execute( std::shared_ptr<Container> pContainer, std::shared_ptr<FileStreamQueue> pQueue )
+    std::shared_ptr<libMS::Container> execute( std::shared_ptr<libMS::Container> pContainer, std::shared_ptr<FileStreamQueue> pQueue )
     {
         std::lock_guard<std::mutex> xLock( xMutex );
         auto xNow = std::chrono::steady_clock::now( );

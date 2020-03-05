@@ -28,7 +28,7 @@ namespace libMA
  * @li @c a Interval representing the position of the sequence on the query.
  * @ingroup container
  */
-class Segment : public Container, public geom::Interval<nucSeqIndex>
+class Segment : public libMS::Container, public geom::Interval<nucSeqIndex>
 {
   public:
     SAInterval xSaInterval;
@@ -49,7 +49,7 @@ class Segment : public Container, public geom::Interval<nucSeqIndex>
 
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<Segment>( c ) != nullptr;
     } // function
@@ -61,9 +61,9 @@ class Segment : public Container, public geom::Interval<nucSeqIndex>
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new Segment( ) );
+        return std::shared_ptr<libMS::Container>( new Segment( ) );
     } // function
 
     /**
@@ -126,7 +126,7 @@ class Segment : public Container, public geom::Interval<nucSeqIndex>
  * tree.
  * @ingroup container
  */
-class SegmentVector : public Container
+class SegmentVector : public libMS::Container
 {
   private:
     typedef std::vector<Segment> TP_VEC;
@@ -290,7 +290,7 @@ class SegmentVector : public Container
     } // method
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<SegmentVector>( c ) != nullptr;
     } // function
@@ -302,7 +302,7 @@ class SegmentVector : public Container
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
         return std::shared_ptr<SegmentVector>( new SegmentVector( ) );
     } // function

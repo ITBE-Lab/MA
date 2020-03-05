@@ -401,7 +401,7 @@ void exportFM_index( py::module& rxPyModuleId )
         .def_readwrite( "start", &SAInterval::iStart )
         .def( "rev_comp", &SAInterval::revComp );
 
-    py::class_<SuffixArrayInterface, Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
+    py::class_<SuffixArrayInterface, libMS::Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
                                                                                         "SuffixArrayInterface" );
 
     // export the FM_index class
@@ -421,6 +421,6 @@ void exportFM_index( py::module& rxPyModuleId )
         .def( "bwt_2occ4", &FMIndex::bwt_2occ4 );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<FMIndex, Container>( );
+    py::implicitly_convertible<FMIndex, libMS::Container>( );
 } // function
 #endif

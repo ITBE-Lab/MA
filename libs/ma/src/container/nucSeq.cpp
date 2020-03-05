@@ -30,7 +30,7 @@ const unsigned char NucSeq::xNucleotideTranslationTable[ 256 ] = {
 void exportNucSeq( py::module& rxPyModuleId )
 {
     // export the nucleotidesequence class
-    py::class_<NucSeq, Container, std::shared_ptr<NucSeq>>( rxPyModuleId, "NucSeq" )
+    py::class_<NucSeq, libMS::Container, std::shared_ptr<NucSeq>>( rxPyModuleId, "NucSeq" )
         .def( py::init<>( ) ) // default constructor
         .def( py::init<const char*>( ) )
         .def( py::init<const std::string>( ) )

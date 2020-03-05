@@ -323,7 +323,7 @@ int64_t Alignment::reCalcScore( ) const
 
 void exportAlignment( py::module& rxPyModuleId )
 {
-    py::class_<Alignment, Container, std::shared_ptr<Alignment>>( rxPyModuleId, "Alignment" )
+    py::class_<Alignment, libMS::Container, std::shared_ptr<Alignment>>( rxPyModuleId, "Alignment" )
         .def( "at", &Alignment::at )
         .def( py::init<nucSeqIndex>( ) )
         .def( py::init<nucSeqIndex, nucSeqIndex>( ) )
@@ -372,12 +372,12 @@ void exportAlignment( py::module& rxPyModuleId )
     py::bind_vector<std::vector<MatchType>>( rxPyModuleId, "MatchTypeVector", "docstr" );
 
     py::bind_vector_ext<ContainerVector<std::shared_ptr<Alignment>>,
-                        Container,
+                        libMS::Container,
                         std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>(
         rxPyModuleId, "AlignmentVector", "docstr" );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<ContainerVector<std::shared_ptr<Alignment>>, Container>( );
+    py::implicitly_convertible<ContainerVector<std::shared_ptr<Alignment>>, libMS::Container>( );
 
 } // function
 #endif

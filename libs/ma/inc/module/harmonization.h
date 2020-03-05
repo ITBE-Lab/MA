@@ -30,7 +30,7 @@ namespace libMA
  * Removes all contradicting seeds.
  * This should only be used in combination with the StripOfConsideration module.
  */
-class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
+class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FMIndex>
 {
   private:
     /**
@@ -190,7 +190,7 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
  * @brief Extracts SoC from a priority queue and performs harmonization on all extracted SoC;s.
  * @ingroup module
  */
-class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
+class Harmonization : public libMS::Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
 {
   public:
     HarmonizationSingle xSingle;
@@ -242,7 +242,7 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
  * @details
  * Uses a n log(n) algorithm to combine overlapping seeds
  */
-class SeedLumping : public Module<Seeds, false, Seeds>
+class SeedLumping : public libMS::Module<Seeds, false, Seeds>
 {
   public:
     const bool bReduceToMaxSpan = false;
@@ -434,7 +434,7 @@ class SeedLumping : public Module<Seeds, false, Seeds>
  * @brief Extends seeds at the end to create maximally extened seeds
  * @ingroup module
  */
-class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
+class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
 {
 
   public:
@@ -511,7 +511,7 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
  * implemented very inefficiently at the moment.
  * @ingroup module
  */
-class FilterToUnique : public Module<Seeds, false, Seeds, NucSeq, NucSeq>
+class FilterToUnique : public libMS::Module<Seeds, false, Seeds, NucSeq, NucSeq>
 {
   public:
     size_t uiNumMissmatchesAllowed = 3;
@@ -556,7 +556,7 @@ class FilterToUnique : public Module<Seeds, false, Seeds, NucSeq, NucSeq>
  * @brief Filters a set of maximally extended seeds down to SMEMs
  * @ingroup module
  */
-class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
+class MaxExtendedToSMEM : public libMS::Module<Seeds, false, Seeds>
 {
   public:
     MaxExtendedToSMEM( const ParameterSetManager& rParameters )
@@ -611,7 +611,7 @@ class MaxExtendedToSMEM : public Module<Seeds, false, Seeds>
  * @brief Filters a set of maximally extended seeds down to SMEMs
  * @ingroup module
  */
-class MinLength : public Module<Seeds, false, Seeds>
+class MinLength : public libMS::Module<Seeds, false, Seeds>
 {
     size_t uiMinLen;
 
@@ -643,7 +643,7 @@ class MinLength : public Module<Seeds, false, Seeds>
  * @brief Filters a set of maximally extended seeds down to MaxSpanning
  * @ingroup module
  */
-class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
+class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
 {
     struct SeedSmallerComp
     {
@@ -736,7 +736,7 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
  * parlindrome seeds are two seeds that are crossing and on opposite strands.
  * @ingroup module
  */
-class ParlindromeFilter : public Module<Seeds, false, Seeds>
+class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
 {
     static int64_t startX( Seed& rSeed )
     {

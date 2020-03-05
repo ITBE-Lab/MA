@@ -50,7 +50,7 @@ enum MatchType
  * Contains a list of MatchTypes (match, missmatch, insertion, deletion).
  * @ingroup container
  */
-class Alignment : public Container
+class Alignment : public libMS::Container
 {
   public:
 #if DEBUG_LEVEL >= 1
@@ -185,7 +185,7 @@ class Alignment : public Container
     } // method
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<Alignment>( c ) != nullptr;
     } // function
@@ -197,9 +197,9 @@ class Alignment : public Container
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new Alignment( ) );
+        return std::shared_ptr<libMS::Container>( new Alignment( ) );
     } // function
 
     int64_t EXPORTED reCalcScore( ) const;
@@ -680,7 +680,7 @@ class Alignment : public Container
      * @details
      * When multiple alignments are created we use this function to sort them.
      */
-    bool larger( const std::shared_ptr<Container> pOther ) const
+    bool larger( const std::shared_ptr<libMS::Container> pOther ) const
     {
         const std::shared_ptr<Alignment> pAlign = std::dynamic_pointer_cast<Alignment>( pOther );
         if( pAlign == nullptr )

@@ -21,7 +21,7 @@ class PerfectMatch;
  * Can use either the extension scheme by Li et Al. or ours.
  * @ingroup module
  */
-class OtherSeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
+class OtherSeeding : public libMS::Module<SegmentVector, false, FMIndex, NucSeq>
 {
   public:
     const bool bBowtie;

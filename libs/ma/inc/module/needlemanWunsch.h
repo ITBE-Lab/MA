@@ -48,7 +48,7 @@ class Wrapper_ksw_extz_t
  * Returns a finished alignment if given a sound selection of seeds.
  * @ingroup module
  */
-class NeedlemanWunsch : public Module<ContainerVector<std::shared_ptr<Alignment>>, false,
+class NeedlemanWunsch : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, false,
                                       ContainerVector<std::shared_ptr<Seeds>>, NucSeq, Pack>
 {
     std::vector<std::vector<std::vector<int>>> s;

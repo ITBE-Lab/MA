@@ -17,7 +17,7 @@ namespace libMA
  * @brief Used to quickly find areas with high density of @ref Seed "seeds".
  * @ingroup module
  */
-class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVector, NucSeq, Pack, FMIndex>
+class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, SegmentVector, NucSeq, Pack, FMIndex>
 {
   public:
     /// @brief Maximum ambiguity for a seed to be considered.
@@ -139,7 +139,7 @@ class StripOfConsideration : public Module<SoCPriorityQueue, false, SegmentVecto
 
 #ifdef WITH_PYTHON
 /**
- * @brief export the bucketing @ref libMA::Module "module" to python.
+ * @brief export the bucketing @ref libMS::Module "module" to python.
  * @ingroup export
  */
 #ifdef WITH_BOOST

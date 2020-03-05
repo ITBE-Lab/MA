@@ -201,7 +201,7 @@ void exportFileReader( py::module& rxPyModuleId )
 {
     py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) );
     py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
-    py::class_<FileStream, Container, std::shared_ptr<FileStream>>( rxPyModuleId, "FileStream" );
+    py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( rxPyModuleId, "FileStream" );
     py::class_<FileStreamFromPath, FileStream, std::shared_ptr<FileStreamFromPath>>( rxPyModuleId,
                                                                                      "FileStreamFromPath" )
         .def( py::init<fs::path>( ) )
@@ -209,7 +209,7 @@ void exportFileReader( py::module& rxPyModuleId )
     py::class_<StringStream, FileStream, std::shared_ptr<StringStream>>( rxPyModuleId, "StringStream" )
         .def( py::init<std::string>( ) );
 
-    py::bind_vector_ext<PairedReadsContainer, Container, std::shared_ptr<PairedReadsContainer>>(
+    py::bind_vector_ext<PairedReadsContainer, libMS::Container, std::shared_ptr<PairedReadsContainer>>(
         rxPyModuleId, "ContainerVectorNucSeq", "docstr" );
 
     exportCyclicQueue<FileStream, NucSeq>( rxPyModuleId, "File", {"NucSeq"} );

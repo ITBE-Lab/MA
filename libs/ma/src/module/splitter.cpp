@@ -13,10 +13,10 @@ using namespace libMA;
 void exportSplitter( py::module& rxPyModuleId )
 {
     // export the Lock class
-    exportModule<Lock<Container>>( rxPyModuleId, "Lock" );
+    exportModule<Lock<libMS::Container>>( rxPyModuleId, "Lock" );
 
     // export the UnLock class
-    exportModule<UnLock<Container>, std::shared_ptr<BasePledge>>( rxPyModuleId, "UnLock" );
+    exportModule<UnLock<libMS::Container>, std::shared_ptr<BasePledge>>( rxPyModuleId, "UnLock" );
 
     // export the Splitter<NucSeq> class
     exportModule<Splitter<NucSeq>>( rxPyModuleId, "NucSeqSplitter" );
@@ -25,7 +25,7 @@ void exportSplitter( py::module& rxPyModuleId )
         rxPyModuleId, "StaticNucSeqSplitter" );
 
     // exported in fileReader.cpp
-    // py::bind_vector_ext<ContainerVector<std::shared_ptr<NucSeq>>, Container,
+    // py::bind_vector_ext<ContainerVector<std::shared_ptr<NucSeq>>, libMS::Container,
     //                    std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>>>( rxPyModuleId,
     //                                                                                "NucSeqContainerVector" );
 
@@ -57,7 +57,7 @@ void exportSplitter( py::module& rxPyModuleId )
             x.def_readwrite( "collection", &Collector<NucSeq, ContainerVector<std::shared_ptr<Seeds>>>::vCollection );
         } );
 
-    exportModule<Join<Container, Container>>( rxPyModuleId, "ContainerJoin" );
+    exportModule<Join<libMS::Container, libMS::Container>>( rxPyModuleId, "ContainerJoin" );
 
     exportModule<Collector<NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>>(
         rxPyModuleId, "AlignmentCollector", []( auto&& x ) {

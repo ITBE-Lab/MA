@@ -54,7 +54,7 @@ template <class T> void reverse( T word[], size_t length )
  * Class for genetic sequence that consist of nucleotides. (A, C, G, T)
  * @ingroup container
  */
-class NucSeq : public Container
+class NucSeq : public libMS::Container
 {
   public:
     /** The encapsulated sequence
@@ -462,7 +462,7 @@ class NucSeq : public Container
     } // method
 
     // overload
-    bool canCast( std::shared_ptr<Container> c ) const
+    bool canCast( std::shared_ptr<libMS::Container> c ) const
     {
         return std::dynamic_pointer_cast<NucSeq>( c ) != nullptr;
     } // function
@@ -474,9 +474,9 @@ class NucSeq : public Container
     } // function
 
     // overload
-    std::shared_ptr<Container> getType( ) const
+    std::shared_ptr<libMS::Container> getType( ) const
     {
-        return std::shared_ptr<Container>( new NucSeq( ) );
+        return std::shared_ptr<libMS::Container>( new NucSeq( ) );
     } // function
 
     /** Delivers the complement of a single nucleotide.
