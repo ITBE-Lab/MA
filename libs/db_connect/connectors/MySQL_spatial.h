@@ -91,8 +91,7 @@ template <> inline void MySQLConDB::StmtArg::set( const WKBPoint& rRectangle )
 // Part 3: Code for supporting query output:
 //         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
 //         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
-template <>
-struct /* MySQLConDB:: */ RowCell<WKBPoint> : public /* MySQLConDB::*/ RowCellBase<WKBPoint>
+template <> struct /* MySQLConDB:: */ RowCell<WKBPoint> : public /* MySQLConDB::*/ RowCellBase<WKBPoint>
 {
     inline void init( MYSQL_BIND* pMySQLBind, WKBPoint* pCellValue, size_t uiColNum )
     {
@@ -107,4 +106,3 @@ struct /* MySQLConDB:: */ RowCell<WKBPoint> : public /* MySQLConDB::*/ RowCellBa
         pCellValue->setData( this->pVarLenBuf.get( ) );
     } // method
 }; // specialized class
-  

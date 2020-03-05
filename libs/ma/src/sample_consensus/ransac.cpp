@@ -32,8 +32,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <ma/sample_consensus/ransac.h>
 #include <math.h>
-#include <sample_consensus/ransac.h>
 
 namespace sample_consensus
 {
@@ -109,7 +109,7 @@ bool RANSAC::computeModel( int debug )
         double dAngle = -90;
         // if we are in the correct quadrant we compute an angle
         if( dHorizontalDist > 0 && dVerticalDist > 0 )
-            dAngle = atan( dVerticalDist / dHorizontalDist ) * 180 / std::acos(-1);
+            dAngle = atan( dVerticalDist / dHorizontalDist ) * 180 / std::acos( -1 );
         if( dAngle >= 20 && dAngle <= 70 )
         {
 
@@ -119,7 +119,7 @@ bool RANSAC::computeModel( int debug )
             // Better match ?
             if( n_inliers_count > n_best_inliers_count )
             {
-                //std::cout  << "New best angle: " << dAngle << std::endl;
+                // std::cout  << "New best angle: " << dAngle << std::endl;
                 n_best_inliers_count = n_inliers_count;
                 best_inliers = inliers;
                 // inliers.clear ();

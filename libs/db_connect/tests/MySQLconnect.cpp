@@ -9,8 +9,8 @@
 // Then include the SQL common stuff that is currently below
 // #define SQL_VERBOSE
 
-#include <sql_api.h>
 #include <db_con_pool.h>
+#include <sql_api.h>
 #include <threadPool.h>
 
 using SQLStatement_ = SQLStatement<MySQLConDB>;
@@ -585,18 +585,17 @@ int mySQLExplainTest( )
     // doNoExcept( [ & ] {
     std::cout << "Do mySQLExplainTest ..." << std::endl;
     std::shared_ptr<SQLDB<MySQLConDB>> pDBCon(
-        std::make_shared<SQLDB<MySQLConDB>>( json{ { SCHEMA, { { NAME, "storage_result_test" } } } } ) );
+        std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, {{NAME, "storage_result_test"}}}} ) );
 
     json xTestTableWithStringsDef =
-        json{ { TABLE_NAME, "TEST_TABLE_WITH_STRINGS" }, { TABLE_COLUMNS, { { { COLUMN_NAME, "string_col" } } } } };
+        json{{TABLE_NAME, "TEST_TABLE_WITH_STRINGS"}, {TABLE_COLUMNS, {{{COLUMN_NAME, "string_col"}}}}};
 
     SQLTableWithLibIncrPriKey<SQLDB<MySQLConDB>, std::string> xTestTableWithStrings( pDBCon, xTestTableWithStringsDef );
 
 
     // Verify the xVerificationMap
     std::cout << "Do execute query ..." << std::endl;
-    SQLQuery<SQLDB<MySQLConDB>, std::string> xQuery(
-        pDBCon, "SELECT string_col FROM TEST_TABLE_WITH_STRINGS" );
+    SQLQuery<SQLDB<MySQLConDB>, std::string> xQuery( pDBCon, "SELECT string_col FROM TEST_TABLE_WITH_STRINGS" );
 
     // size_t uiCount = 0;
     // xQuery.execAndForAll( [ & ]( auto& iTxt ) { std::cout << iTxt << std::endl; } );

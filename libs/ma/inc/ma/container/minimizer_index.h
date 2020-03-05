@@ -1,8 +1,8 @@
 
-#include "container/nucSeq.h"
-#include "container/pack.h"
-#include "container/segment.h"
-#include "util/parameter.h"
+#include "ma/container/nucSeq.h"
+#include "ma/container/pack.h"
+#include "ma/container/segment.h"
+#include "ms/util/parameter.h"
 #ifndef __cplusplus
 #define __cplusplus TRUE
 #endif
@@ -43,20 +43,22 @@ class Index
                 mm_idx_reader_close( idx_rdr );
         } // destructor
     }; // class
-    
-    mm_tbuf_t *mm_tbuf_init(void)
+
+    mm_tbuf_t* mm_tbuf_init( void )
     {
-        mm_tbuf_t *b;
-        b = (mm_tbuf_t*)calloc(1, sizeof(mm_tbuf_t));
-        if (!(mm_dbg_flag & 1)) b->km = km_init();
+        mm_tbuf_t* b;
+        b = (mm_tbuf_t*)calloc( 1, sizeof( mm_tbuf_t ) );
+        if( !( mm_dbg_flag & 1 ) )
+            b->km = km_init( );
         return b;
     }
 
-    void mm_tbuf_destroy(mm_tbuf_t *b)
+    void mm_tbuf_destroy( mm_tbuf_t* b )
     {
-        if (b == 0) return;
-        km_destroy(b->km);
-        free(b);
+        if( b == 0 )
+            return;
+        km_destroy( b->km );
+        free( b );
     }
 
     void mm_mapopt_init( mm_mapopt_t* opt )
@@ -100,9 +102,9 @@ class Index
     {
         if( ( opt->flag & MM_F_SPLICE_FOR ) || ( opt->flag & MM_F_SPLICE_REV ) )
             opt->flag |= MM_F_SPLICE;
-        //if( opt->mid_occ <= 0 )
+        // if( opt->mid_occ <= 0 )
         //    opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
-        //if( opt->mid_occ < opt->min_mid_occ )
+        // if( opt->mid_occ < opt->min_mid_occ )
         //    opt->mid_occ = opt->min_mid_occ;
         opt->mid_occ = 200;
         // if( mm_verbose >= 3 )
@@ -130,14 +132,14 @@ class Index
                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
-		this->xOptions.k = rParameters.getSelected()->xMinimizerK->get();
-		this->xOptions.w = rParameters.getSelected()->xMinimizerW->get();
-		this->xOptions.flag = rParameters.getSelected()->xMinimizerFlag->get();
-		this->xOptions.bucket_bits = rParameters.getSelected()->xMinimizerBucketBits->get();
-		this->xOptions.mini_batch_size = rParameters.getSelected()->xMinimizerMiniBatchSize->get();
-		this->xOptions.batch_size = rParameters.getSelected()->xMinimizerBatchSize->get();
-		
-		IndexReader xIndexReader( sIndexName, &xOptions, NULL );
+        this->xOptions.k = rParameters.getSelected( )->xMinimizerK->get( );
+        this->xOptions.w = rParameters.getSelected( )->xMinimizerW->get( );
+        this->xOptions.flag = rParameters.getSelected( )->xMinimizerFlag->get( );
+        this->xOptions.bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( );
+        this->xOptions.mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( );
+        this->xOptions.batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( );
+
+        IndexReader xIndexReader( sIndexName, &xOptions, NULL );
         if( xIndexReader.idx_rdr == 0 )
             throw std::runtime_error( "failed to open file" + sIndexName );
         pData = mm_idx_reader_read( xIndexReader.idx_rdr, (int)rParameters.getNumThreads( ) );
@@ -161,23 +163,23 @@ class Index
                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
     {
-		xOptions.k = rParameters.getSelected()->xMinimizerK->get();
-		xOptions.w = rParameters.getSelected()->xMinimizerW->get();
-		xOptions.flag = rParameters.getSelected()->xMinimizerFlag->get();
-		xOptions.bucket_bits = rParameters.getSelected()->xMinimizerBucketBits->get();
-		xOptions.mini_batch_size = rParameters.getSelected()->xMinimizerMiniBatchSize->get();
-		xOptions.batch_size = rParameters.getSelected()->xMinimizerBatchSize->get();
-		
-		
-		std::vector<const char*> seq;
+        xOptions.k = rParameters.getSelected( )->xMinimizerK->get( );
+        xOptions.w = rParameters.getSelected( )->xMinimizerW->get( );
+        xOptions.flag = rParameters.getSelected( )->xMinimizerFlag->get( );
+        xOptions.bucket_bits = rParameters.getSelected( )->xMinimizerBucketBits->get( );
+        xOptions.mini_batch_size = rParameters.getSelected( )->xMinimizerMiniBatchSize->get( );
+        xOptions.batch_size = rParameters.getSelected( )->xMinimizerBatchSize->get( );
+
+
+        std::vector<const char*> seq;
         std::vector<const char*> name;
         for( auto& sContig : vContigs )
             seq.push_back( sContig.data( ) );
         for( auto& sName : vContigsNames )
             name.push_back( sName.data( ) );
 
-        pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits, (int)vContigs.size( ),
-                            &seq[ 0 ], &name[ 0 ] );
+        pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits,
+                            (int)vContigs.size( ), &seq[ 0 ], &name[ 0 ] );
         initOptions( );
         mm_idx_stat( pData );
         std::cout << "max Occ:" << xMapOpt.mid_occ << std::endl;
@@ -195,8 +197,8 @@ class Index
             throw std::runtime_error( "failed to open file" + sIndexName );
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
-                                                     std::shared_ptr<libMA::Pack> pPack )
+    std::vector<std::shared_ptr<libMA::Seeds>>
+    seed( std::vector<std::string> vQueries, std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         int64_t n_a = 0;
@@ -224,8 +226,8 @@ class Index
                         //                  : ( (int32_t)a[ uiI ].y - (int32_t)a[ uiI - 1 ].y ) -
                         //                        ( (int32_t)a[ uiI ].x - (int32_t)a[ uiI - 1 ].x ) );
                         uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
-                        //assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
-                        //assert( (int32_t)a[ uiI ].x + 1 >= (int32_t)uiQSpan );
+                        // assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
+                        // assert( (int32_t)a[ uiI ].x + 1 >= (int32_t)uiQSpan );
                         vRet.back( )->emplace_back(
                             /* minimap uses 1-based index i use 0-based indices...
                                a[ uiI ].y = last base of minimizer */

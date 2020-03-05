@@ -5,11 +5,11 @@
  */
 #pragma once
 
-#include "container/nucSeq.h"
-#include "container/sv_db/pool_container.h"
-#include "container/sv_db/tables/pairedRead.h"
-#include "container/sv_db/tables/read.h"
-#include "module/module.h"
+#include "msv/container/nucSeq.h"
+#include "msv/container/sv_db/pool_container.h"
+#include "msv/container/sv_db/tables/pairedRead.h"
+#include "msv/container/sv_db/tables/read.h"
+#include "ms/module/module.h"
 #include "sql_api.h"
 
 namespace libMSV

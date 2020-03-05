@@ -145,18 +145,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef EXPORT_H
 #define EXPORT_H
 
-#include "module/binarySeeding.h"
-#include "module/fileReader.h"
-#include "module/fileWriter.h"
-#include "module/harmonization.h"
-#include "module/hashMapSeeding.h"
-#include "module/mappingQuality.h"
-#include "module/needlemanWunsch.h"
-#include "module/otherSeeding.h"
-#include "module/pairedReads.h"
-#include "module/smallInversions.h"
-#include "module/splitter.h"
-#include "module/stripOfConsideration.h"
+#include "ma/module/binarySeeding.h"
+#include "ma/module/fileReader.h"
+#include "ma/module/fileWriter.h"
+#include "ma/module/harmonization.h"
+#include "ma/module/hashMapSeeding.h"
+#include "ma/module/mappingQuality.h"
+#include "ma/module/needlemanWunsch.h"
+#include "ma/module/otherSeeding.h"
+#include "ma/module/pairedReads.h"
+#include "ma/module/smallInversions.h"
+#include "ma/module/splitter.h"
+#include "ma/module/stripOfConsideration.h"
 
 namespace libMA
 {

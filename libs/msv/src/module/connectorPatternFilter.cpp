@@ -2,14 +2,14 @@
  * @file connectorPatternFilter.cpp
  * @author Markus Schmidt
  */
-#include "module/connectorPatternFilter.h"
+#include "msv/module/connectorPatternFilter.h"
 
 using namespace libMSV;
 using namespace libMS;
 
 #ifdef WITH_PYTHON
 
-#include "container/sv_db/py_db_conf.h"
+#include "ms/container/sv_db/py_db_conf.h"
 
 void exportConnectorPatternFilter( py::module& rxPyModuleId )
 {

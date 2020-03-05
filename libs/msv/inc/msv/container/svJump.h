@@ -1,9 +1,9 @@
 #pragma once
 
-#include "container/nucSeq.h"
-#include "container/seed.h"
-#include "geom.h"
-#include "util/parameter.h"
+#include "msv/container/nucSeq.h"
+#include "msv/container/seed.h"
+#include "util/geom.h"
+#include "ms/util/parameter.h"
 #include <cmath>
 #include <limits>
 

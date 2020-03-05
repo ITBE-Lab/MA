@@ -5,9 +5,9 @@
  */
 #pragma once
 
-#include "container/alignment.h"
-#include "module/harmonization.h"
-#include "module/module.h"
+#include "ma/container/alignment.h"
+#include "ma/module/harmonization.h"
+#include "ms/module/module.h"
 #include <unordered_map>
 
 namespace libMA

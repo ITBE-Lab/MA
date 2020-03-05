@@ -4,8 +4,8 @@
  */
 
 
-#include "container/container.h"
-#include "util/pybind11.h"
+#include "ms/container/container.h"
+#include "ms/util/pybind11.h"
 using namespace libMS;
 
 
@@ -20,7 +20,7 @@ void exportContainer( py::module& rxPyModuleId )
     py::bind_vector_ext<PyContainerVector, Container, std::shared_ptr<PyContainerVector>>(
         rxPyModuleId, "ContainerVector", "docstr" );
 
-    // tell boost python that pointers of these classes can be converted implicitly 
+    // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<PyContainerVector, Container>( );
 
 } // function

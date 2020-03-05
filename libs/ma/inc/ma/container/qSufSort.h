@@ -57,11 +57,9 @@ extern "C" {
  * contents of x[n] is disregarded, the n-th symbol being regarded as
  * end-of-string smaller than all other symbols.
  */
-void QSufSortSuffixSort( qsint_t *__restrict V, qsint_t *__restrict I, const qsint_t numChar,
-                         const qsint_t largestInputSymbol, const qsint_t smallestInputSymbol,
-                         const int skipTransform );
-void QSufSortGenerateSaFromInverse( const qsint_t *V, qsint_t *__restrict I,
-                                    const qsint_t numChar );
+void QSufSortSuffixSort( qsint_t* __restrict V, qsint_t* __restrict I, const qsint_t numChar,
+                         const qsint_t largestInputSymbol, const qsint_t smallestInputSymbol, const int skipTransform );
+void QSufSortGenerateSaFromInverse( const qsint_t* V, qsint_t* __restrict I, const qsint_t numChar );
 
 #ifdef __cplusplus
 }

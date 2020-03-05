@@ -12,8 +12,7 @@
 #include "sql_api.h"
 #include "wkb_spatial.h"
 
-auto jDBConfig = json
-{{SCHEMA, {{NAME, "testing"}, {FLAGS, {DROP_ON_CLOSURE}}}},
+auto jDBConfig = json{{SCHEMA, {{NAME, "testing"}, {FLAGS, {DROP_ON_CLOSURE}}}},
                       {CONNECTION, {{HOSTNAME, "127.0.0.1"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}};
 
 int main( void )

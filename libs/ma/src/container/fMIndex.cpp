@@ -2,7 +2,7 @@
  * @file fMIndex.cpp
  * @author Arne Kutzner
  */
-#include "container/fMIndex.h"
+#include "ma/container/fMIndex.h"
 
 #include <cstdlib>
 using namespace libMA;
@@ -402,7 +402,7 @@ void exportFM_index( py::module& rxPyModuleId )
         .def( "rev_comp", &SAInterval::revComp );
 
     py::class_<SuffixArrayInterface, libMS::Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
-                                                                                        "SuffixArrayInterface" );
+                                                                                               "SuffixArrayInterface" );
 
     // export the FM_index class
     py::class_<FMIndex, SuffixArrayInterface, std::shared_ptr<FMIndex>>( rxPyModuleId, "FMIndex" )

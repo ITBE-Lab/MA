@@ -2,9 +2,9 @@
  * @file alignment.cpp
  * @author Markus Schmidt
  */
-#include "container/alignment.h"
-#include "util/parameter.h"
-#include "util/pybind11.h"
+#include "ma/container/alignment.h"
+#include "ms/util/parameter.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 

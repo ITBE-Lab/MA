@@ -7,9 +7,9 @@
 #define LINESWEEP_H
 
 #include "IntervalTree.h"
-#include "container/segment.h"
-#include "container/soc.h"
-#include "module/module.h"
+#include "ma/container/segment.h"
+#include "ma/container/soc.h"
+#include "ms/module/module.h"
 #include <algorithm>
 #include <csignal>
 #include <set>

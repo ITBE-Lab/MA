@@ -1,10 +1,10 @@
 #ifndef MINIMAP2_H
 #define MINIMAP2_H
 
+#include "kalloc.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include "kalloc.h"
 
 #define MM_F_NO_DIAG 0x001 // no exact diagonal hit
 #define MM_F_NO_DUAL 0x002 // skip pairs where query name is lexicographically larger than target name
@@ -84,8 +84,6 @@ struct mm_idxopt_t
     short k, w, flag, bucket_bits;
     int mini_batch_size;
     uint64_t batch_size;
-
-
 };
 
 typedef struct
@@ -216,7 +214,7 @@ mm_idx_t* mm_idx_load( FILE* fp );
  * @param mi         minimap2 index
  */
 void mm_idx_dump( FILE* fp, const mm_idx_t* mi );
-int mm_idx_dump_name(const char* sIndexName, const mm_idx_t *mi);
+int mm_idx_dump_name( const char* sIndexName, const mm_idx_t* mi );
 
 /**
  * Create an index from strings in memory
@@ -258,7 +256,7 @@ typedef struct mm_tbuf_s mm_tbuf_t;
 
 
 // markus: expose this function
-int32_t mm_idx_cal_max_occ(const mm_idx_t *mi, float f);
+int32_t mm_idx_cal_max_occ( const mm_idx_t* mi, float f );
 
 /** *
  * @param mi         minimap2 index
@@ -272,7 +270,7 @@ int32_t mm_idx_cal_max_occ(const mm_idx_t *mi, float f);
  * @param n_a        length of a array (out)
  */
 mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const char** seqs, mm_tbuf_t* b,
-                           const mm_mapopt_t* opt, const char* qname, int64_t* n_a );
+                        const mm_mapopt_t* opt, const char* qname, int64_t* n_a );
 
 #ifdef __cplusplus
 }

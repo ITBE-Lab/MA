@@ -13,7 +13,7 @@
 
 #define FASTA_READER
 
-#include "container/nucSeq.h"
+#include "ma/container/nucSeq.h"
 
 #ifdef FASTA_READER
 class FastaDescriptor;
@@ -1284,7 +1284,7 @@ class Pack : public libMS::Container
             } // if
 
             // sequence is of size 0; we don't have to do anything
-            if(iBegin == iEnd)
+            if( iBegin == iEnd )
                 return;
             /* Do range-check for begin and end of extraction.
              */
@@ -1438,7 +1438,7 @@ class Pack : public libMS::Container
     std::shared_ptr<NucSeq> vColletionWithoutReverseStrandAsNucSeq( ) const
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
-        if(this->uiUnpackedSizeForwardStrand == 0)
+        if( this->uiUnpackedSizeForwardStrand == 0 )
             return pRet;
         vExtractSubsection( 0, uiStartOfReverseStrand( ),
                             *pRet ); // get the forward strand

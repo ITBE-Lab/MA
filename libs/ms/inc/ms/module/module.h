@@ -6,9 +6,9 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "container/container.h"
-#include "threadPool.h"
-#include "util/parameter.h"
+#include "ms/container/container.h"
+#include "util/threadPool.h"
+#include "ms/util/parameter.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #ifdef WITH_PYTHON

@@ -3,9 +3,9 @@
  */
 #pragma once
 
-#include "container/sv_db/pool_container.h"
-#include "module/needlemanWunsch.h"
-#include "module/sweepSvJumps.h"
+#include "msv/container/sv_db/pool_container.h"
+#include "ms/module/needlemanWunsch.h"
+#include "msv/module/sweepSvJumps.h"
 
 namespace libMSV
 {

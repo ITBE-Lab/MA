@@ -130,7 +130,7 @@ else()
 endif()
 
 configure_file( # @todo so far this only triggers during configure not at build time
-    inc/util/version.h.in
+    inc/ms/util/version.h.in
     ${CMAKE_BINARY_DIR}/generated/version.h
 )
 target_include_directories(MS PUBLIC ${CMAKE_BINARY_DIR}/generated)

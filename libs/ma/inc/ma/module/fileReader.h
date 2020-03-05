@@ -6,10 +6,10 @@
 #ifndef FILE_READER_H
 #define FILE_READER_H
 
-#include "container/nucSeq.h"
-#include "module/cyclic_queue_modules.h"
-#include "module/module.h"
-#include "support.h"
+#include "ma/container/nucSeq.h"
+#include "ms/module/cyclic_queue_modules.h"
+#include "ms/module/module.h"
+#include "util/support.h"
 
 
 #ifdef WITH_ZLIB

@@ -2,15 +2,14 @@
  * @file hashMapSeeding.cpp
  * @author Markus Schmidt
  */
-#include "module/hashMapSeeding.h"
+#include "ma/module/hashMapSeeding.h"
 #include <limits>
 
 using namespace libMA;
 using namespace libMS;
 
 
-std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2,
-                                                                       nucSeqIndex uiSeedSize )
+std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2, nucSeqIndex uiSeedSize )
 {
     std::unordered_multimap<std::string, size_t> xIndex;
 
@@ -21,8 +20,8 @@ std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& r
 } // method
 
 
-std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex,
-                                                 NucSeq& rQ1, nucSeqIndex uiSeedSize )
+std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex, NucSeq& rQ1,
+                                                 nucSeqIndex uiSeedSize )
 {
     auto pSeeds = std::make_shared<Seeds>( );
     for( size_t uiI = 0; uiI + uiSeedSize <= rQ1.length( ); uiI += 1 )

@@ -6,9 +6,9 @@
 #ifndef STRIP_OF_CONSIDERATION_H
 #define STRIP_OF_CONSIDERATION_H
 
-#include "container/segment.h"
-#include "container/soc.h"
-#include "module/module.h"
+#include "ma/container/segment.h"
+#include "ma/container/soc.h"
+#include "ms/module/module.h"
 #include <cmath>
 
 namespace libMA

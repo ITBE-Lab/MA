@@ -11,9 +11,9 @@
 #ifndef SUPPORT_H
 #define SUPPORT_H
 
-#include "debug.h"
-#include "exported.h"
-#include "system.h"
+#include "util/debug.h"
+#include "util/exported.h"
+#include "util/system.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>

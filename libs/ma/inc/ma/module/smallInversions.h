@@ -5,10 +5,10 @@
  */
 #pragma once
 
-#include "container/alignment.h"
+#include "ma/container/alignment.h"
 #include "kswcpp.h"
-#include "module/module.h"
-#include "module/needlemanWunsch.h"
+#include "ms/module/module.h"
+#include "ma/module/needlemanWunsch.h"
 #include <limits>
 
 namespace libMA

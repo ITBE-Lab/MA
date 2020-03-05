@@ -54,9 +54,9 @@ class WKBPoint
         initHeader( );
     } // constructor
 
-    WKBPoint( double fX, double fY ) : WKBPoint()
+    WKBPoint( double fX, double fY ) : WKBPoint( )
     {
-        setPoint(0, fX, fY);
+        setPoint( 0, fX, fY );
     } // constructor
 
     inline void set( size_t uiPos, uint8_t uiData )
@@ -292,11 +292,11 @@ template <typename T> class WKBRectangle : public WKBPolygon<5>
 
 typedef WKBRectangle<uint64_t> WKBUint64Rectangle;
 
-/// 
+///
 inline std::ostream& operator<<( std::ostream& xOS, const WKBUint64Rectangle& xRectWKB )
 {
     const auto xRect = xRectWKB.getRect( );
-	xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
+    xOS << std::dec << "Rectangle: x: " << xRect.xXAxis << " y: " << xRect.xYAxis << std::endl;
     xOS << "WKBPolygon: ";
     for( auto uiI : xRectWKB.aData )
         xOS << std::hex << (int)uiI << " ";

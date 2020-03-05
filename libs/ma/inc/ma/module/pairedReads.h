@@ -6,8 +6,8 @@
 #ifndef PAIRED_READS_H
 #define PAIRED_READS_H
 
-#include "container/alignment.h"
-#include "module/module.h"
+#include "ma/container/alignment.h"
+#include "ms/module/module.h"
 #include <cmath>
 
 namespace libMA

@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include "container/svJump.h"
-#include "container/sv_db/tables/pairedRead.h"
-#include "container/sv_db/tables/read.h"
-#include "container/sv_db/tables/sequencer.h"
-#include "module/get_inserter_container_module.h"
+#include "msv/container/svJump.h"
+#include "msv/container/sv_db/tables/pairedRead.h"
+#include "msv/container/sv_db/tables/read.h"
+#include "msv/container/sv_db/tables/sequencer.h"
+#include "msv/module/get_inserter_container_module.h"
 
 namespace libMSV
 {

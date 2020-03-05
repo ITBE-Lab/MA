@@ -6,13 +6,13 @@
  */
 #pragma once
 
-#include "container/pack.h"
-#include "container/svJump.h"
-#include "container/sv_db/pool_container.h"
-#include "geom.h"
+#include "msv/container/pack.h"
+#include "msv/container/svJump.h"
+#include "msv/container/sv_db/pool_container.h"
+#include "util/geom.h"
 #include "sql_api.h"
-#include "system.h"
-#include "threadPool.h"
+#include "util/system.h"
+#include "util/threadPool.h"
 #include "wkb_spatial.h"
 #include <csignal>
 #include <string>

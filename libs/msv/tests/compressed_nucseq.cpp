@@ -1,13 +1,13 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#include "container/nucSeq.h"
+#include "ma/container/nucSeq.h"
 #include <iostream>
 #include <time.h>
 
+#include <db_con_pool.h>
 #include <mysql_con.h>
 #include <sql_api.h>
-#include <db_con_pool.h>
 
 using namespace libMSV;
 
@@ -84,7 +84,7 @@ void databaseTest( )
         pDBCon,
         xCompNucSeqTableDef ); //
     xTestTable.deleteAllRows( ); // clear the table
-    //using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
+    // using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
 
     std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs;
     for( size_t uiItr = 0; uiItr < 1000; uiItr++ )
@@ -122,16 +122,15 @@ void databaseTest( )
 #endif
 } // function
 
-void bulkInsertTest()
+void bulkInsertTest( )
 {
     double dLibIncrTotalTime = 0;
     double dAutoTotalTime = 0;
     for( int a = 0; a < 10; a++ )
         doNoExcept( [&] {
-            json xTestTableLibIncrDef =
-                json{{TABLE_NAME, "TEST_TABLE_LIB_INCR"},
-                     {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "read"}}}},
-                     /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+            json xTestTableLibIncrDef = json{{TABLE_NAME, "TEST_TABLE_LIB_INCR"},
+                                             {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "read"}}}},
+                                             /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
 
             json xTestTableForeKeyDef =
                 json{{TABLE_NAME, "TEST_TABLE_FOREIGN_KEY"},
@@ -168,7 +167,8 @@ void bulkInsertTest()
                                                               int,
                                                               std::shared_ptr<CompressedNucSeq>>
                                         xPoolTable( pDBCon, xTestTableLibIncrDef );
-                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<MySQLConDB>, PriKeyDefaultType,
+                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<MySQLConDB>,
+                                                              PriKeyDefaultType,
                                                               PriKeyDefaultType>
                                         xPoolTableForeignKey( pDBCon, xTestTableForeKeyDef );
                                     auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
@@ -184,7 +184,7 @@ void bulkInsertTest()
                                                     i * 2, makeSharedCompNucSeq( *vCompNucSeqs1[ i ] ) );
                                                 auto uiPriKey2 = xBulkInserter->insert(
                                                     i * 2, makeSharedCompNucSeq( *vCompNucSeqs2[ i ] ) );
-                                                //xBulkInserter2->insert( uiPriKey1, uiPriKey2 );
+                                                // xBulkInserter2->insert( uiPriKey1, uiPriKey2 );
                                                 // xVerificationMap[ uiPriKey ] = i * 2;
                                             }
                                             std::cout << "Finished inserting via BulkInserter LibIncr .... "
@@ -218,8 +218,7 @@ void bulkInsertTest()
                                     SQLTableWithAutoPriKey<PooledSQLDBCon<MySQLConDB>,
                                                            int,
                                                            std::shared_ptr<CompressedNucSeq>>
-                                        xPoolTable(
-                                        pDBCon, xTestTableAutoDef );
+                                        xPoolTable( pDBCon, xTestTableAutoDef );
                                     auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
 
                                     // xPoolTable.insertNonSafe( 2, nullptr );

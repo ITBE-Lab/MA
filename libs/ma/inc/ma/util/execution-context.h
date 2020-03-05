@@ -1,7 +1,7 @@
 #include <iomanip> // for std::setw
 
-#include "util/export.h"
-#include "util/parameter.h"
+#include "ma/util/export.h"
+#include "ms/util/parameter.h"
 
 #undef snprintf // required under MSVC
 // Documentation: https://github.com/nlohmann/json

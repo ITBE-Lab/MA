@@ -1,10 +1,10 @@
-#include "container/sv_db/query_objects/readInserter.h"
+#include "msv/container/sv_db/query_objects/readInserter.h"
 
 using namespace libMSV;
 
 #ifdef WITH_PYTHON
 
-#include "container/sv_db/py_db_conf.h"
+#include "ms/container/sv_db/py_db_conf.h"
 
 
 void exportReadInserter( py::module& rxPyModuleId )

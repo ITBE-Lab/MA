@@ -3,9 +3,9 @@
  * @author Arne Kutzner
  * @note @todo we should think about using the GZ stream here as well...
  */
-#include "container/pack.h"
-#include "container/nucSeq.h"
-#include "util/pybind11.h"
+#include "ma/container/pack.h"
+#include "ma/container/nucSeq.h"
+#include "ms/util/pybind11.h"
 
 using namespace libMA;
 

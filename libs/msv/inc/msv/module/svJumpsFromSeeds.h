@@ -5,15 +5,15 @@
  */
 #pragma once
 
-#include "container/segment.h"
-#include "container/svJump.h"
-#include "container/sv_db/tables/svJump.h"
-#include "module/binarySeeding.h"
-#include "module/harmonization.h"
-#include "module/hashMapSeeding.h"
-#include "module/module.h"
-#include "module/needlemanWunsch.h"
-#include "util/statisticSequenceAnalysis.h"
+#include "ma/container/segment.h"
+#include "msv/container/svJump.h"
+#include "msv/container/sv_db/tables/svJump.h"
+#include "ma/module/binarySeeding.h"
+#include "ma/module/harmonization.h"
+#include "ma/module/hashMapSeeding.h"
+#include "ms/module/module.h"
+#include "ma/module/needlemanWunsch.h"
+#include "msv/util/statisticSequenceAnalysis.h"
 
 namespace libMSV
 {

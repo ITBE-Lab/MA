@@ -6,7 +6,7 @@
 #ifndef INTERVALTREE_H
 #define INTERVALTREE_H
 
-#include "container/fMIndex.h"
+#include "ma/container/fMIndex.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>

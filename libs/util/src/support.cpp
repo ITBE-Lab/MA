@@ -18,8 +18,8 @@
 #include <sys/types.h>
 #include <vector>
 
+#include "util/support.h"
 #include <stdexcept>
-#include "support.h"
 /* Constructs the full file name for some prefix, suffix combination.
  * Returns by value for convenience purposes.
  */

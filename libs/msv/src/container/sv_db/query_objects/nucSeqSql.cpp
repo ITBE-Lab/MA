@@ -1,10 +1,10 @@
-#include "container/sv_db/query_objects/nucSeqSql.h"
+#include "msv/container/sv_db/query_objects/nucSeqSql.h"
 
 using namespace libMSV;
 
 #ifdef WITH_PYTHON
 
-#include "container/sv_db/py_db_conf.h"
+#include "ms/container/sv_db/py_db_conf.h"
 
 void exportNucSeqSql( py::module& rxPyModuleId )
 {

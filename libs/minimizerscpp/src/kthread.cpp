@@ -7,8 +7,8 @@
 #ifdef USE_STL
 #include <condition_variable>
 #include <mutex>
-#include <vector>
 #include <thread>
+#include <vector>
 #else
 #include <pthread.h>
 #endif
@@ -223,9 +223,9 @@ static void* ktp_worker( void* data )
         } // scope lock_guard
     } // while
 #ifdef USE_STL
-	return 0;
+    return 0;
 #else
-	pthread_exit(0);
+    pthread_exit( 0 );
 #endif
 } // function
 

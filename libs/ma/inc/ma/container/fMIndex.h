@@ -6,9 +6,9 @@
 #ifndef FM_INDEX_H
 #define FM_INDEX_H
 
-#include "container/bwt_large.h"
-#include "container/is.h"
-#include "container/pack.h"
+#include "ma/container/bwt_large.h"
+#include "ma/container/is.h"
+#include "ma/container/pack.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <chrono> // time required for temporary filename construction

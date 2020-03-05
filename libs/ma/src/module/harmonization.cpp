@@ -2,15 +2,14 @@
  * @file harmonization.cpp
  * @author Markus Schmidt
  */
-#include "module/harmonization.h"
-#include "module/stripOfConsideration.h"
-#include "util/pybind11.h"
+#include "ma/module/harmonization.h"
+#include "ma/module/stripOfConsideration.h"
+#include "ms/util/pybind11.h"
 #if USE_RANSAC == 1
-#include "sample_consensus/test_ransac.h"
+#include "ma/sample_consensus/test_ransac.h"
 #endif
 using namespace libMA;
 using namespace libMS;
-#include "util/pybind11.h"
 
 std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>& pIn ) const
 {

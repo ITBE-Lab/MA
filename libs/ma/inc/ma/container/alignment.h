@@ -7,7 +7,7 @@
 #ifndef ALIGNMENT_H
 #define ALIGNMENT_H
 
-#include "container/segment.h"
+#include "ma/container/segment.h"
 
 #define MULTIPLE_SEGMENTS_IN_TEMPLATE 0x001
 #define SEGMENT_PROPERLY_ALIGNED 0x002
@@ -153,9 +153,9 @@ class Alignment : public libMS::Container
         return sRet;
     }
 
-    inline std::shared_ptr<Seeds> toSeeds() const
+    inline std::shared_ptr<Seeds> toSeeds( ) const
     {
-        auto pRet = std::make_shared<Seeds>();
+        auto pRet = std::make_shared<Seeds>( );
         nucSeqIndex uiQ = uiBeginOnQuery;
         nucSeqIndex uiR = uiBeginOnRef;
         for( auto& rPair : data )
@@ -165,7 +165,7 @@ class Alignment : public libMS::Container
                 case MatchType::seed:
                 case MatchType::match:
                     // @todo make this work for rev strand alignments...
-                    pRet->emplace_back(uiQ, rPair.second, uiR, true );
+                    pRet->emplace_back( uiQ, rPair.second, uiR, true );
                 case MatchType::missmatch: // seed and match case continue till the break
                     uiQ += rPair.second;
                     uiR += rPair.second;
@@ -323,7 +323,7 @@ class Alignment : public libMS::Container
     void invertSuccessiveInserionAndDeletion( )
     {
         // using -1 in loop therefore start at 1 instead of 0
-        for( size_t uiI = 1; uiI < this->data.size(); uiI++ )
+        for( size_t uiI = 1; uiI < this->data.size( ); uiI++ )
         {
             if( ( this->data[ uiI - 1 ].first == MatchType::insertion &&
                   this->data[ uiI ].first == MatchType::deletion ) ||

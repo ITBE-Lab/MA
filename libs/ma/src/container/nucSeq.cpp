@@ -6,8 +6,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "container/nucSeq.h"
-#include "util/pybind11.h"
+#include "ma/container/nucSeq.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 /* The translation table for columns.
@@ -50,8 +50,7 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def_readwrite( "id", &NucSeq::iId );
 
     // register return values of vectors of nucseqs
-    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" )
-        .def( py::init<>( ) );
+    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" ).def( py::init<>( ) );
 
     // export the NucSeqSql class
     py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( rxPyModuleId, "NucSeqSql" )

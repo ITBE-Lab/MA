@@ -3,8 +3,8 @@
  * @brief implements FilterSeedsByArea
  * @author Markus Schmidt
  */
-#include "module/module.h"
-#include "container/segment.h"
+#include "ms/module/module.h"
+#include "ma/container/segment.h"
 namespace libMS
 {
 

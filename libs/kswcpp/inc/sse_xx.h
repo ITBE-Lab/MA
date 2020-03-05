@@ -216,8 +216,7 @@ template <int INSTR, typename TP_SELF> struct alignas( 16 ) Vec_m128i_base
 
 
 /* SIMD Vector of 16 int8_t (signed 8 bit) values */
-template <int INSTR>
-struct alignas( 16 ) Vec_m128i_16_int8_t : public Vec_m128i_base<INSTR, Vec_m128i_16_int8_t<INSTR>>
+template <int INSTR> struct alignas( 16 ) Vec_m128i_16_int8_t : public Vec_m128i_base<INSTR, Vec_m128i_16_int8_t<INSTR>>
 {
     static constexpr size_t SIZE = 16; // 16 elements of type int8_t
     typedef int8_t TP_ELEMENT;
@@ -258,8 +257,8 @@ struct alignas( 16 ) Vec_m128i_16_int8_t : public Vec_m128i_base<INSTR, Vec_m128
         else
         { // Plain SSE2
             __m128i mask = _mm_cmpgt_epi8( this->val, TP_SUPER::unwrap( vec ) );
-            return Vec_m128i_16_int8_t( _mm_or_si128(
-                _mm_and_si128( mask, this->val ), _mm_andnot_si128( mask, TP_SUPER::unwrap( vec ) ) ) );
+            return Vec_m128i_16_int8_t(
+                _mm_or_si128( _mm_and_si128( mask, this->val ), _mm_andnot_si128( mask, TP_SUPER::unwrap( vec ) ) ) );
         } // else
     } // method
 
@@ -276,8 +275,8 @@ struct alignas( 16 ) Vec_m128i_16_int8_t : public Vec_m128i_base<INSTR, Vec_m128
         else
         { // Plain SSE2
             __m128i mask = _mm_cmplt_epi8( this->val, TP_SUPER::unwrap( vec ) );
-            return Vec_m128i_16_int8_t( _mm_or_si128(
-                _mm_and_si128( mask, this->val ), _mm_andnot_si128( mask, TP_SUPER::unwrap( vec ) ) ) );
+            return Vec_m128i_16_int8_t(
+                _mm_or_si128( _mm_and_si128( mask, this->val ), _mm_andnot_si128( mask, TP_SUPER::unwrap( vec ) ) ) );
         } // else
     } // method
 
@@ -312,8 +311,7 @@ struct alignas( 16 ) Vec_m128i_16_int8_t : public Vec_m128i_base<INSTR, Vec_m128
 
 
 /* Vector of 8 signed 16 bit values */
-template <int INSTR>
-struct alignas( 16 ) Vec_m128i_8_int16_t : public Vec_m128i_base<INSTR, Vec_m128i_8_int16_t<INSTR>>
+template <int INSTR> struct alignas( 16 ) Vec_m128i_8_int16_t : public Vec_m128i_base<INSTR, Vec_m128i_8_int16_t<INSTR>>
 {
     static constexpr size_t SIZE = 8; // 8 times 16 bit
     typedef int16_t TP_ELEMENT;
@@ -332,14 +330,12 @@ struct alignas( 16 ) Vec_m128i_8_int16_t : public Vec_m128i_base<INSTR, Vec_m128
     /* Dump the vector std::cout */
     void dump( void )
     {
-        std::cout << (int16_t)_mm_extract_epi16( this->val, 0 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 1 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 2 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 3 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 4 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 5 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 6 ) << ", "
-                  << (int16_t)_mm_extract_epi16( this->val, 7 ) << ", " << std::endl;
+        std::cout << (int16_t)_mm_extract_epi16( this->val, 0 ) << ", " << (int16_t)_mm_extract_epi16( this->val, 1 )
+                  << ", " << (int16_t)_mm_extract_epi16( this->val, 2 ) << ", "
+                  << (int16_t)_mm_extract_epi16( this->val, 3 ) << ", " << (int16_t)_mm_extract_epi16( this->val, 4 )
+                  << ", " << (int16_t)_mm_extract_epi16( this->val, 5 ) << ", "
+                  << (int16_t)_mm_extract_epi16( this->val, 6 ) << ", " << (int16_t)_mm_extract_epi16( this->val, 7 )
+                  << ", " << std::endl;
     } // method
 
 
@@ -376,12 +372,12 @@ struct alignas( 16 ) Vec_m128i_8_int16_t : public Vec_m128i_base<INSTR, Vec_m128
            */
             // Load the 8 int8_t values via loading a single 64 bit float value
             __m128i vZero = _mm_setzero_si128( );
-            const __m128i v8Bytes = _mm_castpd_si128(
-                _mm_loadl_pd( _mm_castsi128_pd( vZero ), reinterpret_cast<double const*>( pArr ) ) );
+            const __m128i v8Bytes =
+                _mm_castpd_si128( _mm_loadl_pd( _mm_castsi128_pd( vZero ), reinterpret_cast<double const*>( pArr ) ) );
             // Shuffle the bytes to the appropriate positions with respect to int16_t
-            const __m128i vShuffle = _mm_setr_epi8(
-                INT8_C( 0 ), 0x80U, INT8_C( 1 ), 0x80U, INT8_C( 2 ), 0x80U, INT8_C( 3 ), 0x80U,
-                INT8_C( 4 ), 0x80U, INT8_C( 5 ), 0x80U, INT8_C( 6 ), 0x80U, INT8_C( 7 ), 0x80U );
+            const __m128i vShuffle =
+                _mm_setr_epi8( INT8_C( 0 ), 0x80U, INT8_C( 1 ), 0x80U, INT8_C( 2 ), 0x80U, INT8_C( 3 ), 0x80U,
+                               INT8_C( 4 ), 0x80U, INT8_C( 5 ), 0x80U, INT8_C( 6 ), 0x80U, INT8_C( 7 ), 0x80U );
             const __m128i vShuff8Bytes = _mm_shuffle_epi8( v8Bytes, vShuffle );
             // if greater 127, it was a negative value (255 = -1, ... , 128 = - 128)
             const __m128i vCompValues = _mm_set1_epi16( INT8_MAX );
@@ -395,8 +391,8 @@ struct alignas( 16 ) Vec_m128i_8_int16_t : public Vec_m128i_base<INSTR, Vec_m128
         else
 #endif
         { /* Plain SSE2 */
-            return Vec_m128i_8_int16_t( _mm_setr_epi16( pArr[ 0 ], pArr[ 1 ], pArr[ 2 ], pArr[ 3 ],
-                                                        pArr[ 4 ], pArr[ 5 ], pArr[ 6 ], pArr[ 7 ] ) );
+            return Vec_m128i_8_int16_t( _mm_setr_epi16( pArr[ 0 ], pArr[ 1 ], pArr[ 2 ], pArr[ 3 ], pArr[ 4 ],
+                                                        pArr[ 5 ], pArr[ 6 ], pArr[ 7 ] ) );
         } // else
     } // method
 
@@ -417,8 +413,7 @@ struct alignas( 16 ) Vec_m128i_8_int16_t : public Vec_m128i_base<INSTR, Vec_m128
 
 
 /* Vector of 4 signed 32 bit values */
-template <int INSTR>
-struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i_base<INSTR, Vec_m128i_4_int32_t<INSTR>>
+template <int INSTR> struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i_base<INSTR, Vec_m128i_4_int32_t<INSTR>>
 {
     static constexpr size_t SIZE = 4; // 4 times 32 bit (int32_t)
     typedef int32_t TP_ELEMENT;
@@ -437,9 +432,8 @@ struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i_base<INSTR, Vec_m128
     /* For debuging ... */
     void dump( void )
     {
-        std::cout << _mm_extract_epi32( this->val, 0 ) << ", " << _mm_extract_epi32( this->val, 1 )
-                  << ", " << _mm_extract_epi32( this->val, 2 ) << ", "
-                  << _mm_extract_epi32( this->val, 3 ) << std::endl;
+        std::cout << _mm_extract_epi32( this->val, 0 ) << ", " << _mm_extract_epi32( this->val, 1 ) << ", "
+                  << _mm_extract_epi32( this->val, 2 ) << ", " << _mm_extract_epi32( this->val, 3 ) << std::endl;
     } // method
 
 
@@ -459,8 +453,8 @@ struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i_base<INSTR, Vec_m128
 
 
     /* Initializes the 4 vector elements with the 4 arguments */
-    Vc_INTRINSIC Vec_m128i_4_int32_t& set4( const int32_t iVal0, const int32_t iVal1,
-                                            const int32_t iVal2, const int32_t iVal3 )
+    Vc_INTRINSIC Vec_m128i_4_int32_t& set4( const int32_t iVal0, const int32_t iVal1, const int32_t iVal2,
+                                            const int32_t iVal3 )
     {
         this->val = _mm_setr_epi32( iVal0, iVal1, iVal2, iVal3 );
         return static_cast<Vec_m128i_4_int32_t&>( *this );
@@ -478,16 +472,16 @@ struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i_base<INSTR, Vec_m128
            * Load the 4 int8_t values via loading a single 32 bit integer */
             const __m128i v4Bytes = _mm_cvtsi32_si128( *( reinterpret_cast<const int32_t*>( pArr ) ) );
             /* Shuffle the bytes to the correct positions */
-            const __m128i vShuffle = _mm_setr_epi8( 0, 0x80U, 0x80U, 0x80U, 1, 0x80U, 0x80U, 0x80U, 2,
-                                                    0x80U, 0x80U, 0x80U, 3, 0x80U, 0x80U, 0x80U );
+            const __m128i vShuffle = _mm_setr_epi8( 0, 0x80U, 0x80U, 0x80U, 1, 0x80U, 0x80U, 0x80U, 2, 0x80U, 0x80U,
+                                                    0x80U, 3, 0x80U, 0x80U, 0x80U );
             const __m128i vShuff4Bytes = _mm_shuffle_epi8( v4Bytes, vShuffle );
             /* if greater 127, it was a negative value (255 = -1, ... , 128 = - 128) */
             const __m128i vCompValues = _mm_setr_epi32( 0x7F, 0x7F, 0x7F, 0x7F );
             /* v_mask = 1 for the values greater 127, all other 0 */
             const __m128i vMask = _mm_cmpgt_epi32( vShuff4Bytes, vCompValues );
             /* expand negative values to 32 bit size */
-            const __m128i vNegValues = _mm_or_si128(
-                vShuff4Bytes, _mm_setr_epi32( 0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00 ) );
+            const __m128i vNegValues =
+                _mm_or_si128( vShuff4Bytes, _mm_setr_epi32( 0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00 ) );
 
             /* blend positive and negative values using the mask */
             return Vec_m128i_4_int32_t( vShuff4Bytes ).blendv( vNegValues, vMask );
@@ -527,8 +521,8 @@ struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i_base<INSTR, Vec_m128
         { // Plain SSE2
             __m128i mask = _mm_cmpgt_epi32( this->val, TP_SUPER::unwrap( vec ) );
             // ssp_logical_bitwise_select_SSE2
-            return Vec_m128i_4_int32_t( _mm_or_si128(
-                _mm_and_si128( mask, this->val ), _mm_andnot_si128( mask, TP_SUPER::unwrap( vec ) ) ) );
+            return Vec_m128i_4_int32_t(
+                _mm_or_si128( _mm_and_si128( mask, this->val ), _mm_andnot_si128( mask, TP_SUPER::unwrap( vec ) ) ) );
         } // else
     } // method
 

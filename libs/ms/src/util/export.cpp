@@ -2,10 +2,10 @@
  * @file export.cpp
  * @author Markus Schmidt
  */
-#include "util/parameter.h"
-#include "container/container.h"
-#include "container/sv_db/pool_container.h"
-#include "module/module.h"
+#include "ms/container/container.h"
+#include "ms/container/sv_db/pool_container.h"
+#include "ms/module/module.h"
+#include "ms/util/parameter.h"
 
 using namespace libMS;
 

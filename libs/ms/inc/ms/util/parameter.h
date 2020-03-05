@@ -1,7 +1,7 @@
 #pragma once
 
-#include "exported.h"
-#include "support.h"
+#include "util/exported.h"
+#include "util/support.h"
 #include <stdexcept>
 
 #if defined( __GNUC__ ) && ( __GNUC__ < 8 )

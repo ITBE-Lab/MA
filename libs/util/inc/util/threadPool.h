@@ -75,6 +75,8 @@
 
 
 
+
+
     // the constructor just launches some amount of workers
     inline ThreadPool::ThreadPool(size_t threads)
         :   stop(false)
@@ -114,6 +116,8 @@
                 std::bind(std::forward<F>(f), std::forward<Args>(args)...)
             );
             
+
+
 
 
 
@@ -230,8 +234,7 @@ class ThreadPool
     /* add new work item to the pool
      */
     template <class F, class... Args>
-    auto enqueue( F &&f, Args &&... args )
-        -> std::future<typename std::result_of<F( size_t, Args... )>::type>
+    auto enqueue( F&& f, Args&&... args ) -> std::future<typename std::result_of<F( size_t, Args... )>::type>
     {
         typedef typename std::result_of<F( size_t, Args... )>::type return_type;
 
@@ -245,8 +248,8 @@ class ThreadPool
         /* std::placeholders::_1 and represents some future value (this value will be only known
          * during function definition.
          */
-        auto task = std::make_shared<std::packaged_task<return_type( size_t )>>( std::bind(
-            std::forward<F>( f ), std::placeholders::_1, std::forward<Args>( args )... ) );
+        auto task = std::make_shared<std::packaged_task<return_type( size_t )>>(
+            std::bind( std::forward<F>( f ), std::placeholders::_1, std::forward<Args>( args )... ) );
 
         /* The future outcome of the task. The caller will be later blocked until this result will
          * be available.
@@ -417,8 +420,7 @@ class ThreadPoolAllowingRecursiveEnqueue
     /* add new work item to the pool
      */
     template <class F, class... Args>
-    auto enqueue( F &&f, Args &&... args )
-        -> std::future<typename std::result_of<F( size_t, Args... )>::type>
+    auto enqueue( F&& f, Args&&... args ) -> std::future<typename std::result_of<F( size_t, Args... )>::type>
     {
         typedef typename std::result_of<F( size_t, Args... )>::type return_type;
 
@@ -426,8 +428,8 @@ class ThreadPoolAllowingRecursiveEnqueue
          * std::placeholders::_1 and represents some future value
          * (this value will be only known during function definition.
          */
-        auto task = std::make_shared<std::packaged_task<return_type( size_t )>>( std::bind(
-            std::forward<F>( f ), std::placeholders::_1, std::forward<Args>( args )... ) );
+        auto task = std::make_shared<std::packaged_task<return_type( size_t )>>(
+            std::bind( std::forward<F>( f ), std::placeholders::_1, std::forward<Args>( args )... ) );
 
         /* The future outcome of the task. The caller will be later blocked until this result will
          * be available.

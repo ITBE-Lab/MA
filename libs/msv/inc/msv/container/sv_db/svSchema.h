@@ -5,9 +5,9 @@
  */
 #pragma once
 
-#include "container/pack.h"
-#include "container/sv_db/pool_container.h"
-#include "module/module.h"
+#include "msv/container/pack.h"
+#include "msv/container/sv_db/pool_container.h"
+#include "ms/module/module.h"
 
 namespace libMSV
 {

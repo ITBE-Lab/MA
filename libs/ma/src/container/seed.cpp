@@ -2,9 +2,9 @@
  * @file seed.cpp
  * @author Markus Schmidt
  */
-#include "container/seed.h"
-#include "container/pack.h"
-#include "util/pybind11.h"
+#include "ma/container/seed.h"
+#include "ma/container/pack.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 #ifdef _MSC_VER

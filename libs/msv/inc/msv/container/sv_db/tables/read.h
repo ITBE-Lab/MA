@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include "container/svJump.h"
+#include "msv/container/svJump.h"
 #include "sql_api.h" // NEW DATABASE INTERFACE
 
 namespace libMSV

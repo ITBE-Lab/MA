@@ -1,17 +1,17 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#include "container/nucSeq.h"
+#include "ma/container/nucSeq.h"
 #include <iostream>
 #include <time.h>
 
+#include <db_con_pool.h>
 #include <mysql_con.h>
 #include <sql_api.h>
-#include <db_con_pool.h>
 
-#include "container/sv_db/tables/pairedRead.h"
-#include "container/sv_db/tables/read.h"
-#include "container/sv_db/tables/sequencer.h"
+#include "msv/container/sv_db/tables/pairedRead.h"
+#include "msv/container/sv_db/tables/read.h"
+#include "msv/container/sv_db/tables/sequencer.h"
 
 using namespace libMSV;
 

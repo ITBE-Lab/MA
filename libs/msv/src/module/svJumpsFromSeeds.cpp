@@ -2,8 +2,8 @@
  * @file svJumpsFromSeeds.cpp
  * @author Markus Schmidt
  */
-#include "module/svJumpsFromSeeds.h"
-#include "module/module.h"
+#include "msv/module/svJumpsFromSeeds.h"
+#include "ms/module/module.h"
 #include <cmath>
 #include <csignal>
 

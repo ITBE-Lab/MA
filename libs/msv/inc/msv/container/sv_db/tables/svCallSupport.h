@@ -7,7 +7,7 @@
 #pragma once
 
 #include "sql_api.h"
-#include "container/svJump.h"
+#include "msv/container/svJump.h"
 
 namespace libMSV
 {

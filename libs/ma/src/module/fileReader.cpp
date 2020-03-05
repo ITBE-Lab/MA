@@ -2,8 +2,8 @@
  * @file fileReader.cpp
  * @author Markus Schmidt
  */
-#include "module/fileReader.h"
-#include "util/pybind11.h"
+#include "ma/module/fileReader.h"
+#include "ms/util/pybind11.h"
 #include <cctype>
 
 using namespace libMA;

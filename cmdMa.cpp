@@ -26,15 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "container/fMIndex.h"
-#include "container/nucSeq.h"
-#include "container/pack.h"
-#include "debug.h"
-#include "module/fileReader.h"
-#include "module/fileWriter.h"
-#include "util/execution-context.h"
-#include "util/export.h"
-#include "version.h"
+#include "ma/container/fMIndex.h"
+#include "ma/container/nucSeq.h"
+#include "ma/container/pack.h"
+#include "ma/module/fileReader.h"
+#include "ma/module/fileWriter.h"
+#include "ma/util/export.h"
+#include "ms/util/execution-context.h"
+#include "ms/version.h"
+#include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <iostream>

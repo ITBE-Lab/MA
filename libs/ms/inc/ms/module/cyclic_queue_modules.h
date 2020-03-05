@@ -3,8 +3,8 @@
  * @brief Implements a modules that interact with a queue of containers.
  * @author Markus Schmidt
  */
-#include "container/cyclic_queue_container.h"
-#include "module/module.h"
+#include "ms/container/cyclic_queue_container.h"
+#include "ms/module/module.h"
 
 namespace libMS
 {

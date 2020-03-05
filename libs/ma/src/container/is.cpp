@@ -10,11 +10,10 @@
 
 typedef unsigned char ubyte_t;
 
-#define chr( i )                                                                                   \
-    ( cs == sizeof( int ) ? ( (const int *)T )[ i ] : ( (const unsigned char *)T )[ i ] )
+#define chr( i ) ( cs == sizeof( int ) ? ( (const int*)T )[ i ] : ( (const unsigned char*)T )[ i ] )
 
 /** @brief find the start or end of each bucket */
-static void getCounts( const unsigned char *T, int *C, int n, int k, int cs )
+static void getCounts( const unsigned char* T, int* C, int n, int k, int cs )
 {
     int i;
     for( i = 0; i < k; ++i )
@@ -22,7 +21,7 @@ static void getCounts( const unsigned char *T, int *C, int n, int k, int cs )
     for( i = 0; i < n; ++i )
         ++C[ chr( i ) ];
 }
-static void getBuckets( const int *C, int *B, int k, int end )
+static void getBuckets( const int* C, int* B, int k, int end )
 {
     int i, sum = 0;
     if( end )
@@ -44,7 +43,7 @@ static void getBuckets( const int *C, int *B, int k, int end )
 }
 
 /** @brief compute SA */
-static void induceSA( const unsigned char *T, int *SA, int *C, int *B, int n, int k, int cs )
+static void induceSA( const unsigned char* T, int* SA, int* C, int* B, int n, int k, int cs )
 {
     int *b, i, j;
     int c0, c1;
@@ -63,7 +62,7 @@ static void induceSA( const unsigned char *T, int *SA, int *C, int *B, int n, in
             --j;
             if( ( c0 = chr( j ) ) != c1 )
             {
-                B[ c1 ] = (int)( b - SA);
+                B[ c1 ] = (int)( b - SA );
                 b = SA + B[ c1 = c0 ];
             }
             *b++ = ( ( 0 < j ) && ( chr( j - 1 ) < c1 ) ) ? ~j : j;
@@ -94,7 +93,7 @@ static void induceSA( const unsigned char *T, int *SA, int *C, int *B, int n, in
  * find the suffix array SA of T[0..n-1] in {0..k-1}^n use a working
  * space (excluding T and SA) of at most 2n+O(1) for a constant alphabet
  */
-static int sais_main( const unsigned char *T, int *SA, int fs, int n, int k, int cs )
+static int sais_main( const unsigned char* T, int* SA, int fs, int n, int k, int cs )
 {
     int *C, *B, *RA;
     int i, j, c, m, p, q, plen, qlen, name;
@@ -108,7 +107,7 @@ static int sais_main( const unsigned char *T, int *SA, int fs, int n, int k, int
         C = SA + n;
         B = ( k <= ( fs - k ) ) ? C + k : C;
     }
-    else if( ( C = B = (int *)malloc( k * sizeof( int ) ) ) == NULL )
+    else if( ( C = B = (int*)malloc( k * sizeof( int ) ) ) == NULL )
         return -2;
     getCounts( T, C, n, k, cs );
     getBuckets( C, B, k, 1 ); /* find ends of buckets */
@@ -177,7 +176,7 @@ static int sais_main( const unsigned char *T, int *SA, int fs, int n, int k, int
             if( SA[ i ] != 0 )
                 RA[ j-- ] = SA[ i ] - 1;
         }
-        if( sais_main( (unsigned char *)RA, SA, fs + n - m * 2, m, name, sizeof( int ) ) != 0 )
+        if( sais_main( (unsigned char*)RA, SA, fs + n - m * 2, m, name, sizeof( int ) ) != 0 )
             return -2;
         for( i = n - 2, j = m - 1, c = 0, c1 = chr( n - 1 ); 0 <= i; --i, c1 = c0 )
         {
@@ -195,7 +194,7 @@ static int sais_main( const unsigned char *T, int *SA, int fs, int n, int k, int
         C = SA + n;
         B = ( k <= ( fs - k ) ) ? C + k : C;
     }
-    else if( ( C = B = (int *)malloc( k * sizeof( int ) ) ) == NULL )
+    else if( ( C = B = (int*)malloc( k * sizeof( int ) ) ) == NULL )
         return -2;
     /* put all left-most S characters into their buckets */
     getCounts( T, C, n, k, cs );
@@ -214,7 +213,7 @@ static int sais_main( const unsigned char *T, int *SA, int fs, int n, int k, int
 }
 
 
-int is_sa( const ubyte_t *T, int *SA, int n )
+int is_sa( const ubyte_t* T, int* SA, int n )
 {
     if( ( T == NULL ) || ( SA == NULL ) || ( n < 0 ) )
         return -1;
@@ -229,10 +228,10 @@ int is_sa( const ubyte_t *T, int *SA, int n )
 }
 
 
-int is_bwt( ubyte_t *T, int n )
+int is_bwt( ubyte_t* T, int n )
 {
     int *SA, i, primary = 0;
-    SA = (int *)calloc( n + 1, sizeof( int ) );
+    SA = (int*)calloc( n + 1, sizeof( int ) );
 
     if( is_sa( T, SA, n ) )
         return -1;

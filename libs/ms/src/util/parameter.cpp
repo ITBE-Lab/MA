@@ -1,4 +1,4 @@
-#include "util/parameter.h"
+#include "ms/util/parameter.h"
 #include <algorithm>
 
 template <> EXPORTED std::string genericStringToValue<std::string>( const std::string& sString )
@@ -23,12 +23,12 @@ template <> EXPORTED float genericStringToValue<float>( const std::string& sStri
 
 template <> EXPORTED short genericStringToValue<short>( const std::string& sString )
 {
-    return (short)stoi ( sString );
+    return (short)stoi( sString );
 } // function
 
 template <> EXPORTED uint64_t genericStringToValue<uint64_t>( const std::string& sString )
 {
-    return (uint64_t)stoull ( sString );
+    return (uint64_t)stoull( sString );
 } // function
 
 template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString )

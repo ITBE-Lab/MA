@@ -1,10 +1,10 @@
-#include "container/sv_db/query_objects/fetchCalls.h"
+#include "msv/container/sv_db/query_objects/fetchCalls.h"
 
 using namespace libMSV;
 
 #ifdef WITH_PYTHON
 
-#include "container/sv_db/py_db_conf.h"
+#include "ms/container/sv_db/py_db_conf.h"
 void exportCallsFromDb( py::module& rxPyModuleId )
 {
     // export the SvCallsFromDb class

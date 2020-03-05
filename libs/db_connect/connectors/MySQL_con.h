@@ -8,6 +8,5 @@
 
 #pragma once
 
-#include "mysql_core.h"  // core code for MySQL engine support
+#include "mysql_core.h" // core code for MySQL engine support
 #include "mysql_spatial.h" // spatial datatype support for MySQL
-

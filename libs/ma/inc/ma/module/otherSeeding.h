@@ -6,10 +6,10 @@
 #ifndef OTHER_SEEDING_H
 #define OTHER_SEEDING_H
 
-#include "container/segment.h"
-#include "module/module.h"
-#include "system.h"
-#include "threadPool.h"
+#include "ma/container/segment.h"
+#include "ms/module/module.h"
+#include "util/system.h"
+#include "util/threadPool.h"
 
 namespace libMA
 {

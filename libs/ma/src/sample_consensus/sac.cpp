@@ -30,7 +30,7 @@
 
 /** \author Radu Bogdan Rusu */
 
-#include <sample_consensus/sac.h>
+#include <ma/sample_consensus/sac.h>
 
 using namespace sample_consensus;
 
@@ -59,8 +59,7 @@ sensor_msgs::PointCloud SAC::getPointCloud( std::vector<int> indices )
         i_points.points[ i ].y = sac_model_->getCloud( )->points[ indices.at( i ) ].y;
         i_points.points[ i ].z = sac_model_->getCloud( )->points[ indices.at( i ) ].z;
         for( unsigned int d = 0; d < i_points.get_channels_size( ); d++ )
-            i_points.channels[ d ].values[ i ] =
-                sac_model_->getCloud( )->channels[ d ].values[ indices.at( i ) ];
+            i_points.channels[ d ].values[ i ] = sac_model_->getCloud( )->channels[ d ].values[ indices.at( i ) ];
     }
 
     return ( i_points );

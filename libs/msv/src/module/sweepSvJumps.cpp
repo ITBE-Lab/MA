@@ -2,8 +2,8 @@
  * @file sweepSvJumps.cpp
  * @author Markus Schmidt
  */
-#include "module/sweepSvJumps.h"
-#include "util/pybind11.h"
+#include "msv/module/sweepSvJumps.h"
+#include "ms/util/pybind11.h"
 
 using namespace libMSV;
 using namespace libMS;

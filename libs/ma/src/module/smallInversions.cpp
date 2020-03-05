@@ -2,7 +2,7 @@
  * @file smallInversions.cpp
  * @author Markus Schmidt
  */
-#include "module/smallInversions.h"
+#include "ma/module/smallInversions.h"
 
 
 using namespace libMA;

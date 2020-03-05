@@ -2,10 +2,10 @@
  * @file needlemanWunsch.cpp
  * @author Markus Schmidt
  */
-#include "module/needlemanWunsch.h"
+#include "ma/module/needlemanWunsch.h"
 
 #if OLD_KSW == 1
-#include "ksw/ksw2.h"
+#include "ma/ksw/ksw2.h"
 #endif
 
 #include <algorithm>
@@ -640,7 +640,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         return pRet;
     } // if
 #if DEBUG_LEVEL >= 2
-    std::cout << "Query length " << pQuery->length() << std::endl;
+    std::cout << "Query length " << pQuery->length( ) << std::endl;
     std::cout << "seedlist: (start_ref, end_ref; start_query, end_query, onForwardStrand)" << std::endl;
     for( Seed& rSeed : *pSeeds )
     {
@@ -655,7 +655,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
         {
             rxSeed.uiPosOnReference =
                 pRefPack->uiUnpackedSizeForwardStrand * 2 - ( rxSeed.uiPosOnReference + rxSeed.size( ) + 1 );
-            rxSeed.iStart = pQuery->length( ) - (rxSeed.end( ) - 1);
+            rxSeed.iStart = pQuery->length( ) - ( rxSeed.end( ) - 1 );
         } // if
 
     // Determine the query and reverence coverage of the seeds
@@ -903,8 +903,9 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
     auto pAlignment = std::make_shared<Alignment>( );
     Wrapper_ksw_extz_t ez;
     AlignedMemoryManager xMemoryManager;
-    KswCppParam<5> xParams( pGlobalParams->iMatch->get(), pGlobalParams->iMissMatch->get(), pGlobalParams->iGap->get(), pGlobalParams->iExtend->get(), pGlobalParams->iGap2->get(),
-                            pGlobalParams->iExtend2->get() );
+    KswCppParam<5> xParams( pGlobalParams->iMatch->get( ), pGlobalParams->iMissMatch->get( ),
+                            pGlobalParams->iGap->get( ), pGlobalParams->iExtend->get( ), pGlobalParams->iGap2->get( ),
+                            pGlobalParams->iExtend2->get( ) );
 
     ksw_simplified( (int)pQuery->length( ),
                     pQuery->pGetSequenceRef( ),
@@ -957,8 +958,9 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
     auto pAlignment = std::make_shared<Alignment>( );
     Wrapper_ksw_extz_t ez;
     AlignedMemoryManager xMemoryManager;
-    KswCppParam<5> xParams( pGlobalParams->iMatch->get(), pGlobalParams->iMissMatch->get(), pGlobalParams->iGap->get(), pGlobalParams->iExtend->get(), pGlobalParams->iGap2->get(),
-                            pGlobalParams->iExtend2->get() );
+    KswCppParam<5> xParams( pGlobalParams->iMatch->get( ), pGlobalParams->iMissMatch->get( ),
+                            pGlobalParams->iGap->get( ), pGlobalParams->iExtend->get( ), pGlobalParams->iGap2->get( ),
+                            pGlobalParams->iExtend2->get( ) );
 
     if( bRev )
     {

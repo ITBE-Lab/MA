@@ -1,6 +1,6 @@
 
 
-#include "container/minimizer_index.h"
+#include "ma/container/minimizer_index.h"
 using namespace minimizer;
 
 #ifdef WITH_PYTHON

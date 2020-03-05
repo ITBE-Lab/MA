@@ -4,7 +4,7 @@
  * @author Markus Schmidt
  */
 #include "geom.h"
-#include "container/nucSeq.h"
+#include "ma/container/nucSeq.h"
 
 #pragma once
 

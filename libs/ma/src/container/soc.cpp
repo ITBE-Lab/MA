@@ -2,8 +2,8 @@
  * @file segment.cpp
  * @author Markus Schmidt
  */
-#include "container/soc.h"
-#include "util/pybind11.h"
+#include "ma/container/soc.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 #ifdef WITH_PYTHON
@@ -25,7 +25,8 @@ void exportSoC( py::module& rxPyModuleId )
 #endif
     py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "seedVector", "docstr" );
     // export the SoCPriorityQueue class
-    py::class_<SoCPriorityQueue, libMS::Container, std::shared_ptr<SoCPriorityQueue>>( rxPyModuleId, "SoCPriorityQueue" )
+    py::class_<SoCPriorityQueue, libMS::Container, std::shared_ptr<SoCPriorityQueue>>( rxPyModuleId,
+                                                                                       "SoCPriorityQueue" )
         .def( py::init<>( ) )
         .def( "empty", &SoCPriorityQueue::empty )
         .def( "pop", &SoCPriorityQueue::pop )

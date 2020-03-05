@@ -6,9 +6,9 @@
 #ifndef BINARY_SEEDING_H
 #define BINARY_SEEDING_H
 
-#include "container/segment.h"
-#include "module/module.h"
-#include "system.h"
+#include "ma/container/segment.h"
+#include "ms/module/module.h"
+#include "util/system.h"
 
 namespace libMA
 {

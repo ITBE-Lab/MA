@@ -2,11 +2,11 @@
  * @file export.cpp
  * @author Markus Schmidt
  */
-#include "util/export.h"
-#include "util/execution-context.h"
-#include "util/parameter.h"
-#include "container/soc.h"
-#include "container/minimizer_index.h"
+#include "ma/util/export.h"
+#include "ma/container/minimizer_index.h"
+#include "ma/container/soc.h"
+#include "ma/util/execution-context.h"
+#include "ms/util/parameter.h"
 
 using namespace libMA;
 

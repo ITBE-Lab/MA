@@ -3,7 +3,7 @@
  * @brief implements two futher seeding techniques for texting purpose.
  * @author Markus Schmidt
  */
-#include "module/otherSeeding.h"
+#include "ma/module/otherSeeding.h"
 
 using namespace libMA;
 using namespace libMS;

@@ -8,9 +8,9 @@
 
 #define OLD_KSW ( 0 )
 
-#include "container/alignment.h"
+#include "ma/container/alignment.h"
 #include "kswcpp.h"
-#include "module/module.h"
+#include "ms/module/module.h"
 
 
 namespace libMA

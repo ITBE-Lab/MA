@@ -8,7 +8,7 @@
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
-#include "module/module.h"
+#include "ms/module/module.h"
 #include <fstream>
 #include <mutex>
 

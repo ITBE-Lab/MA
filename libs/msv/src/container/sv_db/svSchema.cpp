@@ -1,15 +1,15 @@
-#include "container/sv_db/svSchema.h"
-#include "container/container.h"
-#include "container/sv_db/py_db_conf.h"
-#include "module/combineOverlappingCalls.h"
+#include "msv/container/sv_db/svSchema.h"
+#include "ms/container/container.h"
+#include "ms/container/sv_db/py_db_conf.h"
+#include "msv/module/combineOverlappingCalls.h"
 
 // include classes that implement sql queries
-#include "container/sv_db/query_objects/callInserter.h"
-#include "container/sv_db/query_objects/fetchCalls.h"
-#include "container/sv_db/query_objects/fetchSvJump.h"
-#include "container/sv_db/query_objects/jumpInserter.h"
-#include "container/sv_db/query_objects/nucSeqSql.h"
-#include "container/sv_db/query_objects/readInserter.h"
+#include "msv/container/sv_db/query_objects/callInserter.h"
+#include "msv/container/sv_db/query_objects/fetchCalls.h"
+#include "msv/container/sv_db/query_objects/fetchSvJump.h"
+#include "msv/container/sv_db/query_objects/jumpInserter.h"
+#include "msv/container/sv_db/query_objects/nucSeqSql.h"
+#include "msv/container/sv_db/query_objects/readInserter.h"
 
 using namespace libMSV;
 

@@ -2,8 +2,8 @@
  * @file segment.cpp
  * @author Markus Schmidt
  */
-#include "container/segment.h"
-#include "util/pybind11.h"
+#include "ma/container/segment.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 #ifdef WITH_PYTHON
@@ -17,7 +17,7 @@ void exportSegment( py::module& rxPyModuleId )
 
     // export the SegmentVector class
     py::bind_vector_ext<SegmentVector, libMS::Container, std::shared_ptr<SegmentVector>>( rxPyModuleId, "SegmentVector",
-                                                                                   "docstr" )
+                                                                                          "docstr" )
         .def( "extract_seeds", &SegmentVector::extractSeeds )
         .def( "num_seeds", &SegmentVector::numSeeds )
 #if MEASURE_DURATIONS == ( 1 )

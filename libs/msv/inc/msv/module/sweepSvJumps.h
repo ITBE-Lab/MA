@@ -4,13 +4,13 @@
  */
 #pragma once
 
-#include "container/pack.h"
-#include "container/squeezedVector.h"
-#include "container/sv_db/pool_container.h"
-#include "container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
-#include "container/sv_db/query_objects/fetchSvJump.h"
-#include "module/module.h"
-#include "util/statisticSequenceAnalysis.h"
+#include "ma/container/pack.h"
+#include "msv/container/squeezedVector.h"
+#include "msv/container/sv_db/pool_container.h"
+#include "msv/container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
+#include "msv/container/sv_db/query_objects/fetchSvJump.h"
+#include "ms/module/module.h"
+#include "msv/util/statisticSequenceAnalysis.h"
 #include <cmath>
 #include <csignal>
 

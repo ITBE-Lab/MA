@@ -6,8 +6,8 @@
  */
 #pragma once
 
-#include "container/svJump.h"
-#include "container/sv_db/tables/read.h"
+#include "msv/container/svJump.h"
+#include "msv/container/sv_db/tables/read.h"
 
 namespace libMSV
 {

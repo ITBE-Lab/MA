@@ -6,8 +6,8 @@
 #ifndef FILE_WRITER_H
 #define FILE_WRITER_H
 
-#include "container/alignment.h"
-#include "module/module.h"
+#include "ma/container/alignment.h"
+#include "ms/module/module.h"
 
 namespace libMA
 {

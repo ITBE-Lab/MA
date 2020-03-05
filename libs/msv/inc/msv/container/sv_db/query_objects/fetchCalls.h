@@ -5,9 +5,9 @@
  */
 #pragma once
 
-#include "container/sv_db/tables/svCall.h"
-#include "container/sv_db/tables/svCallSupport.h"
-#include "util/parameter.h"
+#include "msv/container/sv_db/tables/svCall.h"
+#include "msv/container/sv_db/tables/svCallSupport.h"
+#include "ms/util/parameter.h"
 
 namespace libMSV
 {

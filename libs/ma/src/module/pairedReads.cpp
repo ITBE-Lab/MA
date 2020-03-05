@@ -6,7 +6,7 @@
 #define NOMINMAX
 #endif
 
-#include "module/pairedReads.h"
+#include "ma/module/pairedReads.h"
 #include <limits>
 
 using namespace libMA;

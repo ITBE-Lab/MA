@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "container/qSufSort.h"
-#include "support.h"
+#include "ma/container/qSufSort.h"
+#include "util/support.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <errno.h>
@@ -41,4 +41,4 @@ typedef int64_t sbgint_t;
  * @brief BWT-Index Construction for large inputs
  */
 std::tuple<bgint_t, bgint_t, std::vector<bgint_t>, std::vector<unsigned int>>
-    EXPORTED bwtLarge( const char *pcFileNamePack );
+    EXPORTED bwtLarge( const char* pcFileNamePack );

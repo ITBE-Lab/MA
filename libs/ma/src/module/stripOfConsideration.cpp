@@ -3,8 +3,8 @@
  * @brief Implements a Strip of Consideration.
  * @author Markus Schmidt
  */
-#include "module/stripOfConsideration.h"
-#include "system.h"
+#include "ma/module/stripOfConsideration.h"
+#include "util/system.h"
 using namespace libMA;
 using namespace libMS;
 
@@ -27,7 +27,8 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
      * This is the formula from the paper
      * computes the size required for the strip so that we collect all relevent seeds.
      */
-    const nucSeqIndex uiStripSize = this->getStripSize( uiQLen, pGlobalParams->iMatch->get(), pGlobalParams->iExtend->get(), pGlobalParams->iGap->get() );
+    const nucSeqIndex uiStripSize = this->getStripSize(
+        uiQLen, pGlobalParams->iMatch->get( ), pGlobalParams->iExtend->get( ), pGlobalParams->iGap->get( ) );
 
     // extract the seeds
     auto pSeeds = std::make_shared<Seeds>( );

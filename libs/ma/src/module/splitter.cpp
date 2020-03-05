@@ -2,9 +2,9 @@
  * @file splitter.cpp
  * @author Markus Schmidt
  */
-#include "module/splitter.h"
+#include "ma/module/splitter.h"
+#include "ms/module/splitter.h"
 
-using namespace libMA;
 using namespace libMS;
 
 
