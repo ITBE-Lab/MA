@@ -8,8 +8,8 @@
 #define CONTAINER_H
 
 #include "debug.h"
-#include <stdexcept>
 #include "support.h"
+#include <stdexcept>
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <memory>
@@ -31,7 +31,7 @@ namespace py = pybind11;
 #define TOMBSTONE_VAL_DEAD 2020202020202
 #endif
 
-namespace libMA
+namespace libMS
 {
 
 /**
@@ -263,7 +263,7 @@ class PyContainerVector : public ContainerVector<std::shared_ptr<Container>>
     using ContainerVector<std::shared_ptr<Container>>::ContainerVector;
 }; // class
 
-} // namespace libMA
+} // namespace libMS
 
 
 #ifdef WITH_PYTHON

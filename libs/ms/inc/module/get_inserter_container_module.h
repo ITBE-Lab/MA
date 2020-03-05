@@ -8,7 +8,7 @@
 #include "container/sv_db/pool_container.h"
 #include "module/module.h"
 
-namespace libMA
+namespace libMS
 {
 
 #define PROFILE_INSERTER 1
@@ -510,4 +510,4 @@ inline void exportInserterContainer( py::module& rxPyModuleId, const std::string
 
 #endif
 
-}; // namespace libMA
+}; // namespace libMS

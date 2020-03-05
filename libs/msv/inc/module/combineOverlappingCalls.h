@@ -74,12 +74,13 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
 
         metaMeasureAndLogDuration<LOG>( "xInsertIntoOverlapTable", [&]( ) {
             // fill call_overlap_table
-            size_t uiNumTasks = rParameters.getNumThreads( ) * 100; // @todo make a parameter out of this
+            size_t uiNumTasks = rParameters.getNumThreads( ) * 10; // @todo make a parameter out of this
             std::vector<std::future<void>> vFutures;
             vFutures.reserve( uiNumTasks );
             for( size_t uiI = 0; uiI < uiNumTasks; uiI++ )
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiI ) {
+                        // @todo this triggers multiple full table scans...
                         SQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
                             pConnection,
                             "SELECT id, ST_AsBinary(rectangle), switch_strand "
@@ -95,7 +96,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                             "SELECT ?, id "
                             "FROM sv_call_table "
                             "WHERE sv_caller_run_id = ? "
-                            "AND ? < id "
+                            "AND id > ? "
                             "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
                             "AND switch_strand = ? ",
                             "combineOverlappingCalls::xInsertIntoOverlapTable" );

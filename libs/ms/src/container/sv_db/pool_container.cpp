@@ -1,6 +1,6 @@
 #include "container/sv_db/pool_container.h"
 
-using namespace libMA;
+using namespace libMS;
 
 #ifdef WITH_PYTHON
 #include "container/sv_db/py_db_conf.h"

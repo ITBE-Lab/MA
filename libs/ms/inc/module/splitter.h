@@ -16,7 +16,7 @@
 #include <fstream>
 #include <mutex>
 
-namespace libMA
+namespace libMS
 {
 /**
  * @brief Lock for enabeling sub-computational graphs
@@ -273,7 +273,7 @@ class FilterSeedsByArea : public Module<Seeds, false, SegmentVector, FMIndex, Nu
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMS
 
 #ifdef WITH_PYTHON
 #ifdef WITH_BOOST

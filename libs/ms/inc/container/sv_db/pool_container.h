@@ -1,6 +1,6 @@
 /**
  * @file pool_container.h
- * @brief implements libMA::PoolContainer a container that holds a connection to a database.
+ * @brief implements libMS::PoolContainer a container that holds a connection to a database.
  * @author Markus Schmidt
  */
 #pragma once
@@ -8,7 +8,7 @@
 #include "container/container.h"
 #include "db_con_pool.h"
 
-namespace libMA
+namespace libMS
 {
 /**
  * @brief container that holds a SQLDBConPool
@@ -25,12 +25,12 @@ template <class DBCon> class PoolContainer : public Container
     {} // constructor
 
     PoolContainer( size_t uiPoolSize, std::string sSchemaName )
-        : PoolContainer( uiPoolSize, json{ { SCHEMA, {{ NAME, sSchemaName }} } } )
+        : PoolContainer( uiPoolSize, json{{SCHEMA, {{NAME, sSchemaName}}}} )
     {} // constructor
 
 }; // class
 
-} // namespace libMA
+} // namespace libMS
 
 #ifdef WITH_PYTHON
 

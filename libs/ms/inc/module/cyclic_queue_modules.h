@@ -6,7 +6,7 @@
 #include "container/cyclic_queue_container.h"
 #include "module/module.h"
 
-namespace libMA
+namespace libMS
 {
 
 template <typename ContentType> class QueuePicker : public Module<ContentType, true, CyclicQueue<ContentType>>
@@ -37,7 +37,7 @@ class QueuePlacer : public Module<ReturnType, false, ReturnType, ContentType, Cy
     {
         if( pContainer->eof( ) )
         {
-            pContainer->close();
+            pContainer->close( );
             pQueue->informThatContainerIsFinished( );
         } // if
         else
@@ -113,4 +113,4 @@ void exportCyclicQueue( py::module& rxPyModuleId, const std::string& sNamePrefix
 
 #endif
 
-} // namespace libMA
+} // namespace libMS

@@ -35,6 +35,7 @@
 /* Due to MSVC libMa should be included after the wxWidgets includes */
 #include "util/export.h"
 #include "version.h"
+using namespace libMS;
 using namespace libMA;
 
 #include "util/execution-context.h"

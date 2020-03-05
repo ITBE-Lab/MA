@@ -43,6 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /// @endcond
 
 using namespace libMA;
+using namespace libMS;
 
 const std::string sHeader =
     "========================================= The Modular Aligner =========================================";
@@ -242,7 +243,7 @@ int main( int argc, char* argv[] )
 {
     if( MA_VERSION != sLibMaVersion )
     {
-        std::cerr << "Fatal error: cmbMA verion \"" << MA_VERSION << "\" does not match libMA version \""
+        std::cerr << "Fatal error: cmbMA verion \"" << MA_VERSION << "\" does not match libMS version \""
                   << sLibMaVersion << "\". Something went wrong during building/linking." << std::endl;
         return 1;
     } // if

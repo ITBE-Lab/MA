@@ -32,4 +32,6 @@ endif()
 
 # Include the core library of MA
 message( "Include libMA ..." )
+add_subdirectory (ms)
 add_subdirectory (ma)
+add_subdirectory (msv)

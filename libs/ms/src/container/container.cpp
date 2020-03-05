@@ -6,7 +6,7 @@
 
 #include "container/container.h"
 #include "util/pybind11.h"
-using namespace libMA;
+using namespace libMS;
 
 
 #ifdef WITH_PYTHON

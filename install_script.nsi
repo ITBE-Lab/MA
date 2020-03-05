@@ -52,6 +52,7 @@ Section "MainSection" SEC01
   CreateDirectory "$SMPROGRAMS\MA"
   CreateShortCut "$SMPROGRAMS\MA\MA.lnk" "$INSTDIR\maGUI.exe"
   CreateShortCut "$DESKTOP\MA.lnk" "$INSTDIR\maGUI.exe"
+  File "C:\Users\Markus\Desktop\Project-Markus\workspace\aligner\build\libMS.pyd"
   File "C:\Users\Markus\Desktop\Project-Markus\workspace\aligner\build\libMA.pyd"
   File "C:\Users\Markus\Desktop\Project-Markus\workspace\aligner\build\maCMD.exe"
   File "C:\ProgramData\Anaconda3\Library\bin\zlib.dll"

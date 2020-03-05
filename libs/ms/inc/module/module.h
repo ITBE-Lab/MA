@@ -36,7 +36,7 @@ namespace py = pybind11;
 /**
  * @brief the C++ code is in this namespace.
  */
-namespace libMA
+namespace libMS
 {
 /// @cond PRIVATE
 /* +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -949,7 +949,7 @@ void exportModuleAlternateConstructor( pybind11::module& xPyModuleId, // pybind 
 
 #endif
 
-} // namespace libMA
+} // namespace libMS
 
 
 #ifdef WITH_PYTHON

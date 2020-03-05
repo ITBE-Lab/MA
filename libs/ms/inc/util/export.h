@@ -3,7 +3,7 @@
  * @brief Provides the boost-python main method.
  * @author Markus Schmidt
  * @details
- * Calls the export functions of the various @ref libMA::Module "modules" and Containers.
+ * Calls the export functions of the various @ref libMS::Module "modules" and Containers.
  * @copyright
 Copyright 2018 Markus Schmidt, Arne Kutzner
 
@@ -31,11 +31,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @note This documentation is outdated!
  *
  *
- * MA is a @ref libMA::Module "Modular" alignment tool build using C++11 and Boost Python.
- * The alignment process has been seperated into several @ref libMA::Module "modules".
- * The execution order of the @ref libMA::Module "modules" is set up using Python.
- * @ref libMA::Module "Modules" can be implemented in Python or C++. <br>
- * The @ref libMA::Pledge "Pledge" class allows setting up a @ref comp_graph_page "computational
+ * MA is a @ref libMS::Module "Modular" alignment tool build using C++11 and Boost Python.
+ * The alignment process has been seperated into several @ref libMS::Module "modules".
+ * The execution order of the @ref libMS::Module "modules" is set up using Python.
+ * @ref libMS::Module "Modules" can be implemented in Python or C++. <br>
+ * The @ref libMS::Pledge "Pledge" class allows setting up a @ref comp_graph_page "computational
  * graph", that avoids unnecessary jumps between Python and C++. <br>
  *
  *
@@ -51,18 +51,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * A C++ Module is available for each of these tasks, respectively.
  *
  *
- * @ref libMA::Container "Containers" are used for the inputs and outputs of the @ref libMA::Module "modules".
+ * @ref libMS::Container "Containers" are used for the inputs and outputs of the @ref libMS::Module "modules".
  * The Expected in- and out- puts for each of the three main steps is as follows:
  * <table>
  * <caption>inputs and outputs for each main step in the alignment</caption>
  * <tr><th>Step <th>input <th>output
- * <tr><td>Seeding <td> libMA::FMIndex, libMA::NucSeq <td> libMA::SegmentVector
- * <tr><td>Seed set assembling <td> libMA::SegmentVector <td> libMA::Seeds
- * <tr><td>Dynamic programming <td> libMA::Seeds, libMA::NucSeq, libMA::Pack <td> libMA::Alignment
+ * <tr><td>Seeding <td> libMS::FMIndex, libMS::NucSeq <td> libMS::SegmentVector
+ * <tr><td>Seed set assembling <td> libMS::SegmentVector <td> libMS::Seeds
+ * <tr><td>Dynamic programming <td> libMS::Seeds, libMS::NucSeq, libMS::Pack <td> libMS::Alignment
  * </table>
  *
  * @note The python classes can be easily identified by the prefix "MA."
- * while C++ classes have "libMA::" as prefix.
+ * while C++ classes have "libMS::" as prefix.
  *
  * @section install_sec Installation
  *
@@ -74,7 +74,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @section quick_start_sec Quick start
  *
- * Here is some python code that sets up the three main @ref libMA::Module "modules" reqired for alignment:
+ * Here is some python code that sets up the three main @ref libMS::Module "modules" reqired for alignment:
  * @code{.py}
  * # A module that creates seeds.
  * seg = BinarySeeding()
@@ -86,8 +86,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * printer = AlignmentPrinter()
  * @endcode
  *
- * Here we set up the @ref libMA::Module "modules" we need for the alignment process.
- * The @ref libMA::Module "modules" themselves do not store data. They can be used multiple times.
+ * Here we set up the @ref libMS::Module "modules" we need for the alignment process.
+ * The @ref libMS::Module "modules" themselves do not store data. They can be used multiple times.
  * Note that while BinarySeeding and NeedlemanWunsch are C++ modules,
  * SweepAllReturnBest and AlignmentPrinter are implemented in Python.
  *
@@ -108,7 +108,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * query = NucSeq(query_string)
  * @endcode
  *
- * Here we setup the @ref libMA::Container "containers" holding the data we need.
+ * Here we setup the @ref libMS::Container "containers" holding the data we need.
  *
  * @code{.py}
  * # Call the segmentation module.
@@ -125,7 +125,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Here we perform the alignment process and print the results. <br>
  * Note that this setup does not perform well, since we skipped the seed filtering step.
  *
- * @note this setup of @ref libMA::Module "modules" using a
+ * @note this setup of @ref libMS::Module "modules" using a
  * computation graph can be seen @ref comp_graph_page "here".
  *
  *
@@ -136,7 +136,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * @defgroup export Exporters
- * @brief functions that are used to export Container and @ref libMA::Module "module" classes to Python
+ * @brief functions that are used to export Container and @ref libMS::Module "module" classes to Python
  * @details
  * When the library is imported in python we need to tell python which classes functions etc.
  * we provide.
@@ -165,7 +165,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/svJumpsFromSeeds.h"
 #include "module/sweepSvJumps.h"
 
-namespace libMA
+namespace libMS
 {
 
 typedef Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_WRITER;
@@ -195,6 +195,6 @@ std::vector<std::shared_ptr<BasePledge>>
                                    unsigned int uiThreads );
 
 
-} // namespace libMA
+} // namespace libMS
 
 #endif // EXPORT_H

@@ -3,8 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/module.h"
-#include "module/splitter.h"
-using namespace libMA;
+using namespace libMS;
 
 #ifdef WITH_PYTHON
 

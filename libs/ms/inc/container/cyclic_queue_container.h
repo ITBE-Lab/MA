@@ -11,7 +11,7 @@
 #include <mutex>
 #include <queue>
 
-namespace libMA
+namespace libMS
 {
 
 /** @brief a queue that cycles it's elements between push and pop operations.
@@ -367,4 +367,4 @@ template <class ContentType> using CyclicQueue = CyclicQueueBase<ContentType>;
 
 #endif
 
-} // namespace libMA
+} // namespace libMS

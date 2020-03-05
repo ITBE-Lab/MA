@@ -7,7 +7,7 @@
 // Documentation: https://github.com/nlohmann/json
 #include "json.hpp" // FIXME: Move to different location
 
-using namespace libMA;
+using namespace libMS;
 
 using nlohmann::json; // might be better: namespace json = nlohmann;
 
