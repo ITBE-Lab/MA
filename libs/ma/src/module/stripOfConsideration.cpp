@@ -6,6 +6,7 @@
 #include "module/stripOfConsideration.h"
 #include "system.h"
 using namespace libMA;
+using namespace libMS;
 
 
 std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr<SegmentVector> pSegments,

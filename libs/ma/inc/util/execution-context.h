@@ -1,12 +1,13 @@
 #include <iomanip> // for std::setw
 
-#include "util/export.h" // MA aligner interface
+#include "util/export.h"
 #include "util/parameter.h"
 
 #undef snprintf // required under MSVC
 // Documentation: https://github.com/nlohmann/json
 #include "json.hpp" // FIXME: Move to different location
 
+using namespace libMA;
 using namespace libMS;
 
 using nlohmann::json; // might be better: namespace json = nlohmann;

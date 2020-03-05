@@ -7,6 +7,7 @@
 #include <cctype>
 
 using namespace libMA;
+using namespace libMS;
 
 bool validNuc( char c )
 {

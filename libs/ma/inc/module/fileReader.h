@@ -462,7 +462,7 @@ class FileReader : public libMS::Module<NucSeq, true, FileStream>
 
 }; // class
 
-using FileStreamQueue = CyclicQueue<FileStream>;
+using FileStreamQueue = libMS::CyclicQueue<FileStream>;
 class PairedFileStream : public FileStream, public std::pair<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>
 {
   public:
@@ -504,7 +504,7 @@ class PairedFileStream : public FileStream, public std::pair<std::shared_ptr<Fil
     }
 }; // class
 
-using PairedFileStreamQueue = CyclicQueue<PairedFileStream>;
+using PairedFileStreamQueue = libMS::CyclicQueue<PairedFileStream>;
 
 inline std::shared_ptr<PairedFileStreamQueue>
 combineFileStreams( std::shared_ptr<FileStreamQueue> pA, std::shared_ptr<FileStreamQueue> pB )
@@ -521,7 +521,7 @@ combineFileStreams( std::shared_ptr<FileStreamQueue> pA, std::shared_ptr<FileStr
     return pRet;
 } // function
 
-using PairedReadsContainer = ContainerVector<std::shared_ptr<NucSeq>>;
+using PairedReadsContainer = libMS::ContainerVector<std::shared_ptr<NucSeq>>;
 
 /**
  * @brief Reads Queries from a file.

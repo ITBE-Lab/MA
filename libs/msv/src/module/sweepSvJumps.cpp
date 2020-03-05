@@ -6,6 +6,7 @@
 #include "util/pybind11.h"
 
 using namespace libMSV;
+using namespace libMS;
 
 
 #ifdef WITH_PYTHON

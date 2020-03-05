@@ -5,6 +5,7 @@
 #include "module/binarySeeding.h"
 
 using namespace libMA;
+using namespace libMS;
 
 
 #include <atomic>

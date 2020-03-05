@@ -48,8 +48,8 @@ class Wrapper_ksw_extz_t
  * Returns a finished alignment if given a sound selection of seeds.
  * @ingroup module
  */
-class NeedlemanWunsch : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, false,
-                                      ContainerVector<std::shared_ptr<Seeds>>, NucSeq, Pack>
+class NeedlemanWunsch : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Alignment>>, false,
+                                      libMS::ContainerVector<std::shared_ptr<Seeds>>, NucSeq, Pack>
 {
     std::vector<std::vector<std::vector<int>>> s;
     std::vector<std::vector<std::vector<char>>> dir;
@@ -107,12 +107,12 @@ class NeedlemanWunsch : public libMS::Module<ContainerVector<std::shared_ptr<Ali
                                                      AlignedMemoryManager& rMemoryManager );
 
     // overload
-    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-    execute( std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> pSeedSets, std::shared_ptr<NucSeq> pQuery,
+    virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
+    execute( std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Seeds>>> pSeedSets, std::shared_ptr<NucSeq> pQuery,
              std::shared_ptr<Pack> pRefPack )
     {
         AlignedMemoryManager xMemoryManager;
-        auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
+        auto pRet = std::make_shared<libMS::ContainerVector<std::shared_ptr<Alignment>>>( );
         for( auto pSeeds : *pSeedSets )
         {
             // if we have a seed set with an inversion we need to generate two alignments...

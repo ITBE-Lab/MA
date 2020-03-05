@@ -371,13 +371,13 @@ void exportAlignment( py::module& rxPyModuleId )
 
     py::bind_vector<std::vector<MatchType>>( rxPyModuleId, "MatchTypeVector", "docstr" );
 
-    py::bind_vector_ext<ContainerVector<std::shared_ptr<Alignment>>,
+    py::bind_vector_ext<libMS::ContainerVector<std::shared_ptr<Alignment>>,
                         libMS::Container,
-                        std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>(
+                        std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>>(
         rxPyModuleId, "AlignmentVector", "docstr" );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<ContainerVector<std::shared_ptr<Alignment>>, libMS::Container>( );
+    py::implicitly_convertible<libMS::ContainerVector<std::shared_ptr<Alignment>>, libMS::Container>( );
 
 } // function
 #endif

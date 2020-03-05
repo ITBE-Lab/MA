@@ -9,6 +9,7 @@
 #include "sample_consensus/test_ransac.h"
 #endif
 using namespace libMA;
+using namespace libMS;
 #include "util/pybind11.h"
 
 std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>& pIn ) const

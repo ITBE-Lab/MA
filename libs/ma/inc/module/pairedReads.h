@@ -19,12 +19,13 @@ namespace libMA
  * Given two vector of alignments this module picks one alignment of each vector,
  * so that their combined score and penalty for the insert size is maximal.
  */
-class PairedReads : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, // out
-                                  false, // not volatile
-                                  NucSeq, NucSeq, // Query 1 and 2
-                                  ContainerVector<std::shared_ptr<Alignment>>, // alignments for first paired read
-                                  ContainerVector<std::shared_ptr<Alignment>>, // alignments for second paired read
-                                  Pack>
+class PairedReads
+    : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Alignment>>, // out
+                           false, // not volatile
+                           NucSeq, NucSeq, // Query 1 and 2
+                           libMS::ContainerVector<std::shared_ptr<Alignment>>, // alignments for first paired read
+                           libMS::ContainerVector<std::shared_ptr<Alignment>>, // alignments for second paired read
+                           Pack>
 {
   public:
     /**
@@ -44,7 +45,7 @@ class PairedReads : public libMS::Module<ContainerVector<std::shared_ptr<Alignme
 
     PairedReads( const ParameterSetManager& rParameters )
         : u( rParameters.getSelected( )->xPairedBonus->get( ) ),
-          mean( (size_t) rParameters.getSelected( )->xMeanPairedReadDistance->get( ) ),
+          mean( (size_t)rParameters.getSelected( )->xMeanPairedReadDistance->get( ) ),
           std( rParameters.getSelected( )->xStdPairedReadDistance->get( ) )
     {} // constructor
 
@@ -56,10 +57,10 @@ class PairedReads : public libMS::Module<ContainerVector<std::shared_ptr<Alignme
      */
     double EXPORTED p( nucSeqIndex d ) const;
 
-    std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+    std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
         EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
-                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pA,
-                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pB,
+                          std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pA,
+                          std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pB,
                           std::shared_ptr<Pack> pPack );
 }; // class
 } // namespace libMA

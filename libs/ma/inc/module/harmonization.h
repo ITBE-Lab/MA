@@ -97,7 +97,7 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
 
     std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds>& pIn ) const;
 
-    std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> cluster( std::shared_ptr<Seeds> pSeedsIn,
+    std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Seeds>>> cluster( std::shared_ptr<Seeds> pSeedsIn,
                                                                       nucSeqIndex uiQLen ) const;
 
   public:
@@ -190,7 +190,7 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
  * @brief Extracts SoC from a priority queue and performs harmonization on all extracted SoC;s.
  * @ingroup module
  */
-class Harmonization : public libMS::Module<ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
+class Harmonization : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
 {
   public:
     HarmonizationSingle xSingle;
@@ -203,13 +203,13 @@ class Harmonization : public libMS::Module<ContainerVector<std::shared_ptr<Seeds
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
+    virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Seeds>>>
         EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCSsIn, std::shared_ptr<NucSeq> pQuery,
                           std::shared_ptr<FMIndex> pFMIndex )
     {
         unsigned int uiNumTries = 0;
 
-        auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
+        auto pSoCs = std::make_shared<libMS::ContainerVector<std::shared_ptr<Seeds>>>( );
 
         for( ; uiNumTries < uiMaxTries && !pSoCSsIn->empty( ); uiNumTries++ )
         {

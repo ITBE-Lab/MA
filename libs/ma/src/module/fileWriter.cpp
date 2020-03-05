@@ -6,6 +6,7 @@
 #include "module/fileWriter.h"
 
 using namespace libMA;
+using namespace libMS;
 
 std::shared_ptr<libMS::Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
                                                 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>

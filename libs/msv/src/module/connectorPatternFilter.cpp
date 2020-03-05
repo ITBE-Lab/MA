@@ -5,6 +5,7 @@
 #include "module/connectorPatternFilter.h"
 
 using namespace libMSV;
+using namespace libMS;
 
 #ifdef WITH_PYTHON
 

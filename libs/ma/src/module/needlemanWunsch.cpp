@@ -17,6 +17,7 @@
 #include <vector>
 
 using namespace libMA;
+using namespace libMS;
 
 
 inline void ksw_ext( int qlen,

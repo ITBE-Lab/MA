@@ -19,8 +19,8 @@ namespace libMA
  * Returns a finished alignment if given a sound selection of seeds.
  * @ingroup module
  */
-class SmallInversions : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, false,
-                                      ContainerVector<std::shared_ptr<Alignment>>, NucSeq, Pack>
+class SmallInversions : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Alignment>>, false,
+                                             libMS::ContainerVector<std::shared_ptr<Alignment>>, NucSeq, Pack>
 {
 
     const KswCppParam<5> xKswParameters;
@@ -175,13 +175,13 @@ class SmallInversions : public libMS::Module<ContainerVector<std::shared_ptr<Ali
     } // method
 
     // overload
-    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-    execute( std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments, std::shared_ptr<NucSeq> pQuery,
-             std::shared_ptr<Pack> pRefPack )
+    virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
+    execute( std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
+             std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefPack )
     {
         AlignedMemoryManager xMemoryManager;
         // the container vector of alignments that is returned.
-        auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Alignment>>>( );
+        auto pRet = std::make_shared<libMS::ContainerVector<std::shared_ptr<Alignment>>>( );
         for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
         {
             pRet->push_back( pAlignment );

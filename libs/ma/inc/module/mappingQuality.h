@@ -19,8 +19,8 @@ namespace libMA
  * first alignment on the basis of the second
  * @note the name quality is missleading it rather is a mapping confidence
  */
-class MappingQuality : public libMS::Module<ContainerVector<std::shared_ptr<Alignment>>, false, NucSeq,
-                                     ContainerVector<std::shared_ptr<Alignment>>>
+class MappingQuality : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Alignment>>, false, NucSeq,
+                                     libMS::ContainerVector<std::shared_ptr<Alignment>>>
 {
   public:
     const size_t uiReportNBest;
@@ -35,8 +35,8 @@ class MappingQuality : public libMS::Module<ContainerVector<std::shared_ptr<Alig
           uiMaxSupplementaryPerPrim( rParameters.getSelected( )->xMaxSupplementaryPerPrim->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> EXPORTED
-    execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments );
+    virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> EXPORTED
+    execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments );
 
 }; // class
 } // namespace libMA

@@ -6,6 +6,7 @@
 #include <limits>
 
 using namespace libMA;
+using namespace libMS;
 
 
 std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2,

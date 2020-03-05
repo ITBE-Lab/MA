@@ -2,9 +2,10 @@
  * @file export.cpp
  * @author Markus Schmidt
  */
-#include "util/export.h"
-#include "util/execution-context.h"
 #include "util/parameter.h"
+#include "container/container.h"
+#include "container/sv_db/pool_container.h"
+#include "module/module.h"
 
 using namespace libMS;
 
@@ -88,24 +89,6 @@ void exportParameter( py::module& rxPyModuleId )
         .def( "by_short", &ParameterSetManager::byShort );
 } // function
 
-void exportExecutionContext( py::module& rxPyModuleId )
-{
-    py::class_<GenomeManager>( rxPyModuleId, "GenomeManager" ) //
-        .def( "load_genome", &GenomeManager::loadGenome );
-    py::class_<ReadsManager>( rxPyModuleId, "ReadsManager" ) //
-        .def_readwrite( "primary_queries", &ReadsManager::vsPrimaryQueryFullFileName ) //
-        .def_readwrite( "mate_queries", &ReadsManager::vsMateQueryFullFileName );
-    py::class_<OutputManager>( rxPyModuleId, "OutputManager" );
-
-    py::class_<ExecutionContext>( rxPyModuleId, "ExecutionContext" ) //
-        .def( py::init<>( ) ) //
-        .def( "do_align", &ExecutionContext::doAlignCallbackLess ) //
-        // def_readonly required since xParameterSetManager is non-copyable
-        .def_readonly( "parameter_set_manager", &ExecutionContext::xParameterSetManager ) //
-        .def_readwrite( "genome_manager", &ExecutionContext::xGenomeManager ) //
-        .def_readwrite( "reads_manager", &ExecutionContext::xReadsManager ) //
-        .def_readwrite( "output_manager", &ExecutionContext::xOutputManager );
-} // function
 
 PYBIND11_MODULE( libMS, libMsModule )
 {

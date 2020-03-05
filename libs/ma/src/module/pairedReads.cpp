@@ -10,6 +10,7 @@
 #include <limits>
 
 using namespace libMA;
+using namespace libMS;
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
 PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,

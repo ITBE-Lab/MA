@@ -8,6 +8,7 @@
 #include <csignal>
 
 using namespace libMSV;
+using namespace libMS;
 
 // @todo this whole function can be simplified a lot
 std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>

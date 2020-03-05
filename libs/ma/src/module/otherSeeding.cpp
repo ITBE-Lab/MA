@@ -6,6 +6,7 @@
 #include "module/otherSeeding.h"
 
 using namespace libMA;
+using namespace libMS;
 
 #define INCLUDE_SELF_TESTS ( 1 )
 

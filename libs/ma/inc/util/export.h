@@ -145,12 +145,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef EXPORT_H
 #define EXPORT_H
 
-#include "container/minimizer_index.h"
-#include "container/svJump.h"
-#include "container/sv_db/pool_container.h"
-#include "container/sv_db/svSchema.h"
 #include "module/binarySeeding.h"
-#include "module/connectorPatternFilter.h"
 #include "module/fileReader.h"
 #include "module/fileWriter.h"
 #include "module/harmonization.h"
@@ -162,39 +157,38 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "module/smallInversions.h"
 #include "module/splitter.h"
 #include "module/stripOfConsideration.h"
-#include "module/svJumpsFromSeeds.h"
-#include "module/sweepSvJumps.h"
 
-namespace libMS
+namespace libMA
 {
 
-typedef Module<Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_WRITER;
-typedef Module<Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_PAIRED_WRITER;
+typedef libMS::Module<libMS::Container, false, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_WRITER;
+typedef libMS::Module<libMS::Container, false, NucSeq, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack>
+    TP_PAIRED_WRITER;
 
-std::vector<std::shared_ptr<BasePledge>> EXPORTED setUpCompGraph( const ParameterSetManager& rParameters,
-                                                                  std::shared_ptr<Pledge<Pack>>
+std::vector<std::shared_ptr<libMS::BasePledge>> EXPORTED setUpCompGraph( const ParameterSetManager& rParameters,
+                                                                  std::shared_ptr<libMS::Pledge<Pack>>
                                                                       pPack,
-                                                                  std::shared_ptr<Pledge<FMIndex>>
+                                                                  std::shared_ptr<libMS::Pledge<FMIndex>>
                                                                       pFMDIndex,
-                                                                  std::shared_ptr<Pledge<NucSeq, true>>
+                                                                  std::shared_ptr<libMS::Pledge<NucSeq, true>>
                                                                       pQueries,
                                                                   std::shared_ptr<TP_WRITER>
                                                                       pWriter,
                                                                   unsigned int uiThreads );
 
-std::vector<std::shared_ptr<BasePledge>>
+std::vector<std::shared_ptr<libMS::BasePledge>>
     EXPORTED setUpCompGraphPaired( const ParameterSetManager& rParameters,
-                                   std::shared_ptr<Pledge<Pack>>
+                                   std::shared_ptr<libMS::Pledge<Pack>>
                                        pPack,
-                                   std::shared_ptr<Pledge<FMIndex>>
+                                   std::shared_ptr<libMS::Pledge<FMIndex>>
                                        pFMDIndex,
-                                   std::shared_ptr<Pledge<PairedReadsContainer, true>>
+                                   std::shared_ptr<libMS::Pledge<PairedReadsContainer, true>>
                                        pQueries,
                                    std::shared_ptr<TP_PAIRED_WRITER>
                                        pWriter,
                                    unsigned int uiThreads );
 
 
-} // namespace libMS
+} // namespace libMA
 
 #endif // EXPORT_H

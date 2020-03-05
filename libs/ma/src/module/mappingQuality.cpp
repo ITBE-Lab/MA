@@ -5,6 +5,7 @@
 #include "module/mappingQuality.h"
 
 using namespace libMA;
+using namespace libMS;
 
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::execute(

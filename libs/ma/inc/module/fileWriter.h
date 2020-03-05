@@ -111,7 +111,7 @@ class TagGenerator
                                 pAlignment,
                             const std::shared_ptr<Pack>
                                 pPack,
-                            const std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+                            const std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
                                 pvAllAlignments ) const
     {
         std::string sTag = "";
@@ -355,8 +355,9 @@ class TagGenerator
  * @note flushing of the outstream; this must be done in the deconstructor of OutStream
  *
  */
-class FileWriter : public libMS::Module<libMS::Container, false, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>,
-                   private TagGenerator
+class FileWriter
+    : public libMS::Module<libMS::Container, false, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack>,
+      private TagGenerator
 {
   public:
     // holds a file ourstream if necessary
@@ -425,11 +426,12 @@ class FileWriter : public libMS::Module<libMS::Container, false, NucSeq, Contain
           bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<libMS::Container> EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
-                                                         std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-                                                             pAlignments,
-                                                         std::shared_ptr<Pack>
-                                                             pPack );
+    virtual std::shared_ptr<libMS::Container>
+        EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
+                          std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
+                              pAlignments,
+                          std::shared_ptr<Pack>
+                              pPack );
 
 }; // class
 
@@ -438,9 +440,9 @@ class FileWriter : public libMS::Module<libMS::Container, false, NucSeq, Contain
  * @note flushing of the outstream; this must be done in the deconstructor of OutStream
  *
  */
-class PairedFileWriter
-    : public libMS::Module<libMS::Container, false, NucSeq, NucSeq, ContainerVector<std::shared_ptr<Alignment>>, Pack>,
-      private TagGenerator
+class PairedFileWriter : public libMS::Module<libMS::Container, false, NucSeq, NucSeq,
+                                              libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack>,
+                         private TagGenerator
 {
   public:
     // holds a file ourstream if necessary
@@ -526,7 +528,7 @@ class PairedFileWriter
 
     virtual std::shared_ptr<libMS::Container>
         EXPORTED execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
-                          std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
+                          std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
                           std::shared_ptr<Pack> pPack );
 
 }; // class

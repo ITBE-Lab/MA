@@ -6,6 +6,7 @@
 
 
 using namespace libMA;
+using namespace libMS;
 
 
 #ifdef WITH_PYTHON

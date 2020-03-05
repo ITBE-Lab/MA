@@ -31,7 +31,7 @@ if( ZLIB_FOUND )
 endif()
 
 # Include the core library of MA
-message( "Include libMA ..." )
+message( "Include libMS ..." )
 add_subdirectory (ms)
 add_subdirectory (ma)
 add_subdirectory (msv)

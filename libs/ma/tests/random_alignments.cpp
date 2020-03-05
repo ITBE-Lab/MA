@@ -7,6 +7,7 @@
 #include <iostream>
 
 using namespace libMA;
+using namespace libMS;
 
 std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen )
 {
