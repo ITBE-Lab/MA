@@ -224,6 +224,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline int64_t filterCallsWithHighScore( int64_t iCallerRunId, double dPercentToFilter )
     {
+        auto xTransaction = this->pConnection->sharedGuardedTrxn();
         double dMinScore = minScore( iCallerRunId );
         double dMaxScore = maxScore( iCallerRunId );
         return xFilterCallsWithHighScore.exec( 1, iCallerRunId,
