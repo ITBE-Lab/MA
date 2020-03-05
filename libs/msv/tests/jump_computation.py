@@ -17,7 +17,7 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
 
     print("inserting reads...")
     reconstr_nuc_seq = reconstr.extract_forward_strand_n()
-    reads = libMA.ContainerVectorNucSeq()
+    reads = libMSV.ContainerVectorNucSeq()
     # create 10x coverage
     for x in range(5):
         reads.append(reconstr_nuc_seq)
@@ -45,7 +45,7 @@ def fetch_call_rectangles(db_conn, parameter_set, run_id):
         def __eq__(self, other):
             def interval_overlap(start_a, len_a, start_b, len_b):
                 return start_a + len_a >= start_b and start_b + len_b >= start_a
-            if isinstance(other, libMA.SvJump):
+            if isinstance(other, libMSV.SvJump):
                 return interval_overlap(self.from_start, self.from_size,
                                         other.from_start_same_strand(), other.from_size()) and \
                        interval_overlap(self.to_start, self.to_size, other.to_start(), other.to_size())

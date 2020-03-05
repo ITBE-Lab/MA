@@ -5,7 +5,7 @@
 #include "module/sweepSvJumps.h"
 #include "util/pybind11.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 
 #ifdef WITH_PYTHON

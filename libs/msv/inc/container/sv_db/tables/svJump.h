@@ -7,7 +7,7 @@
 #pragma once
 #include "sql_api.h"
 
-namespace libMA
+namespace libMSV
 {
 
 template <typename DBCon>
@@ -108,4 +108,4 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 }; // class
 
 
-} // namespace libMA
+} // namespace libMSV

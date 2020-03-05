@@ -11,7 +11,7 @@
 #include "container/sv_db/query_objects/nucSeqSql.h"
 #include "container/sv_db/query_objects/readInserter.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 
 uint32_t getNumJumpsInArea( std::shared_ptr<DBConSingle> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,

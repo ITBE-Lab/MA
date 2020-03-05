@@ -8,7 +8,7 @@
 
 #include "sql_api.h"
 
-namespace libMA
+namespace libMSV
 {
 
 template <typename DBCon>
@@ -140,4 +140,4 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

@@ -1,6 +1,6 @@
 #include "container/sv_db/query_objects/callInserter.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 #ifdef WITH_PYTHON
 

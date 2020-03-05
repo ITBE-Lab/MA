@@ -1,6 +1,6 @@
 /**
  * @file fetchSvJump.h
- * @brief implements libMA::SortedSvJumpFromSql that fetches libMA::SvJump objects from the DB.
+ * @brief implements libMSV::SortedSvJumpFromSql that fetches libMSV::SvJump objects from the DB.
  * @author Markus Schmidt
  */
 
@@ -9,11 +9,11 @@
 #include "container/svJump.h"
 #include "container/sv_db/tables/svJump.h"
 
-namespace libMA
+namespace libMSV
 {
 
 /**
- * @brief fetches libMA::SvJump objects from the DB.
+ * @brief fetches libMSV::SvJump objects from the DB.
  * @details
  * Creates two iterators:
  * - one for sv jumps sorted by their start position (on the reference)
@@ -46,7 +46,7 @@ template <typename DBCon> class SortedSvJumpFromSql
     {} // constructor
 
   public:
-    /// @brief fetches libMA::SvJump objects from the run with id = iSvCallerRunId sorted by their start/end positions.
+    /// @brief fetches libMSV::SvJump objects from the run with id = iSvCallerRunId sorted by their start/end positions.
     SortedSvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId )
         : SortedSvJumpFromSql(
               pConnection,
@@ -65,9 +65,9 @@ template <typename DBCon> class SortedSvJumpFromSql
     } // constructor
 
     /**
-     * @brief fetches libMA::SvJump objects.
+     * @brief fetches libMSV::SvJump objects.
      * @details
-     * fetches libMA::SvJump objects that:
+     * fetches libMSV::SvJump objects that:
      * - are from the run with id = iSvCallerRunId
      * - are sorted by their start/end position
      * - are within the rectangle iX,iY,uiW,uiH
@@ -97,9 +97,9 @@ template <typename DBCon> class SortedSvJumpFromSql
     } // constructor
 
     /**
-     * @brief fetches libMA::SvJump objects.
+     * @brief fetches libMSV::SvJump objects.
      * @details
-     * fetches libMA::SvJump objects that:
+     * fetches libMSV::SvJump objects that:
      * - are from the run with id = iSvCallerRunId
      * - start after iS (on ref)
      * - end after iE (on ref)
@@ -178,9 +178,9 @@ template <typename DBCon> class SortedSvJumpFromSql
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV
 
 #ifdef WITH_PYTHON
-/// @brief used to expose libMA::SortedSvJumpFromSql to python
+/// @brief used to expose libMSV::SortedSvJumpFromSql to python
 void exportSvJump( py::module& rxPyModuleId );
 #endif

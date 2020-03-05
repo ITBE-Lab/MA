@@ -13,7 +13,7 @@
 #include "container/sv_db/tables/read.h"
 #include "container/sv_db/tables/sequencer.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen, // length sequence
                                       size_t uiNMod = 200, // N start, statistically; 0 = no N at all

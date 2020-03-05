@@ -16,7 +16,7 @@
 
 #define ADDITIONAL_DEBUG 0
 
-namespace libMA
+namespace libMSV
 {
 
 class GenomeSection : public Container, public geom::Interval<int64_t>
@@ -776,7 +776,7 @@ class FilterLowScoreCalls
 
 }; // class
 
-} // namespace libMA
+} // namespace libMSV
 
 #ifdef WITH_PYTHON
 void exportSweepSvJump( py::module& rxPyModuleId );

@@ -18,7 +18,7 @@
 #include <string>
 #include <type_traits>
 
-namespace libMA
+namespace libMSV
 {
 template <typename DBCon>
 using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
@@ -447,7 +447,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
         return pRet;
     } // method
-}; // namespace libMA
+}; // namespace libMSV
 
 
 /** @brief provides queries that can analyze the accuracy of a sv-caller
@@ -718,4 +718,4 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

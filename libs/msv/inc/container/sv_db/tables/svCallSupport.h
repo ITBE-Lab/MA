@@ -9,7 +9,7 @@
 #include "sql_api.h"
 #include "container/svJump.h"
 
-namespace libMA
+namespace libMSV
 {
 template <typename DBCon>
 using SvCallSupportTableType = SQLTable<DBCon,
@@ -78,4 +78,4 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

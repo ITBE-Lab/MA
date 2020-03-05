@@ -1,6 +1,6 @@
 /**
  * @file fetchCalls.h
- * @brief implements libMA::SvCallsFromDb; a class that fetches libMA::SvCall objects from a DB.
+ * @brief implements libMSV::SvCallsFromDb; a class that fetches libMSV::SvCall objects from a DB.
  * @author Markus Schmidt
  */
 #pragma once
@@ -9,10 +9,10 @@
 #include "container/sv_db/tables/svCallSupport.h"
 #include "util/parameter.h"
 
-namespace libMA
+namespace libMSV
 {
 /**
- * @brief fetches libMA::SvCall objects from a DB.
+ * @brief fetches libMSV::SvCall objects from a DB.
  * @details
  * Can do several 2d range queries.
  * @todo this should become a container
@@ -185,7 +185,7 @@ template <typename DBCon> class SvCallsFromDb
     /**
      * @brief fetches the next call.
      * @details
-     * behaviour is undefined if libMA::SvCallsFromDb::hasNext returns false
+     * behaviour is undefined if libMSV::SvCallsFromDb::hasNext returns false
      */
     SvCall next( )
     {
@@ -218,7 +218,7 @@ template <typename DBCon> class SvCallsFromDb
     } // method
 
     /**
-     * @brief returns true if there is another call to fetch using libMA::SvCallsFromDb::next
+     * @brief returns true if there is another call to fetch using libMSV::SvCallsFromDb::next
      */
     bool hasNext( )
     {
@@ -227,12 +227,12 @@ template <typename DBCon> class SvCallsFromDb
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV
 
 
 #ifdef WITH_PYTHON
 /**
- * @brief used to expose libMA::SvCallsFromDb to python
+ * @brief used to expose libMSV::SvCallsFromDb to python
  */
 void exportCallsFromDb( py::module& rxPyModuleId );
 #endif

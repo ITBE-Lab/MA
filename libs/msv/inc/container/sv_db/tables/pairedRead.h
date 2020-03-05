@@ -9,7 +9,7 @@
 #include "container/svJump.h"
 #include "container/sv_db/tables/read.h"
 
-namespace libMA
+namespace libMSV
 {
 
 template <typename DBCon>
@@ -60,4 +60,4 @@ template <typename DBCon> class PairedReadTable : public PairedReadTableType<DBC
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

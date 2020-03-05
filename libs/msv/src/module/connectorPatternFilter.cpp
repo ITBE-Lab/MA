@@ -4,7 +4,7 @@
  */
 #include "module/connectorPatternFilter.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 #ifdef WITH_PYTHON
 

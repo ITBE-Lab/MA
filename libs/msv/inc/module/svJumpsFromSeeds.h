@@ -15,7 +15,7 @@
 #include "module/needlemanWunsch.h"
 #include "util/statisticSequenceAnalysis.h"
 
-namespace libMA
+namespace libMSV
 {
 class PerfectMatch;
 
@@ -199,11 +199,11 @@ class SvJumpsFromSeeds : public Module<ContainerVector<SvJump>, false, SegmentVe
                                                                            pQuery );
 }; // class
 
-}; // namespace libMA
+}; // namespace libMSV
 
 #ifdef WITH_PYTHON
 /**
- * @brief exports the SvJumpsFromSeeds @ref libMA::Module "module" to python.
+ * @brief exports the SvJumpsFromSeeds @ref libMSV::Module "module" to python.
  * @ingroup export
  */
 void exportSvJumpsFromSeeds( py::module& rxPyModuleId );

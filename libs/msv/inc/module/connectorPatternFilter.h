@@ -7,7 +7,7 @@
 #include "module/needlemanWunsch.h"
 #include "module/sweepSvJumps.h"
 
-namespace libMA
+namespace libMSV
 {
 
 /**
@@ -156,7 +156,7 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
 }; // class
 
 
-} // namespace libMA
+} // namespace libMSV
 
 #ifdef WITH_PYTHON
 void exportConnectorPatternFilter( py::module& rxPyModuleId );

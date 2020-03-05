@@ -3,7 +3,7 @@
 #include "support.h"
 #include <vector>
 
-namespace libMA
+namespace libMSV
 {
 /**
  * @brief squeezed vector
@@ -161,4 +161,4 @@ template <class TP_CONTENT> class SqueezedVector
 #endif
 }; // class
 
-}; // namespace libMA
+}; // namespace libMSV

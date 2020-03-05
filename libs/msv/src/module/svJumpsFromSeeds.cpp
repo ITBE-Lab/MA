@@ -7,7 +7,7 @@
 #include <cmath>
 #include <csignal>
 
-using namespace libMA;
+using namespace libMSV;
 
 // @todo this whole function can be simplified a lot
 std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>
@@ -468,14 +468,14 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
     py::class_<geom::Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
         .def_readwrite( "x_axis", &geom::Rectangle<nucSeqIndex>::xXAxis )
         .def_readwrite( "y_axis", &geom::Rectangle<nucSeqIndex>::xYAxis );
-    py::class_<libMA::SvJumpsFromSeeds::HelperRetVal>( rxPyModuleId, "SvJumpsFromSeedsHelperRetVal" )
-        .def_readwrite( "layer_of_seeds", &libMA::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
-        .def_readwrite( "seeds", &libMA::SvJumpsFromSeeds::HelperRetVal::pSeeds )
-        .def_readwrite( "rectangles", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangles )
-        .def_readwrite( "parlindrome", &libMA::SvJumpsFromSeeds::HelperRetVal::vParlindromeSeed )
-        .def_readwrite( "rectangles_fill", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
-        .def_readwrite( "rectangle_ambiguity", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
-        .def_readwrite( "rectangle_used_dp", &libMA::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
+    py::class_<libMSV::SvJumpsFromSeeds::HelperRetVal>( rxPyModuleId, "SvJumpsFromSeedsHelperRetVal" )
+        .def_readwrite( "layer_of_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
+        .def_readwrite( "seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::pSeeds )
+        .def_readwrite( "rectangles", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangles )
+        .def_readwrite( "parlindrome", &libMSV::SvJumpsFromSeeds::HelperRetVal::vParlindromeSeed )
+        .def_readwrite( "rectangles_fill", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
+        .def_readwrite( "rectangle_ambiguity", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
+        .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( rxPyModuleId, "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );

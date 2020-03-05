@@ -8,7 +8,7 @@
 
 #include "sql_api.h" // NEW DATABASE INTERFACE
 
-namespace libMA
+namespace libMSV
 {
 
 /* NEW DATABASE INTERFACE */
@@ -41,4 +41,4 @@ template <typename DBCon> class SequencerTable : public SequencerTableType<DBCon
     {} // default constructor
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

@@ -9,7 +9,7 @@
 #include "container/svJump.h"
 #include "sql_api.h" // NEW DATABASE INTERFACE
 
-namespace libMA
+namespace libMSV
 {
 
 
@@ -59,4 +59,4 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

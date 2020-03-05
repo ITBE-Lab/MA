@@ -1,6 +1,6 @@
 #include "container/sv_db/query_objects/jumpInserter.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 #ifdef WITH_PYTHON
 

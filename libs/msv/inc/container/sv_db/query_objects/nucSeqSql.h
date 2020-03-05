@@ -1,6 +1,6 @@
 /**
  * @file nucSeqSql.h
- * @brief implements libMA::AllNucSeqFromSql that fetches reads from the DB.
+ * @brief implements libMSV::AllNucSeqFromSql that fetches reads from the DB.
  * @author Markus Schmidt
  */
 #pragma once
@@ -12,7 +12,7 @@
 #include "module/module.h"
 #include "sql_api.h"
 
-namespace libMA
+namespace libMSV
 {
 
 template <typename DBCon> class NucSeqQueryContainer : public Container
@@ -152,7 +152,7 @@ class NucSeqFetcher : public Module<NucSeq, true, PoolContainer<DBCon>, NucSeqQu
     } // method
 }; // class
 
-} // namespace libMA
+} // namespace libMSV
 
 
 #ifdef WITH_PYTHON

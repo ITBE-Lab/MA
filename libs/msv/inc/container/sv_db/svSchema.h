@@ -9,7 +9,7 @@
 #include "container/sv_db/pool_container.h"
 #include "module/module.h"
 
-namespace libMA
+namespace libMSV
 {
 
 template <typename DBCon> class CountCallsQuery : public SQLQuery<DBCon, uint32_t>
@@ -135,7 +135,7 @@ std::vector<rect> getCallOverview( std::shared_ptr<PoolContainer<DBCon>> pConPoo
     return vRet;
 } // function
 
-} // namespace libMA
+} // namespace libMSV
 
 #ifdef WITH_PYTHON
 void exportSoCDbWriter( py::module& rxPyModuleId );

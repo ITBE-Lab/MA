@@ -1,6 +1,6 @@
 /**
  * @file jumpInserter.h
- * @brief implements libMA::SvJumpInserter that inserts libMA::SvJump objects into the DB.
+ * @brief implements libMSV::SvJumpInserter that inserts libMSV::SvJump objects into the DB.
  * @author Markus Schmidt
  */
 #pragma once
@@ -10,10 +10,10 @@
 #include "container/sv_db/tables/svJump.h"
 #include "module/get_inserter_container_module.h"
 
-namespace libMA
+namespace libMSV
 {
 /**
- * @brief Insertion of libMA::SvJump into the database.
+ * @brief Insertion of libMSV::SvJump into the database.
  */
 template <typename DBCon>
 class JumpInserterContainer
@@ -58,9 +58,9 @@ using GetJumpInserterContainerModule =
 template <typename DBCon> using JumpInserterModule = InserterModule<JumpInserterContainer<DBCon>>;
 
 
-} // namespace libMA
+} // namespace libMSV
 
 #ifdef WITH_PYTHON
-/// @brief used to expose libMA::SvJumpInserter to python
+/// @brief used to expose libMSV::SvJumpInserter to python
 void exportSvJumpInserter( py::module& rxPyModuleId );
 #endif

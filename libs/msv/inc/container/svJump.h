@@ -7,7 +7,7 @@
 #include <cmath>
 #include <limits>
 
-namespace libMA
+namespace libMSV
 {
 
 class SvJump : public Container
@@ -634,7 +634,7 @@ class CompleteBipartiteSubgraphClusterVector : public Container
     std::vector<std::shared_ptr<SvCall>> vContent;
 }; // class
 
-}; // namespace libMA
+}; // namespace libMSV
 
 #ifdef WITH_PYTHON
 void exportSVJump( py::module& rxPyModuleId );

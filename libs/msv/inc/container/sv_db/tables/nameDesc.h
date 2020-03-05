@@ -9,7 +9,7 @@
 
 #include "sql_api.h"
 
-namespace libMA
+namespace libMSV
 {
 template <typename DBCon>
 using NameDescTableType = SQLTableWithAutoPriKey<DBCon,
@@ -139,4 +139,4 @@ template <typename DBCon> class SvJumpRunTable : public NameDescTable<DBCon>
     {} // default constructor
 }; // class
 
-} // namespace libMA
+} // namespace libMSV

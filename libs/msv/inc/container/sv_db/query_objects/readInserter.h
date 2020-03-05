@@ -1,6 +1,6 @@
 /**
  * @file readInserter.h
- * @brief implements libMA::ReadInserter that inserts reads into the DB.
+ * @brief implements libMSV::ReadInserter that inserts reads into the DB.
  * @author Markus Schmidt
  */
 // The order of the following two includes is significant with MSVC.
@@ -13,7 +13,7 @@
 #include "container/sv_db/tables/sequencer.h"
 #include "module/get_inserter_container_module.h"
 
-namespace libMA
+namespace libMSV
 {
 
 /// @brief inserts reads into a DB
@@ -83,10 +83,10 @@ using GetPairedReadInserterContainerModule =
     GetInserterContainerModule<PairedReadInserterContainer, DBCon, DBConInit, SequencerTable>;
 template <typename DBCon> using PairedReadInserterModule = InserterModule<PairedReadInserterContainer<DBCon>>;
 
-} // namespace libMA
+} // namespace libMSV
 
 
 #ifdef WITH_PYTHON
-/// @brief expose libMA::ReadInsert to python
+/// @brief expose libMSV::ReadInsert to python
 void exportReadInserter( py::module& rxPyModuleId );
 #endif

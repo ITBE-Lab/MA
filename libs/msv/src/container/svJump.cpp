@@ -1,6 +1,6 @@
 #include "container/svJump.h"
 
-using namespace libMA;
+using namespace libMSV;
 
 #ifdef WITH_PYTHON
 

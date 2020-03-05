@@ -2,7 +2,7 @@
 #include "container/sv_db/pool_container.h"
 #include "container/sv_db/query_objects/callInserter.h"
 
-namespace libMA
+namespace libMSV
 {
 
 #define LOG false
@@ -228,4 +228,4 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
     return uiNumCombines;
 
 } // function
-}; // namespace libMA
+}; // namespace libMSV

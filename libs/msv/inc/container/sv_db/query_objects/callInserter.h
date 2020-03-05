@@ -1,6 +1,6 @@
 /**
  * @file callInserter.h
- * @brief Implements libMA::SvCallInserter; a transaction based structural variant call inserter
+ * @brief Implements libMSV::SvCallInserter; a transaction based structural variant call inserter
  * @author Markus Schmidt
  */
 #pragma once
@@ -11,7 +11,7 @@
 #include "container/sv_db/tables/svCallerRun.h"
 #include "module/get_inserter_container_module.h"
 
-namespace libMA
+namespace libMSV
 {
 
 
@@ -28,7 +28,7 @@ namespace libMA
 /**
  * @brief A transaction based structural variant call inserter
  * @details
- * Objects of this class can be used to update or insert structural variant calls into a libMA::svDb.
+ * Objects of this class can be used to update or insert structural variant calls into a libMSV::svDb.
  */
 template <typename CallOrVector, typename DBCon>
 class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterContainer, SvCallTable, CallOrVector>
@@ -53,7 +53,7 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
     /**
      * @brief insert a new call and link to the supporting jumps.
      * @details
-     * Makes use of the libMA::SvCallInserter::CallContex.
+     * Makes use of the libMSV::SvCallInserter::CallContex.
      * Expects that rCall does NOT exist in the DB yet.
      */
     inline size_t insertCall( SvCall& rCall )
@@ -112,11 +112,11 @@ using GetCallVectorInserterContainerModule =
 template <typename DBCon> using SvCallInserterModule = InserterModule<SvCallInserterContainer<DBCon>>;
 template <typename DBCon> using SvCallVectorInserterModule = InserterModule<SvCallVectorInserterContainer<DBCon>>;
 
-} // namespace libMA
+} // namespace libMSV
 
 #ifdef WITH_PYTHON
 /**
- * @brief used to expose libMA::SvCallInserter to python
+ * @brief used to expose libMSV::SvCallInserter to python
  */
 void exportSvCallInserter( py::module& rxPyModuleId );
 #endif
