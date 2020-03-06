@@ -8,7 +8,7 @@
 using namespace libMA;
 
 
-void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
+void DLL_PORT(MA) Alignment::append( MatchType type, nucSeqIndex size )
 {
 #if DEBUG_LEVEL >= 2
     // get a copy of the alignment for later comparison in case something goes wrong
@@ -96,7 +96,7 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
            ) // DEBUG
 } // function
 
-unsigned int EXPORTED Alignment::localscore( ) const
+unsigned int DLL_PORT(MA) Alignment::localscore( ) const
 {
     unsigned int uiMaxScore = 0;
     int64_t iScoreCurr = 0;
@@ -128,7 +128,7 @@ unsigned int EXPORTED Alignment::localscore( ) const
     return uiMaxScore;
 } // function
 
-void EXPORTED Alignment::makeLocal( )
+void DLL_PORT(MA) Alignment::makeLocal( )
 {
     if( uiLength == 0 )
         return;
@@ -236,7 +236,7 @@ void EXPORTED Alignment::makeLocal( )
                                                     << std::endl; )
 } // function
 
-void EXPORTED Alignment::removeDangeling( )
+void DLL_PORT(MA) Alignment::removeDangeling( )
 {
 #if DEBUG_LEVEL >= 1
     // get a copy of the alignment for later comparison in case something goes wrong

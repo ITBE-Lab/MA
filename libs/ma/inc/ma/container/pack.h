@@ -707,10 +707,10 @@ class Pack : public libMS::Container
 #ifdef FASTA_READER
     /* Appends a single FASTA record to the collection and pack.
      */
-    void EXPORTED vAppendFastaSequence( const FastaDescriptor& rxFastaDescriptor );
+    void DLL_PORT(MA) vAppendFastaSequence( const FastaDescriptor& rxFastaDescriptor );
     /* Appends a single FASTA record to the collection and pack.
      */
-    void EXPORTED vAppendFastaFile( const char* pcFileName );
+    void DLL_PORT(MA) vAppendFastaFile( const char* pcFileName );
 #endif
 
     /* Creates the reverse strand a saves the collection on the disk.
@@ -777,14 +777,14 @@ class Pack : public libMS::Container
      * pcPackPrefix is some prefix for the pack-files.
      * Reads all sequences on the file system and creates a sequence collection out of them.
      */
-    void EXPORTED vPackFastaFilesDeprecated( const std::vector<std::string>& rxvFileNameOfFastaFiles,
+    void DLL_PORT(MA) vPackFastaFilesDeprecated( const std::vector<std::string>& rxvFileNameOfFastaFiles,
                                              const char* pcPackPrefix, bool bMakeReverseStand = false );
 
     /* Entry point, for the construction of packs.
      * pcPackPrefix is some prefix for the pack-files.
      * Reads all sequences on the file system and creates a sequence collection out of them.
      */
-    void EXPORTED vAppendFASTA( const std::string& sFastaFilePath );
+    void DLL_PORT(MA) vAppendFASTA( const std::string& sFastaFilePath );
 #endif
 
     /* Restores a nucleotide sequence collection from the file system using the prefix given as

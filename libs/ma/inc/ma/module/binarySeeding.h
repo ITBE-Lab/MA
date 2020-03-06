@@ -52,13 +52,13 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
      * Segments are saved in pSegmentVector.
      */
     inline geom::Interval<nucSeqIndex> maximallySpanningExtension( nucSeqIndex center,
-                                                             std::shared_ptr<SuffixArrayInterface>
-                                                                 pFM_index,
-                                                             std::shared_ptr<NucSeq>
-                                                                 pQuerySeq,
-                                                             std::shared_ptr<SegmentVector>
-                                                                 pSegmentVector,
-                                                             bool bFirst )
+                                                                   std::shared_ptr<SuffixArrayInterface>
+                                                                       pFM_index,
+                                                                   std::shared_ptr<NucSeq>
+                                                                       pQuerySeq,
+                                                                   std::shared_ptr<SegmentVector>
+                                                                       pSegmentVector,
+                                                                   bool bFirst )
     {
         //+ const size_t uiTempExtLen = 20;
         //+ const long uiTempMaxOcc = 4;
@@ -258,8 +258,8 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
      * Segments are saved in pSegmentVector.
      */
     geom::Interval<nucSeqIndex> smemExtension( nucSeqIndex center, std::shared_ptr<SuffixArrayInterface> pFM_index,
-                                         std::shared_ptr<NucSeq> pQuerySeq,
-                                         std::shared_ptr<SegmentVector> pSegmentVector )
+                                               std::shared_ptr<NucSeq> pQuerySeq,
+                                               std::shared_ptr<SegmentVector> pSegmentVector )
     {
         // to remember the covered area
         geom::Interval<nucSeqIndex> ret( center, 0 );
@@ -455,9 +455,10 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
      *    if the interval cannot be found this method splits the interval in half and repeats the
      * step with the first half, while queuing the second half as a task in the thread pool.
      */
-    void procesInterval( geom::Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
-                         std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
-                         size_t uiCnt );
+    void DLL_PORT( MA )
+        procesInterval( geom::Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
+                        std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq,
+                        size_t uiCnt );
 
   public:
     /**
@@ -480,12 +481,12 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
           uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<SegmentVector>
-        EXPORTED execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
+    virtual std::shared_ptr<SegmentVector> DLL_PORT( MA )
+        execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
 
 
-    std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
-                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    std::vector<std::shared_ptr<Seeds>>
+    seed( std::shared_ptr<FMIndex> pFM_index, std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
     {
         std::vector<std::shared_ptr<Seeds>> vRet;
         for( auto pQuery : vQueries )
@@ -503,11 +504,7 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
  * @brief exports the Segmentation @ref libMA::Module "module" to python.
  * @ingroup export
  */
-#ifdef WITH_BOOST
-void exportBinarySeeding( );
-#else
 void exportBinarySeeding( py::module& rxPyModuleId );
-#endif
 #endif
 
 #endif

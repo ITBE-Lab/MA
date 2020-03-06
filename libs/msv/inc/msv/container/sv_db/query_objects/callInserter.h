@@ -81,12 +81,12 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
         return 1 + rCall.vSupportingJumpIds.size( );
     } // method
   protected:
-    virtual size_t EXPORTED insert_override( std::shared_ptr<SvCall> pCall )
+    virtual size_t insert_override( std::shared_ptr<SvCall> pCall )
     {
         return insertCall( *pCall );
     } // method
 
-    virtual size_t EXPORTED insert_override( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
+    virtual size_t insert_override( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls )
     {
         size_t uiTotal = 0;
         for( auto pCall : pCalls->vContent )

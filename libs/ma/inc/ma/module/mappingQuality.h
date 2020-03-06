@@ -35,7 +35,7 @@ class MappingQuality : public libMS::Module<libMS::ContainerVector<std::shared_p
           uiMaxSupplementaryPerPrim( rParameters.getSelected( )->xMaxSupplementaryPerPrim->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> EXPORTED
+    virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> DLL_PORT(MA)
     execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments );
 
 }; // class

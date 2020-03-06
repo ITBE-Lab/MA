@@ -16,6 +16,7 @@ using namespace libMA;
 
 PYBIND11_MODULE( libMSV, libMsvModule )
 {
+    py::module::import("libMS");
     exportSVJump( libMsvModule );
     exportSvJumpsFromSeeds( libMsvModule );
     exportSweepSvJump( libMsvModule );

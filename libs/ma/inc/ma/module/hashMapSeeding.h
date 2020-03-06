@@ -40,18 +40,18 @@ class HashMapSeeding : public libMS::Module<Seeds, false, NucSeq, NucSeq>
         return minSeedSize( );
     } // method
 
-    virtual std::unordered_multimap<std::string, size_t> getIndex( NucSeq& xQ1, nucSeqIndex uiSeedSize );
-    virtual std::shared_ptr<Seeds> getSeeds( std::unordered_multimap<std::string, size_t> xIndex, NucSeq& xQ1,
-                                             nucSeqIndex uiSeedSize );
+    virtual std::unordered_multimap<std::string, size_t> DLL_PORT( MA ) getIndex( NucSeq& xQ1, nucSeqIndex uiSeedSize );
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA )
+        getSeeds( std::unordered_multimap<std::string, size_t> xIndex, NucSeq& xQ1, nucSeqIndex uiSeedSize );
 
-    virtual std::shared_ptr<Seeds> EXPORTED execute( NucSeq& xQ1, NucSeq& xQ2 );
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( NucSeq& xQ1, NucSeq& xQ2 );
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
     {
         return execute( *pQ1, *pQ2 );
     } // method
 
-    virtual std::vector<std::shared_ptr<libMA::Seeds>> getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex,
-                                                                    std::vector<std::shared_ptr<NucSeq>> vIn )
+    virtual std::vector<std::shared_ptr<libMA::Seeds>>
+    getAllSeeds( std::unordered_multimap<std::string, size_t> xIndex, std::vector<std::shared_ptr<NucSeq>> vIn )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
         for( auto pNucSeq : vIn )
@@ -79,7 +79,7 @@ class ReSeeding : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
           uiPadding( rParameters.getSelected( )->xPaddingReSeeding->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
                                                      std::shared_ptr<Pack> pPack );
 
 }; // class
@@ -100,7 +100,7 @@ class FillSeedSet : public libMS::Module<Seeds, false, Seeds, NucSeq, FMIndex, P
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeedsIn,
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeedsIn,
                                                      std::shared_ptr<NucSeq>
                                                          pQuery,
                                                      std::shared_ptr<FMIndex>
@@ -146,7 +146,7 @@ class ExtractFilledSeedSets
 
     // overload
     virtual std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
-        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCsIn, std::shared_ptr<NucSeq> pQuery,
+        DLL_PORT(MA) execute( std::shared_ptr<SoCPriorityQueue> pSoCsIn, std::shared_ptr<NucSeq> pQuery,
                           std::shared_ptr<FMIndex> pFMIndex, std::shared_ptr<Pack> pPack )
     {
         auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );

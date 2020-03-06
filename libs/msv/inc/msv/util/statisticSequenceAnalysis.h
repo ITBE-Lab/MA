@@ -3,12 +3,13 @@
  * @brief Implements statistical ways to analyze repetitiveness in sequences.
  * @author Markus Schmidt
  */
-#include "util/geom.h"
 #include "ma/container/nucSeq.h"
+#include "util/geom.h"
 
 #pragma once
 
-namespace libMA
+using namespace libMA;
+namespace libMSV
 {
 
 /**
@@ -18,14 +19,14 @@ namespace libMA
  * where (1 - 1/4^k) is the probability that two k-sized nucleotide sequences do not match.
  *	     (w-k+1)*(h-k+1) ) is the number of possible K-mer combinations within the rectangle.
  */
-nucSeqIndex getKMerSizeForRectangle( geom::Rectangle<nucSeqIndex>& rRect, double t );
+nucSeqIndex DLL_PORT( MSV ) getKMerSizeForRectangle( geom::Rectangle<nucSeqIndex>& rRect, double t );
 
 /**
  * @brief returns the size at which all k-mer's on the reference interval of xArea are unique.
  * @details
  * Currently implemented inefficiently.
  */
-nucSeqIndex sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, double t );
+nucSeqIndex DLL_PORT( MSV ) sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, double t );
 inline nucSeqIndex sampleKMerSize( NucSeq& rSequence, double t )
 {
     NucSeq xEmpty;
@@ -39,11 +40,11 @@ inline nucSeqIndex sampleKMerSize( NucSeq& rSequence, double t )
  * Compares both sequences with themselves and each other, so the minimal returned value should be
  * the length of both sequences added together.
  */
-nucSeqIndex sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenceB, double t );
+nucSeqIndex DLL_PORT( MSV ) sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenceB, double t );
 inline nucSeqIndex sampleSequenceAmbiguity( NucSeq& rSequence, double t )
 {
     NucSeq xEmpty;
     return sampleSequenceAmbiguity( rSequence, xEmpty, t );
 } // function
 
-} // namespace libMA
+} // namespace libMSV

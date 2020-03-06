@@ -40,7 +40,7 @@ class OtherSeeding : public libMS::Module<SegmentVector, false, FMIndex, NucSeq>
     {} // constructor
 
     // overload
-    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<FMIndex> pFM_index,
+    virtual std::shared_ptr<SegmentVector> DLL_PORT(MA) execute( std::shared_ptr<FMIndex> pFM_index,
                                                              std::shared_ptr<NucSeq> pQuerySeq );
 
 }; // class

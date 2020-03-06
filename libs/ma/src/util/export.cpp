@@ -36,6 +36,7 @@ void exportExecutionContext( py::module& rxPyModuleId )
 
 PYBIND11_MODULE( libMA, libMaModule )
 {
+    py::module::import("libMS");
     exportFM_index( libMaModule );
     exportNucSeq( libMaModule );
     exportBinarySeeding( libMaModule );

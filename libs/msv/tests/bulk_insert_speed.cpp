@@ -125,7 +125,7 @@ int main( void )
     duration xTotalTime = std::chrono::steady_clock::now( ) - xStart;
 
     size_t uiTotalNumInserts = 3 * uiNumValues * uiThreads;
-    size_t uiNumInsertedRows = uiTotalNumInserts / xTotalTime.count( );
+    size_t uiNumInsertedRows = (size_t)(uiTotalNumInserts / xTotalTime.count( ));
     std::cout << "inserted " << withCommas( uiNumInsertedRows ) << " rows per second (accumulated over " << uiThreads
               << " threads)." << std::endl;
 

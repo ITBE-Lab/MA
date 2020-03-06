@@ -154,7 +154,7 @@ class AbstractInserterContainer : public Container
      * Whenever you inherit from this class your job is to implement this function.
      * Shall return the number of rows that were inserted.
      */
-    virtual size_t EXPORTED insert_override( std::shared_ptr<InsertTypes>... pArgs )
+    virtual size_t insert_override( std::shared_ptr<InsertTypes>... pArgs )
     {
         throw std::runtime_error( "insert function of AbstractInserterContainer was not defined." );
     } // method

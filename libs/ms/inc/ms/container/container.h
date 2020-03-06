@@ -4,8 +4,7 @@
  * @author Markus Schmidt
  */
 
-#ifndef CONTAINER_H
-#define CONTAINER_H
+#pragma once
 
 #include "util/debug.h"
 #include "util/support.h"
@@ -273,6 +272,4 @@ class PyContainerVector : public ContainerVector<std::shared_ptr<Container>>
  */
 
 void exportContainer( py::module& rxPyModuleId );
-#endif
-
 #endif

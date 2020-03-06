@@ -3,6 +3,8 @@ option(FORT_HAVE_UTF8 "Enable UTF8 support" ON)
 
 add_library(fort SHARED
     fort.c)
+set_target_properties( fort PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties( fort PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 target_include_directories(fort
     PUBLIC

@@ -55,10 +55,10 @@ class PairedReads
      * Can be set to use normal or uniform distribution.
      * Note: both distributions are set using mean and standard deviation.
      */
-    double EXPORTED p( nucSeqIndex d ) const;
+    double DLL_PORT(MA) p( nucSeqIndex d ) const;
 
     std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
-        EXPORTED execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
+        DLL_PORT(MA) execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
                           std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pA,
                           std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pB,
                           std::shared_ptr<Pack> pPack );

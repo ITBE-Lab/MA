@@ -142,8 +142,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * we provide.
  */
 
-#ifndef EXPORT_H
-#define EXPORT_H
+#pragma once
 
 #include "ma/module/binarySeeding.h"
 #include "ma/module/fileReader.h"
@@ -165,7 +164,7 @@ typedef libMS::Module<libMS::Container, false, NucSeq, libMS::ContainerVector<st
 typedef libMS::Module<libMS::Container, false, NucSeq, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack>
     TP_PAIRED_WRITER;
 
-std::vector<std::shared_ptr<libMS::BasePledge>> EXPORTED setUpCompGraph( const ParameterSetManager& rParameters,
+std::vector<std::shared_ptr<libMS::BasePledge>> DLL_PORT(MA) setUpCompGraph( const ParameterSetManager& rParameters,
                                                                   std::shared_ptr<libMS::Pledge<Pack>>
                                                                       pPack,
                                                                   std::shared_ptr<libMS::Pledge<FMIndex>>
@@ -177,7 +176,7 @@ std::vector<std::shared_ptr<libMS::BasePledge>> EXPORTED setUpCompGraph( const P
                                                                   unsigned int uiThreads );
 
 std::vector<std::shared_ptr<libMS::BasePledge>>
-    EXPORTED setUpCompGraphPaired( const ParameterSetManager& rParameters,
+    DLL_PORT(MA) setUpCompGraphPaired( const ParameterSetManager& rParameters,
                                    std::shared_ptr<libMS::Pledge<Pack>>
                                        pPack,
                                    std::shared_ptr<libMS::Pledge<FMIndex>>
@@ -190,5 +189,3 @@ std::vector<std::shared_ptr<libMS::BasePledge>>
 
 
 } // namespace libMA
-
-#endif // EXPORT_H

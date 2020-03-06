@@ -109,7 +109,8 @@ std::vector<rect> getCallOverview( std::shared_ptr<libMS::PoolContainer<DBCon>> 
             for( size_t uiI = 0; uiI < uiNumW; uiI++ )
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiContigX, size_t uiContigY, size_t uiI, double dW,
-                         double dH, uint32_t uiStartX, uint32_t uiStartY, uint32_t uiNumH ) {
+                         double dH, uint32_t uiStartX, uint32_t uiStartY, uint32_t uiNumH ) -> std::vector<rect>
+                    {
                         std::vector<rect> vRet;
                         for( size_t uiJ = 0; uiJ < uiNumH; uiJ++ )
                         {

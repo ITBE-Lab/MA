@@ -123,7 +123,7 @@ typedef unsigned char ubyte_t;
 class SuffixArrayInterface : public libMS::Container
 {
   public:
-    virtual SAInterval EXPORTED extend_backward(
+    virtual SAInterval DLL_PORT(MA) extend_backward(
         // current interval
         const SAInterval& ik,
         // the character to extend with
@@ -167,13 +167,13 @@ class FMIndex : public SuffixArrayInterface
      */
     t_bwtIndex primary;
 
-    SAInterval EXPORTED getInterval( std::shared_ptr<NucSeq> pQuerySeq );
+    SAInterval DLL_PORT(MA) getInterval( std::shared_ptr<NucSeq> pQuerySeq );
 
-    t_bwtIndex EXPORTED get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
+    t_bwtIndex DLL_PORT(MA) get_ambiguity( std::shared_ptr<NucSeq> pQuerySeq );
 
-    bool EXPORTED testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const Pack& rPack );
+    bool DLL_PORT(MA) testSaInterval( std::shared_ptr<NucSeq> pQuerySeq, const Pack& rPack );
 
-    bool EXPORTED test( const Pack& rPack, unsigned int uiNumTest );
+    bool DLL_PORT(MA) test( const Pack& rPack, unsigned int uiNumTest );
 
   protected:
     typedef int64_t bwtint_t;
@@ -203,7 +203,7 @@ class FMIndex : public SuffixArrayInterface
      * represent them. WARNING: Do not pass sequences comprising ambiguous symbols (e.g. symbol
      * 'N').
      */
-    void EXPORTED bwt_pac2bwt_step1( const NucSeq& fn_pac_arg );
+    void DLL_PORT(MA) bwt_pac2bwt_step1( const NucSeq& fn_pac_arg );
 
 /** Retrieve character at position k from the $-removed packed BWT without occurrence counter.
  * Used in the context of step 2 (bwt_bwtupdate_core_step2) for retrieving characters.
@@ -216,7 +216,7 @@ class FMIndex : public SuffixArrayInterface
      * counters according to the counting. FIX ME: If we get exception over here, we have a memory
      * leak -> use unique poiters are vectors
      */
-    void EXPORTED bwt_bwtupdate_core_step2( );
+    void DLL_PORT(MA) bwt_bwtupdate_core_step2( );
 
 /** Retrieve character at position k from the $-removed packed BWT, which comprises occurrence
  * counter. (Note that bwt_t::bwt is not exactly the BWT string and therefore this macro is called
@@ -320,14 +320,14 @@ class FMIndex : public SuffixArrayInterface
     /** Creation of the suffix array (SA is organized on the foundation of 64 bit counters)
      * @param intv Interval size for suffix array (must be a power of 2)
      */
-    void EXPORTED bwt_cal_sa_step3( unsigned int intv );
+    void DLL_PORT(MA) bwt_cal_sa_step3( unsigned int intv );
 
     /** BWT construction for packs. Is is possible to choose among two different algorithms.
      * uiAlgorithmSelection : 0 manually selected algorithm for small inputs
      *                          1 manually selected algorithm for large inputs
      *                          2 automatic selection on foundation of input size
      */
-    void EXPORTED build_FMIndex( const Pack& rxSequenceCollection, // the pack for which we compute a BWT
+    void DLL_PORT(MA) build_FMIndex( const Pack& rxSequenceCollection, // the pack for which we compute a BWT
                                  unsigned int uiAlgorithmSelection = 2 // 2 -> automatic algorithm selection
     );
 
@@ -727,7 +727,7 @@ class FMIndex : public SuffixArrayInterface
      * perform a backwards extension with the nucleotide c and the SAInterval ik
      * this also updates the position of the reverse complement interval
      */
-    SAInterval EXPORTED extend_backward(
+    SAInterval DLL_PORT(MA) extend_backward(
         // current interval
         const SAInterval& ik,
         // the character to extend with

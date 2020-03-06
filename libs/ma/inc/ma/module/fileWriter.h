@@ -427,7 +427,7 @@ class FileWriter
     {} // constructor
 
     virtual std::shared_ptr<libMS::Container>
-        EXPORTED execute( std::shared_ptr<NucSeq> pQuery,
+        DLL_PORT(MA) execute( std::shared_ptr<NucSeq> pQuery,
                           std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
                               pAlignments,
                           std::shared_ptr<Pack>
@@ -527,7 +527,7 @@ class PairedFileWriter : public libMS::Module<libMS::Container, false, NucSeq, N
     {} // constructor
 
     virtual std::shared_ptr<libMS::Container>
-        EXPORTED execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
+        DLL_PORT(MA) execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
                           std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
                           std::shared_ptr<Pack> pPack );
 

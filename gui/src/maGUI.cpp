@@ -33,13 +33,13 @@
 #include "mwx.h"
 
 /* Due to MSVC libMa should be included after the wxWidgets includes */
-#include "util/export.h"
-#include "version.h"
+#include "ma/util/export.h"
+#include "ms/util/version.h"
 using namespace libMS;
 using namespace libMA;
 
-#include "util/execution-context.h"
-#include "util/parameter.h"
+#include "ma/util/execution-context.h"
+#include "ms/util/parameter.h"
 
 // Global MA execution context
 ExecutionContext xExecutionContext;

@@ -7,11 +7,11 @@
 
 #pragma once
 
+#include "ms/module/get_inserter_container_module.h"
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/pairedRead.h"
 #include "msv/container/sv_db/tables/read.h"
 #include "msv/container/sv_db/tables/sequencer.h"
-#include "ms/module/get_inserter_container_module.h"
 
 
 using namespace libMA;
@@ -29,7 +29,7 @@ class ReadInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
     using ParentType::BulkInserterContainer;
 
   protected:
-    virtual size_t EXPORTED insert_override( std::shared_ptr<NucSeq> pRead )
+    virtual size_t insert_override( std::shared_ptr<NucSeq> pRead )
     {
         ParentType::pInserter->insert( ParentType::iId, pRead->sName, makeSharedCompNucSeq( *pRead ) );
         return 1;
@@ -71,7 +71,7 @@ class PairedReadInserterContainer
               } ) )
     {} // constructor
   protected:
-    virtual size_t EXPORTED insert_override( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
+    virtual size_t insert_override( std::shared_ptr<NucSeq> pReadA, std::shared_ptr<NucSeq> pReadB )
     {
         auto iReadIdA =
             ParentType::pInserter->insert( ParentType::iId, pReadA->sName, makeSharedCompNucSeq( *pReadA ) );

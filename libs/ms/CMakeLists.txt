@@ -9,6 +9,12 @@ else()
     message( "--libMS: Building shared library without python support." )
 endif()
 
+# and for each of your dependent executable/library targets:
+if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
+    # std::filesystem is still experimental and for linkage we need separated library
+    message( "--libMS: Filesystem support for GCC below version 8" )
+endif()
+
 function( ms_add_module_helper target_name )
     # Get all .cpp files in the src folder 
     file(GLOB_RECURSE SRC
@@ -26,7 +32,8 @@ function( ms_add_module_helper target_name )
 
     # Activate __declspec(dllexport) for DLL export 
     # PRIVATE => depending projects will not inherit the EXPORT definition
-    target_compile_definitions( ${target_name} PRIVATE EXPORT )
+    message( "--lib${target_name}: setting DLL_PORT_${target_name} to dllexport" )
+    target_compile_definitions( ${target_name} PRIVATE DLL_PORT_${target_name}=dllexport )
 
     # Be verbose with sql queries (in debug mode)
     #target_compile_definitions( MA PUBLIC SQL_VERBOSE )
@@ -35,6 +42,7 @@ function( ms_add_module_helper target_name )
     set_property(TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
     target_link_libraries ( ${target_name} PUBLIC util contrib_CPP_header )
+    target_compile_definitions( ${target_name} PUBLIC DLL_PORT_util=dllimport )
 
     # Set includes and library dependencies 
     target_include_directories(${target_name} PUBLIC inc)
@@ -46,7 +54,6 @@ function( ms_add_module_helper target_name )
     # and for each of your dependent executable/library targets:
     if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
         # std::filesystem is still experimental and for linkage we need separated library
-        message( "libMA: Filesystem support for GCC below version 8" )
         target_link_libraries( ${target_name} PUBLIC stdc++fs )
     endif()
 
@@ -75,7 +82,8 @@ function( ms_add_module_helper target_name )
             message( "--lib${target_name}: generating test " "${target_name}-${test_name}" )
             add_executable( "${target_name}-${test_name}" ${file} )
             target_link_libraries( "${target_name}-${test_name}" PUBLIC ${target_name} Threads::Threads )
-            add_test( "${target_name}-${test_name}" ${test_name} )
+            target_compile_definitions( "${target_name}-${test_name}" PUBLIC "DLL_PORT_${target_name}=dllimport" )
+            add_test( "${target_name}-${test_name}" "${target_name}-${test_name}" )
         endforeach()
 
         # add tests for all python files in the tests folder
@@ -148,5 +156,6 @@ target_include_directories(MS PUBLIC ${CMAKE_BINARY_DIR}/generated)
 function( ms_add_module target_name )
     ms_add_module_helper( ${target_name} )
     target_link_libraries ( ${target_name} LINK_PUBLIC MS )
+    target_compile_definitions( ${target_name} PUBLIC DLL_PORT_MS=dllimport )
 endfunction()
 

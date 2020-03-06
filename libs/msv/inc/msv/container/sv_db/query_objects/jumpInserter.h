@@ -5,10 +5,10 @@
  */
 #pragma once
 
+#include "ms/module/get_inserter_container_module.h"
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/nameDesc.h"
 #include "msv/container/sv_db/tables/svJump.h"
-#include "ms/module/get_inserter_container_module.h"
 
 using namespace libMA;
 using namespace libMS;
@@ -28,8 +28,7 @@ class JumpInserterContainer
     using ParentType::BulkInserterContainer;
 
   protected:
-    virtual size_t EXPORTED
-    insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
+    virtual size_t insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )
     {
         const int64_t iReadId = pRead->iId;
         for( SvJump& rJump : *pJumps )

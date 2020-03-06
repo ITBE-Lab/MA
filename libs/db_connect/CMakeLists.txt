@@ -16,7 +16,8 @@ add_library(dbSQL INTERFACE)
 
 
 # link to the fort object file
-target_link_libraries ( dbSQL INTERFACE fort ${MYSQL_LIBRARIES} )
+target_link_libraries ( dbSQL INTERFACE Threads::Threads fort util contrib_CPP_header ${MYSQL_LIBRARIES} )
+target_compile_definitions( dbSQL INTERFACE DLL_PORT_util=dllimport )
 
 # location of all includes 
 target_include_directories( dbSQL INTERFACE connectors . ${MYSQL_INCLUDE_DIRS})
@@ -40,8 +41,7 @@ if(BUILD_TESTING)
         get_filename_component(test_name ${file} NAME)
         message( "-- MA Database Connector: generating test " ${test_name} )
         add_executable( ${test_name} ${file} )
-		target_include_directories( ${test_name} PUBLIC ${MYSQL_INCLUDE_DIRS} connectors   )
-        target_link_libraries( ${test_name} PUBLIC ${MYSQL_LIBRARIES} contrib_CPP_header util Threads::Threads)
+        target_link_libraries( ${test_name} PUBLIC dbSQL)
 		# and for each of your dependent executable/library targets:
 		if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
 		    # std::filesystem is still experimental and for linkage we need separated library

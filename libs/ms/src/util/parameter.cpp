@@ -1,37 +1,37 @@
 #include "ms/util/parameter.h"
 #include <algorithm>
 
-template <> EXPORTED std::string genericStringToValue<std::string>( const std::string& sString )
+template <> DLL_PORT(MS) std::string genericStringToValue<std::string>( const std::string& sString )
 {
     return std::string( sString );
 } // function
 
-template <> EXPORTED int genericStringToValue<int>( const std::string& sString )
+template <> DLL_PORT(MS) int genericStringToValue<int>( const std::string& sString )
 {
     return stoi( sString );
 } // function
 
-template <> EXPORTED double genericStringToValue<double>( const std::string& sString )
+template <> DLL_PORT(MS) double genericStringToValue<double>( const std::string& sString )
 {
     return stod( sString );
 } // function
 
-template <> EXPORTED float genericStringToValue<float>( const std::string& sString )
+template <> DLL_PORT(MS) float genericStringToValue<float>( const std::string& sString )
 {
     return (float)stod( sString );
 } // function
 
-template <> EXPORTED short genericStringToValue<short>( const std::string& sString )
+template <> DLL_PORT(MS) short genericStringToValue<short>( const std::string& sString )
 {
     return (short)stoi( sString );
 } // function
 
-template <> EXPORTED uint64_t genericStringToValue<uint64_t>( const std::string& sString )
+template <> DLL_PORT(MS) uint64_t genericStringToValue<uint64_t>( const std::string& sString )
 {
     return (uint64_t)stoull( sString );
 } // function
 
-template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString )
+template <> DLL_PORT(MS) bool genericStringToValue<bool>( const std::string& sString )
 {
     std::string sTmp = sString;
     std::locale loc;
@@ -44,14 +44,14 @@ template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString
     throw std::runtime_error( "Boolean flags accept no other values than 'true' and 'false'." );
 } // function
 
-template <> EXPORTED std::string AlignerParameter<bool>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<bool>::asText( ) const
 {
     if( this->get( ) )
         return "true";
     return "false";
 } // method
 
-template <> EXPORTED std::string AlignerParameter<double>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<double>::asText( ) const
 {
     // Taken from: https://stackoverflow.com/questions/13686482/c11-stdto-stringdouble-no-trailing-zeros
     std::string sText( std::to_string( value ) );
@@ -62,7 +62,7 @@ template <> EXPORTED std::string AlignerParameter<double>::asText( ) const
     return sText;
 } // method
 
-template <> EXPORTED std::string AlignerParameter<float>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<float>::asText( ) const
 {
     // Taken from: https://stackoverflow.com/questions/13686482/c11-stdto-stringdouble-no-trailing-zeros
     std::string sText( std::to_string( value ) );
@@ -73,22 +73,22 @@ template <> EXPORTED std::string AlignerParameter<float>::asText( ) const
     return sText;
 } // method
 
-template <> EXPORTED std::string AlignerParameter<int>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<int>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method
 
-template <> EXPORTED std::string AlignerParameter<short>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<short>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method
 
-template <> EXPORTED std::string AlignerParameter<uint64_t>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<uint64_t>::asText( ) const
 {
     return std::to_string( this->get( ) );
 } // method
 
-template <> EXPORTED std::string AlignerParameter<std::string>::asText( ) const
+template <> DLL_PORT(MS) std::string AlignerParameter<std::string>::asText( ) const
 {
     return this->get( );
 } // method

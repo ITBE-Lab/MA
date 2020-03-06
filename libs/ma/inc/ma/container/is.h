@@ -45,7 +45,7 @@ typedef unsigned char ubyte_t;
  * @param n The length of the given string.
  * @return 0 if no error occurred
  */
-int EXPORTED is_sa( const ubyte_t* T, int* SA, int n );
+int DLL_PORT(MA) is_sa( const ubyte_t* T, int* SA, int n );
 
 /**
  * @brief Constructs the burrows-wheeler transformed string of a given string.
@@ -53,4 +53,4 @@ int EXPORTED is_sa( const ubyte_t* T, int* SA, int n );
  * @param n The length of the given string.
  * @return The primary index if no error occurred, -1 or -2 otherwise.
  */
-int EXPORTED is_bwt( ubyte_t* T, int n );
+int DLL_PORT(MA) is_bwt( ubyte_t* T, int n );

@@ -147,7 +147,7 @@ class NucSeq : public libMS::Container
   public:
     /** The table used to translate from base pairs to numeric codes for nucleotides
      */
-    static const EXPORTED unsigned char xNucleotideTranslationTable[ 256 ];
+    static const DLL_PORT(MA) unsigned char xNucleotideTranslationTable[ 256 ];
 
     std::string sName = "unknown";
     int64_t iId = -1;

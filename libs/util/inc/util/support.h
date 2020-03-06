@@ -48,13 +48,13 @@ typedef signed __int16 int16_t;
 typedef unsigned __int64 uint64_t;
 #endif
 
-bool EXPORTED fileExists( const std::string& rsFile );
+bool DLL_PORT(util) fileExists( const std::string& rsFile );
 
-void makeDir( const std::string& rsFile );
+void DLL_PORT(util) makeDir( const std::string& rsFile );
 
 /* Constructs the full filename for a prefix, suffix combination.
  */
-std::string EXPORTED fullFileName( const char* pcFileNamePrefix, const char* pcSuffix );
+std::string DLL_PORT(util) fullFileName( const char* pcFileNamePrefix, const char* pcSuffix );
 
 /**
  * @brief Function for range checking.
@@ -92,7 +92,7 @@ void vRangeCheckAndThrowExclusive( const std::string& sText, const ParameterType
     } // if
 } // template function
 
-bool EXPORTED is_number( const std::string& s );
+bool DLL_PORT(util) is_number( const std::string& s );
 
 /**
  * @brief Loop where the counter value is known during compiletime.
@@ -153,7 +153,7 @@ template <template <size_t> class Func> struct TemplateLoop<0, Func>
     } // method
 }; // struct
 
-std::string EXPORTED demangle( const char* name );
+std::string DLL_PORT(util) demangle( const char* name );
 
 template <class X> std::string type_name( X* pType, bool bBare = false )
 {
@@ -172,9 +172,9 @@ template <class X> std::string type_name( bool bBare = false )
     return type_name<X>( nullptr, bBare );
 } // function
 
-bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd );
+bool DLL_PORT(util) ends_with( const std::string& rsX, const std::string& rsEnd );
 
-std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex );
+std::vector<std::string> DLL_PORT(util) split( const std::string& sSubject, const std::string sRegex );
 
 /**
  * @brief are we on a big endian system?
@@ -182,6 +182,6 @@ std::vector<std::string> EXPORTED split( const std::string& sSubject, const std:
  * Taken from here: https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program.
  * Once we move to C++20 we can use https://en.cppreference.com/w/cpp/types/endian instead.
  */
-bool /* EXPORTED */ is_big_endian( );
+bool DLL_PORT(util) is_big_endian( );
 
 #endif

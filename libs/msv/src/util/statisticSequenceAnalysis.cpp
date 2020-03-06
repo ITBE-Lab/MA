@@ -1,9 +1,8 @@
 #include "msv/util/statisticSequenceAnalysis.h"
 #include "ma/module/hashMapSeeding.h"
 
-using namespace libMA;
 
-nucSeqIndex libMA::getKMerSizeForRectangle( geom::Rectangle<nucSeqIndex>& rRect, double t )
+nucSeqIndex libMSV::getKMerSizeForRectangle( geom::Rectangle<nucSeqIndex>& rRect, double t )
 {
     auto w = rRect.xXAxis.size( ); // width of rectangle
     auto h = rRect.xYAxis.size( ); // height of rectangle
@@ -25,7 +24,7 @@ nucSeqIndex libMA::getKMerSizeForRectangle( geom::Rectangle<nucSeqIndex>& rRect,
     return std::min( w, h ) + 1;
 } // function
 
-nucSeqIndex libMA::sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, double t )
+nucSeqIndex libMSV::sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, double t )
 {
     geom::Rectangle<nucSeqIndex> xRect( 0, 0, rSequenceA.length( ) + rSequenceB.length( ),
                                         rSequenceA.length( ) + rSequenceB.length( ) );
@@ -53,7 +52,7 @@ nucSeqIndex libMA::sampleKMerSize( NucSeq& rSequenceA, NucSeq& rSequenceB, doubl
     return uiSeedSize - uiStaticsticalSize;
 } // function
 
-nucSeqIndex libMA::sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenceB, double t )
+nucSeqIndex libMSV::sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequenceB, double t )
 {
     HashMapSeeding xSeeder;
 

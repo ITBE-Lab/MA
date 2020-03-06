@@ -30,25 +30,25 @@ std::string fullFileName( const char* pcFileNamePrefix, const char* pcSuffix )
     return sFileName.append( pcSuffix );
 } // method
 
-bool EXPORTED fileExists( const std::string& rsFile )
+bool DLL_PORT(util) fileExists( const std::string& rsFile )
 {
     std::ifstream fStream( rsFile.c_str( ) );
     return fStream.good( );
 } // function
 
-bool EXPORTED is_number( const std::string& s )
+bool DLL_PORT(util) is_number( const std::string& s )
 {
     return !s.empty( ) &&
            std::find_if( s.begin( ) + 1, s.end( ), []( char c ) { return !std::isdigit( (int)c ); } ) == s.end( ) &&
            ( std::isdigit( (int)s[ 0 ] ) || s[ 0 ] == '-' );
 } // function
 
-bool EXPORTED ends_with( const std::string& rsX, const std::string& rsEnd )
+bool DLL_PORT(util) ends_with( const std::string& rsX, const std::string& rsEnd )
 {
     return rsX.compare( rsX.length( ) - rsEnd.length( ), rsEnd.length( ), rsEnd ) == 0;
 } // function
 
-std::vector<std::string> EXPORTED split( const std::string& sSubject, const std::string sRegex )
+std::vector<std::string> DLL_PORT(util) split( const std::string& sSubject, const std::string sRegex )
 {
     std::regex xRegex( sRegex );
     std::vector<std::string> xVector{std::sregex_token_iterator( sSubject.begin( ), sSubject.end( ), xRegex, -1 ),
@@ -79,7 +79,7 @@ void makeDir( const std::string& rsFile )
     } // if
 } // function
 
-bool /* EXPORTED */ is_big_endian( )
+bool /* DLL_PORT(util) */ is_big_endian( )
 {
     union
     {
@@ -95,7 +95,7 @@ bool /* EXPORTED */ is_big_endian( )
 #include <cstdlib>
 #include <cxxabi.h>
 #include <memory>
-std::string EXPORTED demangle( const char* name )
+std::string DLL_PORT(util) demangle( const char* name )
 {
     int status = -4; // some arbitrary value to eliminate the compiler warning
     std::unique_ptr<char, void ( * )( void* )> res{abi::__cxa_demangle( name, NULL, NULL, &status ), std::free};
@@ -103,7 +103,7 @@ std::string EXPORTED demangle( const char* name )
 } // function
 #else
 
-std::string EXPORTED demangle( const char* name )
+std::string DLL_PORT(util) demangle( const char* name )
 {
     return std::string( name );
 } // function

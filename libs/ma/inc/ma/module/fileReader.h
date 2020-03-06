@@ -458,7 +458,7 @@ class FileReader : public libMS::Module<NucSeq, true, FileStream>
     FileReader( const ParameterSetManager& rParameters )
     {} // constructor
 
-    std::shared_ptr<NucSeq> EXPORTED execute( std::shared_ptr<FileStream> pStream );
+    std::shared_ptr<NucSeq> DLL_PORT(MA) execute( std::shared_ptr<FileStream> pStream );
 
 }; // class
 

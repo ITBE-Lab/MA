@@ -104,7 +104,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
      */
     inline nucSeqIndex start_ref_cons_rev( ) const
     {
-        if(!bOnForwStrand)
+        if( !bOnForwStrand )
             return uiPosOnReference - iSize - 1;
         return uiPosOnReference;
     } // function
@@ -114,7 +114,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
      */
     inline nucSeqIndex end_ref_cons_rev( ) const
     {
-        if(!bOnForwStrand)
+        if( !bOnForwStrand )
             return uiPosOnReference - 1;
         return uiPosOnReference + size( );
     } // function
@@ -244,7 +244,7 @@ class SVInfo
 }; // class
 
 #if DEBUG_LEVEL > 0
-    class SoCPriorityQueue; // DEBUG
+class SoCPriorityQueue; // DEBUG
 #endif
 
 /**
@@ -595,12 +595,12 @@ class Seeds : public libMS::Container
         return xRet;
     } // method
 
-    double getAverageSeedSize() const
+    double getAverageSeedSize( ) const
     {
         nucSeqIndex uiSeedSizeSum = 0;
-        for(auto& rSeed : vContent)
-            uiSeedSizeSum += rSeed.size();
-        return uiSeedSizeSum / (double)vContent.size();
+        for( auto& rSeed : vContent )
+            uiSeedSizeSum += rSeed.size( );
+        return uiSeedSizeSum / (double)vContent.size( );
     } // method
 
     /// @brief returns unique seeds in this; shared seeds; unique seeds in pOther
@@ -612,7 +612,8 @@ class Seeds : public libMS::Container
                                 std::get<2>( xTemp )->size( ) );
     } // method
 
-    void confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended );
+    void DLL_PORT( MA )
+        confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended );
 }; // class
 
 } // namespace libMA

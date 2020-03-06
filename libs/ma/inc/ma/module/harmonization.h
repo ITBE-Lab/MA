@@ -73,7 +73,7 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
      * The algorithm has to be run on left and right shadows,
      * therefore it is provided as individual function.
      */
-    std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> EXPORTED
+    std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> DLL_PORT(MA)
     linesweep( std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
                const int64_t uiRStart, const double fAngle );
 
@@ -180,7 +180,7 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pPrimaryStrand,
                                                      std::shared_ptr<NucSeq> pQuery,
                                                      std::shared_ptr<FMIndex> pFMIndex );
 
@@ -204,7 +204,7 @@ class Harmonization : public libMS::Module<libMS::ContainerVector<std::shared_pt
 
     // overload
     virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Seeds>>>
-        EXPORTED execute( std::shared_ptr<SoCPriorityQueue> pSoCSsIn, std::shared_ptr<NucSeq> pQuery,
+        DLL_PORT(MA) execute( std::shared_ptr<SoCPriorityQueue> pSoCSsIn, std::shared_ptr<NucSeq> pQuery,
                           std::shared_ptr<FMIndex> pFMIndex )
     {
         unsigned int uiNumTries = 0;
@@ -254,7 +254,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds>
 
 #if 1
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pIn )
     {
         if( pIn->size( ) == 0 )
             return std::make_shared<Seeds>( );
@@ -343,7 +343,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds>
     } // method
 #else
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pIn )
     {
         if( pIn->size( ) == 0 )
             return std::make_shared<Seeds>( );
@@ -444,7 +444,7 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
                                                      std::shared_ptr<Pack> pRef )
     {
         for( auto& rSeed : *pSeeds )
@@ -522,7 +522,7 @@ class FilterToUnique : public libMS::Module<Seeds, false, Seeds, NucSeq, NucSeq>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
                                                      std::shared_ptr<NucSeq> pRef )
     {
         auto pRet = std::make_shared<Seeds>( );
@@ -563,7 +563,7 @@ class MaxExtendedToSMEM : public libMS::Module<Seeds, false, Seeds>
     {} // constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds )
     {
         std::sort( //
             pSeeds->begin( ),
@@ -620,7 +620,7 @@ class MinLength : public libMS::Module<Seeds, false, Seeds>
     {} // constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds )
     {
         pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
                                        [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
@@ -662,7 +662,7 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds )
     {
 
         interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval_vector vIntervals;
@@ -880,7 +880,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
  *       O( n log n ) with respect to the amount of seeds.
  */
 #define DEBUG_CODE 0
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    virtual std::shared_ptr<Seeds> DLL_PORT(MA) execute( std::shared_ptr<Seeds> pSeeds )
     {
         auto pRet = std::make_shared<Seeds>( );
         std::sort( pSeeds->begin( ), pSeeds->end( ), &seedIsSmallerSort );

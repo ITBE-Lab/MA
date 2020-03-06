@@ -4,3 +4,4 @@ project("MSV Lib" VERSION 1.1.1 DESCRIPTION "The Modular Structural Variant Call
 
 ms_add_module( MSV )
 target_link_libraries ( MSV LINK_PUBLIC MA )
+target_compile_definitions( MSV PUBLIC DLL_PORT_MA=dllimport )

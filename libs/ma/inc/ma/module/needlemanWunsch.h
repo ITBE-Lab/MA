@@ -8,8 +8,8 @@
 
 #define OLD_KSW ( 0 )
 
-#include "ma/container/alignment.h"
 #include "kswcpp.h"
+#include "ma/container/alignment.h"
 #include "ms/module/module.h"
 
 
@@ -49,25 +49,26 @@ class Wrapper_ksw_extz_t
  * @ingroup module
  */
 class NeedlemanWunsch : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Alignment>>, false,
-                                      libMS::ContainerVector<std::shared_ptr<Seeds>>, NucSeq, Pack>
+                                             libMS::ContainerVector<std::shared_ptr<Seeds>>, NucSeq, Pack>
 {
     std::vector<std::vector<std::vector<int>>> s;
     std::vector<std::vector<std::vector<char>>> dir;
 
   public:
-    void EXPORTED dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::shared_ptr<NucSeq> pRef,
-                          const nucSeqIndex fromQuery, const nucSeqIndex toQuery, const nucSeqIndex fromRef,
-                          const nucSeqIndex toRef,
-                          std::shared_ptr<Alignment> pAlignment, // in & output
-                          AlignedMemoryManager& rMemoryManager, const bool bLocalBeginning, const bool bLocalEnd );
+    void DLL_PORT( MA )
+        dynPrg( const std::shared_ptr<NucSeq> pQuery, const std::shared_ptr<NucSeq> pRef, const nucSeqIndex fromQuery,
+                const nucSeqIndex toQuery, const nucSeqIndex fromRef, const nucSeqIndex toRef,
+                std::shared_ptr<Alignment> pAlignment, // in & output
+                AlignedMemoryManager& rMemoryManager, const bool bLocalBeginning, const bool bLocalEnd );
 
-    void ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
-                       nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
-                       std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
+    void DLL_PORT( MA )
+        ksw_dual_ext( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
+                      nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
+                      std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
 
-    void ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery, nucSeqIndex toQuery,
-              nucSeqIndex fromRef, nucSeqIndex toRef, std::shared_ptr<Alignment> pAlignment,
-              AlignedMemoryManager& rMemoryManager );
+    void DLL_PORT( MA ) ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, nucSeqIndex fromQuery,
+                             nucSeqIndex toQuery, nucSeqIndex fromRef, nucSeqIndex toRef,
+                             std::shared_ptr<Alignment> pAlignment, AlignedMemoryManager& rMemoryManager );
 
   private:
     const KswCppParam<5> xKswParameters;
@@ -102,9 +103,9 @@ class NeedlemanWunsch : public libMS::Module<libMS::ContainerVector<std::shared_
           iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ){}; // default constructor
 
 
-    std::shared_ptr<Alignment> EXPORTED execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery,
-                                                     std::shared_ptr<Pack> pRefPack,
-                                                     AlignedMemoryManager& rMemoryManager );
+    std::shared_ptr<Alignment> DLL_PORT( MA )
+        execute_one( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefPack,
+                     AlignedMemoryManager& rMemoryManager );
 
     // overload
     virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>

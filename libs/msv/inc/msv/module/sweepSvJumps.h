@@ -50,7 +50,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           iCurrStart( 0 )
     {} // constructor
 
-    virtual std::shared_ptr<GenomeSection> EXPORTED execute( )
+    virtual std::shared_ptr<GenomeSection> DLL_PORT(MSV) execute( )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
         // setFinished( );
@@ -107,7 +107,7 @@ class CompleteBipartiteSubgraphSweep
 
     // @todo document this function it is the main loop of the sv caller
     virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-        EXPORTED execute( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<GenomeSection> pSection,
+        DLL_PORT(MSV) execute( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<GenomeSection> pSection,
                           std::shared_ptr<Pack> pPack )
     {
         return pPool->xPool.run(
@@ -455,7 +455,7 @@ class ExactCompleteBipartiteSubgraphSweep
         } // while
     } // method
 
-    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector> EXPORTED
+    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector> DLL_PORT(MSV)
     execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pClusters, std::shared_ptr<Pack> pPack )
     {
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );

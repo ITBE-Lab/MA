@@ -125,7 +125,7 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
           bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds->get( ) )
     {} // default constructor
 
-    virtual std::shared_ptr<SoCPriorityQueue> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
+    virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT(MA) execute( std::shared_ptr<SegmentVector> pSegments,
                                                                 std::shared_ptr<NucSeq>
                                                                     pQuerySeq,
                                                                 std::shared_ptr<Pack>

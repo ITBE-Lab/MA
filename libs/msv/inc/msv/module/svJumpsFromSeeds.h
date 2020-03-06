@@ -6,13 +6,13 @@
 #pragma once
 
 #include "ma/container/segment.h"
-#include "msv/container/svJump.h"
-#include "msv/container/sv_db/tables/svJump.h"
 #include "ma/module/binarySeeding.h"
 #include "ma/module/harmonization.h"
 #include "ma/module/hashMapSeeding.h"
-#include "ms/module/module.h"
 #include "ma/module/needlemanWunsch.h"
+#include "ms/module/module.h"
+#include "msv/container/svJump.h"
+#include "msv/container/sv_db/tables/svJump.h"
 #include "msv/util/statisticSequenceAnalysis.h"
 
 namespace libMSV
@@ -26,7 +26,8 @@ class PerfectMatch;
  * @brief Computes Sv-Jumps from a given seed set
  * @note WARNING: DO USE EACH INSTANCE OF THIS MODULE ONLY ONCE IN THE COMPUTATIONAL GRAPH
  */
-class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
+class SvJumpsFromSeeds
+    : public libMS::Module<libMS::ContainerVector<SvJump>, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
   public:
     const size_t uiMinSeedSizeSV;
@@ -91,9 +92,9 @@ class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, fa
      * If the rectangle's width is more than xMaxSizeReseed (see settings) this will return
      * two rectangles using case 2; one for each seed.
      */
-    std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>
-    getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
-                          std::shared_ptr<Pack> pRefSeq );
+    std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> DLL_PORT( MSV )
+        getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
+                              std::shared_ptr<Pack> pRefSeq );
 
     /**
      * @brief computes how much percent of the rectangles xRects is filled by seeds in pvSeeds.
@@ -136,17 +137,18 @@ class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, fa
      * them to rvRet.
      * @note This is a helper function. Use the other computeSeeds.
      */
-    void computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
-                       std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet, HelperRetVal* pOutExtra );
+    void DLL_PORT( MSV )
+        computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::shared_ptr<NucSeq> pQuery,
+                      std::shared_ptr<Pack> pRefSeq, std::shared_ptr<Seeds> rvRet, HelperRetVal* pOutExtra );
     /**
      * @brief computes all seeds within the given areas.
      * @details
      * computes all seeds larger equal to SvJumpsFromSeeds::getKMerSizeForRectangle( xArea ) within xAreas.first and
      * xAreas.second seperately.
      */
-    std::shared_ptr<Seeds> computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>& xAreas,
-                                         std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq,
-                                         HelperRetVal* pOutExtra );
+    std::shared_ptr<Seeds> DLL_PORT( MSV )
+        computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>& xAreas,
+                      std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq, HelperRetVal* pOutExtra );
 
     /**
      * @brief computes the SV jumps between the two given seeds.
@@ -156,9 +158,10 @@ class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, fa
      * pSeeds, pvLayerOfSeeds and pvRectanglesOut are ignored if they are nullptrs,
      * otherwise the computed seeds, their layers and all reseeding rectangles are appended, respectiveley.
      */
-    void makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
-                                        std::shared_ptr<Pack> pRefSeq, std::shared_ptr<libMS::ContainerVector<SvJump>>& pRet,
-                                        size_t uiLayer, HelperRetVal* pOutExtra );
+    void DLL_PORT( MSV ) makeJumpsByReseedingRecursive( Seed& rLast, Seed& rNext, std::shared_ptr<NucSeq> pQuery,
+                                                        std::shared_ptr<Pack> pRefSeq,
+                                                        std::shared_ptr<libMS::ContainerVector<SvJump>>& pRet,
+                                                        size_t uiLayer, HelperRetVal* pOutExtra );
 
     /**
      * @brief computes all SV jumps between the given seeds.
@@ -168,14 +171,15 @@ class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, fa
      *
      * Uses makeJumpsByReseedingRecursive().
      */
-    std::shared_ptr<libMS::ContainerVector<SvJump>> EXPORTED execute_helper( std::shared_ptr<SegmentVector> pSegments,
-                                                                      std::shared_ptr<Pack>
-                                                                          pRefSeq,
-                                                                      std::shared_ptr<FMIndex>
-                                                                          pFM_index,
-                                                                      std::shared_ptr<NucSeq>
-                                                                          pQuery,
-                                                                      HelperRetVal* pOutExtra );
+    std::shared_ptr<libMS::ContainerVector<SvJump>> DLL_PORT( MSV )
+        execute_helper( std::shared_ptr<SegmentVector> pSegments,
+                        std::shared_ptr<Pack>
+                            pRefSeq,
+                        std::shared_ptr<FMIndex>
+                            pFM_index,
+                        std::shared_ptr<NucSeq>
+                            pQuery,
+                        HelperRetVal* pOutExtra );
 
     inline HelperRetVal execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
                                            std::shared_ptr<Pack>
@@ -190,13 +194,14 @@ class SvJumpsFromSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, fa
         return xRet;
     } // method
 
-    virtual std::shared_ptr<libMS::ContainerVector<SvJump>> EXPORTED execute( std::shared_ptr<SegmentVector> pSegments,
-                                                                       std::shared_ptr<Pack>
-                                                                           pRefSeq,
-                                                                       std::shared_ptr<FMIndex>
-                                                                           pFM_index,
-                                                                       std::shared_ptr<NucSeq>
-                                                                           pQuery );
+    virtual std::shared_ptr<libMS::ContainerVector<SvJump>> DLL_PORT( MSV )
+        execute( std::shared_ptr<SegmentVector> pSegments,
+                 std::shared_ptr<Pack>
+                     pRefSeq,
+                 std::shared_ptr<FMIndex>
+                     pFM_index,
+                 std::shared_ptr<NucSeq>
+                     pQuery );
 }; // class
 
 }; // namespace libMSV

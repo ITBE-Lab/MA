@@ -6,7 +6,7 @@
 
 #define MA_VERSION "@MA_VERSION@"
 
-extern EXPORTED const std::string sLibMaVersion;
-extern EXPORTED const bool bLibMaWithPython;
+extern DLL_PORT(MS) const std::string sLibMaVersion;
+extern DLL_PORT(MS) const bool bLibMaWithPython;
 
 #endif

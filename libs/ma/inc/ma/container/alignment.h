@@ -202,7 +202,7 @@ class Alignment : public libMS::Container
         return std::shared_ptr<libMS::Container>( new Alignment( ) );
     } // function
 
-    int64_t EXPORTED reCalcScore( ) const;
+    int64_t DLL_PORT(MA) reCalcScore( ) const;
 
     /**
      * @returns the type of math for the given position i.
@@ -502,7 +502,7 @@ class Alignment : public libMS::Container
      * This is used for appending seeds,
      * where simply size of the seed matches need to be appended.
      */
-    void EXPORTED append( MatchType type, nucSeqIndex size );
+    void DLL_PORT(MA) append( MatchType type, nucSeqIndex size );
 
     /**
      * @brief appends a matchType to the alignment
@@ -660,7 +660,7 @@ class Alignment : public libMS::Container
     /**
      * @brief the NMW score for this alignment
      */
-    unsigned int EXPORTED localscore( ) const;
+    unsigned int DLL_PORT(MA) localscore( ) const;
 
     /**
      * @brief returns how many nucleotides within this alignment are determined by seeds
@@ -712,7 +712,7 @@ class Alignment : public libMS::Container
      * When an alignment is computed on the foundation of seeds it might not be local.
      * This function has a linear complexity with regard to the compressed alignment length.
      */
-    void EXPORTED makeLocal( );
+    void DLL_PORT(MA) makeLocal( );
 
     /**
      * @brief removes dangeling Deletions
@@ -720,7 +720,7 @@ class Alignment : public libMS::Container
      * When the alignment is created there might be some dangeling deletions at
      * the beginning or end. This function removes them
      */
-    void EXPORTED removeDangeling( );
+    void DLL_PORT(MA) removeDangeling( );
 
     void operator=( const std::shared_ptr<Alignment> pOther )
     {

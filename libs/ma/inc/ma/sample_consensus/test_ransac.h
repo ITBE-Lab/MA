@@ -74,7 +74,7 @@ template <typename TP> TP medianAbsoluteDeviation( std::vector<TP> arr )
     return Median( vDevArr );
 } // function
 
-std::pair<double, double> EXPORTED run_ransac( const std::vector<double> &rvxValues,
+std::pair<double, double> DLL_PORT(MA) run_ransac( const std::vector<double> &rvxValues,
                                       const std::vector<double> &rvyValues,
                                       /*std::shared_ptr<libMA::Seeds> pvIngroup,*/
                                       double fDMA );

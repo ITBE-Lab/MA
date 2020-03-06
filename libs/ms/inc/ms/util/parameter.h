@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 /* Generic conversion of string to different value types.
  * (Specialized for some types)
  */
-template <typename VALUE_TYPE> EXPORTED VALUE_TYPE genericStringToValue( const std::string& sString );
+template <typename VALUE_TYPE> DLL_PORT(MS) VALUE_TYPE genericStringToValue( const std::string& sString );
 
 // template <typename VALUE_TYPE> VALUE_TYPE genericStringToValue( const std::string& sString )
 // {
@@ -192,7 +192,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         this->value = pOtherDerived->value;
     } // method
 
-    virtual EXPORTED std::string asText( ) const;
+    virtual DLL_PORT(MS) std::string asText( ) const;
 }; // class
 
 /* Parameter class for choices (list of different textual alternatives)
@@ -940,7 +940,7 @@ class GlobalParameter : public ParameterSetBase
     AlignerParameterPointer<int> iExtend;
     AlignerParameterPointer<int> iGap2;
     AlignerParameterPointer<int> iExtend2;
-    AlignerParameterPointer<size_t> uiSVPenalty;
+    AlignerParameterPointer<int> uiSVPenalty;
 
     /* Constructor */
     GlobalParameter( )

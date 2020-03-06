@@ -589,13 +589,13 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     {
         for( size_t uiT = 0; uiT < pConPool->xPool.uiPoolSize; uiT++ )
         {
-            vOverlapQuery.push_back( pConPool->xPool.run( uiT, []( std::shared_ptr<DBCon> pConnection ) {
+            vOverlapQuery.push_back( pConPool->xPool.run(  (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
                 return std::make_unique<NumOverlapsQuery>( pConnection );
             } ) );
-            vIntersectScoreQueries.push_back( pConPool->xPool.run( uiT, []( std::shared_ptr<DBCon> pConnection ) {
+            vIntersectScoreQueries.push_back( pConPool->xPool.run(  (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
                 return std::make_unique<HelperIntersecCallWHigherScore>( pConnection );
             } ) );
-            vIntersectQueries.push_back( pConPool->xPool.run( uiT, []( std::shared_ptr<DBCon> pConnection ) {
+            vIntersectQueries.push_back( pConPool->xPool.run( (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
                 return std::make_unique<HelperIntersectingCall>( pConnection );
             } ) );
         } // for
@@ -623,7 +623,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                 [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection, WKBUint64Rectangle& xWKB,
                      bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
                     auto xRect = xWKB.getRect( );
-                    WKBPoint xCenter( xRect.xXAxis.center( ), xRect.xYAxis.center( ) );
+                    WKBPoint xCenter( (double)xRect.xXAxis.center( ), (double)xRect.xYAxis.center( ) );
                     xRect.resize( iAllowedDist );
                     WKBUint64Rectangle xWKBResized( xRect );
                     // check that call overlaps with at least one ground truth
@@ -661,7 +661,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                 [&]( std::pair<uint32_t, uint32_t>& xIntermediate, std::shared_ptr<DBCon> pConnection,
                      WKBUint64Rectangle& xWKB, bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
                     auto xRect = xWKB.getRect( );
-                    WKBPoint xCenter( xRect.xXAxis.center( ), xRect.xYAxis.center( ) );
+                    WKBPoint xCenter( (double)xRect.xXAxis.center( ), (double)xRect.xYAxis.center( ) );
                     xRect.resize( iAllowedDist );
                     WKBUint64Rectangle xWKBResized( xRect );
                     // check that call overlaps with at least one ground truth
@@ -676,7 +676,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                 iCallerRunIdA, xWKBResized2, bSwitchStrand, fScore, iId ) == 0 )
                         {
                             auto xRectInner = vIntersectQueries[ pConnection->getTaskId( ) ]->getVal( ).getRect( );
-                            xIntermediate.first += xRectInner.manhattonDistance( xWKB.getRect( ) );
+                            xIntermediate.first += (uint32_t)xRectInner.manhattonDistance( xWKB.getRect( ) );
                             xIntermediate.second++;
                         } // if
                     } // if

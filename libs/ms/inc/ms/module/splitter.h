@@ -5,8 +5,7 @@
  * @todo there should be an actual sub comp. graph class instead of
  * exposing locks, unlocks splitters and so on...
  */
-#ifndef SPLITTER_H
-#define SPLITTER_H
+#pragma once
 
 #include "ms/module/module.h"
 #include <fstream>
@@ -38,7 +37,7 @@ template <typename TP_CONTAINER> class Lock : public Module<TP_CONTAINER, false,
     Lock( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pInput )
+    virtual std::shared_ptr<TP_CONTAINER> execute( std::shared_ptr<TP_CONTAINER> pInput )
     {
         // DEBUG( std::cout << "lock" << std::endl; )
         // locking in the container is done automatically by the pledge
@@ -65,7 +64,7 @@ template <typename TP_CONTAINER> class UnLock : public Module<TP_CONTAINER, true
         : pLockPledge( pLockPledge )
     {} // constructor
 
-    virtual std::shared_ptr<TP_CONTAINER> EXPORTED execute( std::shared_ptr<TP_CONTAINER> pIn )
+    virtual std::shared_ptr<TP_CONTAINER> execute( std::shared_ptr<TP_CONTAINER> pIn )
     {
         // DEBUG( std::cout << "unlock" << std::endl; )
         // unlock the given lock
@@ -88,7 +87,7 @@ class TupleGet : public Module<typename TP_TUPLE::value_type::element_type, fals
     TupleGet( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual typename TP_TUPLE::value_type EXPORTED execute( std::shared_ptr<TP_TUPLE> pIn )
+    virtual typename TP_TUPLE::value_type execute( std::shared_ptr<TP_TUPLE> pIn )
     {
         return ( *pIn )[ IDX ];
     } // method
@@ -107,7 +106,7 @@ class PairGet : public Module<typename TP_PAIR::value_type::element_type, false,
     PairGet( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual typename TP_PAIR::value_type EXPORTED execute( std::shared_ptr<TP_PAIR> pIn )
+    virtual typename TP_PAIR::value_type execute( std::shared_ptr<TP_PAIR> pIn )
     {
         if( bFirst )
             return pIn->first;
@@ -125,17 +124,13 @@ template <typename TP> class Splitter : public Module<TP, true, ContainerVector<
     Splitter( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual typename std::shared_ptr<TP> EXPORTED execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
+    virtual typename std::shared_ptr<TP> execute( std::shared_ptr<ContainerVector<std::shared_ptr<TP>>> pIn )
     {
         if( pIn->empty( ) )
             // if we reach this point we have read all content vector
-            throw std::runtime_error( "Tried to extract element from empty vector" );
+            return nullptr;
         auto pBack = pIn->back( );
         pIn->pop_back( );
-        if( pIn->empty( ) )
-        {
-            //@todo
-        }
         return pBack;
     } // method
 }; // class
@@ -156,13 +151,9 @@ template <typename TP> class StaticSplitter : public Module<TP, true>
     {
         if( pIn->empty( ) )
             // if we reach this point we have read all content vector
-            throw std::runtime_error( "Tried to extract element from empty vector" );
+            return nullptr;
         auto pBack = pIn->back( );
         pIn->pop_back( );
-        if( pIn->empty( ) )
-        {
-            //@todo
-        }
         return pBack;
     } // method
 }; // class
@@ -226,22 +217,14 @@ template <typename... TP_VEC_CONTENT> class Join : public Module<Container, fals
     Join( const ParameterSetManager& rParameters )
     {} // constructor
 
-    virtual typename std::shared_ptr<Container> EXPORTED execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
+    virtual typename std::shared_ptr<Container> execute( std::shared_ptr<TP_VEC_CONTENT>... pIn )
     {
         return std::make_shared<Container>( );
     } // method
 }; // class
 
-
-
 } // namespace libMS
 
 #ifdef WITH_PYTHON
-#ifdef WITH_BOOST
-void exportSplitter( );
-#else
 void exportSplitter( py::module& rxPyModuleId );
-#endif
-#endif
-
 #endif
