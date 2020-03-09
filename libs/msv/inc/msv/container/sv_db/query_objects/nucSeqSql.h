@@ -158,5 +158,5 @@ class NucSeqFetcher : public libMS::Module<NucSeq, true, libMS::PoolContainer<DB
 
 #ifdef WITH_PYTHON
 /// @brief expose the NucSeqFromSql classes to python
-void exportNucSeqSql( py::module& rxPyModuleId );
+void exportNucSeqSql( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

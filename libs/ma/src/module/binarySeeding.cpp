@@ -175,10 +175,10 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 
 #ifdef WITH_PYTHON
 
-void exportBinarySeeding( py::module& rxPyModuleId )
+void exportBinarySeeding( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
+    exportModule<BinarySeeding>( xOrganizer, "BinarySeeding",
                                  []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
 } // function
 #endif

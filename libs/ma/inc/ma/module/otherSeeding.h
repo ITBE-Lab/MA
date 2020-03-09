@@ -56,7 +56,7 @@ class OtherSeeding : public libMS::Module<SegmentVector, false, FMIndex, NucSeq>
 #ifdef WITH_BOOST
 void exportOtherSeeding( );
 #else
-void exportOtherSeeding( py::module& rxPyModuleId );
+void exportOtherSeeding( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

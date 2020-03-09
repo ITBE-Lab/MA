@@ -141,5 +141,5 @@ std::vector<rect> getCallOverview( std::shared_ptr<libMS::PoolContainer<DBCon>> 
 } // namespace libMSV
 
 #ifdef WITH_PYTHON
-void exportSoCDbWriter( py::module& rxPyModuleId );
+void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

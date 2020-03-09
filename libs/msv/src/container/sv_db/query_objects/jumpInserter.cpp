@@ -6,11 +6,11 @@ using namespace libMSV;
 
 #include "ms/container/sv_db/py_db_conf.h"
 
-void exportSvJumpInserter( py::module& rxPyModuleId )
+void exportSvJumpInserter( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    exportInserterContainer<GetJumpInserterContainerModule<DBCon, DBConSingle>>( rxPyModuleId, "JumpInserter" );
+    exportInserterContainer<GetJumpInserterContainerModule<DBCon, DBConSingle>>( xOrganizer, "JumpInserter" );
 
-    exportModule<JumpInserterModule<DBCon>>( rxPyModuleId, "JumpInserterModule" );
+    exportModule<JumpInserterModule<DBCon>>( xOrganizer, "JumpInserterModule" );
 } // function
 
 #endif

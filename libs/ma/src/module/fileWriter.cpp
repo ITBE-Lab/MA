@@ -364,17 +364,17 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
 } // function
 
 #ifdef WITH_PYTHON
-void exportFileWriter( py::module& rxPyModuleId )
+void exportFileWriter( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the FileWriter class
-    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "FileWriter" );
-    exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( rxPyModuleId, "SyncFileWriter" );
+    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( xOrganizer, "FileWriter" );
+    exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( xOrganizer, "SyncFileWriter" );
 
     // export the PairedFileWriter class
-    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "PairedFileWriter" );
-    exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<FileWriter>>( rxPyModuleId,
+    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( xOrganizer, "PairedFileWriter" );
+    exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<FileWriter>>( xOrganizer,
                                                                                      "SyncPairedFileWriter" );
     exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<PairedFileWriter>>(
-        rxPyModuleId, "PairedSyncPairedFileWriter" );
+        xOrganizer, "PairedSyncPairedFileWriter" );
 } // function
 #endif

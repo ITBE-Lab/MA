@@ -217,5 +217,5 @@ class SmallInversions : public libMS::Module<libMS::ContainerVector<std::shared_
  * @brief Exposes the SmallInversions Module to python.
  * @ingroup export
  */
-void exportSmallInversions( py::module& rxPyModuleId );
+void exportSmallInversions( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

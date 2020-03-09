@@ -539,7 +539,7 @@ class PairedFileWriter : public libMS::Module<libMS::Container, false, NucSeq, N
 #ifdef WITH_BOOST
 void exportFileWriter( );
 #else
-void exportFileWriter( py::module& rxPyModuleId );
+void exportFileWriter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

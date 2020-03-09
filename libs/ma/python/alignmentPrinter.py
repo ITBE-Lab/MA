@@ -5,8 +5,7 @@
 # @brief Implements @ref MA.alignmentPrinter.AlignmentPrinter "AlignmentPrinter".
 # @author Markus Schmidt
 
-from .aligner import *
-
+from MS import *
 
 ##
 # @brief Print the given Alignment.

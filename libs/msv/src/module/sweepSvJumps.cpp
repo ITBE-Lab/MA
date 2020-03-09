@@ -13,36 +13,36 @@ using namespace libMS;
 
 #include "ms/container/sv_db/py_db_conf.h"
 
-void exportSweepSvJump( py::module& rxPyModuleId )
+void exportSweepSvJump( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<GenomeSection, Container, std::shared_ptr<GenomeSection>>( rxPyModuleId, "GenomeSection" )
+    py::class_<GenomeSection, Container, std::shared_ptr<GenomeSection>>( xOrganizer.container( ), "GenomeSection" )
         .def_readwrite( "start", &GenomeSection::iStart )
         .def_readwrite( "size", &GenomeSection::iSize );
 
-    py::bind_vector<std::vector<std::shared_ptr<SvCall>>>( rxPyModuleId, "SvCallVec", "docstr" );
+    py::bind_vector<std::vector<std::shared_ptr<SvCall>>>( xOrganizer.util( ), "SvCallVec", "docstr" );
 
     py::class_<CompleteBipartiteSubgraphClusterVector,
                Container,
-               std::shared_ptr<CompleteBipartiteSubgraphClusterVector>>( rxPyModuleId,
+               std::shared_ptr<CompleteBipartiteSubgraphClusterVector>>( xOrganizer.container( ),
                                                                          "CompleteBipartiteSubgraphClusterVector" )
         .def( py::init<>( ) )
         .def_readwrite( "content", &CompleteBipartiteSubgraphClusterVector::vContent );
 
-    exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( rxPyModuleId, "GenomeSectionFactory" );
+    exportModule<GenomeSectionFactory, std::shared_ptr<Pack>>( xOrganizer, "GenomeSectionFactory" );
 
 
     exportModule<CompleteBipartiteSubgraphSweep<DBCon>, int64_t>(
-        rxPyModuleId, "CompleteBipartiteSubgraphSweep", []( auto&& x ) {
+        xOrganizer, "CompleteBipartiteSubgraphSweep", []( auto&& x ) {
             x.def_readonly( "time_init", &CompleteBipartiteSubgraphSweep<DBCon>::dInit )
                 .def_readonly( "time_complete_while", &CompleteBipartiteSubgraphSweep<DBCon>::dOuterWhile )
                 .def_readonly( "time_inner_while", &CompleteBipartiteSubgraphSweep<DBCon>::dInnerWhile );
         } );
 
-    exportModule<ExactCompleteBipartiteSubgraphSweep<DBCon>>( rxPyModuleId, "ExactCompleteBipartiteSubgraphSweep" );
-    exportModule<FilterLowSupportShortCalls>( rxPyModuleId, "FilterLowSupportShortCalls" );
-    exportModule<FilterLowScoreCalls>( rxPyModuleId, "FilterLowScoreCalls" );
-    exportModule<FilterDiagonalLineCalls>( rxPyModuleId, "FilterDiagonalLineCalls" );
-    exportModule<FilterFuzzyCalls>( rxPyModuleId, "FilterFuzzyCalls" );
-    exportModule<ComputeCallAmbiguity>( rxPyModuleId, "ComputeCallAmbiguity" );
+    exportModule<ExactCompleteBipartiteSubgraphSweep<DBCon>>( xOrganizer, "ExactCompleteBipartiteSubgraphSweep" );
+    exportModule<FilterLowSupportShortCalls>( xOrganizer, "FilterLowSupportShortCalls" );
+    exportModule<FilterLowScoreCalls>( xOrganizer, "FilterLowScoreCalls" );
+    exportModule<FilterDiagonalLineCalls>( xOrganizer, "FilterDiagonalLineCalls" );
+    exportModule<FilterFuzzyCalls>( xOrganizer, "FilterFuzzyCalls" );
+    exportModule<ComputeCallAmbiguity>( xOrganizer, "ComputeCallAmbiguity" );
 } // function
 #endif

@@ -106,9 +106,9 @@ std::shared_ptr<SegmentVector> OtherSeeding::execute( std::shared_ptr<FMIndex> p
 
 #ifdef WITH_PYTHON
 
-void exportOtherSeeding( py::module& rxPyModuleId )
+void exportOtherSeeding( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the OtherSeeding class
-    exportModule<OtherSeeding, bool>( rxPyModuleId, "OtherSeeding" );
+    exportModule<OtherSeeding, bool>( xOrganizer, "OtherSeeding" );
 } // function
 #endif

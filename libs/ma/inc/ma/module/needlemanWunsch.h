@@ -145,7 +145,7 @@ class NeedlemanWunsch : public libMS::Module<libMS::ContainerVector<std::shared_
 #ifdef WITH_BOOST
 void exportNeedlemanWunsch( );
 #else
-void exportNeedlemanWunsch( py::module& rxPyModuleId );
+void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

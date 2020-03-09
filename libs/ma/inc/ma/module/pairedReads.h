@@ -73,7 +73,7 @@ class PairedReads
 #ifdef WITH_BOOST
 void exportPairedReads( );
 #else
-void exportPairedReads( py::module& rxPyModuleId );
+void exportPairedReads( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

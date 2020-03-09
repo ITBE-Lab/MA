@@ -30,9 +30,10 @@ for _ in range(100):
         out_file.write(qual)
         out_file.write("\n")
 
-    file_reader = FileReader(ParameterSetManager(), libMA.path(fasta_file_name))
-    query_nuc_seq = file_reader.execute()
-    alignment_vec = libMA.AlignmentVector()
+    file_reader = FileReader(ParameterSetManager())
+    stream = FileStreamFromPath(fasta_file_name)
+    query_nuc_seq = file_reader.execute(stream)
+    alignment_vec = AlignmentVector()
     file_writer = FileWriter(ParameterSetManager(), sam_file_name, reference_pack)
     file_writer.execute(query_nuc_seq, alignment_vec, reference_pack)
     del file_writer
@@ -59,9 +60,9 @@ for _ in range(100):
         out_file.write(query)
         out_file.write("\n")
 
-    file_reader = FileReader(ParameterSetManager(), libMA.path(fasta_file_name))
+    file_reader = FileReader(ParameterSetManager(), path(fasta_file_name))
     query_nuc_seq = file_reader.execute()
-    alignment_vec = libMA.AlignmentVector()
+    alignment_vec = AlignmentVector()
     file_writer = FileWriter(ParameterSetManager(), sam_file_name, reference_pack)
     file_writer.execute(query_nuc_seq, alignment_vec, reference_pack)
     del file_writer

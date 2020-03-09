@@ -1137,12 +1137,12 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 
 #ifdef WITH_PYTHON
 
-void exportNeedlemanWunsch( py::module& rxPyModuleId )
+void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the NeedlemanWunsch class
-    exportModule<NeedlemanWunsch>( rxPyModuleId, "NeedlemanWunsch" );
+    exportModule<NeedlemanWunsch>( xOrganizer, "NeedlemanWunsch" );
 
-    rxPyModuleId.def( "runKsw", &runKsw );
-    rxPyModuleId.def( "runKswExtend", &runKswExtend );
+    xOrganizer.util().def( "runKsw", &runKsw );
+    xOrganizer.util().def( "runKswExtend", &runKswExtend );
 } // function
 #endif

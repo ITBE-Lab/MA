@@ -6,17 +6,16 @@ using namespace libMSV;
 
 #include "ms/container/sv_db/py_db_conf.h"
 
-void exportSvCallInserter( py::module& rxPyModuleId )
+void exportSvCallInserter( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the CallInserter class
-    exportInserterContainer<GetCallInserterContainerModule<DBCon, DBConSingle>>
-        ( rxPyModuleId, "CallInserter" );
+    exportInserterContainer<GetCallInserterContainerModule<DBCon, DBConSingle>>( xOrganizer, "CallInserter" );
 
-    exportInserterContainer<GetCallVectorInserterContainerModule<DBCon, DBConSingle>>
-        ( rxPyModuleId, "CallVectorInserter" );
+    exportInserterContainer<GetCallVectorInserterContainerModule<DBCon, DBConSingle>>( xOrganizer,
+                                                                                       "CallVectorInserter" );
 
-    exportModule<SvCallInserterModule<DBCon>>( rxPyModuleId, "CallInserterModule" );
-    exportModule<SvCallVectorInserterModule<DBCon>>( rxPyModuleId, "CallVectorInserterModule" );
+    exportModule<SvCallInserterModule<DBCon>>( xOrganizer, "CallInserterModule" );
+    exportModule<SvCallVectorInserterModule<DBCon>>( xOrganizer, "CallVectorInserterModule" );
 } // function
 
 #endif // WITH_PYTHON

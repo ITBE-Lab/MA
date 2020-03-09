@@ -64,18 +64,18 @@ std::shared_ptr<QueuePlacer<ReturnType, ContentType>> getQueuePlacer( const Para
 #ifdef WITH_PYTHON
 
 template <size_t uiN, typename ContentType>
-void exportCyclicQueueHelper( py::module& rxPyModuleId, const std::string& sNamePrefix,
+void exportCyclicQueueHelper( SubmoduleOrganizer& xOrganizer, const std::string& sNamePrefix,
                               const std::vector<std::string>& vReturnTypeNames )
 {} // function
 
 template <size_t uiN, typename ContentType, typename ReturnType, typename... ReturnTypes>
-void exportCyclicQueueHelper( py::module& rxPyModuleId, const std::string& sNamePrefix,
+void exportCyclicQueueHelper( SubmoduleOrganizer& xOrganizer, const std::string& sNamePrefix,
                               const std::vector<std::string>& vReturnTypeNames )
 {
     exportModule<QueuePlacer<ReturnType, ContentType>>(
-        rxPyModuleId,
+        xOrganizer,
         std::string( sNamePrefix ).append( uiN == 0 ? "" : vReturnTypeNames[ uiN - 1 ] ).append( "Placer" ).c_str( ) );
-    exportCyclicQueueHelper<uiN + 1, ContentType, ReturnTypes...>( rxPyModuleId, sNamePrefix, vReturnTypeNames );
+    exportCyclicQueueHelper<uiN + 1, ContentType, ReturnTypes...>( xOrganizer, sNamePrefix, vReturnTypeNames );
 } // function
 
 /** @brief expose a cyclic queue to python
@@ -95,11 +95,11 @@ void exportCyclicQueueHelper( py::module& rxPyModuleId, const std::string& sName
  * In both cases one extra placer is exposed: the FileNucSeqPlacer and the PairedFileNucSeqPlacer
  */
 template <typename ContentType, typename... ReturnTypes>
-void exportCyclicQueue( py::module& rxPyModuleId, const std::string& sNamePrefix,
+void exportCyclicQueue( SubmoduleOrganizer& xOrganizer, const std::string& sNamePrefix,
                         const std::vector<std::string>& vReturnTypeNames = {} )
 {
     py::class_<CyclicQueue<ContentType>, Container, std::shared_ptr<CyclicQueue<ContentType>>>(
-        rxPyModuleId, std::string( sNamePrefix ).append( "Queue" ).c_str( ) )
+        xOrganizer.container(), std::string( sNamePrefix ).append( "Queue" ).c_str( ) )
         .def( py::init<std::shared_ptr<ContainerVector<std::shared_ptr<ContentType>>>>( ) )
         .def( py::init<>( ) )
         .def( "pop", &CyclicQueue<ContentType>::pop )
@@ -107,8 +107,8 @@ void exportCyclicQueue( py::module& rxPyModuleId, const std::string& sNamePrefix
         .def( "add", &CyclicQueue<ContentType>::add )
         .def( "inform_finished", &CyclicQueue<ContentType>::informThatContainerIsFinished );
 
-    exportModule<QueuePicker<ContentType>>( rxPyModuleId, std::string( sNamePrefix ).append( "Picker" ).c_str( ) );
-    exportCyclicQueueHelper<0, ContentType, ContentType, ReturnTypes...>( rxPyModuleId, sNamePrefix, vReturnTypeNames );
+    exportModule<QueuePicker<ContentType>>( xOrganizer, std::string( sNamePrefix ).append( "Picker" ).c_str( ) );
+    exportCyclicQueueHelper<0, ContentType, ContentType, ReturnTypes...>( xOrganizer, sNamePrefix, vReturnTypeNames );
 } // function
 
 #endif

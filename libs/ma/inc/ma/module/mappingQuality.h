@@ -49,7 +49,7 @@ class MappingQuality : public libMS::Module<libMS::ContainerVector<std::shared_p
 #ifdef WITH_BOOST
 void exportMappingQuality( );
 #else
-void exportMappingQuality( py::module& rxPyModuleId );
+void exportMappingQuality( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

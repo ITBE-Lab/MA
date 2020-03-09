@@ -393,19 +393,19 @@ void FMIndex::build_FMIndex( const Pack& rxSequenceCollection, // the pack for w
 #ifdef WITH_PYTHON
 
 
-void exportFM_index( py::module& rxPyModuleId )
+void exportFM_index( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SAInterval class
-    py::class_<SAInterval>( rxPyModuleId, "SAInterval" )
+    py::class_<SAInterval>( xOrganizer.util(), "SAInterval" )
         .def_readwrite( "size", &SAInterval::iSize )
         .def_readwrite( "start", &SAInterval::iStart )
         .def( "rev_comp", &SAInterval::revComp );
 
-    py::class_<SuffixArrayInterface, libMS::Container, std::shared_ptr<SuffixArrayInterface>>( rxPyModuleId,
+    py::class_<SuffixArrayInterface, libMS::Container, std::shared_ptr<SuffixArrayInterface>>( xOrganizer._container(),
                                                                                                "SuffixArrayInterface" );
 
     // export the FM_index class
-    py::class_<FMIndex, SuffixArrayInterface, std::shared_ptr<FMIndex>>( rxPyModuleId, "FMIndex" )
+    py::class_<FMIndex, SuffixArrayInterface, std::shared_ptr<FMIndex>>( xOrganizer.container(), "FMIndex" )
         .def( py::init<>( ) ) // default constructor
         .def( py::init<std::shared_ptr<NucSeq>>( ) )
         .def( py::init<std::shared_ptr<Pack>>( ) )

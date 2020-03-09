@@ -8,16 +8,16 @@ using namespace libMA;
 
 #ifdef WITH_PYTHON
 
-void exportSegment( py::module& rxPyModuleId )
+void exportSegment( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SegmentVector class
-    py::class_<Segment, libMS::Container, std::shared_ptr<Segment>>( rxPyModuleId, "Segment" )
+    py::class_<Segment, libMS::Container, std::shared_ptr<Segment>>( xOrganizer.container( ), "Segment" )
         .def( "start", &Segment::start_boost1 )
         .def( "end", &Segment::end_boost1 );
 
     // export the SegmentVector class
-    py::bind_vector_ext<SegmentVector, libMS::Container, std::shared_ptr<SegmentVector>>( rxPyModuleId, "SegmentVector",
-                                                                                          "docstr" )
+    py::bind_vector_ext<SegmentVector, libMS::Container, std::shared_ptr<SegmentVector>>( xOrganizer.container( ),
+                                                                                          "SegmentVector", "docstr" )
         .def( "extract_seeds", &SegmentVector::extractSeeds )
         .def( "num_seeds", &SegmentVector::numSeeds )
 #if MEASURE_DURATIONS == ( 1 )

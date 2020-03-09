@@ -11,25 +11,25 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     combined_queue = file_queue
     lock = Lock(parameter_set)
     if not file_queue_2 is None:
-        combined_queue = libMA.combine_file_streams(file_queue, file_queue_2)
+        combined_queue = combine_file_streams(file_queue, file_queue_2)
         module_get_first = GetFirstQuery(parameter_set)
         module_get_second = GetSecondQuery(parameter_set)
 
         #set up modules for paired read insert
-        queue_picker = libMA.PairedFilePicker(parameter_set)
-        queue_placer = libMA.PairedFileNucSeqPlacer(parameter_set)
+        queue_picker = PairedFilePicker(parameter_set)
+        queue_placer = PairedFileNucSeqPlacer(parameter_set)
         file_reader = PairedFileReader(parameter_set)
         get_read_inserter = GetPairedReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
         read_inserter_module = PairedReadInserterModule(parameter_set)
-        printer = libMA.ProgressPrinterPairedFileStreamQueue(parameter_set)
+        printer = ProgressPrinterPairedFileStreamQueue(parameter_set)
     else:
         #set up modules for single read insert
-        queue_picker = libMA.FilePicker(parameter_set)
-        queue_placer = libMA.FileNucSeqPlacer(parameter_set)
+        queue_picker = FilePicker(parameter_set)
+        queue_placer = FileNucSeqPlacer(parameter_set)
         file_reader = FileReader(parameter_set)
         get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
         read_inserter_module = ReadInserterModule(parameter_set)
-        printer = libMA.ProgressPrinterFileStreamQueue(parameter_set)
+        printer = ProgressPrinterFileStreamQueue(parameter_set)
 
     queue_pledge = Pledge()
     queue_pledge.set(combined_queue)
@@ -90,9 +90,9 @@ def insert_reads_path_string_vec(parameter_set, dataset_name, sequencer_name, st
     def to_file_queue(string_vec):
         if string_vec is None:
             return None
-        file_queue = libMA.FileQueue()
+        file_queue = FileQueue()
         for string in string_vec:
-            file_queue.add(libMA.FileStreamFromPath(string))
+            file_queue.add(FileStreamFromPath(string))
         return file_queue
 
     return insert_reads(parameter_set, dataset_name, sequencer_name, to_file_queue(string_vec),

@@ -211,5 +211,5 @@ class SvJumpsFromSeeds
  * @brief exports the SvJumpsFromSeeds @ref libMSV::Module "module" to python.
  * @ingroup export
  */
-void exportSvJumpsFromSeeds( py::module& rxPyModuleId );
+void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

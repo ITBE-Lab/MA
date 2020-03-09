@@ -1043,7 +1043,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
  * @brief Exposes the Harmonization @ref libMA::Module "module" to boost python.
  * @ingroup export
  */
-void exportHarmonization( py::module& rxPyModuleId );
+void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 
 #endif

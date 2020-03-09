@@ -159,5 +159,5 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
 } // namespace libMSV
 
 #ifdef WITH_PYTHON
-void exportConnectorPatternFilter( py::module& rxPyModuleId );
+void exportConnectorPatternFilter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

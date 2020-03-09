@@ -121,5 +121,5 @@ template <typename DBCon> using SvCallVectorInserterModule = InserterModule<SvCa
 /**
  * @brief used to expose libMSV::SvCallInserter to python
  */
-void exportSvCallInserter( py::module& rxPyModuleId );
+void exportSvCallInserter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

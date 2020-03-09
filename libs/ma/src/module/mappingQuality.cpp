@@ -132,9 +132,9 @@ std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>> MappingQuality::exe
 
 #ifdef WITH_PYTHON
 
-void exportMappingQuality( py::module& rxPyModuleId )
+void exportMappingQuality( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the MappingQuality class
-    exportModule<MappingQuality>( rxPyModuleId, "MappingQuality" );
+    exportModule<MappingQuality>( xOrganizer, "MappingQuality" );
 } // function
 #endif

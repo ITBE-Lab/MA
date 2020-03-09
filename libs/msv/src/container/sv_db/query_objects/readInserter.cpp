@@ -7,13 +7,13 @@ using namespace libMSV;
 #include "ms/container/sv_db/py_db_conf.h"
 
 
-void exportReadInserter( py::module& rxPyModuleId )
+void exportReadInserter( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    exportInserterContainer<GetReadInserterContainerModule<DBCon, DBConSingle>>( rxPyModuleId, "ReadInserter" );
-    exportInserterContainer<GetPairedReadInserterContainerModule<DBCon, DBConSingle>>( rxPyModuleId, "PairedReadInserter" );
+    exportInserterContainer<GetReadInserterContainerModule<DBCon, DBConSingle>>( xOrganizer, "ReadInserter" );
+    exportInserterContainer<GetPairedReadInserterContainerModule<DBCon, DBConSingle>>( xOrganizer, "PairedReadInserter" );
 
-    exportModule<ReadInserterModule<DBCon>>( rxPyModuleId, "ReadInserterModule" );
-    exportModule<PairedReadInserterModule<DBCon>>( rxPyModuleId, "PairedReadInserterModule" );
+    exportModule<ReadInserterModule<DBCon>>( xOrganizer, "ReadInserterModule" );
+    exportModule<PairedReadInserterModule<DBCon>>( xOrganizer, "PairedReadInserterModule" );
 } // function
 
 #endif

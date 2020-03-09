@@ -182,5 +182,5 @@ template <typename DBCon> class SortedSvJumpFromSql
 
 #ifdef WITH_PYTHON
 /// @brief used to expose libMSV::SortedSvJumpFromSql to python
-void exportSvJump( py::module& rxPyModuleId );
+void exportSvJump( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

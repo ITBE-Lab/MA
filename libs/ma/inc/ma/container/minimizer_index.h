@@ -272,5 +272,5 @@ class Index
 
 
 #ifdef WITH_PYTHON
-void exportMinimizerIndex( py::module& rxPyModuleId );
+void exportMinimizerIndex( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

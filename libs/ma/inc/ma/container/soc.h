@@ -358,7 +358,7 @@ class SoCPriorityQueue : public libMS::Container
 #ifdef WITH_BOOST
 void exportSoC( );
 #else
-void exportSoC( py::module& rxPyModuleId );
+void exportSoC( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

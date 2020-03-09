@@ -626,7 +626,7 @@ class Seeds : public libMS::Container
 #ifdef WITH_BOOST
 void exportSeed( );
 #else
-void exportSeed( py::module& rxPyModuleId );
+void exportSeed( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

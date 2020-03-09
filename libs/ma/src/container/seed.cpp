@@ -91,10 +91,10 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
 
 #ifdef WITH_PYTHON
 
-void exportSeed( py::module& rxPyModuleId )
+void exportSeed( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the Seed class
-    py::class_<Seed>( rxPyModuleId, "Seed" )
+    py::class_<Seed>( xOrganizer.util(), "Seed" )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, bool>( ) )
         .def_readwrite( "start", &Seed::iStart )
         .def_readwrite( "size", &Seed::iSize )
@@ -106,7 +106,7 @@ void exportSeed( py::module& rxPyModuleId )
 #endif
         .def( "__eq__", &Seed::operator==);
 
-    py::class_<AlignmentStatistics>( rxPyModuleId, "AlignmentStatistics" )
+    py::class_<AlignmentStatistics>( xOrganizer.util(), "AlignmentStatistics" )
         .def( py::init<>( ) )
         .def_readwrite( "index_of_strip", &AlignmentStatistics::index_of_strip )
         .def_readwrite( "num_seeds_in_strip", &AlignmentStatistics::num_seeds_in_strip )
@@ -119,7 +119,7 @@ void exportSeed( py::module& rxPyModuleId )
         .def_readwrite( "initial_r_end", &AlignmentStatistics::uiInitialRefEnd );
 
     // export the Seeds class
-    py::bind_vector_ext<Seeds, libMS::Container, std::shared_ptr<Seeds>>( rxPyModuleId, "Seeds", "docstr" )
+    py::bind_vector_ext<Seeds, libMS::Container, std::shared_ptr<Seeds>>( xOrganizer.container(), "Seeds", "docstr" )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
         .def( py::init<>( ) )
         .def( "extractStrand", &Seeds::extractStrand )

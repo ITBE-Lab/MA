@@ -971,7 +971,7 @@ class FMIndex : public SuffixArrayInterface
  * @brief function called in order to export this @ref libMS::Module "module"
  * @ingroup export
  */
-void exportFM_index( py::module& rxPyModuleId );
+void exportFM_index( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 
 #endif

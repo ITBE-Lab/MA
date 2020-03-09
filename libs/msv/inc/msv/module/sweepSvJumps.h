@@ -779,5 +779,5 @@ class FilterLowScoreCalls
 } // namespace libMSV
 
 #ifdef WITH_PYTHON
-void exportSweepSvJump( py::module& rxPyModuleId );
+void exportSweepSvJump( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

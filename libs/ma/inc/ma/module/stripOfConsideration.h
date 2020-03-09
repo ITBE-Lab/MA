@@ -145,7 +145,7 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
 #ifdef WITH_BOOST
 void exportStripOfConsideration( );
 #else
-void exportStripOfConsideration( py::module& rxPyModuleId );
+void exportStripOfConsideration( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

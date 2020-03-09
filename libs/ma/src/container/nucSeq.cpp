@@ -27,10 +27,10 @@ const unsigned char NucSeq::xNucleotideTranslationTable[ 256 ] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}; // predefined array
 
 #ifdef WITH_PYTHON
-void exportNucSeq( py::module& rxPyModuleId )
+void exportNucSeq( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the nucleotidesequence class
-    py::class_<NucSeq, libMS::Container, std::shared_ptr<NucSeq>>( rxPyModuleId, "NucSeq" )
+    py::class_<NucSeq, libMS::Container, std::shared_ptr<NucSeq>>( xOrganizer.container( ), "NucSeq" )
         .def( py::init<>( ) ) // default constructor
         .def( py::init<const char*>( ) )
         .def( py::init<const std::string>( ) )
@@ -50,10 +50,11 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def_readwrite( "id", &NucSeq::iId );
 
     // register return values of vectors of nucseqs
-    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" ).def( py::init<>( ) );
+    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( xOrganizer.container( ), "VecRetNuc", "docstr" )
+        .def( py::init<>( ) );
 
     // export the NucSeqSql class
-    py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( rxPyModuleId, "NucSeqSql" )
+    py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( xOrganizer._container( ), "NucSeqSql" )
         .def( py::init<>( ) ) // default constructor
         .def( "fromBlob", &NucSeqSql::fromBlob )
         .def_readwrite( "seq", &NucSeqSql::pNucSeq );

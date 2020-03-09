@@ -11,10 +11,10 @@ using namespace libMS;
 
 #include "ms/container/sv_db/py_db_conf.h"
 
-void exportConnectorPatternFilter( py::module& rxPyModuleId )
+void exportConnectorPatternFilter( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the ConnectorPatternFilter class
-    exportModule<ConnectorPatternFilter<DBCon>>( rxPyModuleId, "ConnectorPatternFilter" );
+    exportModule<ConnectorPatternFilter<DBCon>>( xOrganizer, "ConnectorPatternFilter" );
 
 } // function
 #endif

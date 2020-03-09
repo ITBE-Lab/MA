@@ -7,5 +7,5 @@
 #include "ms/module/module.h"
 
 #ifdef WITH_PYTHON
-void exportSplitter( py::module& rxPyModuleId );
+void exportSplitter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

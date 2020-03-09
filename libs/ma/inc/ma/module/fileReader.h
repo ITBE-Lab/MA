@@ -627,7 +627,7 @@ template <typename FileStreamQueue> class ProgressPrinter : public libMS::Module
 #ifdef WITH_BOOST
 void exportFileReader( );
 #else
-void exportFileReader( py::module& rxPyModuleId );
+void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

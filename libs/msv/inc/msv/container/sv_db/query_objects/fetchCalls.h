@@ -234,5 +234,5 @@ template <typename DBCon> class SvCallsFromDb
 /**
  * @brief used to expose libMSV::SvCallsFromDb to python
  */
-void exportCallsFromDb( py::module& rxPyModuleId );
+void exportCallsFromDb( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

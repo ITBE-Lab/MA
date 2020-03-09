@@ -1,12 +1,13 @@
 #include "msv/container/svJump.h"
+#include "ms/util/pybind11.h"
 
 #ifdef WITH_PYTHON
 using namespace libMSV;
 
-void exportSVJump( py::module& rxPyModuleId )
+void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SvJump class
-    py::class_<SvJump, std::shared_ptr<SvJump>>( rxPyModuleId, "SvJump" )
+    py::class_<SvJump, std::shared_ptr<SvJump>>( xOrganizer.util(), "SvJump" )
         .def( py::init<const Seed&, const Seed&, const bool, int64_t>( ) )
         .def( py::init<const Seed&, nucSeqIndex, const bool, int64_t, nucSeqIndex>( ) )
         .def( "does_switch_strand", &SvJump::does_switch_strand )
@@ -36,8 +37,8 @@ void exportSVJump( py::module& rxPyModuleId )
         .def_readonly( "read_id", &SvJump::iReadId );
 
     // export the SvCall class
-    py::bind_vector<std::vector<int64_t>>( rxPyModuleId, "int64_tVector", "docstr" );
-    py::class_<SvCall, std::shared_ptr<SvCall>>( rxPyModuleId, "SvCall" )
+    py::bind_vector<std::vector<int64_t>>( xOrganizer._util(), "int64_tVector", "docstr" );
+    py::class_<SvCall, std::shared_ptr<SvCall>>( xOrganizer.util(), "SvCall" )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, uint32_t>( ) )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, uint32_t, uint32_t>( ) )
         .def( py::init<std::shared_ptr<SvJump>>( ) )

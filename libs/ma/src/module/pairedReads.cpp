@@ -172,9 +172,9 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
 
 #ifdef WITH_PYTHON
 
-void exportPairedReads( py::module& rxPyModuleId )
+void exportPairedReads( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the PairedReads class
-    exportModule<PairedReads>( rxPyModuleId, "PairedReads" );
+    exportModule<PairedReads>( xOrganizer, "PairedReads" );
 } // function
 #endif

@@ -5,10 +5,10 @@ using namespace libMSV;
 #ifdef WITH_PYTHON
 
 #include "ms/container/sv_db/py_db_conf.h"
-void exportCallsFromDb( py::module& rxPyModuleId )
+void exportCallsFromDb( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SvCallsFromDb class
-    py::class_<SvCallsFromDb<DBConSingle>>( rxPyModuleId, "SvCallsFromDb" )
+    py::class_<SvCallsFromDb<DBConSingle>>( xOrganizer.util(), "SvCallsFromDb" )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t>( ) )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, double>( ) )
         .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, bool, int64_t>( ) )

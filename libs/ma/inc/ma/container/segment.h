@@ -403,7 +403,7 @@ class SegmentVector : public libMS::Container
 #ifdef WITH_BOOST
 void exportSegment( );
 #else
-void exportSegment( py::module& rxPyModuleId );
+void exportSegment( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

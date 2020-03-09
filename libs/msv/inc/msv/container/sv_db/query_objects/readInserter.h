@@ -92,5 +92,5 @@ template <typename DBCon> using PairedReadInserterModule = InserterModule<Paired
 
 #ifdef WITH_PYTHON
 /// @brief expose libMSV::ReadInsert to python
-void exportReadInserter( py::module& rxPyModuleId );
+void exportReadInserter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

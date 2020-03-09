@@ -31,7 +31,7 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
 def render_reads(self):
     seeder = BinarySeeding(self.params)
     with self.measure("SvJumpsFromSeeds"):
-        jumps_from_seeds = libMA.SvJumpsFromSeeds(self.params, self.pack)
+        jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
     read_dict = {
         "center": [],
         "r_id": [],

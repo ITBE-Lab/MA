@@ -75,8 +75,8 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
             uiGap *= pGlobalParams->iExtend->get( );
             if( uiGap > 0 )
                 uiGap += pGlobalParams->iGap->get( );
-            if( uiGap > pGlobalParams->uiSVPenalty->get( ) && pGlobalParams->uiSVPenalty->get( ) != 0 )
-                uiGap = pGlobalParams->uiSVPenalty->get( );
+            if( uiGap > (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) && pGlobalParams->uiSVPenalty->get( ) != 0 )
+                uiGap = (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
             if( // check for the maximal allowed gap area
                 // check for negative score
                 iScore < (int64_t)uiGap )
@@ -743,34 +743,34 @@ std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPri
 
 #ifdef WITH_PYTHON
 
-void exportHarmonization( py::module& rxPyModuleId )
+void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle" );
+    exportModule<HarmonizationSingle>( xOrganizer, "HarmonizationSingle" );
 
-    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
-    exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
+    exportModule<SeedLumping>( xOrganizer, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
+    exportModule<SeedExtender>( xOrganizer, "SeedExtender",
                                 []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
-    exportModule<MaxExtendedToSMEM>( rxPyModuleId, "MaxExtendedToSMEM",
+    exportModule<MaxExtendedToSMEM>( xOrganizer, "MaxExtendedToSMEM",
                                      []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
-    exportModule<MaxExtendedToMaxSpanning>( rxPyModuleId, "MaxExtendedToMaxSpanning",
+    exportModule<MaxExtendedToMaxSpanning>( xOrganizer, "MaxExtendedToMaxSpanning",
                                             []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
-    exportModule<MinLength, size_t>( rxPyModuleId, "MinLength",
+    exportModule<MinLength, size_t>( xOrganizer, "MinLength",
                                      []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
 
-    exportModule<FilterToUnique>( rxPyModuleId, "FilterToUnique", []( auto&& x ) {
+    exportModule<FilterToUnique>( xOrganizer, "FilterToUnique", []( auto&& x ) {
         x.def_readwrite( "num_mm", &FilterToUnique::uiNumMissmatchesAllowed );
     } );
 
-    exportModule<ParlindromeFilter>( rxPyModuleId, "ParlindromeFilter", []( auto&& x ) {
+    exportModule<ParlindromeFilter>( xOrganizer, "ParlindromeFilter", []( auto&& x ) {
         x.def_readwrite( "parlindromes", &ParlindromeFilter::pParlindromes )
             .def( "keep_parlindromes", &ParlindromeFilter::keepParlindromes );
     } );
 
-    exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
+    exportModule<Harmonization>( xOrganizer, "Harmonization" );
 
     py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, libMS::Container,
-                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "ContainerVectorSeeds",
-                                                                                   "docstr" )
+                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( xOrganizer.container( ),
+                                                                                   "ContainerVectorSeeds", "docstr" )
         .def( py::init<>( ) );
 
     // tell boost python that pointers of these classes can be converted implicitly

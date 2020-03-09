@@ -1335,5 +1335,5 @@ template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQ
 
 
 #ifdef WITH_PYTHON
-void exportNucSeq( py::module& rxPyModuleId );
+void exportNucSeq( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

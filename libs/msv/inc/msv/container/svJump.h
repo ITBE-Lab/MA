@@ -638,5 +638,5 @@ class CompleteBipartiteSubgraphClusterVector : public libMS::Container
 }; // namespace libMSV
 
 #ifdef WITH_PYTHON
-void exportSVJump( py::module& rxPyModuleId );
+void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

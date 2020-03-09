@@ -1,4 +1,3 @@
-from .aligner import *
 from .alignmentPrinter import *
 from random import choice
 
@@ -145,7 +144,7 @@ def quick_align_paths(queries, genome_prefix, parameter_set_manager=ParameterSet
     query_vec_pledge = Pledge()
     query_vec_pledge.set(ContainerVectorNucSeq(queries))
 
-    module_splitter = libMA.NucSeqSplitter(parameter_set_manager)
+    module_splitter = NucSeqSplitter(parameter_set_manager)
     queries_pledge = promise_me(module_splitter, query_vec_pledge)
 
     module_output = FileWriter(parameter_set_manager, output_path, pack)

@@ -4,6 +4,7 @@
  */
 #include "msv/module/svJumpsFromSeeds.h"
 #include "ms/module/module.h"
+#include "ms/util/pybind11.h"
 #include <cmath>
 #include <csignal>
 
@@ -461,15 +462,15 @@ std::shared_ptr<libMS::ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::
 } // method
 
 #ifdef WITH_PYTHON
-void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
+void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<geom::Interval<nucSeqIndex>>( rxPyModuleId, "nucSeqInterval" )
+    py::class_<geom::Interval<nucSeqIndex>>( xOrganizer.util(), "nucSeqInterval" )
         .def_readwrite( "start", &geom::Interval<nucSeqIndex>::iStart )
         .def_readwrite( "size", &geom::Interval<nucSeqIndex>::iSize );
-    py::class_<geom::Rectangle<nucSeqIndex>>( rxPyModuleId, "nucSeqRectangle" )
+    py::class_<geom::Rectangle<nucSeqIndex>>( xOrganizer.util(), "nucSeqRectangle" )
         .def_readwrite( "x_axis", &geom::Rectangle<nucSeqIndex>::xXAxis )
         .def_readwrite( "y_axis", &geom::Rectangle<nucSeqIndex>::xYAxis );
-    py::class_<libMSV::SvJumpsFromSeeds::HelperRetVal>( rxPyModuleId, "SvJumpsFromSeedsHelperRetVal" )
+    py::class_<libMSV::SvJumpsFromSeeds::HelperRetVal>( xOrganizer._util(), "SvJumpsFromSeedsHelperRetVal" )
         .def_readwrite( "layer_of_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
         .def_readwrite( "seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::pSeeds )
         .def_readwrite( "rectangles", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangles )
@@ -477,10 +478,10 @@ void exportSvJumpsFromSeeds( py::module& rxPyModuleId )
         .def_readwrite( "rectangles_fill", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
         .def_readwrite( "rectangle_ambiguity", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
         .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
-    py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( rxPyModuleId, "RectangleVector", "" );
-    py::bind_vector<std::vector<double>>( rxPyModuleId, "DoubleVector", "" );
-    py::bind_vector<std::vector<bool>>( rxPyModuleId, "BoolVector", "" );
-    exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( rxPyModuleId, "SvJumpsFromSeeds", []( auto&& x ) {
+    py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util(), "RectangleVector", "" );
+    py::bind_vector<std::vector<double>>( xOrganizer._util(), "DoubleVector", "" );
+    py::bind_vector<std::vector<bool>>( xOrganizer._util(), "BoolVector", "" );
+    exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromSeeds", []( auto&& x ) {
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
     } );
 } // function

@@ -171,5 +171,5 @@ class ExtractFilledSeedSets
  * @brief export the HashMapSeeding @ref libMA::Module "module" to python.
  * @ingroup export
  */
-void exportHashMapSeeding( py::module& rxPyModuleId );
+void exportHashMapSeeding( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

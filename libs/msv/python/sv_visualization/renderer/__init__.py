@@ -89,7 +89,7 @@ class Renderer():
         if self.cached_global_overview is None or self.cached_overview_min_score != self.get_min_score() or \
                 self.cached_overview_max_render != self.get_max_num_ele():
             div = int(math.sqrt(self.get_max_num_ele()/10))
-            self.cached_global_overview = libMA.get_call_overview(self.db_pool, self.pack,
+            self.cached_global_overview = get_call_overview(self.db_pool, self.pack,
                                         self.get_run_id(), self.get_min_score(),
                                         0, 0, self.pack.unpacked_size_single_strand,
                                         self.pack.unpacked_size_single_strand,

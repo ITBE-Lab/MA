@@ -64,5 +64,5 @@ template <typename DBCon> using JumpInserterModule = InserterModule<JumpInserter
 
 #ifdef WITH_PYTHON
 /// @brief used to expose libMSV::SvJumpInserter to python
-void exportSvJumpInserter( py::module& rxPyModuleId );
+void exportSvJumpInserter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

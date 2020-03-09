@@ -6,19 +6,20 @@
 
 #include "ms/container/container.h"
 #include "ms/util/pybind11.h"
+
 using namespace libMS;
 
 
 #ifdef WITH_PYTHON
 
-void exportContainer( py::module& rxPyModuleId )
+void exportContainer( SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<Container, std::shared_ptr<Container>>( rxPyModuleId, "Container" );
+    py::class_<Container, std::shared_ptr<Container>> xContainer( xOrganizer._container( ), "Container" );
 
     // container is an abstract class and should never be initialized
 
     py::bind_vector_ext<PyContainerVector, Container, std::shared_ptr<PyContainerVector>>(
-        rxPyModuleId, "ContainerVector", "docstr" );
+        xOrganizer.container( ), "ContainerVector", "docstr" );
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<PyContainerVector, Container>( );

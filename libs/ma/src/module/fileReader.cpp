@@ -198,31 +198,34 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
 
 #ifdef WITH_PYTHON
 
-void exportFileReader( py::module& rxPyModuleId )
+void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) );
-    py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
-    py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( rxPyModuleId, "FileStream" );
-    py::class_<FileStreamFromPath, FileStream, std::shared_ptr<FileStreamFromPath>>( rxPyModuleId,
+    py::class_<fs::path>( xOrganizer.util( ), "path" ).def( py::init<std::string>( ) );
+    py::bind_vector<std::vector<fs::path>>( xOrganizer.util( ), "filePathVector", "docstr" );
+    py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( xOrganizer.container( ), "FileStream" );
+    py::class_<PairedFileStream, libMS::Container, std::shared_ptr<PairedFileStream>>( xOrganizer.container( ),
+                                                                                       "PairedFileStream" )
+        .def( py::init<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>( ) );
+    py::class_<FileStreamFromPath, FileStream, std::shared_ptr<FileStreamFromPath>>( xOrganizer.container( ),
                                                                                      "FileStreamFromPath" )
         .def( py::init<fs::path>( ) )
         .def( py::init<std::string>( ) );
-    py::class_<StringStream, FileStream, std::shared_ptr<StringStream>>( rxPyModuleId, "StringStream" )
+    py::class_<StringStream, FileStream, std::shared_ptr<StringStream>>( xOrganizer.container( ), "StringStream" )
         .def( py::init<std::string>( ) );
 
     py::bind_vector_ext<PairedReadsContainer, libMS::Container, std::shared_ptr<PairedReadsContainer>>(
-        rxPyModuleId, "ContainerVectorNucSeq", "docstr" );
+        xOrganizer.container( ), "ContainerVectorNucSeq", "docstr" );
 
-    exportCyclicQueue<FileStream, NucSeq>( rxPyModuleId, "File", {"NucSeq"} );
-    exportCyclicQueue<PairedFileStream, PairedReadsContainer>( rxPyModuleId, "PairedFile", {"NucSeq"} );
+    exportCyclicQueue<FileStream, NucSeq>( xOrganizer, "File", {"NucSeq"} );
+    exportCyclicQueue<PairedFileStream, PairedReadsContainer>( xOrganizer, "PairedFile", {"NucSeq"} );
 
     // export the FileReader class
-    exportModule<FileReader>( rxPyModuleId, "FileReader" );
+    exportModule<FileReader>( xOrganizer, "FileReader" );
     // export the PairedFileReader class
-    exportModule<PairedFileReader>( rxPyModuleId, "PairedFileReader" );
-    exportModule<ProgressPrinter<FileStreamQueue>>( rxPyModuleId, "ProgressPrinterFileStreamQueue" );
-    exportModule<ProgressPrinter<PairedFileStreamQueue>>( rxPyModuleId, "ProgressPrinterPairedFileStreamQueue" );
+    exportModule<PairedFileReader>( xOrganizer, "PairedFileReader" );
+    exportModule<ProgressPrinter<FileStreamQueue>>( xOrganizer, "ProgressPrinterFileStreamQueue" );
+    exportModule<ProgressPrinter<PairedFileStreamQueue>>( xOrganizer, "ProgressPrinterPairedFileStreamQueue" );
 
-    rxPyModuleId.def( "combine_file_streams", &combineFileStreams );
+    xOrganizer.util( ).def( "combine_file_streams", &combineFileStreams );
 } // function
 #endif

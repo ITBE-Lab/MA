@@ -543,9 +543,9 @@ void Pack::vAppendFastaFile( const char* pcFileName )
 
 
 #ifdef WITH_PYTHON
-void exportPack( py::module& rxPyModuleId )
+void exportPack( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<Pack, libMS::Container, std::shared_ptr<Pack>>( rxPyModuleId, "Pack" )
+    py::class_<Pack, libMS::Container, std::shared_ptr<Pack>>( xOrganizer.container(), "Pack" )
         .def( py::init<>( ) )
         .def( "unpacked_size", &Pack::uiUnpackedSizeForwardPlusReverse )
         .def( "append", &Pack::vAppendSequence_boost )
@@ -584,9 +584,9 @@ void exportPack( py::module& rxPyModuleId )
     py::implicitly_convertible<Pack, libMS::Container>( );
 
     // required by contigNames
-    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector", "docstr" );
+    py::bind_vector<std::vector<std::string>>( xOrganizer._util(), "StringVector", "docstr" );
 
     // required by contigLengths
-    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector", "docstr" );
+    py::bind_vector<std::vector<nucSeqIndex>>( xOrganizer._util(), "nucSeqIndexVector", "docstr" );
 } // function
 #endif

@@ -17,13 +17,13 @@ using namespace libMS;
  * -> here only some quickfixes, so that python does not immedeately segfault if someone tries to use this...
  */
 
-template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModuleId, std::string sName )
+template <typename TP_VALUE> void exportAlignerParameter( SubmoduleOrganizer& xOrganizer, std::string sName )
 {
     py::class_< //
         AlignerParameter<TP_VALUE>, //
         AlignerParameterBase, //
         std::shared_ptr<AlignerParameter<TP_VALUE>> //
-        >( rxPyModuleId, sName.c_str( ) ) //
+        >( xOrganizer.util( ), sName.c_str( ) ) //
         .def( py::init<const std::string,
                        const std::string,
                        const std::string,
@@ -37,28 +37,29 @@ template <typename TP_VALUE> void exportAlignerParameter( py::module& rxPyModule
 /**
  * Parameter set manager export is here, so that we do not need to include pybind11 in parameter.h
  */
-void exportParameter( py::module& rxPyModuleId )
+void exportParameter( SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<AlignerParameterBase, std::shared_ptr<AlignerParameterBase>>( rxPyModuleId, "AlignerParameterBase" ) //
+    py::class_<AlignerParameterBase, std::shared_ptr<AlignerParameterBase>>( xOrganizer._util( ),
+                                                                             "AlignerParameterBase" ) //
         .def( "mirror", &AlignerParameterBase::mirror ) //
         .def_readonly( "name", &AlignerParameterBase::sName ) //
         .def_readonly( "description", &AlignerParameterBase::sDescription );
 
-    exportAlignerParameter<int>( rxPyModuleId, "AlignerParameterInt" );
-    exportAlignerParameter<short>( rxPyModuleId, "AlignerParameterShort" );
-    exportAlignerParameter<bool>( rxPyModuleId, "AlignerParameterBool" );
-    exportAlignerParameter<double>( rxPyModuleId, "AlignerParameterDouble" );
-    exportAlignerParameter<float>( rxPyModuleId, "AlignerParameterFloat" );
+    exportAlignerParameter<int>( xOrganizer, "AlignerParameterInt" );
+    exportAlignerParameter<short>( xOrganizer, "AlignerParameterShort" );
+    exportAlignerParameter<bool>( xOrganizer, "AlignerParameterBool" );
+    exportAlignerParameter<double>( xOrganizer, "AlignerParameterDouble" );
+    exportAlignerParameter<float>( xOrganizer, "AlignerParameterFloat" );
     py::class_<AlignerParameter<AlignerParameterBase::ChoicesType>,
                AlignerParameterBase,
-               std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>>( rxPyModuleId,
+               std::shared_ptr<AlignerParameter<AlignerParameterBase::ChoicesType>>>( xOrganizer.util( ),
                                                                                       "AlignerParameterChoice" ) //
         .def( "set", &AlignerParameter<AlignerParameterBase::ChoicesType>::set ) //
         .def( "get", &AlignerParameter<AlignerParameterBase::ChoicesType>::get_py );
     // exportAlignerParameter<fs::path>( rxPyModuleId, "AlignerParameterFilePath" ); @todo
 
     // Export ParameterSetBase Class
-    py::class_<ParameterSetBase, std::shared_ptr<ParameterSetBase>>( rxPyModuleId, "ParameterSetBase" ) //
+    py::class_<ParameterSetBase, std::shared_ptr<ParameterSetBase>>( xOrganizer.util( ), "ParameterSetBase" ) //
         .def( "mirror", &ParameterSetBase::mirror ) //
         .def( "register_parameter", &ParameterSetBase::registerParameter ) //
         .def( "unregister_parameter", &ParameterSetBase::unregisterParameter ) //
@@ -67,17 +68,17 @@ void exportParameter( py::module& rxPyModuleId )
 
 
     // Export Presetting Class
-    py::class_<Presetting, ParameterSetBase, std::shared_ptr<Presetting>>( rxPyModuleId, "Presetting" ) //
+    py::class_<Presetting, ParameterSetBase, std::shared_ptr<Presetting>>( xOrganizer.util( ), "Presetting" ) //
         .def( py::init<std::string>( ) ) //
         .def_readonly( "name", &Presetting::sName );
 
     // Export Presetting Class
-    py::class_<GeneralParameter, ParameterSetBase, std::shared_ptr<GeneralParameter>>( rxPyModuleId,
+    py::class_<GeneralParameter, ParameterSetBase, std::shared_ptr<GeneralParameter>>( xOrganizer.util( ),
                                                                                        "GeneralSettings" ) //
         .def( py::init<>( ) );
 
     // Export ParameterSetManager Class
-    py::class_<ParameterSetManager>( rxPyModuleId, "ParameterSetManager" ) //
+    py::class_<ParameterSetManager>( xOrganizer.util( ), "ParameterSetManager" ) //
         .def( py::init<>( ) ) //
         .def_readwrite( "global_settings", &ParameterSetManager::pGeneralParameterSet ) //
         .def( "get", &ParameterSetManager::get )
@@ -92,11 +93,12 @@ void exportParameter( py::module& rxPyModuleId )
 
 PYBIND11_MODULE( libMS, libMsModule )
 {
+    SubmoduleOrganizer xOrganizer( libMsModule );
     DEBUG_3( std::cout.setf( std::ios::unitbuf ); )
-    exportParameter( libMsModule );
-    exportContainer( libMsModule );
-    exportModuleClass( libMsModule );
-    exportPoolContainer( libMsModule );
+    exportParameter( xOrganizer );
+    exportContainer( xOrganizer );
+    exportModuleClass( xOrganizer );
+    exportPoolContainer( xOrganizer );
 } // function
 
 #endif

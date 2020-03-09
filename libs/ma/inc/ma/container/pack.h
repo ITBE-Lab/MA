@@ -1531,7 +1531,7 @@ class Pack : public libMS::Container
 #ifdef WITH_BOOST
 void exportPack( );
 #else
-void exportPack( py::module& rxPyModuleId );
+void exportPack( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 
 #endif

@@ -1,0 +1,72 @@
+import lib@target_name@
+
+print("##")
+print("# @file _lib_init.py")
+print("# @brief this file takes care of importing all components of the cpp library lib@target_name@ to python")
+print("# @details")
+print("# @note this is a generated file do NOT change anything in here.")
+print("# the original file is: lib/ms/_lib_init.py.in")
+print()
+print("import lib@target_name@")
+print("import libMS")
+
+for name, cls in lib@target_name@.util.__dict__.items():
+    if name[:2] == "__":
+        if name[-2:] == "__":
+            continue
+        print("# Hidden util:", name)
+        print()
+    if name[:2] == "__":
+        continue
+    print("## @brief python warpper for the utility", name)
+    print("from lib@target_name@.util import", name)
+    print()
+print()
+
+for name, cls in lib@target_name@.containers.__dict__.items():
+    if name[:2] == "__":
+        if name[-2:] == "__":
+            continue
+        print("# Hidden containers:", name)
+        print()
+    if name[:2] == "__":
+        continue
+    print("## @brief python warpper for the container", name)
+    print("from lib@target_name@.containers import", name)
+    print()
+print()
+
+for name, cls in lib@target_name@.modules.__dict__.items():
+    if name[:2] == "__":
+        if name[-2:] == "__":
+            continue
+        print("# Hidden module:", name)
+        print()
+    print("##")
+    print("# @brief python warpper for the module", name)
+    print("class ", name, "(lib@target_name@.modules.", name, "):", sep="")
+    print("    def execute(self, *args):")
+    print("        vec = libMS.containers.ContainerVector()")
+    print("        for arg in args:")
+    print("            vec.append(arg)")
+    print("        return super(", name, ", self).execute(vec)", sep="")
+    print()
+
+print()
+print("# List of hidden utilities:")
+for name, cls in lib@target_name@._util.__dict__.items():
+    if name[-2:] == "__":
+        continue
+    print("#   ", name)
+print()
+print("# List of hidden containers:")
+for name, cls in lib@target_name@._containers.__dict__.items():
+    if name[-2:] == "__":
+        continue
+    print("#   ", name)
+print()
+print("# List of hidden modules:")
+for name, cls in lib@target_name@._modules.__dict__.items():
+    if name[-2:] == "__":
+        continue
+    print("#   ", name)

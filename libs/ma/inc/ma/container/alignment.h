@@ -796,7 +796,7 @@ class Alignment : public libMS::Container
 #ifdef WITH_BOOST
 void exportAlignment( );
 #else
-void exportAlignment( py::module& rxPyModuleId );
+void exportAlignment( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 #endif
 

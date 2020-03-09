@@ -504,7 +504,7 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
  * @brief exports the Segmentation @ref libMA::Module "module" to python.
  * @ingroup export
  */
-void exportBinarySeeding( py::module& rxPyModuleId );
+void exportBinarySeeding( libMS::SubmoduleOrganizer& xOrganizer );
 #endif
 
 #endif

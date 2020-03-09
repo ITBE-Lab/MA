@@ -44,11 +44,13 @@ for _ in range(100):
         out_file.write(qual2)
         out_file.write("\n")
 
-    file_reader = PairedFileReader(ParameterSetManager(),
-                                   libMA.filePathVector([libMA.path(fasta_1_file_name)]),
-                                   libMA.filePathVector([libMA.path(fasta_2_file_name)]))
-    query_vec = file_reader.execute()
-    alignment_vec = libMA.AlignmentVector()
+    file_reader = PairedFileReader(ParameterSetManager())
+    stream1 = FileStreamFromPath(fasta_1_file_name)
+    stream2 = FileStreamFromPath(fasta_2_file_name)
+    paired_stream = PairedFileStream(stream1, stream2)
+    query_vec = file_reader.execute(paired_stream)
+    print(query_vec)
+    alignment_vec = AlignmentVector()
     file_writer = PairedFileWriter(ParameterSetManager(), sam_file_name, reference_pack)
     file_writer.execute(query_vec[0], query_vec[1], alignment_vec, reference_pack)
     del file_writer
@@ -87,11 +89,12 @@ for _ in range(100):
         out_file.write(query2)
         out_file.write("\n")
 
-    file_reader = PairedFileReader(ParameterSetManager(),
-                                   libMA.filePathVector([libMA.path(fasta_1_file_name)]),
-                                   libMA.filePathVector([libMA.path(fasta_2_file_name)]))
-    query_vec = file_reader.execute()
-    alignment_vec = libMA.AlignmentVector()
+    file_reader = PairedFileReader(ParameterSetManager())
+    stream1 = FileStreamFromPath(fasta_1_file_name)
+    stream2 = FileStreamFromPath(fasta_2_file_name)
+    paired_stream = PairedFileStream(stream1, stream2)
+    query_vec = file_reader.execute(paired_stream)
+    alignment_vec = AlignmentVector()
     file_writer = PairedFileWriter(ParameterSetManager(), sam_file_name, reference_pack)
     file_writer.execute(query_vec[0], query_vec[1], alignment_vec, reference_pack)
     del file_writer

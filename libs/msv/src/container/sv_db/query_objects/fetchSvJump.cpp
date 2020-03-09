@@ -6,10 +6,10 @@ using namespace libMSV;
 
 #include "ms/container/sv_db/py_db_conf.h"
 
-void exportSvJump( py::module& rxPyModuleId )
+void exportSvJump( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SortedSvJumpFromSql class
-    py::class_<SortedSvJumpFromSql<DBConSingle>>( rxPyModuleId, "SortedSvJumpFromSql" )
+    py::class_<SortedSvJumpFromSql<DBConSingle>>( xOrganizer.util(), "SortedSvJumpFromSql" )
         .def( py::init<std::shared_ptr<DBConSingle>, int64_t>( ) )
         .def( py::init<std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, uint32_t,
                        uint32_t>( ) )

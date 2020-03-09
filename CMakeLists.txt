@@ -167,5 +167,5 @@ endif()
 # Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
 # Link cmdMA
-target_link_libraries ( maCMD PUBLIC MA Threads::Threads )
+target_link_libraries ( maCMD PUBLIC libMA Threads::Threads )
 target_compile_definitions( maCMD PUBLIC DLL_PORT_MA=dllimport )

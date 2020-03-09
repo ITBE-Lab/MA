@@ -444,20 +444,20 @@ class ModuleWrapperCppToPy2 : public ModuleWrapperCppToPy<TP_MODULE, const Param
  * @see exportInserterContainer
  */
 template <class TP_MODULE, typename... TP_CONSTR_PARAMS>
-void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
+void exportModule2( SubmoduleOrganizer& xOrganizer, // pybind module variable
                     const std::string& sName, // module name
                     TypePack<TP_CONSTR_PARAMS...> // empty struct just to transport TP_CONSTR_PARAMS type
 )
 {
     // export the GetInserterContainerModule
-    py::class_<TP_MODULE>( xPyModuleId, ( std::string( "__Get" ) + sName ).c_str( ) )
+    py::class_<TP_MODULE>( xOrganizer._module(), ( std::string( "Cpp_Get" ) + sName ).c_str( ) )
         .def_readonly( "id", &TP_MODULE::iId );
 
     // export GetInserterContainerModule python wrapper
     // ModuleWrapperCppToPy2 is needed in order to allow two constructors
     typedef ModuleWrapperCppToPy2<TP_MODULE, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
     py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>(
-        xPyModuleId, ( std::string( "Get" ) + sName ).c_str( ) )
+        xOrganizer.module(), ( std::string( "Get" ) + sName ).c_str( ) )
         // export the constructor that generates the foreign key by creating a new row
         .def( py::init<const ParameterSetManager&, std::shared_ptr<typename TP_MODULE::DBConInitForw>,
                        TP_CONSTR_PARAMS...>( ) )
@@ -473,12 +473,13 @@ void exportModule2( pybind11::module& xPyModuleId, // pybind module variable
  * @see exportInserterContainer
  */
 template <typename InserterContainerType, typename DBCon, typename... InsertTypes>
-void exportHelper( pybind11::module& xPyModuleId, // pybind module variable
+void exportHelper( SubmoduleOrganizer& xOrganizer, // pybind module variable
                    const std::string& sName, // module name
                    TypePack<InsertTypes...> // empty struct just to transport InsertTypes type
 )
 {
-    py::class_<InserterContainerType, Container, std::shared_ptr<InserterContainerType>>( xPyModuleId, sName.c_str( ) )
+    py::class_<InserterContainerType, Container, std::shared_ptr<InserterContainerType>>( xOrganizer.container( ),
+                                                                                          sName.c_str( ) )
         // inserter container should never be constructed directly in python
         // .def( py::init<std::shared_ptr<PoolContainer<DBCon>>, int64_t>( ) )
         .def( "insert",
@@ -495,17 +496,17 @@ void exportHelper( pybind11::module& xPyModuleId, // pybind module variable
  * For the GetInserterContainerModule "Get" is used as prefix.
  */
 template <typename GetInserterContainerModuleType>
-inline void exportInserterContainer( py::module& rxPyModuleId, const std::string& rName )
+inline void exportInserterContainer( SubmoduleOrganizer& xOrganizer, const std::string& rName )
 {
     // export the templated class
     exportHelper<typename GetInserterContainerModuleType::InserterContainerTypeForw,
                  typename GetInserterContainerModuleType::DBConForw>(
-        rxPyModuleId, rName, typename GetInserterContainerModuleType::InserterContainerTypeForw::InsertTypesForw( ) );
+        xOrganizer, rName, typename GetInserterContainerModuleType::InserterContainerTypeForw::InsertTypesForw( ) );
 
     // TP_MODULE::TableTypeForw::ColTypesForw( ) is passed as last argument in order to transprot the constructor
     // parameters ColTypesForw is a completely empty structure
     exportModule2<GetInserterContainerModuleType>(
-        rxPyModuleId, rName, typename GetInserterContainerModuleType::TableTypeForw::ColTypesForw( ) );
+        xOrganizer, rName, typename GetInserterContainerModuleType::TableTypeForw::ColTypesForw( ) );
 } // function
 
 #endif

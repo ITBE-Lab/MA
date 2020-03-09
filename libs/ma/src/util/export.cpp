@@ -8,6 +8,7 @@
 #include "ma/util/execution-context.h"
 #include "ms/util/parameter.h"
 #include "ms/module/splitter.h"
+#include "ms/util/export.h"
 
 using namespace libMA;
 using namespace libMS;
@@ -15,16 +16,16 @@ using namespace libMS;
 
 #ifdef WITH_PYTHON
 
-void exportExecutionContext( py::module& rxPyModuleId )
+void exportExecutionContext( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<GenomeManager>( rxPyModuleId, "GenomeManager" ) //
+    py::class_<GenomeManager>( xOrganizer.util(), "GenomeManager" ) //
         .def( "load_genome", &GenomeManager::loadGenome );
-    py::class_<ReadsManager>( rxPyModuleId, "ReadsManager" ) //
+    py::class_<ReadsManager>( xOrganizer.util(), "ReadsManager" ) //
         .def_readwrite( "primary_queries", &ReadsManager::vsPrimaryQueryFullFileName ) //
         .def_readwrite( "mate_queries", &ReadsManager::vsMateQueryFullFileName );
-    py::class_<OutputManager>( rxPyModuleId, "OutputManager" );
+    py::class_<OutputManager>( xOrganizer.util(), "OutputManager" );
 
-    py::class_<ExecutionContext>( rxPyModuleId, "ExecutionContext" ) //
+    py::class_<ExecutionContext>( xOrganizer.util(), "ExecutionContext" ) //
         .def( py::init<>( ) ) //
         .def( "do_align", &ExecutionContext::doAlignCallbackLess ) //
         // def_readonly required since xParameterSetManager is non-copyable
@@ -37,27 +38,29 @@ void exportExecutionContext( py::module& rxPyModuleId )
 PYBIND11_MODULE( libMA, libMaModule )
 {
     py::module::import("libMS");
-    exportFM_index( libMaModule );
-    exportNucSeq( libMaModule );
-    exportBinarySeeding( libMaModule );
-    exportPack( libMaModule );
-    exportSegment( libMaModule );
-    exportSeed( libMaModule );
-    exportAlignment( libMaModule );
-    exportHarmonization( libMaModule );
-    exportNeedlemanWunsch( libMaModule );
-    exportStripOfConsideration( libMaModule );
-    exportFileReader( libMaModule );
-    exportFileWriter( libMaModule );
-    exportMappingQuality( libMaModule );
-    exportPairedReads( libMaModule );
-    exportSplitter( libMaModule );
-    exportSmallInversions( libMaModule );
-    exportSoC( libMaModule );
-    exportOtherSeeding( libMaModule );
-    exportHashMapSeeding( libMaModule );
-    exportMinimizerIndex( libMaModule );
-    exportExecutionContext( libMaModule );
+    libMS::SubmoduleOrganizer xOrganizer( libMaModule );
+
+    exportFM_index( xOrganizer );
+    exportNucSeq( xOrganizer );
+    exportBinarySeeding( xOrganizer );
+    exportPack( xOrganizer );
+    exportSegment( xOrganizer );
+    exportSeed( xOrganizer );
+    exportAlignment( xOrganizer );
+    exportHarmonization( xOrganizer );
+    exportNeedlemanWunsch( xOrganizer );
+    exportStripOfConsideration( xOrganizer );
+    exportFileReader( xOrganizer );
+    exportFileWriter( xOrganizer );
+    exportMappingQuality( xOrganizer );
+    exportPairedReads( xOrganizer );
+    exportSplitter( xOrganizer );
+    exportSmallInversions( xOrganizer );
+    exportSoC( xOrganizer );
+    exportOtherSeeding( xOrganizer );
+    exportHashMapSeeding( xOrganizer );
+    exportMinimizerIndex( xOrganizer );
+    exportExecutionContext( xOrganizer );
 } // function
 
 #endif

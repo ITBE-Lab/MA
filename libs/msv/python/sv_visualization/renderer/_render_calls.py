@@ -121,7 +121,7 @@ def render_calls(self):
         if self.do_render_call_jumps_only:
             num_jumps = num_call_jumps
         else:
-            num_jumps = libMA.get_num_jumps_in_area(self.db_conn, self.pack,
+            num_jumps = get_num_jumps_in_area(self.db_conn, self.pack,
                                                 SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
                                                 int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
                                                 self.get_max_num_ele())

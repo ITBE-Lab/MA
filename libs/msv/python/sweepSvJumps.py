@@ -21,16 +21,16 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
         assert len(sequencer_ids) == 1
 
-        section_fac = libMA.GenomeSectionFactory(parameter_set_manager, pack)
+        section_fac = GenomeSectionFactory(parameter_set_manager, pack)
         lock_module = Lock(parameter_set_manager)
-        sweep1 = libMA.CompleteBipartiteSubgraphSweep(parameter_set_manager, run_id)
-        sweep2 = libMA.ExactCompleteBipartiteSubgraphSweep(parameter_set_manager)
+        sweep1 = CompleteBipartiteSubgraphSweep(parameter_set_manager, run_id)
+        sweep2 = ExactCompleteBipartiteSubgraphSweep(parameter_set_manager)
 
-        filter1 = libMA.FilterLowSupportShortCalls(parameter_set_manager)
-        filter2 = libMA.FilterFuzzyCalls(parameter_set_manager)
-        filter5 = libMA.FilterDiagonalLineCalls(parameter_set_manager)
-        filter6 = libMA.FilterLowScoreCalls(parameter_set_manager)
-        call_ambiguity = libMA.ComputeCallAmbiguity(parameter_set_manager)
+        filter1 = FilterLowSupportShortCalls(parameter_set_manager)
+        filter2 = FilterFuzzyCalls(parameter_set_manager)
+        filter5 = FilterDiagonalLineCalls(parameter_set_manager)
+        filter6 = FilterLowScoreCalls(parameter_set_manager)
+        call_ambiguity = ComputeCallAmbiguity(parameter_set_manager)
 
         get_call_inserter = GetCallVectorInserter(parameter_set_manager, DbConn(dataset_name), name, desc, run_id)
         call_inserter_module = CallVectorInserterModule(parameter_set_manager)
@@ -61,7 +61,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             filter2_pledge = promise_me(filter2, filter1_pledge)
             analyze.register("FilterFuzzyCalls", filter2_pledge, True)
 
-            #filter3 = libMA.ConnectorPatternFilter(parameter_set_manager, sv_db)
+            #filter3 = ConnectorPatternFilter(parameter_set_manager, sv_db)
             #filter3_pledge = promise_me(filter3, filter2_pledge, pack_pledge) # this filter was off already
             #analyze.register("[4] ConnectorPatternFilter", filter3_pledge)
 
@@ -125,7 +125,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
     print("overlapping...")
     start = datetime.datetime.now()
-    num_combined = libMA.combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
+    num_combined = combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)

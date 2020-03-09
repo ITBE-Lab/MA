@@ -133,11 +133,11 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
 #endif
 
 #ifdef WITH_PYTHON
-void exportHashMapSeeding( py::module& rxPyModuleId )
+void exportHashMapSeeding( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<std::unordered_multimap<std::string, size_t>>( rxPyModuleId, "K-MerIndex" );
+    py::class_<std::unordered_multimap<std::string, size_t>>( xOrganizer.util(), "K_MerIndex" );
     // export the HashMapSeeding class
-    exportModule<HashMapSeeding>( rxPyModuleId, "HashMapSeeding", []( auto&& x ) {
+    exportModule<HashMapSeeding>( xOrganizer, "HashMapSeeding", []( auto&& x ) {
         x.def( "getIndex", &HashMapSeeding::getIndex ) //
             .def( "getSeeds", &HashMapSeeding::getSeeds ) //
             .def( "getAllSeeds", &HashMapSeeding::getAllSeeds )
@@ -145,11 +145,11 @@ void exportHashMapSeeding( py::module& rxPyModuleId )
     } );
 #if 0
     // export the ReSeeding class
-    exportModule<ReSeeding>( rxPyModuleId, "ReSeeding" );
+    exportModule<ReSeeding>( xOrganizer, "ReSeeding" );
     // export the FillSeedSet class
-    exportModule<FillSeedSet>( rxPyModuleId, "FillSeedSet" );
+    exportModule<FillSeedSet>( xOrganizer, "FillSeedSet" );
     // export the ExtractFilledSeedSets class
-    exportModule<ExtractFilledSeedSets>( rxPyModuleId, "ExtractFilledSeedSets" );
+    exportModule<ExtractFilledSeedSets>( xOrganizer, "ExtractFilledSeedSets" );
 #endif
 } // function
 #endif

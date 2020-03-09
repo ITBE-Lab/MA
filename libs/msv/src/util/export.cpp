@@ -17,11 +17,12 @@ using namespace libMA;
 PYBIND11_MODULE( libMSV, libMsvModule )
 {
     py::module::import("libMS");
-    exportSVJump( libMsvModule );
-    exportSvJumpsFromSeeds( libMsvModule );
-    exportSweepSvJump( libMsvModule );
-    exportConnectorPatternFilter( libMsvModule );
-    exportSoCDbWriter( libMsvModule );
+    libMS::SubmoduleOrganizer xOrganizer( libMsvModule );
+    exportSVJump( xOrganizer );
+    exportSvJumpsFromSeeds( xOrganizer );
+    exportSweepSvJump( xOrganizer );
+    exportConnectorPatternFilter( xOrganizer );
+    exportSoCDbWriter( xOrganizer );
 } // function
 
 #endif

@@ -226,5 +226,5 @@ template <typename... TP_VEC_CONTENT> class Join : public Module<Container, fals
 } // namespace libMS
 
 #ifdef WITH_PYTHON
-void exportSplitter( py::module& rxPyModuleId );
+void exportSplitter( libMS::SubmoduleOrganizer& xOrganizer );
 #endif

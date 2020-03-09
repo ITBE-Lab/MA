@@ -7,6 +7,7 @@
 
 #include "ms/container/container.h"
 #include "db_con_pool.h"
+#include "ms/util/export.h"
 
 namespace libMS
 {
@@ -34,6 +35,6 @@ template <class DBCon> class PoolContainer : public Container
 
 #ifdef WITH_PYTHON
 
-void exportPoolContainer( py::module& rxPyModuleId );
+void exportPoolContainer( libMS::SubmoduleOrganizer& xOrganizer );
 
 #endif
