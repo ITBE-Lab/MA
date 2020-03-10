@@ -1,6 +1,6 @@
 from .alignmentPrinter import *
 from random import choice
-
+from MA import *
 
 def test_aligner():
     parameter_manager = ParameterSetManager()

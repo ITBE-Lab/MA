@@ -1,5 +1,4 @@
-from .aligner import *
-from .analyzeRuntimes import *
+from MA import *
 
 
 def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_queue_2=None,

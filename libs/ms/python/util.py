@@ -5,9 +5,9 @@ def promise_me(module, *args):
     for arg in args:
         arg_vector.append(arg)
     if isinstance(module, Module):
-        return ModulePledge(module, arg_vector)
+        return libMS._util.ModulePledge(module, arg_vector)
     elif isinstance(module, VolatileModule):
-        return VolatileModulePledge(module, arg_vector)
+        return libMS._util.VolatileModulePledge(module, arg_vector)
     else:
         raise Exception(
             "module must be an instance of Module or VolatileModule")

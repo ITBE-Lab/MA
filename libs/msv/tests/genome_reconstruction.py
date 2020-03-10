@@ -1,4 +1,4 @@
-from MA import *
+from MSV import *
 import tempfile
 
 #
@@ -10,7 +10,8 @@ def insert_calls(db_conn, dataset_name):
     SvCallerRunTable(db_conn)
     get_inserter = GetCallInserter(ParameterSetManager(), db_conn, "simulated_sv",
                                    "the sv's that were simulated", -1)
-    sv_inserter = get_inserter.execute(PoolContainer(1, dataset_name))
+    pool = PoolContainer(1, dataset_name)
+    sv_inserter = get_inserter.execute(pool)
 
     # deletion
     sv_inserter.insert(SvCall(4, 7, 0, 0, False, 1000))  # a
@@ -29,7 +30,7 @@ def insert_calls(db_conn, dataset_name):
     sv_inserter.insert(SvCall(19, 1, 0, 0, False, 1000))  # f
     sv_inserter.insert(SvCall(18, 20, 0, 0, False, 1000))  # g
 
-    sv_inserter.close()
+    sv_inserter.close(pool)
 
     return get_inserter.cpp_module.id
 

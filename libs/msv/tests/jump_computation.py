@@ -17,7 +17,7 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
 
     print("inserting reads...")
     reconstr_nuc_seq = reconstr.extract_forward_strand_n()
-    reads = libMSV.ContainerVectorNucSeq()
+    reads = ContainerVectorNucSeq()
     # create 10x coverage
     for x in range(5):
         reads.append(reconstr_nuc_seq)
@@ -27,8 +27,33 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
     for x in range(5):
         reads.append(reconstr_nuc_seq)
     print(reads)
-    sequencer_id = insert_reads_vec(parameter_set, dataset_name, "perfect whole genome read", reads)
+
+    pool = PoolContainer(1, dataset_name)
+    pool_pledge = Pledge()
+    pool_pledge.set(pool)
+
+    get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), "perfect whole genome read")
+    read_inserter_module = ReadInserterModule(parameter_set)
+    splitter = NucSeqSplitter(parameter_set)
+    lock = Lock(parameter_set)
+
+    inserter = promise_me(get_read_inserter, pool_pledge)
+
+    vec_pledge = Pledge()
+    vec_pledge.set(reads)
+    query = promise_me(splitter, vec_pledge)
+    locked_query = promise_me(lock, query)
+    inserted = promise_me(read_inserter_module, inserter, pool_pledge, locked_query)
+    unlock = promise_me(UnLock(parameter_set, locked_query), inserted)
+    
+    res = VectorPledge()
+    res.append(unlock)
+    res.simultaneous_get(1)
+
+    inserter.get().close(pool) 
+
     print("done")
+    sequencer_id = get_read_inserter.cpp_module.id
 
     return ground_truth_id, fm_index, sequencer_id
 
@@ -45,7 +70,7 @@ def fetch_call_rectangles(db_conn, parameter_set, run_id):
         def __eq__(self, other):
             def interval_overlap(start_a, len_a, start_b, len_b):
                 return start_a + len_a >= start_b and start_b + len_b >= start_a
-            if isinstance(other, libMSV.SvJump):
+            if isinstance(other, SvJump):
                 return interval_overlap(self.from_start, self.from_size,
                                         other.from_start_same_strand(), other.from_size()) and \
                        interval_overlap(self.to_start, self.to_size, other.to_start(), other.to_size())

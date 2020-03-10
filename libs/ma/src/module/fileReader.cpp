@@ -213,8 +213,9 @@ void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<StringStream, FileStream, std::shared_ptr<StringStream>>( xOrganizer.container( ), "StringStream" )
         .def( py::init<std::string>( ) );
 
-    py::bind_vector_ext<PairedReadsContainer, libMS::Container, std::shared_ptr<PairedReadsContainer>>(
+    py::bind_vector_ext<PairedReadsContainer, Container, std::shared_ptr<PairedReadsContainer>>(
         xOrganizer.container( ), "ContainerVectorNucSeq", "docstr" );
+    py::implicitly_convertible<PairedReadsContainer, Container>( );
 
     exportCyclicQueue<FileStream, NucSeq>( xOrganizer, "File", {"NucSeq"} );
     exportCyclicQueue<PairedFileStream, PairedReadsContainer>( xOrganizer, "PairedFile", {"NucSeq"} );

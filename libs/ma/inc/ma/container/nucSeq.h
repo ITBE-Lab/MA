@@ -147,7 +147,7 @@ class NucSeq : public libMS::Container
   public:
     /** The table used to translate from base pairs to numeric codes for nucleotides
      */
-    static const DLL_PORT(MA) unsigned char xNucleotideTranslationTable[ 256 ];
+    static const DLL_PORT( MA ) unsigned char xNucleotideTranslationTable[ 256 ];
 
     std::string sName = "unknown";
     int64_t iId = -1;
@@ -1243,7 +1243,13 @@ struct /* MySQLConDB:: */ RowCell<CompNucSeqSharedPtr> : public /* MySQLConDB::*
     {
         // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
         if( !( this->is_null ) )
+        {
+            if( *pCellValue == nullptr ) // @todo ask arne again... i don't quite get what i'm doing wrong
+                *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
             ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
+        }
+        else
+            *pCellValue = nullptr;
     } // method
 }; // specialized class
 

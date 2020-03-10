@@ -248,6 +248,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t> xRet;
         std::get<0>( xRet ) = -1;
         std::get<2>( xRet ) = bForwardContext; // does nothing...
+        std::get<3>( xRet ) = nullptr;
         if( bForwardContext && xNextCallForwardContext.execAndFetch( uiFrom ) )
         {
             auto xQ = xNextCallForwardContext.get( );
@@ -361,7 +362,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // moment)
                 uiIntermediatePos += bForwContext ? 1 : -1;
             } while( true );
-#if 0
+#if 1
             std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
                       << " to: " << std::get<4>( tNextCall ) << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" )
                       << " inserted_seq: "

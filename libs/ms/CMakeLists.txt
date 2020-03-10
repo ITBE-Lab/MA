@@ -77,7 +77,7 @@ function( ms_add_module_helper target_name )
         file(GLOB py_folder "python/*" )
         make_directory("${CMAKE_BINARY_DIR}/${target_name}")
         add_custom_command(
-                OUTPUT "${CMAKE_BINARY_DIR}/${target_name}/dummy"
+                OUTPUT "${CMAKE_BINARY_DIR}/${target_name}/copy_if_different"
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${py_folder} "${CMAKE_BINARY_DIR}/${target_name}"
                 DEPENDS ${py_folder}
         )
@@ -94,7 +94,7 @@ function( ms_add_module_helper target_name )
         add_custom_target(
                 ${target_name} ALL
                 DEPENDS "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py" 
-                        "${CMAKE_BINARY_DIR}/${target_name}/dummy"
+                        "${CMAKE_BINARY_DIR}/${target_name}/copy_if_different"
             )
     endif()
 

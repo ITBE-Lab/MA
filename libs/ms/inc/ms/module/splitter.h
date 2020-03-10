@@ -133,6 +133,11 @@ template <typename TP> class Splitter : public Module<TP, true, ContainerVector<
         pIn->pop_back( );
         return pBack;
     } // method
+
+    virtual bool requiresLock( ) const
+    {
+        return true;
+    } // method
 }; // class
 
 /**
@@ -155,6 +160,11 @@ template <typename TP> class StaticSplitter : public Module<TP, true>
         auto pBack = pIn->back( );
         pIn->pop_back( );
         return pBack;
+    } // method
+
+    virtual bool requiresLock( ) const
+    {
+        return true;
     } // method
 }; // class
 
