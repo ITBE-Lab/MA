@@ -7,8 +7,8 @@
 #pragma once
 
 #include "ma/container/pack.h"
-#include "msv/container/svJump.h"
 #include "ms/container/sv_db/pool_container.h"
+#include "msv/container/svJump.h"
 #include "sql_api.h"
 #include "util/geom.h"
 #include "util/system.h"
@@ -362,16 +362,16 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // moment)
                 uiIntermediatePos += bForwContext ? 1 : -1;
             } while( true );
-#if 1
+#if 0
             std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
                       << " to: " << std::get<4>( tNextCall ) << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" )
                       << " inserted_seq: "
                       << ( std::get<3>( tNextCall ) == nullptr
                                ? "nullptr"
-                               : ( std::get<3>( tNextCall )->uiSize == 0
-                                       ? "empty"
-                                       : std::get<3>( tNextCall )->toString( ) ) )
-                      << std::endl;
+                               : ( std::get<3>( tNextCall )->uiSize == 0 ? "empty"
+                                                                         : std::get<3>( tNextCall )->toString( ) ) )
+                      << " curr_genome: " << pRet->vColletionWithoutReverseStrandAsNucSeq( )->toString( ) << " "
+                      << xCurrChrom.toString( ) << std::endl;
 #endif
             if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
             {
@@ -590,10 +590,10 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     {
         for( size_t uiT = 0; uiT < pConPool->xPool.uiPoolSize; uiT++ )
         {
-            vOverlapQuery.push_back( pConPool->xPool.run(  (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
+            vOverlapQuery.push_back( pConPool->xPool.run( (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
                 return std::make_unique<NumOverlapsQuery>( pConnection );
             } ) );
-            vIntersectScoreQueries.push_back( pConPool->xPool.run(  (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
+            vIntersectScoreQueries.push_back( pConPool->xPool.run( (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
                 return std::make_unique<HelperIntersecCallWHigherScore>( pConnection );
             } ) );
             vIntersectQueries.push_back( pConPool->xPool.run( (int)uiT, []( std::shared_ptr<DBCon> pConnection ) {
