@@ -2,6 +2,7 @@ from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet, FixedTicker
 from bokeh.models.callbacks import CustomJS
 from MA import *
+from MSV import *
 import math
 from .util import *
 

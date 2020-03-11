@@ -2,6 +2,7 @@ from bokeh.models import TapTool, OpenURL
 from bokeh.plotting import ColumnDataSource
 import math
 from MA import *
+from MSV import *
 from .util import *
 
 
@@ -28,17 +29,18 @@ def render_overview(self):
         't': [],
         'i': []
     }
-    max_ = max(*[r.c for r in rect_vec], 0)
-    names = self.pack.contigNames()
-    for rect in rect_vec:
-        cds["x"].append(rect.x)
-        cds["y"].append(rect.y)
-        cds["w"].append(rect.x + rect.w)
-        cds["h"].append(rect.y + rect.h)
-        cds["c"].append(format(light_spec_approximation(rect.c/max_)))
-        cds["f"].append(names[rect.i])
-        cds["t"].append(names[rect.j])
-        cds["i"].append(str(rect.c))
+    if len(rect_vec) > 0:
+        max_ = max(*[r.c for r in rect_vec], 0)
+        names = self.pack.contigNames()
+        for rect in rect_vec:
+            cds["x"].append(rect.x)
+            cds["y"].append(rect.y)
+            cds["w"].append(rect.x + rect.w)
+            cds["h"].append(rect.y + rect.h)
+            cds["c"].append(format(light_spec_approximation(rect.c/max_)))
+            cds["f"].append(names[rect.i])
+            cds["t"].append(names[rect.j])
+            cds["i"].append(str(rect.c))
     self.main_plot.overview_quad.data = cds
 
     self.analyze.analyze()

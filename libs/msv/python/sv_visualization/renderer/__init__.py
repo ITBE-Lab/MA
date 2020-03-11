@@ -1,4 +1,5 @@
 from MA import AnalyzeRuntimes, ParameterSetManager
+from MSV import *
 import datetime
 from .visual_elements.main_plot import *
 from .visual_elements.seed_plot import *

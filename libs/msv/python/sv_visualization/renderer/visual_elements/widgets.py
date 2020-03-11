@@ -4,6 +4,7 @@ from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup
 from bokeh.events import ButtonClick
 from ..util import *
 from MA import *
+from MSV import *
 import copy
 
 class Widgets:
@@ -32,10 +33,15 @@ class Widgets:
         renderer.setup()
 
     def run_id_change(self, renderer):
+        print("new run_id:", self.run_id_dropdown.value)
+        renderer.cached_global_overview = None
         run_table = SvCallerRunTable(renderer.db_conn)
         self.run_id_dropdown.label = "Selected run: " + run_table.getName(int(self.run_id_dropdown.value)) + \
                                      " - " + self.run_id_dropdown.value
-        self.score_slider.end = SvCallTable(renderer.db_conn).max_score(int(self.run_id_dropdown.value))
+        call_table = SvCallTable(renderer.db_conn)
+        self.score_slider.end = 0
+        if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
+            self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
         renderer.render()
 
     def ground_id_change(self, renderer):

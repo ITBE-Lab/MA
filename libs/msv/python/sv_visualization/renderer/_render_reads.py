@@ -3,6 +3,7 @@ from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet, FixedTic
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Plasma, Plasma256
 from MA import *
+from MSV import *
 import math
 from .util import *
 
