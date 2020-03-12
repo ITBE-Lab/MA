@@ -9,7 +9,11 @@ import copy
 
 class Widgets:
     def __init__(self, renderer):
-        self.file_input = TextInput(value=None, title="Dataset Name:")
+        self.file_input = Dropdown(label="Select dataset", menu=[])
+        for dataset_name in SQLDBInformer(DbConn({})).get_all_schemas():
+            if dataset_name in set(["information_schema", "performance_schema", "sys", "defaultDB", "mysql"]):
+                continue
+            self.file_input.menu.append(dataset_name)
         self.run_id_dropdown = Dropdown(label="select run id here", menu=[])
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
         self.score_slider = Slider(start=0, end=1, value=0, step=.1, callback_policy='mouseup', title="min score")
@@ -30,6 +34,7 @@ class Widgets:
         self.delete_button.on_event(ButtonClick, lambda x: self.delete_button_event(renderer))
 
     def file_input_change(self, renderer):
+        self.file_input.label = "Selected dataset: " + self.file_input.value
         renderer.setup()
 
     def run_id_change(self, renderer):

@@ -5,6 +5,7 @@
 #include "msv/module/svJumpsFromSeeds.h"
 #include "ms/module/module.h"
 #include "ms/util/pybind11.h"
+#include "pybind11/stl.h"
 #include <cmath>
 #include <csignal>
 

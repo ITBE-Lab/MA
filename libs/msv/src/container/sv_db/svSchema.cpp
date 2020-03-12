@@ -4,19 +4,21 @@
 #include "msv/module/combineOverlappingCalls.h"
 
 // include classes that implement sql queries
+#include "ms/util/pybind11.h"
 #include "msv/container/sv_db/query_objects/callInserter.h"
 #include "msv/container/sv_db/query_objects/fetchCalls.h"
 #include "msv/container/sv_db/query_objects/fetchSvJump.h"
 #include "msv/container/sv_db/query_objects/jumpInserter.h"
 #include "msv/container/sv_db/query_objects/nucSeqSql.h"
 #include "msv/container/sv_db/query_objects/readInserter.h"
-#include "ms/util/pybind11.h"
+#include "pybind11/stl.h"
 
 using namespace libMSV;
 
 
-uint32_t getNumJumpsInArea( std::shared_ptr<DBConSingle> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId,
-                            int64_t iX, int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
+template <typename DBCon>
+uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<Pack> pPack, int64_t iRunId, int64_t iX,
+                            int64_t iY, uint64_t uiW, uint64_t uiH, uint64_t uiLimit )
 {
     uint32_t uiX = 0;
     if( iX > 0 )
@@ -29,16 +31,17 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBConSingle> pConnection, std::share
     if( uiY + uiH > pPack->uiUnpackedSizeForwardStrand )
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
+
+    auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
+
     SQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
                                             "SELECT COUNT(*) "
                                             "FROM sv_jump_table "
                                             "WHERE sv_jump_run_id = ? "
-                                            "AND ( (from_pos >= ? AND from_pos <= ?) OR from_pos = ? ) "
-                                            "AND ( (to_pos >= ? AND to_pos <= ?) OR to_pos = ? ) "
+                                            "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
                                             "LIMIT ? " );
     // FIXME: Don't use scalar anymore!
-    return xQuery.scalar( iRunId, uiX, uiX + (uint32_t)uiW, std::numeric_limits<uint32_t>::max( ), uiY,
-                          uiY + (uint32_t)uiH, std::numeric_limits<uint32_t>::max( ), uiLimit );
+    return xQuery.scalar( iRunId, xRectangle, uiLimit );
 } // function
 
 
@@ -101,11 +104,16 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readonly( "j", &rect::j )
         .def_readonly( "c", &rect::c );
     py::bind_vector<std::vector<rect>>( xOrganizer.util( ), "rectVector", "docstr" );
-    xOrganizer.util( ).def( "get_num_jumps_in_area", &getNumJumpsInArea );
+    xOrganizer.util( ).def( "get_num_jumps_in_area", &getNumJumpsInArea<DBConSingle> );
     xOrganizer.util( ).def( "get_call_overview", &getCallOverview<DBCon> );
     xOrganizer.util( ).def( "get_call_overview_area", &getCallOverviewArea<DBConSingle> );
 
     xOrganizer.util( ).def( "combine_overlapping_calls", &combineOverlappingCalls<DBCon> );
+
+    py::class_<SQLDBInformer<DBConSingle>, std::shared_ptr<SQLDBInformer<DBConSingle>>>( xOrganizer.util( ),
+                                                                                         "SQLDBInformer" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "get_all_schemas", &SQLDBInformer<DBConSingle>::getAllSchemas );
 
     exportSvCallInserter( xOrganizer );
     exportCallsFromDb( xOrganizer );

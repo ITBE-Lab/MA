@@ -32,7 +32,7 @@ class Renderer():
         self.xe = 0
         self.ye = 0
         self.redered_everything = False
-        self.do_render_call_jumps_only = True
+        self.do_render_call_jumps_only = False
         self.render_area_factor = 1 # @todo make this adjustable 
         # number of reads needs to be smaller than max_num_elements / read_penalty_factor to be rendered
         self.read_penalty_factor = 10

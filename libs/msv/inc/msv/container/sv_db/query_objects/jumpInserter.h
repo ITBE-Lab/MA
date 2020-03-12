@@ -9,6 +9,7 @@
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/nameDesc.h"
 #include "msv/container/sv_db/tables/svJump.h"
+#include "util/geom.h"
 
 using namespace libMA;
 using namespace libMS;
@@ -43,10 +44,14 @@ class JumpInserterContainer
 
             if( rJump.does_switch_strand( ) )
                 assert( rJump.from_start( ) >= std::numeric_limits<int64_t>::max( ) / 2 );
+
+            auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>(
+                rJump.from_start_same_strand( ), rJump.to_start( ), rJump.from_size( ), rJump.to_size( ) ) );
             rJump.iId = ParentType::pInserter->insert(
                 ParentType::iId /* <- id of the sv jump run */, rJump.iReadId, rJump.from_start( ), rJump.from_end( ),
                 (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
-                (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart );
+                (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart,
+                xRectangle );
         } // for
         return pJumps->size( );
     } // method

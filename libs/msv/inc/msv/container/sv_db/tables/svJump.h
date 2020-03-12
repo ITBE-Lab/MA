@@ -23,7 +23,8 @@ using SvJumpTableType = SQLTableWithLibIncrPriKey<DBCon,
                                                   uint32_t, // num_supporting_nt
                                                   bool, // from_forward
                                                   bool, // to_forward
-                                                  bool // from_seed_start
+                                                  bool, // from_seed_start
+                                                  WKBUint64Rectangle // rectangle (geometry)
                                                   >;
 
 
@@ -50,14 +51,11 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
               {{COLUMN_NAME, "num_supporting_nt"}},
               {{COLUMN_NAME, "from_forward"}},
               {{COLUMN_NAME, "to_forward"}},
-              {{COLUMN_NAME, "from_seed_start"}}}},
+              {{COLUMN_NAME, "from_seed_start"}},
+              {{COLUMN_NAME, "rectangle"}, {CONSTRAINTS, "NOT NULL"}}}},
             {FOREIGN_KEY, {{COLUMN_NAME, "sv_jump_run_id"}, {REFERENCES, "sv_jump_run_table(id) ON DELETE CASCADE"}}},
             {FOREIGN_KEY, {{COLUMN_NAME, "read_id"}, {REFERENCES, "read_table(id)"}}}};
     } // method
-#if DEBUG_LEVEL == 0
-    // increase the bulk inserter size on this table
-    using uiBulkInsertSize = std::integral_constant<size_t, 5000>;
-#endif
 
     SvJumpTable( std::shared_ptr<DBCon> pDatabase )
         : SvJumpTableType<DBCon>( pDatabase, // the database where the table resides
@@ -86,6 +84,8 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
             json{{INDEX_NAME, "sort_end"},
                  {INDEX_COLUMNS, "sort_pos_end, from_pos, to_pos, query_from, query_to, from_forward,"
                                  " to_forward, from_seed_start, num_supporting_nt, id, read_id, sv_jump_run_id"}} );
+        
+        this->addIndex( json{{INDEX_NAME, "rectangle"}, {INDEX_COLUMNS, "rectangle"}, {INDEX_TYPE, "SPATIAL"}} );
     } // method
 
     inline void dropIndices( int64_t uiRun )
