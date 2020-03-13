@@ -7,8 +7,9 @@ import copy
 
 class SeedPlot:
     def __init__(self, main_plot, renderer):
+        self.plot_width = 300
         self.left_plot = figure(
-            width=300,
+            width=self.plot_width,
             height=900,
             y_range=main_plot.plot.y_range,
             x_range=(0,0),
@@ -22,7 +23,7 @@ class SeedPlot:
 
         self.bottom_plot = figure(
             width=900,
-            height=300,
+            height=self.plot_width,
             x_range=main_plot.plot.x_range,
             y_range=self.left_plot.x_range,
             tools=["ypan", "ywheel_zoom"],

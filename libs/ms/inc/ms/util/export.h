@@ -21,6 +21,20 @@ namespace libMS
 #pragma GCC visibility push( hidden ) // @todo is there a way to resolve this warning?
 #endif
 
+/**
+ * @brief creates several submodules in python.
+ * @details
+ * Some of these submodules are then imported by _lib_init.py.
+ * Submodule organisation:
+ * - modules: imported; contains all modules; Is used automatically by exportModule; Do not use this for anything bu
+ *            modules.
+ * - _modules: not imported; contains the raw cpp modules (not wrapped by the python to cpp interface).
+ * - containers: imported; use this to expose any containers that shall be visible to python.
+ * - _containers: not imported; use this to expose any containers that shall not be visible to python (g.e. return 
+ *                types of functions that are not initiable from python directly).
+ * - util: imported; any type of utility functions / classes
+ * - _util: not imported; any type of hidden utility functions / classes (e.g. hidden return types of functions).
+ */
 class SubmoduleOrganizer
 {
   private:

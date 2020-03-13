@@ -56,8 +56,8 @@ fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool
  * The actual combination of overlapping calls is single threaded though.
  */
 template <typename DBCon>
-size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool,
-                                int64_t iSvCallerId )
+size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
+                                std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool, int64_t iSvCallerId )
 {
     size_t uiNumCombines = 0;
     pConPool->xPool.run( [&]( std::shared_ptr<DBCon> pOuterConnection ) {
@@ -68,8 +68,9 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
                  // {CPP_EXTRA, "DROP ON DESTRUCTION"},
                  {TABLE_COLUMNS,
                   {
-                      {{COLUMN_NAME, "from_call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}},
-                      {{COLUMN_NAME, "to_call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}} //
+                      // cannot have references here otherwise msql locks the table if a query is run over sv_call_table
+                      {{COLUMN_NAME, "from_call_id"}, /*{REFERENCES, "sv_call_table(id)"},*/ {CONSTRAINTS, "NOT NULL"}},
+                      {{COLUMN_NAME, "to_call_id"}, /*{REFERENCES, "sv_call_table(id)"},*/ {CONSTRAINTS, "NOT NULL"}} //
                   }}} );
 
         metaMeasureAndLogDuration<LOG>( "xInsertIntoOverlapTable", [&]( ) {
@@ -110,8 +111,6 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters, std::sha
             for( size_t uiI = 0; uiI < uiNumTasks; uiI++ )
                 vFutures[ uiI ].get( );
         } );
-
-        auto xTransaction = pOuterConnection->sharedGuardedTrxn( );
 
         // create index on overlap table  (mysql cannot deal with empty tables apparently)
         metaMeasureAndLogDuration<LOG>( "xOverlapTable.addIndex", [&]( ) {

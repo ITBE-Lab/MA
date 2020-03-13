@@ -1,15 +1,26 @@
+##
+# @file _lib_init.py.in
+# @brief this file generates the *file* that then imports the cpp library in python
+# @details
+# @note if this files name does not end in .in this is a generated file itself
+# only ever change the original file: libs/ms/_lib_init.py.in
+# This file is called during the cmake build process in order to create the _lib_init.py files that import the
+# cpp modules into python.
+
 import lib@target_name@
 
+# print the file header
 print("##")
 print("# @file _lib_init.py")
 print("# @brief this file takes care of importing all components of the cpp library lib@target_name@ to python")
 print("# @details")
 print("# @note this is a generated file do NOT change anything in here.")
-print("# the original file is: lib/ms/_lib_init.py.in")
+print("# the original file is: libs/ms/_lib_init.py.in")
 print()
 print("import lib@target_name@")
 print("import libMS")
 
+# print the import for the util submodule
 for name, cls in lib@target_name@.util.__dict__.items():
     if name[:2] == "__":
         if name[-2:] == "__":
@@ -23,6 +34,7 @@ for name, cls in lib@target_name@.util.__dict__.items():
     print()
 print()
 
+# print the import for the containers submodule
 for name, cls in lib@target_name@.containers.__dict__.items():
     if name[:2] == "__":
         if name[-2:] == "__":
@@ -36,6 +48,7 @@ for name, cls in lib@target_name@.containers.__dict__.items():
     print()
 print()
 
+# print the import for the modules submodule
 for name, cls in lib@target_name@.modules.__dict__.items():
     if name[:2] == "__":
         if name[-2:] == "__":
@@ -52,6 +65,7 @@ for name, cls in lib@target_name@.modules.__dict__.items():
     print("        return super(", name, ", self).execute(vec)", sep="")
     print()
 
+# list the content of hidden submodules
 print()
 print("# List of hidden utilities:")
 for name, cls in lib@target_name@._util.__dict__.items():

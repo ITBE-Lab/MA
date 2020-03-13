@@ -1,6 +1,6 @@
 from bokeh.plotting import figure
 from bokeh.models import Button, Slider
-from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup
+from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup, Div
 from bokeh.events import ButtonClick
 from ..util import *
 from MA import *
@@ -32,6 +32,34 @@ class Widgets:
 
         self.render_mems_button.on_event(ButtonClick, lambda x: self.render_mems_button_event(renderer))
         self.delete_button.on_event(ButtonClick, lambda x: self.delete_button_event(renderer))
+
+        spinner_text = """
+            <!-- https://www.w3schools.com/howto/howto_css_loader.asp -->
+            <div class="loader">
+            <style scoped>
+            .loader {
+                border: 16px solid #f3f3f3; /* Light grey */
+                border-top: 16px solid #3498db; /* Blue */
+                border-radius: 50%;
+                width: """ + str(renderer.seed_plot.plot_width - 50) + """px;
+                height: """ + str(renderer.seed_plot.plot_width - 50) + """px;
+                animation: spin 2s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            } 
+            </style>
+            </div>
+        """
+        self.spinner_div = Div(text=spinner_text, sizing_mode="scale_both", visible=False)
+
+    def show_spinner(self):
+        self.spinner_div.visible = True
+
+    def hide_spinner(self):
+        self.spinner_div.visible = False
 
     def file_input_change(self, renderer):
         self.file_input.label = "Selected dataset: " + self.file_input.value
