@@ -145,42 +145,45 @@ def render_reads(self):
                                     parlindrome, layer, read_id, idx, read_name)
                     category_counter += len(end_column)
 
-    if len(read_dict["c"]) < self.get_max_num_ele():
-        with self.measure("rendering seeds"):
-            # render ambiguous regions on top and left
-            self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict
+    def callback():
+        if len(read_dict["c"]) < self.get_max_num_ele():
+            with self.measure("rendering seeds"):
+                # render ambiguous regions on top and left
+                self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict
 
-            # render seeds on top and left
-            self.seed_plot.seeds.data = read_dict
-            if self.seed_plot.left_plot.x_range.start == 0 and self.seed_plot.left_plot.x_range.end == 0:
-                self.seed_plot.left_plot.x_range.start = -1
-                self.seed_plot.left_plot.x_range.end = category_counter
+                # render seeds on top and left
+                self.seed_plot.seeds.data = read_dict
+                if self.seed_plot.left_plot.x_range.start == 0 and self.seed_plot.left_plot.x_range.end == 0:
+                    self.seed_plot.left_plot.x_range.start = -1
+                    self.seed_plot.left_plot.x_range.end = category_counter
 
-            if len(self.read_ids) <= self.do_compressed_seeds:
-                self.seed_plot.left_plot.xaxis.ticker = FixedTicker(ticks=col_ids)
-                self.seed_plot.bottom_plot.yaxis.ticker = FixedTicker(ticks=col_ids)
-                self.seed_plot.left_plot.xaxis.formatter = FuncTickFormatter(
-                    args={"read_id_n_cols": read_id_n_cols},
-                    code="""
-                            if(!tick in read_id_n_cols)
-                                return "";
-                            return read_id_n_cols[tick];
-                        """)
-                self.seed_plot.bottom_plot.yaxis.formatter = FuncTickFormatter(
-                    args={"read_id_n_cols": read_id_n_cols},
-                    code="""
-                            if(!tick in read_id_n_cols)
-                                return "";
-                            return read_id_n_cols[tick];
-                        """)
-                self.seed_plot.left_plot.xaxis.axis_label = "Read Id"
-                self.seed_plot.bottom_plot.yaxis.axis_label = "Read Id"
-            else:
-                self.seed_plot.left_plot.xaxis.ticker = []
-                self.seed_plot.left_plot.xaxis.axis_label = "compressed seeds"
-                self.seed_plot.bottom_plot.yaxis.ticker = []
-                self.seed_plot.bottom_plot.yaxis.axis_label = "compressed seeds"
-            self.seed_plot.left_plot.xgrid.ticker = FixedTicker(ticks=all_col_ids)
-            self.seed_plot.bottom_plot.ygrid.ticker = FixedTicker(ticks=all_col_ids)
+                if len(self.read_ids) <= self.do_compressed_seeds:
+                    self.seed_plot.left_plot.xaxis.ticker = FixedTicker(ticks=col_ids)
+                    self.seed_plot.bottom_plot.yaxis.ticker = FixedTicker(ticks=col_ids)
+                    self.seed_plot.left_plot.xaxis.formatter = FuncTickFormatter(
+                        args={"read_id_n_cols": read_id_n_cols},
+                        code="""
+                                if(!tick in read_id_n_cols)
+                                    return "";
+                                return read_id_n_cols[tick];
+                            """)
+                    self.seed_plot.bottom_plot.yaxis.formatter = FuncTickFormatter(
+                        args={"read_id_n_cols": read_id_n_cols},
+                        code="""
+                                if(!tick in read_id_n_cols)
+                                    return "";
+                                return read_id_n_cols[tick];
+                            """)
+                    self.seed_plot.left_plot.xaxis.axis_label = "Read Id"
+                    self.seed_plot.bottom_plot.yaxis.axis_label = "Read Id"
+                else:
+                    self.seed_plot.left_plot.xaxis.ticker = []
+                    self.seed_plot.left_plot.xaxis.axis_label = "compressed seeds"
+                    self.seed_plot.bottom_plot.yaxis.ticker = []
+                    self.seed_plot.bottom_plot.yaxis.axis_label = "compressed seeds"
+                self.seed_plot.left_plot.xgrid.ticker = FixedTicker(ticks=all_col_ids)
+                self.seed_plot.bottom_plot.ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
-            self.seed_plot.update_selection(self)
+                self.seed_plot.update_selection(self)
+
+    self.curdoc.add_next_tick_callback(callback)

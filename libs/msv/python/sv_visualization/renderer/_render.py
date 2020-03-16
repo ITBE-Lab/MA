@@ -5,31 +5,29 @@ from threading import Thread
 def render(self):
     print("rendering")
     self.widgets.show_spinner(self)
+    self.reset_runtimes()
+    self.reset_cds()
+    self.main_plot.genome_outline.data = {"x":[0], 
+                                        "y":[0],
+                                        "w":[self.pack.unpacked_size_single_strand],
+                                        "h":[self.pack.unpacked_size_single_strand]}
+    if self.xs < 0:
+        self.xs = 0
+    if self.ys < 0:
+        self.ys = 0
+    if self.xe < 0:
+        self.xe = 0
+    if self.ye < 0:
+        self.ye = 0
+    self.w = int(self.xe - self.xs)
+    self.h = int(self.ye - self.ys)
+
+    s = max(min(self.xs - self.w, self.ys - self.h), 0)
+    e = min(max(self.xe + self.w, self.ye + self.h), self.pack.unpacked_size_single_strand)
+    # plot diagonal; we need s and e since too large lines sometimes do not render...
+    self.main_plot.diagonal_line.data = {"xs":[s, e], "ys":[s, e]}
+
     def blocking_task():
-        self.reset_runtimes()
-        self.reset_cds()
-        self.main_plot.genome_outline.data = {"x":[0], 
-                                            "y":[0],
-                                            "w":[self.pack.unpacked_size_single_strand],
-                                            "h":[self.pack.unpacked_size_single_strand]}
-
-
-        if self.xs < 0:
-            self.xs = 0
-        if self.ys < 0:
-            self.ys = 0
-        if self.xe < 0:
-            self.xe = 0
-        if self.ye < 0:
-            self.ye = 0
-        self.w = int(self.xe - self.xs)
-        self.h = int(self.ye - self.ys)
-
-        s = max(min(self.xs - self.w, self.ys - self.h), 0)
-        e = min(max(self.xe + self.w, self.ye + self.h), self.pack.unpacked_size_single_strand)
-        # plot diagonal; we need s and e since too large lines sometimes do not render...
-        self.main_plot.diagonal_line.data = {"xs":[s, e], "ys":[s, e]}
-
         if not self.widgets.run_id_dropdown.value is None:
             with self.measure("get_call_overview_area"):
                 if self.do_overview_cache():

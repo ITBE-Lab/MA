@@ -92,10 +92,12 @@ def render_jumps(self, jump_list=[]):
             patch["x"].append([f + 0.25, f + 0.75])
             patch["y"].append([t + 0.25, t + 0.75])
             patch["y"].append([t + 0.75, t + 0.25])
-        for idx in range(4):
-            self.main_plot.jump_quads[idx].data = out_dicts[idx]
-        self.main_plot.jump_x.data = patch
-        self.main_plot.update_selection(self)
+        def callback():
+            for idx in range(4):
+                self.main_plot.jump_quads[idx].data = out_dicts[idx]
+            self.main_plot.jump_x.data = patch
+            self.main_plot.update_selection(self)
+        self.curdoc.add_next_tick_callback(callback)
 
     if self.w*3+self.h*3 < self.get_max_num_ele():
         # render nucs in read plot

@@ -113,10 +113,12 @@ def render_calls(self):
         ground_plus_data["s"].append(str(jump.get_score()))
 
     # the sv - boxes
-    self.main_plot.call_quad.data = accepted_boxes_data
-    self.main_plot.ground_truth_quad.data = ground_boxes_data
-    self.main_plot.call_x.data = ground_plus_data
-    self.main_plot.ground_truth_x.data = accepted_plus_data
+    def callback():
+        self.main_plot.call_quad.data = accepted_boxes_data
+        self.main_plot.ground_truth_quad.data = ground_boxes_data
+        self.main_plot.call_x.data = ground_plus_data
+        self.main_plot.ground_truth_x.data = accepted_plus_data
+    self.curdoc.add_next_tick_callback(callback)
 
     with self.measure("get_num_jumps_in_area"):
         if self.do_render_call_jumps_only:

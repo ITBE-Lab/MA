@@ -192,13 +192,11 @@ class MainPlot:
             renderer.read_plot.nuc_plot.reset_nts()
     
     def reset_cds(self, renderer):
-        def callback():
-            self.diagonal_line.data = {"xs":[], "ys":[]}
-            for jump_quad in self. jump_quads:
-                jump_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[], "a":[]}
-            self.call_quad.data = {"x":[], "y":[], "w":[], "h":[]}
-            self.ground_truth_quad.data = {"x":[], "y":[], "w":[], "h":[]}
-            self.call_x.data = {"x":[], "y":[]}
-            self.ground_truth_x.data = {"x":[], "y":[]}
-            self.overview_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[]}
-        renderer.curdoc.add_next_tick_callback(callback)
+        self.diagonal_line.data = {"xs":[], "ys":[]}
+        for jump_quad in self. jump_quads:
+            jump_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[], "a":[]}
+        self.call_quad.data = {"x":[], "y":[], "w":[], "h":[]}
+        self.ground_truth_quad.data = {"x":[], "y":[], "w":[], "h":[]}
+        self.call_x.data = {"x":[], "y":[]}
+        self.ground_truth_x.data = {"x":[], "y":[]}
+        self.overview_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[]}

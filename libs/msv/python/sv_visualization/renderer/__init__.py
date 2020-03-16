@@ -47,7 +47,7 @@ class Renderer():
         self.cached_overview_max_render = None
         self.global_overview_threshold = 0.2
         self._do_overview_cache = True
-        self.curdoc = curdoc
+        self.curdoc = curdoc()
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:
@@ -83,7 +83,7 @@ class Renderer():
         self.analyze.reset()
 
     def reset_cds(self):
-        self.main_plot.reset_cds()
+        self.main_plot.reset_cds(self)
         self.nuc_plot.reset_cds()
         self.seed_plot.reset_cds()
         self.read_plot.reset_cds()
