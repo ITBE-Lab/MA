@@ -776,11 +776,13 @@ void exportHarmonization( py::module& rxPyModuleId )
     exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
                                 []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
     exportModule<MaxExtendedToSMEM>( rxPyModuleId, "MaxExtendedToSMEM",
-                                []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
+                                     []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
     exportModule<MaxExtendedToMaxSpanning>( rxPyModuleId, "MaxExtendedToMaxSpanning",
-                                []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
+                                            []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
     exportModule<MinLength, size_t>( rxPyModuleId, "MinLength",
-                                []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
+                                     []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
+    exportModule<SortRemoveDuplicates>( rxPyModuleId, "SortRemoveDuplicates",
+                                        []( auto&& x ) { x.def( "filter", &SortRemoveDuplicates::filter ); } );
 
     exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
 

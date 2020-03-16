@@ -181,8 +181,9 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED
-    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
+                                                     std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -500,6 +501,44 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
 }; // class
 #endif
 
+/**
+ * @brief filters out exact duplicates among seeds by sorting and comparing them.
+ * @details
+ * This is implemented to show the runtime advantage of removeing duplicates first.
+ */
+class SortRemoveDuplicates : public Module<Seeds, false, Seeds>
+{
+  public:
+    SortRemoveDuplicates( const ParameterSetManager& rParameters )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
+    {
+        std::sort( pSeeds->begin( ), pSeeds->end( ), []( const Seed& rA, const Seed& rB ) {
+            if( rA.start_ref( ) == rB.start_ref( ) )
+                return rA.start( ) < rB.start( );
+            return rA.start_ref( ) < rB.start_ref( );
+        } );
+        Seed* pLast = nullptr;
+        auto pRet = std::make_shared<Seeds>( );
+        for( auto& rSeed : *pSeeds )
+        {
+            if( pLast == nullptr || pLast->start_ref( ) != rSeed.start_ref( ) || pLast->start( ) != rSeed.start( ) )
+                pRet->push_back( rSeed );
+            pLast = &rSeed;
+        } // for
+        return pRet;
+    } // method
+
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> filter( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
+    {
+        std::vector<std::shared_ptr<libMA::Seeds>> vRet;
+        for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
+            vRet.push_back( execute( vIn[ uiI ] ) );
+        return vRet;
+    } // method
+}; // class
 
 #if 1
 /**
@@ -573,8 +612,8 @@ class MinLength : public Module<Seeds, false, Seeds>
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
     {
         pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
-                                    [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
-                    pSeeds->end( ) );
+                                       [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
+                       pSeeds->end( ) );
         return pSeeds;
     } // method
 
