@@ -6,6 +6,7 @@ from .visual_elements.seed_plot import *
 from .visual_elements.nuc_plot import *
 from .visual_elements.read_plot import *
 from .visual_elements.widgets import *
+from bokeh.plotting import curdoc
 
 class Renderer():
     def __init__(self):
@@ -46,6 +47,7 @@ class Renderer():
         self.cached_overview_max_render = None
         self.global_overview_threshold = 0.2
         self._do_overview_cache = True
+        self.curdoc = curdoc
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:

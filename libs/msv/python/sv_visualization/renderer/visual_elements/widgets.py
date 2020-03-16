@@ -55,11 +55,15 @@ class Widgets:
         """
         self.spinner_div = Div(text=spinner_text, sizing_mode="scale_both", visible=False)
 
-    def show_spinner(self):
-        self.spinner_div.visible = True
+    def show_spinner(self, renderer):
+        def callback():
+            self.spinner_div.visible = True
+        renderer.curdoc.add_next_tick_callback(callback)
 
-    def hide_spinner(self):
-        self.spinner_div.visible = False
+    def hide_spinner(self, renderer):
+        def callback():
+            self.spinner_div.visible = False
+        renderer.curdoc.add_next_tick_callback(callback)
 
     def file_input_change(self, renderer):
         self.file_input.label = "Selected dataset: " + self.file_input.value

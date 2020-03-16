@@ -26,9 +26,9 @@ template <typename DBCon> class SvCallsFromDb
     std::shared_ptr<SvCallSupportTable<DBCon>> pSvCallSupportTable;
     // rectangle for xQuery; stays uninitialized if unused
     WKBUint64Rectangle xWkb;
-    ExplainedSQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
+    SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, NucSeqSql, uint32_t, uint32_t>
         xQuery;
-    ExplainedSQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
+    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
              PriKeyDefaultType>
         xQuerySupport;
 
