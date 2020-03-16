@@ -22,7 +22,7 @@ with renderer.measure("render"):
 curdoc().add_root(row(
     grid([[renderer.seed_plot.left_plot, renderer.nuc_plot.left_plot, renderer.main_plot.plot],
           [None,                         None,                        renderer.nuc_plot.bottom_plot],
-          [renderer.widgets.spinner_div, None,                        renderer.seed_plot.bottom_plot]]),
+          [None,                         None,                        renderer.seed_plot.bottom_plot]]),
     column(renderer.widgets.file_input,
            renderer.widgets.run_id_dropdown,
            renderer.widgets.ground_truth_id_dropdown,
@@ -32,5 +32,6 @@ curdoc().add_root(row(
            renderer.widgets.render_mems_button,
            renderer.widgets.delete_button,
            grid([[renderer.read_plot.nuc_plot.left_plot, renderer.read_plot.plot], 
-                 [None,                                  renderer.read_plot.nuc_plot.bottom_plot]]))
+                 [None,                                  renderer.read_plot.nuc_plot.bottom_plot]])),
+    renderer.widgets.spinner_div
 ))

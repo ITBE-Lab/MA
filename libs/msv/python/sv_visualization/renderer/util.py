@@ -42,9 +42,14 @@ def format(rgb):
         red, green, blue = rgb
         return "#{0:02x}{1:02x}{2:02x}".format(clamp(int(red * 255)), clamp(int(green * 255)),
                                                clamp(int(blue * 255)))
-def js_file(name):
-    with open("js/" + name + ".js", "r") as js_file:
-        return js_file.read()
+
+def html_file(name):
+    with open("html/" + name + ".html", "r") as html_file:
+        return html_file.read()
+
+def css_file(name):
+    with open("css/" + name + ".css", "r") as css_file:
+        return css_file.read()
 
 def decode(o):
     if isinstance(o, str):
