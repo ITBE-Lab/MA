@@ -176,7 +176,7 @@ void SvJumpsFromSeeds::reseedAndMakeEdge( Seed& rLast, Seed& rCurr, bool bJumpFr
         // turn k-mers into maximally extended seeds (into max. spanning seeds even)
         pSeeds->push_back( rLast );
         pSeeds->push_back( rCurr );
-        auto pLumped = xSeedLumper.execute( pSeeds );
+        auto pLumped = xSeedLumper.execute( pSeeds, pQuery, pRefSeq );
 
         // compute more precise jumps
         pRet->pop_back( );
@@ -371,7 +371,7 @@ void helperSvJumpsFromSeedsExecute( const std::shared_ptr<Presetting> pSelectedS
                 // turn k-mers into maximally extended seeds (into max. spanning seeds even)
                 pSeeds->push_back( rLast );
                 pSeeds->push_back( rCurr );
-                auto pLumped = rSeedLumper.execute( pSeeds );
+                auto pLumped = rSeedLumper.execute( pSeeds, pQuery, pRefSeq );
 
                 // compute more precise jumps
                 pRet->pop_back( );

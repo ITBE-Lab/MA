@@ -243,42 +243,50 @@ class Harmonization : public Module<ContainerVector<std::shared_ptr<Seeds>>, fal
  * @details
  * Uses a n log(n) algorithm to combine overlapping seeds
  */
-class SeedLumping : public Module<Seeds, false, Seeds>
+class SeedLumping : public Module<Seeds, false, Seeds, NucSeq, Pack>
 {
-  public:
-    const bool bReduceToMaxSpan = false;
+    const nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
 
+    /*
+     * currently seeds on the reverse strand are pointing to the top left instead of the top right.
+     * The following algorithm requires all seeds to point to the top right
+     * therefore we mirror the reverse strand seeds to the reverse complement strand (and back once were done)
+     *
+     * We do not need to know the actual size of the reference in order to do that
+     * we can just use the maximal possible reference size.
+     */
+    inline int64_t getDelta( const Seed& rSeed ) const
+    {
+        int64_t uiRefPos;
+        if( rSeed.bOnForwStrand )
+            uiRefPos = rSeed.start_ref( );
+        else
+            uiRefPos = uiMaxRefSize - rSeed.start_ref( );
+        return uiRefPos - rSeed.start( );
+    } // method
+
+  public:
     SeedLumping( const ParameterSetManager& rParameters )
     {} // default constructor
 
-#if 1
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
+    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn, std::shared_ptr<NucSeq> pQuery,
+                                                     std::shared_ptr<Pack> pRef )
     {
         if( pIn->size( ) == 0 )
             return std::make_shared<Seeds>( );
-        /*
-         * currently seeds on the reverse strand are pointing to the top left instead of the top right.
-         * The following algorithm requires all seeds to point to the top right
-         * therefore we mirror the reverse strand seeds to the reverse complement strand (and back once were done)
-         *
-         * We do not need to know the actual size of the reference in order to do that
-         * we can just use the maximal possible reference size.
-         */
-        const nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
-        for( Seed& rSeed : *pIn )
-            if( !rSeed.bOnForwStrand )
-                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
 
         std::sort( //
             pIn->begin( ),
             pIn->end( ),
-            []( const Seed& rA, const Seed& rB ) //
+            [&]( const Seed& rA, const Seed& rB ) //
             { //
                 if( rA.bOnForwStrand != rB.bOnForwStrand )
                     return rA.bOnForwStrand;
-                if( rA.start_ref( ) - (int64_t)rA.start( ) != rB.start_ref( ) - (int64_t)rB.start( ) )
-                    return rA.start_ref( ) - (int64_t)rA.start( ) < rB.start_ref( ) - (int64_t)rB.start( );
+                int64_t iDeltaA = getDelta( rA );
+                int64_t iDeltaB = getDelta( rB );
+                if( iDeltaA != iDeltaB )
+                    return iDeltaA < iDeltaB;
                 return rA.start( ) < rB.start( );
             } // lambda
         ); // sort call
@@ -286,143 +294,57 @@ class SeedLumping : public Module<Seeds, false, Seeds>
         auto pRet = std::make_shared<Seeds>( );
         pRet->reserve( pIn->size( ) );
 
-        int64_t iDelta = pIn->front( ).start_ref( ) - (int64_t)pIn->front( ).start( );
+        int64_t iLastDelta = getDelta( pIn->front( ) );
         pRet->push_back( pIn->front( ) );
 
-        auto xIt = pIn->begin( ) + 1;
-        while( xIt != pIn->end( ) )
+        auto xIt = pIn->begin( );
+        while( ++xIt != pIn->end( ) )
         {
-            int64_t iNewDelta = xIt->start_ref( ) - (int64_t)xIt->start( );
-            if( iDelta == iNewDelta && xIt->start( ) <= pRet->back( ).end( ) )
+            int64_t iCurrDelta = getDelta( *xIt );
+            Seed& rLast = pRet->back( );
+            if( rLast.bOnForwStrand == xIt->bOnForwStrand && iLastDelta == iCurrDelta )
             {
-                if( xIt->end( ) > pRet->back( ).end( ) )
-                    pRet->back( ).iSize = xIt->end( ) - pRet->back( ).start( );
-                assert( pRet->back( ).end( ) == xIt->end( ) );
-                assert( pRet->back( ).end_ref( ) == xIt->end_ref( ) );
+                size_t uiBackw = 0;
+                if( rLast.bOnForwStrand )
+                    while( rLast.end( ) + uiBackw < xIt->start( ) &&
+                           pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
+                               pRef->getNucleotideOnPos( rLast.end_ref( ) + uiBackw ) )
+                        uiBackw++;
+                else
+                    while( rLast.end( ) + uiBackw < xIt->start( ) &&
+                           pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
+                               3 - pRef->getNucleotideOnPos( rLast.start_ref( ) - rLast.size( ) - uiBackw ) )
+                        uiBackw++;
+                rLast.iSize += uiBackw;
+                if( rLast.end( ) >= xIt->start( ) )
+                {
+                    if( xIt->end( ) > rLast.end( ) )
+                        rLast.iSize = xIt->end( ) - rLast.start( );
+                    assert( rLast.end( ) == xIt->end( ) );
+                    assert( rLast.end_ref( ) == xIt->end_ref( ) );
+                    // do not add *xIt, to pRet since it has been merged with rLast.
+                    continue;
+                } // if
             } // if
-            else
-            {
-                pRet->push_back( *xIt );
-                iDelta = iNewDelta;
-            } // else
-            xIt++;
+            pRet->push_back( *xIt );
+            iLastDelta = iCurrDelta;
         } // while
 
-        // see note on top (mirror result seeds back)
-        for( Seed& rSeed : *pRet )
-            if( !rSeed.bOnForwStrand )
-                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
-        // see note on top (mirror input seeds back; we don't want to destroy the input maybe someone will keep using
-        // it)
-        for( Seed& rSeed : *pIn )
-            if( !rSeed.bOnForwStrand )
-                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
-
-        if( bReduceToMaxSpan )
-        {
-            // only keep seeds that are not overlapping with longer seeds on query
-            std::sort( //
-                pRet->begin( ),
-                pRet->end( ),
-                []( const Seed& rA, const Seed& rB ) //
-                { //
-                    if( rA.start( ) == rB.start( ) )
-                        return rA.end( ) > rB.end( );
-                    return rA.start( ) < rB.start( );
-                } // lambda
-            ); // sort call
-            auto pRet2 = std::make_shared<Seeds>( );
-            pRet2->reserve( pRet->size( ) );
-            for( Seed& rSeed : *pRet )
-                if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
-                    pRet2->push_back( rSeed );
-            return pRet2;
-        } // if
         return pRet;
     } // method
-#else
-    // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pIn )
+
+    virtual std::vector<std::shared_ptr<libMA::Seeds>> lump( std::vector<std::shared_ptr<libMA::Seeds>> vIn,
+                                                             std::vector<std::shared_ptr<NucSeq>>
+                                                                 vQueries,
+                                                             std::shared_ptr<Pack>
+                                                                 pRef )
     {
-        if( pIn->size( ) == 0 )
-            return std::make_shared<Seeds>( );
-        /*
-         * currently seeds on the reverse strand are pointing to the top left instead of the top right.
-         * The following algorithm requires all seeds to point to the top right
-         * therefore we mirror the reverse strand seeds to the reverse complement strand (and back once were done)
-         *
-         * We do not need to know the actual size of the reference in order to do that
-         * we can just use the maximal possible reference size.
-         */
-        const nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
-        for( Seed& rSeed : *pIn )
-            if( !rSeed.bOnForwStrand )
-                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
-        std::unordered_map<int64_t, std::vector<Seed>> xHashTable;
-        for( Seed& rSeed : *pIn )
-            xHashTable[ rSeed.start_ref( ) - (int64_t)rSeed.start( ) ].push_back( rSeed );
-
-        auto pRet = std::make_shared<Seeds>( );
-        pRet->reserve( pIn->size( ) );
-        for( std::pair<const int64_t, std::vector<Seed>>& rPair : xHashTable )
-        {
-            std::vector<Seed>& rSeeds = rPair.second;
-            std::sort( rSeeds.begin( ), //
-                       rSeeds.end( ),
-                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
-            for( Seed& rSeed : rSeeds )
-            {
-                if( rSeed.start( ) <= pRet->back( ).end( ) )
-                {
-                    if( rSeed.end( ) > pRet->back( ).end( ) )
-                        pRet->back( ).iSize = rSeed.end( ) - pRet->back( ).start( );
-                    assert( pRet->back( ).end( ) == rSeed.end( ) );
-                    assert( pRet->back( ).end_ref( ) == rSeed.end_ref( ) );
-                } // if
-                else
-                    pRet->push_back( rSeed );
-            } // for
-        } // for
-
-        // see note on top (mirror result seeds back)
-        for( Seed& rSeed : *pRet )
-            if( !rSeed.bOnForwStrand )
-                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
-        // see note on top (mirror input seeds back; we don't want to destroy the input maybe someone will keep using
-        // it)
-        for( Seed& rSeed : *pIn )
-            if( !rSeed.bOnForwStrand )
-                rSeed.uiPosOnReference = uiMaxRefSize - rSeed.uiPosOnReference;
-
-        if( bReduceToMaxSpan )
-        {
-            // only keep seeds that are not overlapping with longer seeds on query
-            std::sort( //
-                pRet->begin( ),
-                pRet->end( ),
-                []( const Seed& rA, const Seed& rB ) //
-                { //
-                    if( rA.start( ) == rB.start( ) )
-                        return rA.end( ) > rB.end( );
-                    return rA.start( ) < rB.start( );
-                } // lambda
-            ); // sort call
-            auto pRet2 = std::make_shared<Seeds>( );
-            pRet2->reserve( pRet->size( ) );
-            for( Seed& rSeed : *pRet )
-                if( pRet2->size( ) == 0 || pRet2->back( ).end( ) <= rSeed.end( ) )
-                    pRet2->push_back( rSeed );
-            return pRet2;
-        } // if
-        return pRet;
-    } // method
-#endif
-
-    virtual std::vector<std::shared_ptr<libMA::Seeds>> lump( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
-    {
+        if( vIn.size( ) != vQueries.size( ) )
+            throw std::runtime_error( "vIn and vQueries have different lenghts" );
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
-        for( auto pSeeds : vIn )
-            vRet.push_back( execute( pSeeds ) );
+        vRet.reserve( vIn.size( ) );
+        for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
+            vRet.push_back( execute( vIn[ uiI ], vQueries[ uiI ], pRef ) );
         return vRet;
     } // method
 }; // class
@@ -516,15 +438,21 @@ class SortRemoveDuplicates : public Module<Seeds, false, Seeds>
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
     {
         std::sort( pSeeds->begin( ), pSeeds->end( ), []( const Seed& rA, const Seed& rB ) {
-            if( rA.start_ref( ) == rB.start_ref( ) )
+            if( rA.bOnForwStrand != rB.bOnForwStrand )
+                return rA.bOnForwStrand;
+            if( rA.start_ref( ) != rB.start_ref( ) )
+                return rA.start_ref( ) < rB.start_ref( );
+            if( rA.start( ) != rB.start( ) )
                 return rA.start( ) < rB.start( );
-            return rA.start_ref( ) < rB.start_ref( );
+            return rA.size( ) < rB.size( );
         } );
         Seed* pLast = nullptr;
         auto pRet = std::make_shared<Seeds>( );
+        pRet->reserve( pSeeds->size( ) );
         for( auto& rSeed : *pSeeds )
         {
-            if( pLast == nullptr || pLast->start_ref( ) != rSeed.start_ref( ) || pLast->start( ) != rSeed.start( ) )
+            if( pLast == nullptr || pLast->start_ref( ) != rSeed.start_ref( ) || pLast->start( ) != rSeed.start( ) ||
+                pLast->size( ) != rSeed.size( ) )
                 pRet->push_back( rSeed );
             pLast = &rSeed;
         } // for
