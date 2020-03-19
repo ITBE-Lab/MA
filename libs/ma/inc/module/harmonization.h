@@ -181,9 +181,8 @@ class HarmonizationSingle : public Module<Seeds, false, Seeds, NucSeq, FMIndex>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pPrimaryStrand,
-                                                     std::shared_ptr<NucSeq> pQuery,
-                                                     std::shared_ptr<FMIndex> pFMIndex );
+    virtual std::shared_ptr<Seeds> EXPORTED
+    execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex );
 
 }; // class
 
@@ -300,33 +299,74 @@ class SeedLumping : public Module<Seeds, false, Seeds, NucSeq, Pack>
         auto xIt = pIn->begin( );
         while( ++xIt != pIn->end( ) )
         {
-            int64_t iCurrDelta = getDelta( *xIt );
+            Seed& rSeed = *xIt;
+            int64_t iCurrDelta = getDelta( rSeed );
             Seed& rLast = pRet->back( );
-            if( rLast.bOnForwStrand == xIt->bOnForwStrand && iLastDelta == iCurrDelta )
+            if( rLast.bOnForwStrand == rSeed.bOnForwStrand && iLastDelta == iCurrDelta )
             {
                 size_t uiBackw = 0;
                 if( rLast.bOnForwStrand )
-                    while( rLast.end( ) + uiBackw < xIt->start( ) &&
+                    while( rLast.end( ) + uiBackw < rSeed.start( ) &&
                            pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
                                pRef->getNucleotideOnPos( rLast.end_ref( ) + uiBackw ) )
                         uiBackw++;
                 else
-                    while( rLast.end( ) + uiBackw < xIt->start( ) &&
+                    while( rLast.end( ) + uiBackw < rSeed.start( ) &&
                            pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
                                3 - pRef->getNucleotideOnPos( rLast.start_ref( ) - rLast.size( ) - uiBackw ) )
                         uiBackw++;
                 rLast.iSize += uiBackw;
-                if( rLast.end( ) >= xIt->start( ) )
+                if( rLast.end( ) >= rSeed.start( ) )
                 {
-                    if( xIt->end( ) > rLast.end( ) )
-                        rLast.iSize = xIt->end( ) - rLast.start( );
-                    assert( rLast.end( ) == xIt->end( ) );
-                    assert( rLast.end_ref( ) == xIt->end_ref( ) );
+                    if( rSeed.end( ) > rLast.end( ) )
+                        rLast.iSize = rSeed.end( ) - rLast.start( );
+                    assert( rLast.end( ) == rSeed.end( ) );
+                    assert( rLast.end_ref( ) == rSeed.end_ref( ) );
                     // do not add *xIt, to pRet since it has been merged with rLast.
                     continue;
                 } // if
             } // if
-            pRet->push_back( *xIt );
+
+#if 1 // immediately extend the seeds as well
+            size_t uiForw = 1;
+            if( rSeed.bOnForwStrand )
+                while( uiForw <= rSeed.start( ) && //
+                       uiForw <= rSeed.start_ref( ) && //
+                       pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
+                           pRef->getNucleotideOnPos( rSeed.start_ref( ) - uiForw ) )
+                    uiForw++;
+            else
+                while( uiForw <= rSeed.start( ) && //
+                       uiForw + rSeed.start_ref( ) < pRef->uiUnpackedSizeForwardStrand && //
+                       pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
+                           3 - pRef->getNucleotideOnPos( rSeed.start_ref( ) + uiForw ) )
+                    uiForw++;
+            uiForw--; // uiForward is one too high after loop
+            rSeed.iSize += uiForw;
+            rSeed.iStart -= uiForw;
+            if( rSeed.bOnForwStrand )
+                rSeed.uiPosOnReference -= uiForw;
+            else
+                rSeed.uiPosOnReference += uiForw;
+
+            size_t uiBackw = 0;
+            if( rSeed.bOnForwStrand )
+                while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
+                       uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand && //
+                       pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
+                           pRef->getNucleotideOnPos( rSeed.end_ref( ) + uiBackw ) )
+                    uiBackw++;
+            else
+                while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
+                       rSeed.start_ref( ) >= uiBackw + rSeed.size( ) && //
+                       pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
+                           3 - pRef->getNucleotideOnPos( rSeed.start_ref( ) - rSeed.size( ) - uiBackw ) )
+                    uiBackw++;
+            rSeed.iSize += uiBackw;
+#endif
+
+
+            pRet->push_back( rSeed );
             iLastDelta = iCurrDelta;
         } // while
 

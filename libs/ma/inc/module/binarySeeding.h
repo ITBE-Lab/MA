@@ -27,6 +27,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
 {
   public:
     const bool bLrExtension;
+    const bool bMEMExtension;
     // 18.05.04: increasing uiMinAmbiguity merely has negative runtime effects
     const unsigned int uiMinAmbiguity;
     const unsigned int uiMaxAmbiguity;
@@ -450,9 +451,88 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
         return ret;
     } // function
 
-    /*
-     *    does nothing if the given interval can be found entirely on the genome.
-     *    if the interval cannot be found this method splits the interval in half and repeats the
+
+    /**
+     * @brief The extension scheme to extract all MEMs
+     * @details
+     * Computes all maximally extended segments overlapping center.
+     */
+    std::shared_ptr<SegmentVector> memExtension( std::shared_ptr<SuffixArrayInterface> pFM_index,
+                                                 std::shared_ptr<NucSeq> pQuerySeq )
+    {
+        auto pSegmentVector = std::make_shared<SegmentVector>( );
+
+        // query sequence itself
+        const uint8_t* q = pQuerySeq->pGetSequenceRef( );
+
+        for( nucSeqIndex i = 0; i < pQuerySeq->length( ); i++ )
+        {
+            // make sure we do not have any Ns
+            if( q[ i ] >= 4 )
+                // return that we covered the interval with the N
+                continue;
+
+            /* Initialize ik on the foundation of the single base q[x].
+             * In order to understand this initialization you should have a look
+             * to the corresponding PowerPoint slide.
+             *
+             * we have to start with a forward extension, so that after the do_for_difference, revComp does not
+             * need to be called anymore.
+             */
+            SAInterval ik = pFM_index->init_interval( complement( q[ i ] ) );
+
+            // extend rightwards
+            for( nucSeqIndex j = i + 1; j <= pQuerySeq->length( ) && ik.size( ) > 0; j++ )
+            {
+                SAInterval ok = SAInterval( 0, 0, 0 );
+                // make sure we do not have any Ns
+                if( j < pQuerySeq->length( ) && q[ j ] < 4 )
+                    // this is the extension
+                    ok = pFM_index->extend_backward( ik, complement( q[ j ] ) );
+
+                // checking wether we lost some intervals
+                if( ok.size( ) != ik.size( ) )
+                    // get the lost intervals
+                    ik.revComp( ).do_for_difference( ok.revComp( ), [&]( SAInterval xDifference ) {
+                        // extend them in the other direction
+                        SAInterval xExtended = SAInterval( 0, 0, 0 );
+                        if( i > 0 )
+                            xExtended = pFM_index->extend_backward( xDifference, q[ i - 1 ] );
+
+                        if( xExtended.size( ) == 0 )
+                        {
+                            // std::cout << "push back " << i << ", ?, " << j - i - 1 << std::endl;
+                            if( xDifference.size( ) < uiMaxAmbiguity )
+                                pSegmentVector->push_back( Segment( i, j - i - 1, xDifference ) );
+                        } // if
+                        else if( xExtended.size( ) < xDifference.size( ) )
+                        {
+                            if( xDifference.size( ) - xExtended.size( ) < uiMaxAmbiguity )
+                                // in this case some of the matches in xDifference could be extended but others not
+                                // rescue strategy for now...
+                                // @todo this is inefficient! can this be improved?
+                                for( t_bwtIndex k = xDifference.start( ); k < xDifference.end( ); k++ )
+                                {
+                                    SAInterval xRescue( k, -1, 1 );
+                                    if( pFM_index->extend_backward( xRescue, q[ i - 1 ] ).size( ) == 0 )
+                                    {
+                                        // std::cout << "push back " << i << ", ?, " << j - i - 1 << std::endl;
+                                        pSegmentVector->push_back( Segment( i, j - i - 1, xRescue ) );
+                                    } // if
+                                } // for
+                        } // else
+                    } ); // do_for_difference func call
+
+                ik = ok;
+            } // for
+        } // for
+
+        return pSegmentVector;
+    } // function
+
+    /* @details
+     * does nothing if the given interval can be found entirely on the genome.
+     * if the interval cannot be found this method splits the interval in half and repeats the
      * step with the first half, while queuing the second half as a task in the thread pool.
      */
     void procesInterval( Interval<nucSeqIndex> xAreaToCover, std::shared_ptr<SegmentVector> pSegmentVector,
@@ -471,6 +551,7 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
      */
     BinarySeeding( const ParameterSetManager& rParameters )
         : bLrExtension( rParameters.getSelected( )->xSeedingTechnique->get( ) == "maxSpan" ),
+          bMEMExtension( rParameters.getSelected( )->xSeedingTechnique->get( ) == "MEMs" ),
           uiMinAmbiguity( rParameters.getSelected( )->xMinimalSeedAmbiguity->get( ) ),
           uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
           uiMinSeedSizeDrop( rParameters.getSelected( )->xMinimalSeedSizeDrop->get( ) ),
@@ -480,12 +561,12 @@ class BinarySeeding : public Module<SegmentVector, false, SuffixArrayInterface, 
           uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<SegmentVector>
-        EXPORTED execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
+    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<SuffixArrayInterface> pFM_index,
+                                                             std::shared_ptr<NucSeq> pQuerySeq );
 
 
-    std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
-                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    std::vector<std::shared_ptr<Seeds>>
+    seed( std::shared_ptr<FMIndex> pFM_index, std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
     {
         std::vector<std::shared_ptr<Seeds>> vRet;
         for( auto pQuery : vQueries )

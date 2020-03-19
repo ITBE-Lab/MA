@@ -115,6 +115,38 @@ class SAInterval : public Container, public Interval<t_bwtIndex>
     {
         return Interval::operator==( rxOther ) && startOfComplement == rxOther.startOfComplement;
     } // operator
+
+    /**
+     * @brief returns the difference of the intervals
+     * @details
+     * can return up to two intervals.
+     * These intervals are within this intervals but do not overlap/intersect rxOther.
+     * @note you can never reverse complement the retulting intervals anymore!
+     */
+    template <typename F> void do_for_difference( const SAInterval& rxOther, F&& func )
+    {
+        // std::cout << "Difference: " << start( ) << " - " << end( ) << "    to: " << rxOther.start( ) << " - "
+        //          << rxOther.end( ) << std::endl;
+        auto uiY = std::min( rxOther.start( ), end( ) );
+        auto uiX = std::max( rxOther.end( ), start( ) );
+#if 0
+        if( start( ) < uiY )
+        {
+            SAInterval xOut( start( ), -1, uiY - start( ) );
+            std::cout << " 1 -> " << xOut.start( ) << " - " << xOut.end( ) << std::endl;
+        } // if
+        if( uiX < end( ) )
+        {
+            SAInterval xOut( uiX, -1, end( ) - uiX );
+            std::cout << " 2 -> " << xOut.start( ) << " - " << xOut.end( ) << std::endl;
+        } // if
+#endif
+
+        if( start( ) < uiY )
+            func( SAInterval( start( ), -1, uiY - start( ) ) );
+        if( uiX < end( ) )
+            func( SAInterval( uiX, -1, end( ) - uiX ) );
+    } // method
 }; // class ( SAInterval )
 
 typedef unsigned char ubyte_t;
