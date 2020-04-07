@@ -649,7 +649,8 @@ class Presetting : public ParameterSetBase
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
                              AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"},
-                                                               {"SMEMs", "SMEMs"}
+                                                               {"SMEMs", "SMEMs"},
+                                                               {"MEMs", "MEMs"}
 #ifdef WITH_ZLIB
                                                                ,
                                                                { "mini",

@@ -1170,7 +1170,7 @@ class Pack : public Container
                              NucSeq& rxSequence, // receiver of the extraction process
                              bool bAppend = false // deliver true, if you would like to append to an
                                                   // existing nucleotide sequence
-                             ) const
+    ) const
     {
         /* Do range-check for begin and end of extraction.
          */
@@ -1261,7 +1261,7 @@ class Pack : public Container
                               NucSeq& rxSequence, // receiver of the extraction process
                               bool bAppend = false // deliver true, if you would like to append to
                                                    // an existing nucleotide sequence
-                              ) const
+    ) const
     {
         /* Do range-check for begin and end of extraction.
          */
@@ -1345,7 +1345,7 @@ class Pack : public Container
                          NucSeq& rxSequence, // receiver of the extraction process
                          bool bAppend = false // deliver true, if you would like to append to
                                               // an existing nucleotide sequence
-                         ) const
+    ) const
     {
         vExtractSubsectionN( startOfSequenceWithIdOrReverse( iId ), endOfSequenceWithIdOrReverse( iId ), rxSequence,
                              bAppend );
@@ -1391,7 +1391,7 @@ class Pack : public Container
      */
     std::shared_ptr<NucSeq> vExtract( const int64_t iBegin, // begin of extraction
                                       const int64_t iEnd // end of extraction
-                                      ) const
+    ) const
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
         vExtractSubsection( iBegin, iEnd,
@@ -1404,7 +1404,7 @@ class Pack : public Container
      */
     std::shared_ptr<NucSeq> vExtractPy( const int64_t iBegin, // begin of extraction
                                         const int64_t iEnd // end of extraction
-                                        ) const
+    ) const
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
         vExtractSubsectionN( iBegin, iEnd,

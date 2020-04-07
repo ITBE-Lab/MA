@@ -176,10 +176,9 @@ class MinimizerStripOfConsideration : public Module<SoCPriorityQueue, false, See
 {
   public:
     SeedLumping<true> xLumper;
-    SeedExtender xExtender;
 
     MinimizerStripOfConsideration( const ParameterSetManager& rParameters )
-        : StripOfConsiderationBase( rParameters ), xLumper( rParameters ), xExtender( rParameters )
+        : StripOfConsiderationBase( rParameters ), xLumper( rParameters )
     {} // constructor
 
     virtual std::shared_ptr<SoCPriorityQueue> EXPORTED

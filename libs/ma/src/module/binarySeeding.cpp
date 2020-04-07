@@ -82,8 +82,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector>
-BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index,
+                                                       std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -92,12 +92,15 @@ BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucS
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
 
-    procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq, 0 );
+    if( bMEMExtension )
+        pSegmentVector = memExtension( pFM_index, pQuerySeq );
+    else
+        procesInterval( Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq, 0 );
 
-    /*
-     * If we have extremeley few seeds we may not be able to compute more than one alignment.
-     * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
-     */
+        /*
+         * If we have extremeley few seeds we may not be able to compute more than one alignment.
+         * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
+         */
 #if 0
     if(pSegmentVector->size() <= 10)
     {
@@ -175,7 +178,7 @@ BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucS
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding", []( auto&& x ) {
-        x.def( "seed", &BinarySeeding::seed ); } );
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
+                                 []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
 } // function
 #endif

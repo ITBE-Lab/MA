@@ -118,6 +118,7 @@ int main( void )
         auto pEmpty4 = promiseMe( pChecker3, pSeeds4, pQuery, pPack, pFmIndex );
 #endif
 
+#if 0
         // wait for both tasks to be completed
         auto pJoined = promiseMe( pJoin, pEmpty, pEmpty2
 #ifdef WITH_ZLIB
@@ -125,8 +126,9 @@ int main( void )
                                   pEmpty3, pEmpty4
 #endif
         );
+#endif
         // unlock the query once completed
-        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( xParameters, pQuery ), pJoined );
+        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( xParameters, pQuery ), pEmpty4 );
 
         // add this task to todo list
         vGraphSinks.push_back( pUnlockResult );

@@ -57,7 +57,12 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
         if( bFailed )
         {
             std::cout << "bIsMaxExtended = " << ( bIsMaxExtended ? "true" : "false" ) << std::endl;
-            std::cout << "Seed: (number " << uiI << ")" << std::endl;
+            std::cout << "Seed: (number " << uiI << ")";
+            if( pRef->bPositionIsOnReversStrand( rSeed.start_ref( ) ) )
+                std::cout << " on reverse strand";
+            else
+                std::cout << " on forward strand";
+            std::cout << std::endl;
             std::cout << "(q,r,l): " << rSeed.start( ) << ", " << rSeed.start_ref( ) << ", " << rSeed.size( )
                       << std::endl;
             std::cout << "q_len " << pQuery->length( ) << " ref_len " << pRef->uiUnpackedSizeForwardStrand << std::endl;
@@ -103,6 +108,11 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
                 std::shared_ptr<NucSeq> pRefSec2 = std::make_shared<NucSeq>( );
                 pRef->vExtractSubsectionN( rSeed.start_ref( ) - 2, rSeed.end_ref( ) + 2, *pRefSec2 );
                 std::cout << pRefSec2->toString( ) << std::endl;
+            } // if
+            if( rSeed.start( ) >= 2 && rSeed.end( ) + 2 <= pQuery->length() )
+            {
+                std::cout << "query +-2" << std::endl;
+                std::cout << pQuery->fromTo(rSeed.start( ) - 2, rSeed.end( ) + 2) << std::endl;
             } // if
 
             throw std::runtime_error( "computed wrong seed!" );

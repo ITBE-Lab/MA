@@ -184,20 +184,19 @@ std::shared_ptr<SoCPriorityQueue> MinimizerStripOfConsideration::execute(
 #endif
 
     // combine seeds
-    auto pSeeds2 = xLumper.execute( pSeeds );
-    auto pSeeds3 = xExtender.execute( pSeeds2, pQuerySeq, pPack );
+    auto pSeeds2 = xLumper.execute( pSeeds, pQuerySeq, pPack );
 
     // positions to remember the maxima
-    auto pSoCs = std::make_shared<SoCPriorityQueue>( pSeeds3 );
+    auto pSoCs = std::make_shared<SoCPriorityQueue>( pSeeds2 );
 
     // find the SOC maxima
     SoCOrder xCurrScore;
-    std::vector<Seed>::iterator xStripStart = pSeeds3->begin( );
-    std::vector<Seed>::iterator xStripEnd = pSeeds3->begin( );
-    while( xStripEnd != pSeeds3->end( ) && xStripStart != pSeeds3->end( ) )
+    std::vector<Seed>::iterator xStripStart = pSeeds2->begin( );
+    std::vector<Seed>::iterator xStripEnd = pSeeds2->begin( );
+    while( xStripEnd != pSeeds2->end( ) && xStripStart != pSeeds2->end( ) )
     {
         // move xStripEnd forwards while it is closer to xStripStart than uiStripSize
-        while( xStripEnd != pSeeds3->end( ) && getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
+        while( xStripEnd != pSeeds2->end( ) && getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
                                                    getPositionForBucketing( uiQLen, *xStripEnd ) )
         {
             // remember the additional score
