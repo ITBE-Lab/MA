@@ -584,7 +584,7 @@ void exportPack( libMS::SubmoduleOrganizer& xOrganizer )
     py::implicitly_convertible<Pack, libMS::Container>( );
 
     // required by contigNames
-    py::bind_vector<std::vector<std::string>>( xOrganizer._util(), "StringVector", "docstr" );
+    py::bind_vector<std::vector<std::string>>( xOrganizer.util(), "StringVector", "docstr" );
 
     // required by contigLengths
     py::bind_vector<std::vector<nucSeqIndex>>( xOrganizer._util(), "nucSeqIndexVector", "docstr" );

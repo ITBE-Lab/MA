@@ -128,7 +128,7 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
     pCollection->append( pSeeds );
 
     // lump everything
-    return xLumper.execute( pCollection );
+    return xLumper.execute( pCollection, pQuery, pPack );
 } // function
 #endif
 

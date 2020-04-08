@@ -654,7 +654,8 @@ class Presetting : public ParameterSetBase
           xSeedingTechnique( this, "Seeding Technique", 's',
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
-                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}} ),
+                             AlignerParameterBase::ChoicesType{
+                                 {"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}, {"MEMs", "MEMs"}} ),
           xMinSeedLength( this, "Minimal Seed Length", 'l',
                           "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
                           16, checkPositiveValue ),

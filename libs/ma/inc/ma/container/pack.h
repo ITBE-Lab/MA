@@ -1393,6 +1393,18 @@ class Pack : public libMS::Container
     } // method
 
 
+    /* Get the value at position uiPosition in the unpacked sequence.
+     * Works only for the virtual forward strand.
+     */
+    inline uint8_t vExtract( const int64_t uiPosition ) const
+    {
+        if( bPositionIsOnReversStrand( uiPosition ) )
+            return NucSeq::nucleotideComplement( getNucleotideOnPos( uiPositionToReverseStrand( uiPosition ) ) );
+        else
+            return getNucleotideOnPos( uiPosition );
+    } // inline method
+
+
     /* Unpacks the forward strand sequences of the collection as a single sequence into rxSequence.
      */
     std::shared_ptr<NucSeq> vExtract( const int64_t iBegin, // begin of extraction

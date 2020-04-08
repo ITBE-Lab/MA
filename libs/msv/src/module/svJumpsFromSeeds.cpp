@@ -233,9 +233,7 @@ SvJumpsFromSeeds::computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Re
         return pSeeds;
 
     // turn k-mers into maximally extended seeds
-    auto pvLumpedSeeds = xSeedLumper.execute( pSeeds );
-    // seeds that touch end of rectangle might not be maximally extended
-    return SeedExtender( ).execute( pvLumpedSeeds, pQuery, pRefSeq );
+    return xSeedLumper.execute( pSeeds, pQuery, pRefSeq );
 } // method
 
 

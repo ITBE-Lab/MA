@@ -95,12 +95,16 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
 
-    procesInterval( geom::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq, 0 );
+    if( bMEMExtension )
+        pSegmentVector = memExtension( pFM_index, pQuerySeq );
+    else
+        procesInterval( geom::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq,
+                        0 );
 
-    /*
-     * If we have extremeley few seeds we may not be able to compute more than one alignment.
-     * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
-     */
+        /*
+         * If we have extremeley few seeds we may not be able to compute more than one alignment.
+         * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
+         */
 #if 0
     if(pSegmentVector->size() <= 10)
     {

@@ -1,8 +1,7 @@
 option(FORT_HAVE_WCHAR "Enable wchar support" ON)
 option(FORT_HAVE_UTF8 "Enable UTF8 support" ON)
 
-add_library(fort SHARED
-    fort.c)
+add_library(fort STATIC fort.c)
 set_target_properties( fort PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 set_target_properties( fort PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 

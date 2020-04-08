@@ -756,6 +756,8 @@ void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer )
                                             []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
     exportModule<MinLength, size_t>( xOrganizer, "MinLength",
                                      []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
+    exportModule<SortRemoveDuplicates>( xOrganizer, "SortRemoveDuplicates",
+                                        []( auto&& x ) { x.def( "filter", &SortRemoveDuplicates::filter ); } );
 
     exportModule<FilterToUnique>( xOrganizer, "FilterToUnique", []( auto&& x ) {
         x.def_readwrite( "num_mm", &FilterToUnique::uiNumMissmatchesAllowed );
