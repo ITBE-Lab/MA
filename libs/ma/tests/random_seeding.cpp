@@ -128,7 +128,7 @@ int main( void )
         );
 #endif
         // unlock the query once completed
-        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( xParameters, pQuery ), pEmpty4 );
+        auto pUnlockResult = promiseMe( std::make_shared<UnLock<Container>>( xParameters, pQuery ), pJoined );
 
         // add this task to todo list
         vGraphSinks.push_back( pUnlockResult );
