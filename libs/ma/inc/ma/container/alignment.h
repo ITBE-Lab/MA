@@ -8,6 +8,7 @@
 #define ALIGNMENT_H
 
 #include "ma/container/segment.h"
+#include <sstream>
 
 #define MULTIPLE_SEGMENTS_IN_TEMPLATE 0x001
 #define SEGMENT_PROPERLY_ALIGNED 0x002
@@ -202,7 +203,7 @@ class Alignment : public libMS::Container
         return std::shared_ptr<libMS::Container>( new Alignment( ) );
     } // function
 
-    int64_t DLL_PORT(MA) reCalcScore( ) const;
+    int64_t DLL_PORT( MA ) reCalcScore( ) const;
 
     /**
      * @returns the type of math for the given position i.
@@ -437,6 +438,53 @@ class Alignment : public libMS::Container
         return sCigar;
     } // method
 
+    void appendCigarString( std::string sCigar, std::shared_ptr<NucSeq> pQuery, Pack& rPack )
+    {
+        std::stringstream xStream( sCigar );
+        while( !xStream.eof( ) )
+        {
+            size_t uiLen;
+            char cOp;
+            xStream >> uiLen;
+            xStream >> cOp;
+            switch( cOp )
+            {
+                case 'M':
+                    if( pQuery->pxSequenceRef[ uiEndOnQuery ] == rPack.vExtract( uiEndOnRef ) )
+                        append( MatchType::match, uiLen );
+                    else
+                        append( MatchType::missmatch, uiLen );
+                    break;
+                case 'I':
+                    append( MatchType::insertion, uiLen );
+                    break;
+                case 'D':
+                    append( MatchType::deletion, uiLen );
+                    break;
+                case 'N':
+                    append( MatchType::deletion, uiLen );
+                    break;
+                case 'S':
+                    append( MatchType::insertion, uiLen );
+                    break;
+                case 'H':
+                case 'P':
+                    /*clipped sequences NOT present in SEQ*/
+                    break;
+                case '=':
+                    append( MatchType::match, uiLen );
+                    break;
+                case 'X':
+                    append( MatchType::missmatch, uiLen );
+                    break;
+
+                default:
+                    throw std::runtime_error( "Unrecognized SAM CIGAR operation" );
+                    break;
+            } // switch
+        } // while
+    } // method
+
     uint32_t getSamFlag( Pack& rPack ) const
     {
         uint32_t uiRet = 0;
@@ -502,7 +550,7 @@ class Alignment : public libMS::Container
      * This is used for appending seeds,
      * where simply size of the seed matches need to be appended.
      */
-    void DLL_PORT(MA) append( MatchType type, nucSeqIndex size );
+    void DLL_PORT( MA ) append( MatchType type, nucSeqIndex size );
 
     /**
      * @brief appends a matchType to the alignment
@@ -660,7 +708,7 @@ class Alignment : public libMS::Container
     /**
      * @brief the NMW score for this alignment
      */
-    unsigned int DLL_PORT(MA) localscore( ) const;
+    unsigned int DLL_PORT( MA ) localscore( ) const;
 
     /**
      * @brief returns how many nucleotides within this alignment are determined by seeds
@@ -712,7 +760,7 @@ class Alignment : public libMS::Container
      * When an alignment is computed on the foundation of seeds it might not be local.
      * This function has a linear complexity with regard to the compressed alignment length.
      */
-    void DLL_PORT(MA) makeLocal( );
+    void DLL_PORT( MA ) makeLocal( );
 
     /**
      * @brief removes dangeling Deletions
@@ -720,7 +768,7 @@ class Alignment : public libMS::Container
      * When the alignment is created there might be some dangeling deletions at
      * the beginning or end. This function removes them
      */
-    void DLL_PORT(MA) removeDangeling( );
+    void DLL_PORT( MA ) removeDangeling( );
 
     void operator=( const std::shared_ptr<Alignment> pOther )
     {

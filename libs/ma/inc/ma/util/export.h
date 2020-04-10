@@ -155,6 +155,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ma/module/pairedReads.h"
 #include "ma/module/smallInversions.h"
 #include "ma/module/splitter.h"
+#include "ma/module/sam_reader.h"
+#include "ma/module/compare_alignments.h"
 #include "ma/module/stripOfConsideration.h"
 
 namespace libMA

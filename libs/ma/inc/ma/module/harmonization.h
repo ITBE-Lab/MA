@@ -338,11 +338,13 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
  * @ingroup module
  * @details
  * Uses a n log(n) algorithm to combine overlapping seeds
+ * @todo move me to another file
  */
 class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
 {
-    const nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
+    const static nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
 
+  public:
     /*
      * currently seeds on the reverse strand are pointing to the top left instead of the top right.
      * The following algorithm requires all seeds to point to the top right
@@ -351,7 +353,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
      * We do not need to know the actual size of the reference in order to do that
      * we can just use the maximal possible reference size.
      */
-    inline int64_t getDelta( const Seed& rSeed ) const
+    static int64_t getDelta( const Seed& rSeed )
     {
         int64_t uiRefPos;
         if( rSeed.bOnForwStrand )
@@ -361,6 +363,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
         return uiRefPos - rSeed.start( );
     } // method
 
+  private:
     template <typename Func1_t, typename Func2_t>
     std::shared_ptr<Seeds> execute_helper( std::shared_ptr<Seeds> pIn, Func1_t&& fExtendSeedFunc,
                                            Func2_t&& fExtendSeedRightFunc )
@@ -440,9 +443,8 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
             [&]( Seed& rLast, Seed& rSeed ) {
                 size_t uiBackw = 0;
                 if( rLast.bOnForwStrand )
-                    while( rLast.end( ) + uiBackw < rSeed.start( ) &&
-                           pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
-                               pRef->vExtract( rLast.end_ref( ) + uiBackw ) )
+                    while( rLast.end( ) + uiBackw < rSeed.start( ) && pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
+                                                                          pRef->vExtract( rLast.end_ref( ) + uiBackw ) )
                         uiBackw++;
                 else
                     while( rLast.end( ) + uiBackw < rSeed.start( ) &&

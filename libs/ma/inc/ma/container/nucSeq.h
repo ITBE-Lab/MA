@@ -328,6 +328,21 @@ class NucSeq : public libMS::Container
         return this->uiSize;
     } // method
 
+    inline bool isEqual( NucSeq& xOther )
+    {
+        if( length( ) != xOther.length( ) )
+            return false;
+        for( size_t uiI = 0; uiI < length( ); uiI++ )
+            if( ( *this )[ uiI ] != xOther[ uiI ] )
+                return false;
+#if WITH_QUALITY
+        for( size_t uiI = 0; uiI < length( ); uiI++ )
+            if( this->getQuality( uiI ) != xOther.getQuality( uiI ) )
+                return false;
+#endif
+        return true;
+    }
+
     /** Reverse the elements of the plain sequence.
      */
     inline void vReverse( )

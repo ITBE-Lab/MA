@@ -6,9 +6,9 @@
 #include "ma/container/minimizer_index.h"
 #include "ma/container/soc.h"
 #include "ma/util/execution-context.h"
-#include "ms/util/parameter.h"
 #include "ms/module/splitter.h"
 #include "ms/util/export.h"
+#include "ms/util/parameter.h"
 
 using namespace libMA;
 using namespace libMS;
@@ -18,14 +18,14 @@ using namespace libMS;
 
 void exportExecutionContext( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<GenomeManager>( xOrganizer.util(), "GenomeManager" ) //
+    py::class_<GenomeManager>( xOrganizer.util( ), "GenomeManager" ) //
         .def( "load_genome", &GenomeManager::loadGenome );
-    py::class_<ReadsManager>( xOrganizer.util(), "ReadsManager" ) //
+    py::class_<ReadsManager>( xOrganizer.util( ), "ReadsManager" ) //
         .def_readwrite( "primary_queries", &ReadsManager::vsPrimaryQueryFullFileName ) //
         .def_readwrite( "mate_queries", &ReadsManager::vsMateQueryFullFileName );
-    py::class_<OutputManager>( xOrganizer.util(), "OutputManager" );
+    py::class_<OutputManager>( xOrganizer.util( ), "OutputManager" );
 
-    py::class_<ExecutionContext>( xOrganizer.util(), "ExecutionContext" ) //
+    py::class_<ExecutionContext>( xOrganizer.util( ), "ExecutionContext" ) //
         .def( py::init<>( ) ) //
         .def( "do_align", &ExecutionContext::doAlignCallbackLess ) //
         // def_readonly required since xParameterSetManager is non-copyable
@@ -37,7 +37,7 @@ void exportExecutionContext( libMS::SubmoduleOrganizer& xOrganizer )
 
 PYBIND11_MODULE( libMA, libMaModule )
 {
-    py::module::import("libMS");
+    py::module::import( "libMS" );
     libMS::SubmoduleOrganizer xOrganizer( libMaModule );
 
     exportFM_index( xOrganizer );
@@ -61,6 +61,8 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportHashMapSeeding( xOrganizer );
     exportMinimizerIndex( xOrganizer );
     exportExecutionContext( xOrganizer );
+    exportSamFileReader( xOrganizer );
+    exportCompareAlignments( xOrganizer );
 } // function
 
 #endif
