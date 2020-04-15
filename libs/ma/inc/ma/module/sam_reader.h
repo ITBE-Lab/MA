@@ -41,6 +41,14 @@ class ReadByName : public libMS::Container
             throw std::runtime_error( "unknown query name" );
         return xQueries[ sName ];
     } // method
+
+#ifdef WITH_PYTHON
+    py::iterator iter( )
+    {
+        return py::make_iterator( xQueries.begin( ), xQueries.end( ) );
+    }
+#endif
+
 }; // class ReadByName
 
 class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, ReadByName>
@@ -72,9 +80,14 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
             pStream->peek( ); // potentionally trigger eof
             if( pStream->eof( ) ) // eof case
                 return nullptr;
-            pStream->safeGetLine( sLine );
+            // ignore empty lines and comment/header lines (starting with '@')
+            while( sLine.empty( ) || sLine[ 0 ] == '@' )
+                pStream->safeGetLine( sLine );
+            pStream->peek( ); // potentionally trigger eof
         } // scope for xLock
         auto vColumns = splitString<std::vector<std::string>>( sLine, '\t' );
+        if( vColumns.size( ) <= 5 )
+            throw std::runtime_error( "too little tab seperated columns for a SAM file!" );
         std::shared_ptr<NucSeq> pQuery;
         // only use pReads is sequence is not given in sam file
         if( vColumns[ 9 ] != "*" )
@@ -129,6 +142,40 @@ class GetSeedsByName : public libMS::Module<Seeds, false, Alignment, SeedsByName
     } // method
 
 }; // class GetSeedsByName
+
+class GetSeedsByReadName : public libMS::Module<Seeds, false, NucSeq, SeedsByName>
+{
+  public:
+    /**
+     * @brief creates a new GetSeedsByName module.
+     */
+    GetSeedsByReadName( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<Seeds> DLL_PORT( MA )
+        execute( std::shared_ptr<NucSeq> pRead, std::shared_ptr<SeedsByName> pSeedsByName )
+    {
+        return ( *pSeedsByName )[ pRead->sName ];
+    } // method
+
+}; // class GetSeedsByName
+
+class GetReadByName : public libMS::Module<NucSeq, false, Alignment, ReadByName>
+{
+  public:
+    /**
+     * @brief creates a new GetReadByName module.
+     */
+    GetReadByName( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<NucSeq> DLL_PORT( MA )
+        execute( std::shared_ptr<Alignment> pAlignment, std::shared_ptr<ReadByName> pReadByName )
+    {
+        return ( *pReadByName )[ pAlignment->xStats.sName ];
+    } // method
+
+}; // class GetReadByName
 
 } // namespace libMA
 

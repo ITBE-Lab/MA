@@ -83,8 +83,8 @@ void BinarySeeding::procesInterval( geom::Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArrayInterface> pFM_index,
-                                                       std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector>
+BinarySeeding::execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -184,5 +184,6 @@ void exportBinarySeeding( libMS::SubmoduleOrganizer& xOrganizer )
     // export the BinarySeeding class
     exportModule<BinarySeeding>( xOrganizer, "BinarySeeding",
                                  []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
+    exportModule<ExtractSeeds>( xOrganizer, "ExtractSeeds" );
 } // function
 #endif

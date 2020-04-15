@@ -20,8 +20,12 @@ print()
 print("import lib@target_name@")
 print("import libMS")
 
+def contents(module):
+    for name, cls in sorted(module.__dict__.items(), key=lambda item: item[0]):
+        yield name
+
 # print the import for the util submodule
-for name, cls in lib@target_name@.util.__dict__.items():
+for name in contents(lib@target_name@.util):
     if name[:2] == "__":
         if name[-2:] == "__":
             continue
@@ -35,7 +39,7 @@ for name, cls in lib@target_name@.util.__dict__.items():
 print()
 
 # print the import for the containers submodule
-for name, cls in lib@target_name@.containers.__dict__.items():
+for name in contents(lib@target_name@.containers):
     if name[:2] == "__":
         if name[-2:] == "__":
             continue
@@ -49,7 +53,7 @@ for name, cls in lib@target_name@.containers.__dict__.items():
 print()
 
 # print the import for the modules submodule
-for name, cls in lib@target_name@.modules.__dict__.items():
+for name in contents(lib@target_name@.modules):
     if name[:2] == "__":
         if name[-2:] == "__":
             continue
@@ -68,19 +72,19 @@ for name, cls in lib@target_name@.modules.__dict__.items():
 # list the content of hidden submodules
 print()
 print("# List of hidden utilities:")
-for name, cls in lib@target_name@._util.__dict__.items():
+for name in contents(lib@target_name@._util):
     if name[-2:] == "__":
         continue
     print("#   ", name)
 print()
 print("# List of hidden containers:")
-for name, cls in lib@target_name@._containers.__dict__.items():
+for name in contents(lib@target_name@._containers):
     if name[-2:] == "__":
         continue
     print("#   ", name)
 print()
 print("# List of hidden modules:")
-for name, cls in lib@target_name@._modules.__dict__.items():
+for name in contents(lib@target_name@._modules):
     if name[-2:] == "__":
         continue
     print("#   ", name)

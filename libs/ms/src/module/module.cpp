@@ -62,6 +62,14 @@ void exportModuleClass( SubmoduleOrganizer& xOrganizer )
         .def( "set", &TP_PLEDGE::set )
         .def( "get", &TP_PLEDGE::get );
     py::implicitly_convertible<TP_PLEDGE, BasePledge>( );
+
+#if 0 // @todo needs it's own class that holds a python object
+    typedef Pledge<Container, false, PyContainerVector> TP_PYTHON_PLEDGE;
+    py::class_<TP_PYTHON_PLEDGE, BasePledge, std::shared_ptr<TP_PYTHON_PLEDGE>>( xOrganizer._util( ), "PythonPledge" )
+        .def( py::init<std::shared_ptr<PyModule<false>>, std::shared_ptr<PyPledgeVector>>( ) )
+        .def( "exec_time", &TP_PYTHON_PLEDGE::execTime )
+        .def( "get", &TP_PYTHON_PLEDGE::get );
+#endif
 } // function
 
 #endif

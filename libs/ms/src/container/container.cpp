@@ -14,7 +14,7 @@ using namespace libMS;
 
 void exportContainer( SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<Container, std::shared_ptr<Container>> xContainer( xOrganizer._container( ), "Container" );
+    py::class_<Container, std::shared_ptr<Container>>( xOrganizer.container( ), "Container" ).def( py::init<>( ) );
 
     // container is an abstract class and should never be initialized
 

@@ -342,8 +342,6 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
  */
 class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
 {
-    const static nucSeqIndex uiMaxRefSize = std::numeric_limits<nucSeqIndex>::max( ) / 2 - 10;
-
   public:
     /*
      * currently seeds on the reverse strand are pointing to the top left instead of the top right.
@@ -355,12 +353,10 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
      */
     static int64_t getDelta( const Seed& rSeed )
     {
-        int64_t uiRefPos;
         if( rSeed.bOnForwStrand )
-            uiRefPos = rSeed.start_ref( );
+            return rSeed.start_ref( ) - rSeed.start( );
         else
-            uiRefPos = uiMaxRefSize - rSeed.start_ref( );
-        return uiRefPos - rSeed.start( );
+            return rSeed.start_ref( ) + rSeed.start( );
     } // method
 
   private:
@@ -382,7 +378,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
             [&]( const std::pair<Seed*, int64_t>& rA, const std::pair<Seed*, int64_t>& rB ) //
             { //
                 if( rA.first->bOnForwStrand != rB.first->bOnForwStrand )
-                    return !rA.first->bOnForwStrand;
+                    return rA.first->bOnForwStrand;
                 if( rA.second != rB.second )
                     return rA.second < rB.second;
                 return rA.first->start( ) < rB.first->start( );

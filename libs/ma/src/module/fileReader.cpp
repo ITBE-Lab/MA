@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "ma/module/fileReader.h"
+#include "ma/container/alignment.h"
 #include "ms/util/pybind11.h"
 #include <cctype>
 
@@ -217,7 +218,7 @@ void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer )
         xOrganizer.container( ), "ContainerVectorNucSeq", "docstr" );
     py::implicitly_convertible<PairedReadsContainer, Container>( );
 
-    exportCyclicQueue<FileStream, NucSeq>( xOrganizer, "File", {"NucSeq"} );
+    exportCyclicQueue<FileStream, NucSeq, Alignment>( xOrganizer, "File", {"NucSeq", "Alignment"} );
     exportCyclicQueue<PairedFileStream, PairedReadsContainer>( xOrganizer, "PairedFile", {"NucSeq"} );
 
     // export the FileReader class

@@ -457,8 +457,8 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
      * @details
      * Computes all maximally extended segments overlapping center.
      */
-    std::shared_ptr<SegmentVector>
-    memExtension( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
+    std::shared_ptr<SegmentVector> memExtension( std::shared_ptr<SuffixArrayInterface> pFM_index,
+                                                 std::shared_ptr<NucSeq> pQuerySeq )
     {
         auto pSegmentVector = std::make_shared<SegmentVector>( );
 
@@ -572,8 +572,8 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
         execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
 
 
-    std::vector<std::shared_ptr<Seeds>>
-    seed( std::shared_ptr<FMIndex> pFM_index, std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
+                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
     {
         std::vector<std::shared_ptr<Seeds>> vRet;
         for( auto pQuery : vQueries )
@@ -581,6 +581,31 @@ class BinarySeeding : public libMS::Module<SegmentVector, false, SuffixArrayInte
                                 ->extractSeeds( pFM_index, uiMaxAmbiguity, (unsigned int)uiMinSeedSize,
                                                 (libMA::nucSeqIndex)pQuery->length( ), true ) );
         return vRet;
+    } // method
+}; // class
+
+/**
+ * @brief Filters a set of maximally extended seeds down to SMEMs
+ * @ingroup module
+ */
+class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, NucSeq>
+{
+    const unsigned int uiMaxAmbiguity;
+    const size_t uiMinSeedSize;
+
+  public:
+    ExtractSeeds( const ParameterSetManager& rParameters )
+        : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
+          uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) )
+    {} // constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA )
+        execute( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<FMIndex> pFM_index,
+                 std::shared_ptr<NucSeq> pQuerySeq )
+    {
+        return pSegments->extractSeeds( pFM_index, uiMaxAmbiguity, (unsigned int)uiMinSeedSize,
+                                                (libMA::nucSeqIndex)pQuerySeq->length( ), true );
     } // method
 }; // class
 

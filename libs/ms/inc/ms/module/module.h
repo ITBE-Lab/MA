@@ -7,9 +7,9 @@
 #define MODULE_H
 
 #include "ms/container/container.h"
-#include "util/threadPool.h"
-#include "ms/util/parameter.h"
 #include "ms/util/export.h"
+#include "ms/util/parameter.h"
+#include "util/threadPool.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
@@ -245,9 +245,10 @@ class BasePledge
      * callback is called by one of the worker threads everytime the thread has finished one task.
      * If callback returns false the threadspool is destroyed.
      */
-    static inline void simultaneousGet( std::vector<std::shared_ptr<BasePledge>> vPledges,
-                                        std::function<bool( )> callback = []( ) { return true; },
-                                        unsigned int numThreads = 0 )
+    static inline void simultaneousGet(
+        std::vector<std::shared_ptr<BasePledge>> vPledges,
+        std::function<bool( )> callback = []( ) { return true; },
+        unsigned int numThreads = 0 )
     {
         if( numThreads == 0 )
             numThreads = (unsigned int)( vPledges.size( ) );
@@ -816,7 +817,8 @@ class PyPledgeVector : public Pledge<PyContainerVector>
 
     inline void simultaneousGetPy( unsigned int numThreads = 0 )
     {
-        BasePledge::simultaneousGet( vPledges, []( ) { return true; }, numThreads );
+        BasePledge::simultaneousGet(
+            vPledges, []( ) { return true; }, numThreads );
     } // method
 
     inline void clear( )
@@ -882,13 +884,13 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
 #ifdef WITH_PYTHON
 
 template <class TP_MODULE>
-void exportModule( SubmoduleOrganizer& xOrganizer, // pybind module variable
-                   const std::string&& sName, // module name
-                   std::function<void( py::class_<TP_MODULE>&& )> fExportMembers =
-                       []( py::class_<TP_MODULE>&& ) {} // default lambda
+void exportModule(
+    SubmoduleOrganizer& xOrganizer, // pybind module variable
+    const std::string&& sName, // module name
+    std::function<void( py::class_<TP_MODULE>&& )> fExportMembers = []( py::class_<TP_MODULE>&& ) {} // default lambda
 )
 { // Export Class members
-    fExportMembers( py::class_<TP_MODULE>( xOrganizer._module(),
+    fExportMembers( py::class_<TP_MODULE>( xOrganizer._module( ),
                                            ( std::string( "Cpp_" ) + sName ).c_str( ) ) // Python class name
     );
 
@@ -897,7 +899,7 @@ void exportModule( SubmoduleOrganizer& xOrganizer, // pybind module variable
     py::class_<TP_TO_EXPORT, // derived class
                PyModule<TP_MODULE::IS_VOLATILE>, // base class
                std::shared_ptr<TP_TO_EXPORT>> // reference holder
-        ( xOrganizer.module(), sName.c_str( ) )
+        ( xOrganizer.module( ), sName.c_str( ) )
             .def( py::init<const ParameterSetManager&>( ) )
             .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
 
@@ -905,17 +907,17 @@ void exportModule( SubmoduleOrganizer& xOrganizer, // pybind module variable
 } // function
 
 template <class TP_MODULE, typename TP_CONSTR_PARAM_FIRST, typename... TP_CONSTR_PARAMS>
-void exportModule( SubmoduleOrganizer& xOrganizer, // pybind module variable
-                   const std::string&& sName, // module name
-                   std::function<void( py::class_<TP_MODULE>&& )> fExportMembers =
-                       []( py::class_<TP_MODULE>&& ) {} // default lambda
+void exportModule(
+    SubmoduleOrganizer& xOrganizer, // pybind module variable
+    const std::string&& sName, // module name
+    std::function<void( py::class_<TP_MODULE>&& )> fExportMembers = []( py::class_<TP_MODULE>&& ) {} // default lambda
 )
 {
     typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
         TP_TO_EXPORT;
-    fExportMembers( py::class_<TP_MODULE>( xOrganizer._module(), ( std::string( "Cpp_" ) + sName ).c_str( ) ) );
+    fExportMembers( py::class_<TP_MODULE>( xOrganizer._module( ), ( std::string( "Cpp_" ) + sName ).c_str( ) ) );
 
-    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xOrganizer.module(),
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xOrganizer.module( ),
                                                                                                sName.c_str( ) )
         .def( py::init<const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
         .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );
@@ -930,7 +932,7 @@ void exportModuleAlternateConstructor( SubmoduleOrganizer& xOrganizer, // pybind
     typedef ModuleWrapperCppToPy<TP_MODULE, const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>
         TP_TO_EXPORT;
 
-    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xOrganizer.module(),
+    py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>( xOrganizer.module( ),
                                                                                                sName.c_str( ) )
         .def( py::init<const ParameterSetManager&, TP_CONSTR_PARAM_FIRST, TP_CONSTR_PARAMS...>( ) )
         .def_readonly( "cpp_module", &TP_TO_EXPORT::xModule );

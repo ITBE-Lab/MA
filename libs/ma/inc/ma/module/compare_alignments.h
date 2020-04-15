@@ -42,15 +42,15 @@ class SeedSetComp : public libMS::Container
         xDataIt++;
     } // mehtod
 
-    void addGroundTruth( Seeds::iterator& xGroundTruthIt )
+    void addGroundTruth( std::shared_ptr<Seeds> pGroundTruthSeeds )
     {
-        uiNtGroundTruth += xGroundTruthIt->size( );
-        xGroundTruthIt++;
+        for(auto& xSeed : *pGroundTruthSeeds)
+            uiNtGroundTruth += xSeed.size( );
+        uiAmountGroundTruth += pGroundTruthSeeds->size();
     } // mehtod
 
     void addOverlap( Seeds::iterator& xDataIt, Seeds::iterator& xGroundTruthIt )
     {
-
         assert( std::min( xDataIt->end( ), xGroundTruthIt->end( ) ) >
                 std::max( xDataIt->start( ), xGroundTruthIt->start( ) ) );
         uiNtOverlap += std::min( xDataIt->end( ), xGroundTruthIt->end( ) ) -
@@ -87,9 +87,11 @@ class CompareSeedSets : public libMS::Module<SeedSetComp, false, Seeds, Seeds>
      */
     static bool isSmaller( const Seed& xA, const Seed& xB )
     {
-        if( SeedLumping::getDelta( xA ) == SeedLumping::getDelta( xB ) )
-            return xA.end( ) <= xB.start( );
-        return SeedLumping::getDelta( xA ) < SeedLumping::getDelta( xB );
+        if( xA.bOnForwStrand != xB.bOnForwStrand )
+            return xA.bOnForwStrand;
+        if( SeedLumping::getDelta( xA ) != SeedLumping::getDelta( xB ) )
+            return SeedLumping::getDelta( xA ) < SeedLumping::getDelta( xB );
+        return xA.end( ) <= xB.start( );
     }
 
     /**
@@ -105,7 +107,6 @@ class CompareSeedSets : public libMS::Module<SeedSetComp, false, Seeds, Seeds>
         auto xGroundTruthIt = pGroundTruth->begin( );
         auto xDataIt = pData->begin( );
 
-        pRet->uiAmountGroundTruth += pGroundTruth->size( );
         pRet->uiAmountData += pData->size( );
 
         while( xGroundTruthIt != pGroundTruth->end( ) && xDataIt != pData->end( ) )
@@ -113,22 +114,19 @@ class CompareSeedSets : public libMS::Module<SeedSetComp, false, Seeds, Seeds>
             if( isSmaller( *xDataIt, *xGroundTruthIt ) )
                 pRet->addData( xDataIt );
             else if( isSmaller( *xGroundTruthIt, *xDataIt ) )
-                pRet->addGroundTruth( xGroundTruthIt );
+                ++xGroundTruthIt;
             else
             {
                 pRet->addOverlap( xDataIt, xGroundTruthIt );
                 if( xDataIt->end( ) < xGroundTruthIt->end( ) )
                     pRet->addData( xDataIt );
                 else
-                    pRet->addGroundTruth( xGroundTruthIt );
+                    ++xGroundTruthIt;
             } // else
         } // while
         // remaining seeds in data
         while( xDataIt != pData->end( ) )
             pRet->addData( xDataIt );
-        // remaining seeds in ground truth
-        while( xGroundTruthIt != pGroundTruth->end( ) )
-            pRet->addGroundTruth( xGroundTruthIt );
 
         return pRet;
     } // method
