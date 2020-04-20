@@ -2,6 +2,7 @@
 #include "ma/container/pack.h"
 #include "ma/container/seed.h"
 #include "ma/module/harmonization.h"
+#include "ma/module/sam_reader.h"
 
 #pragma once
 
@@ -25,52 +26,6 @@ class AlignmentToSeeds : public libMS::Module<Seeds, false, Alignment>
 }; // class AlignmentToSeeds
 
 
-class SeedSetComp : public libMS::Container
-{
-  public:
-    nucSeqIndex uiNtGroundTruth = 0;
-    nucSeqIndex uiNtOverlap = 0;
-    nucSeqIndex uiNtData = 0;
-
-    size_t uiAmountGroundTruth = 0;
-    size_t uiAmountOverlap = 0;
-    size_t uiAmountData = 0;
-
-    void addData( Seeds::iterator& xDataIt )
-    {
-        uiNtData += xDataIt->size( );
-        xDataIt++;
-    } // mehtod
-
-    void addGroundTruth( std::shared_ptr<Seeds> pGroundTruthSeeds )
-    {
-        for(auto& xSeed : *pGroundTruthSeeds)
-            uiNtGroundTruth += xSeed.size( );
-        uiAmountGroundTruth += pGroundTruthSeeds->size();
-    } // mehtod
-
-    void addOverlap( Seeds::iterator& xDataIt, Seeds::iterator& xGroundTruthIt )
-    {
-        assert( std::min( xDataIt->end( ), xGroundTruthIt->end( ) ) >
-                std::max( xDataIt->start( ), xGroundTruthIt->start( ) ) );
-        uiNtOverlap += std::min( xDataIt->end( ), xGroundTruthIt->end( ) ) -
-                       std::max( xDataIt->start( ), xGroundTruthIt->start( ) );
-        uiAmountOverlap++;
-    } // mehtod
-
-    void merge( const SeedSetComp& xOther )
-    {
-        uiNtGroundTruth += xOther.uiNtGroundTruth;
-        uiNtOverlap += xOther.uiNtOverlap;
-        uiNtData += xOther.uiNtData;
-
-        uiAmountGroundTruth += xOther.uiAmountGroundTruth;
-        uiAmountOverlap += xOther.uiAmountOverlap;
-        uiAmountData += xOther.uiAmountData;
-    } // mehtod
-
-}; // class SeedSetComp
-
 /**
  * @brief compares two seed sets
  * @details
@@ -79,7 +34,7 @@ class SeedSetComp : public libMS::Container
  * A lumped seed set can never have two seeds overlapping within itself therefore no check is done for that.
  * This can deal with several seeds of one set overlapping a single seed of the other set though.
  */
-class CompareSeedSets : public libMS::Module<SeedSetComp, false, Seeds, Seeds>
+class CompareSeedSets : public libMS::Module<SeedSetComp, false, Seeds, Seeds, SeedSetComp>
 {
   public:
     /**
@@ -101,34 +56,33 @@ class CompareSeedSets : public libMS::Module<SeedSetComp, false, Seeds, Seeds>
     {} // constructor
 
     std::shared_ptr<SeedSetComp> DLL_PORT( MA )
-        execute( std::shared_ptr<Seeds> pGroundTruth, std::shared_ptr<Seeds> pData )
+        execute( std::shared_ptr<Seeds> pGroundTruth, std::shared_ptr<Seeds> pData, std::shared_ptr<SeedSetComp> pComp )
     {
-        auto pRet = std::make_shared<SeedSetComp>( );
         auto xGroundTruthIt = pGroundTruth->begin( );
         auto xDataIt = pData->begin( );
 
-        pRet->uiAmountData += pData->size( );
+        pComp->uiAmountData += pData->size( );
 
         while( xGroundTruthIt != pGroundTruth->end( ) && xDataIt != pData->end( ) )
         {
             if( isSmaller( *xDataIt, *xGroundTruthIt ) )
-                pRet->addData( xDataIt );
+                pComp->addData( xDataIt );
             else if( isSmaller( *xGroundTruthIt, *xDataIt ) )
                 ++xGroundTruthIt;
             else
             {
-                pRet->addOverlap( xDataIt, xGroundTruthIt );
+                pComp->addOverlap( xDataIt, xGroundTruthIt );
                 if( xDataIt->end( ) < xGroundTruthIt->end( ) )
-                    pRet->addData( xDataIt );
+                    pComp->addData( xDataIt );
                 else
                     ++xGroundTruthIt;
             } // else
         } // while
         // remaining seeds in data
         while( xDataIt != pData->end( ) )
-            pRet->addData( xDataIt );
+            pComp->addData( xDataIt );
 
-        return pRet;
+        return pComp;
     } // method
 }; // class CompareSeedSets
 

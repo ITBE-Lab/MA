@@ -14,9 +14,11 @@ void exportSamFileReader( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "__iter__", &ReadByName::iter );
     py::class_<SeedsByName, libMS::Container, std::shared_ptr<SeedsByName>>( xOrganizer.container( ), "SeedsByName" )
         .def( py::init<>( ) ) // default constructor
-        .def( "append", &SeedsByName::append );
+        .def( "append", &SeedsByName::append )
+        .def( "mergeAll", &SeedsByName::mergeAll );
     exportModule<SamFileReader>( xOrganizer, "SamFileReader" );
     exportModule<GetSeedsByName>( xOrganizer, "GetSeedsByName" );
+    exportModule<GetSeedSetCompByName>( xOrganizer, "GetSeedSetCompByName" );
     exportModule<GetSeedsByReadName>( xOrganizer, "GetSeedsByReadName" );
     exportModule<GetReadByName>( xOrganizer, "GetReadByName" );
 } // function
