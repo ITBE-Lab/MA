@@ -62,6 +62,10 @@ class FileStream : public libMS::Container
     {
         throw std::runtime_error( "This function should have been overridden" );
     }
+    virtual char pop( )
+    {
+        throw std::runtime_error( "This function should have been overridden" );
+    }
     virtual std::string fileName( )
     {
         throw std::runtime_error( "This function should have been overridden" );
@@ -119,6 +123,10 @@ class StdFileStream : public FileStream
     char peek( )
     {
         return xStream.peek( );
+    } // method
+    char pop( )
+    {
+        return (char)xStream.get( );
     } // method
 
     virtual std::string fileName( )
@@ -212,6 +220,10 @@ class StringStream : public FileStream
     char peek( )
     {
         return xStream.peek( );
+    } // method
+    char pop( )
+    {
+        return (char)xStream.get( );
     } // method
 
     virtual std::string fileName( )
@@ -349,6 +361,13 @@ class GzFileStream : public FileStream
         open( );
         return cBuff;
     } // method
+    char pop( )
+    {
+        open( );
+        char cRet = cBuff;
+        gzread( pFile, &cBuff, 1 );
+        return cRet;
+    } // method
 
     virtual std::string fileName( )
     {
@@ -434,6 +453,10 @@ class FileStreamFromPath : public FileStream
     {
         return pStream->peek( );
     }
+    virtual char pop( )
+    {
+        return pStream->pop( );
+    }
     virtual std::string fileName( )
     {
         return pStream->fileName( );
@@ -491,6 +514,10 @@ class PairedFileStream : public FileStream, public std::pair<std::shared_ptr<Fil
         return first->fileSize( ) + second->fileSize( );
     }
     virtual char peek( )
+    {
+        throw std::runtime_error( "This function should have been overridden" );
+    }
+    virtual char pop( )
     {
         throw std::runtime_error( "This function should have been overridden" );
     }

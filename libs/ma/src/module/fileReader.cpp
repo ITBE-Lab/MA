@@ -203,7 +203,8 @@ void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer )
 {
     py::class_<fs::path>( xOrganizer.util( ), "path" ).def( py::init<std::string>( ) );
     py::bind_vector<std::vector<fs::path>>( xOrganizer.util( ), "filePathVector", "docstr" );
-    py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( xOrganizer.container( ), "FileStream" );
+    py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( xOrganizer.container( ), "FileStream" )
+        .def("eof", &FileStream::eof);
     py::class_<PairedFileStream, libMS::Container, std::shared_ptr<PairedFileStream>>( xOrganizer.container( ),
                                                                                        "PairedFileStream" )
         .def( py::init<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>( ) );

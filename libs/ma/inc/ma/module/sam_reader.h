@@ -83,19 +83,26 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
             // ignore empty lines and comment/header lines (starting with '@')
             while( sLine.empty( ) || sLine[ 0 ] == '@' )
                 pStream->safeGetLine( sLine );
-            pStream->peek( ); // potentionally trigger eof
+            while( !pStream->eof( ) && pStream->peek( ) == '\n' && pStream->peek( ) == '\r' &&
+                   pStream->peek( ) == '@' && pStream->peek( ) == ' ' && pStream->peek( ) == '\t' )
+                pStream->pop( );
         } // scope for xLock
         auto vColumns = splitString<std::vector<std::string>>( sLine, '\t' );
         if( vColumns.size( ) <= 5 )
             throw std::runtime_error( "too little tab seperated columns for a SAM file!" );
         std::shared_ptr<NucSeq> pQuery;
         // only use pReads is sequence is not given in sam file
-        if( vColumns[ 9 ] != "*" )
-            pQuery = ( *pReads )[ vColumns[ 0 ] ];
-        else
-            pQuery = std::make_shared<NucSeq>( vColumns[ 9 ] );
-        // vColumns[ 3 ] == POS in sam is 1 based
+        if( vColumns[ 0 ][ 0 ] == '*' )
+            throw std::runtime_error( "unnamed read in sam file." );
+        pQuery = ( *pReads )[ vColumns[ 0 ] ];
+
         nucSeqIndex uiRefStart = atoll( vColumns[ 3 ].c_str( ) ) + pRef->startOfSequenceWithName( vColumns[ 2 ] ) - 1;
+        if( atoll( vColumns[ 1 ].c_str( ) ) & 16 ) // check if seq was rev-complemented
+            // uiRefStart - 1: convert from 1 based to 0 based index
+            uiRefStart =
+                pRef->uiPositionToReverseStrand( uiRefStart - 1 )
+                // add reference length of cigar so that our alignment representation matches the one of the sam format
+                + Alignment::refLenCigar( vColumns[ 5 ] );
         auto pRet = std::make_shared<Alignment>( uiRefStart );
         pRet->xStats.sName = vColumns[ 0 ];
         pRet->appendCigarString( vColumns[ 5 ], pQuery, *pRef );
@@ -136,14 +143,14 @@ class SeedSetComp : public libMS::Container
 
     void addOverlap( Seeds::iterator& xDataIt, Seeds::iterator& xGroundTruthIt )
     {
+        int64_t iOverlap = (int64_t)std::min( xDataIt->end( ) - 1, xGroundTruthIt->end( ) - 1 ) -
+                           (int64_t)std::max( xDataIt->start( ), xGroundTruthIt->start( ) );
+        if( iOverlap < 0 )
+            return;
         std::lock_guard<std::mutex> xGuard( xMutex );
-        assert( std::min( xDataIt->end( ), xGroundTruthIt->end( ) ) >
-                std::max( xDataIt->start( ), xGroundTruthIt->start( ) ) );
-        auto uiOverlap = std::min( xDataIt->end( ) - 1, xGroundTruthIt->end( ) - 1 ) -
-                         std::max( xDataIt->start( ), xGroundTruthIt->start( ) );
-        uiNtOverlap += uiOverlap;
+        uiNtOverlap += (size_t)iOverlap;
         uiAmountOverlap++;
-        if( uiOverlap * 10 >= xGroundTruthIt->size( ) * 9 )
+        if( (size_t)iOverlap * 10 >= xGroundTruthIt->size( ) * 9 )
             uiAmount90PercentOverlap++;
     } // mehtod
 
@@ -171,7 +178,7 @@ class SeedSetComp : public libMS::Container
             xSeedsFound[ xPair.first ] += xPair.second;
     } // mehtod
 
-    void clear()
+    void clear( )
     {
         uiNtGroundTruth = 0;
         uiNtOverlap = 0;
@@ -183,7 +190,7 @@ class SeedSetComp : public libMS::Container
 
         uiAmount90PercentOverlap = 0;
 
-        xSeedsFound.clear();
+        xSeedsFound.clear( );
     }
 
 }; // class SeedSetComp
@@ -219,13 +226,13 @@ class SeedsByName : public libMS::Container
 
     std::shared_ptr<SeedSetComp> mergeAll( std::shared_ptr<SeedSetComp> pGroundTruth )
     {
-        auto pRet = std::make_shared<SeedSetComp>();
-        pRet->merge(*pGroundTruth);
-        for(auto xPair : xComps)
+        auto pRet = std::make_shared<SeedSetComp>( );
+        pRet->merge( *pGroundTruth );
+        for( auto xPair : xComps )
         {
-            xPair.second->commitOverlap();
-            pRet->merge(*xPair.second);
-            xPair.second->clear();
+            xPair.second->commitOverlap( );
+            pRet->merge( *xPair.second );
+            xPair.second->clear( );
         }
         return pRet;
     }

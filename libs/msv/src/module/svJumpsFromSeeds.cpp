@@ -195,13 +195,13 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
         AlignedMemoryManager xMemoryManager; // @todo this causes frequent (de-)&allocations; move this outwards
         xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pFAlignment,
                  xMemoryManager );
-        auto pForwSeeds = pFAlignment->toSeeds( );
+        auto pForwSeeds = pFAlignment->toSeeds( pRefSeq );
 
         // and now the reverse strand seeds
         auto pRAlignment = std::make_shared<Alignment>( );
         xNW.ksw( pQuery, pRefRevComp, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRefRevComp->length( ) - 1,
                  pRAlignment, xMemoryManager );
-        auto pRevSeeds = pRAlignment->toSeeds( );
+        auto pRevSeeds = pRAlignment->toSeeds( pRefSeq );
         for( Seed& rSeed : *pRevSeeds )
         {
             rSeed.bOnForwStrand = false;

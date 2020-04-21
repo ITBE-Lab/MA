@@ -154,7 +154,7 @@ class Alignment : public libMS::Container
         return sRet;
     }
 
-    inline std::shared_ptr<Seeds> toSeeds( ) const
+    inline std::shared_ptr<Seeds> toSeeds( std::shared_ptr<Pack> pPack ) const
     {
         auto pRet = std::make_shared<Seeds>( );
         nucSeqIndex uiQ = uiBeginOnQuery;
@@ -165,8 +165,8 @@ class Alignment : public libMS::Container
             {
                 case MatchType::seed:
                 case MatchType::match:
-                    // @todo make this work for rev strand alignments...
-                    pRet->emplace_back( uiQ, rPair.second, uiR, true );
+                    pRet->emplace_back(
+                        uiQ, rPair.second, pPack->iAbsolutePosition( uiR ), !pPack->bPositionIsOnReversStrand( uiR ) );
                 case MatchType::missmatch: // seed and match case continue till the break
                     uiQ += rPair.second;
                     uiR += rPair.second;
@@ -438,11 +438,13 @@ class Alignment : public libMS::Container
         return sCigar;
     } // method
 
-    void appendCigarString( std::string sCigar, std::shared_ptr<NucSeq> pQuery, Pack& rPack )
+    static size_t refLenCigar( std::string sCigar )
     {
+        size_t uiRet = 0;
         std::stringstream xStream( sCigar );
         while( !xStream.eof( ) )
         {
+
             size_t uiLen;
             char cOp;
             xStream >> uiLen;
@@ -450,39 +452,93 @@ class Alignment : public libMS::Container
             switch( cOp )
             {
                 case 'M':
-                    if( pQuery->pxSequenceRef[ uiEndOnQuery ] == rPack.vExtract( uiEndOnRef ) )
-                        append( MatchType::match, uiLen );
-                    else
-                        append( MatchType::missmatch, uiLen );
+                case 'D':
+                case 'N':
+                case '=':
+                case 'X':
+                    uiRet += uiLen;
                     break;
                 case 'I':
-                    append( MatchType::insertion, uiLen );
-                    break;
-                case 'D':
-                    append( MatchType::deletion, uiLen );
-                    break;
-                case 'N':
-                    append( MatchType::deletion, uiLen );
-                    break;
                 case 'S':
-                    append( MatchType::insertion, uiLen );
-                    break;
                 case 'H':
                 case 'P':
-                    /*clipped sequences NOT present in SEQ*/
-                    break;
-                case '=':
-                    append( MatchType::match, uiLen );
-                    break;
-                case 'X':
-                    append( MatchType::missmatch, uiLen );
                     break;
 
                 default:
                     throw std::runtime_error( "Unrecognized SAM CIGAR operation" );
                     break;
             } // switch
-        } // while
+            xStream.peek( ); // check if next element exists
+        }
+        return uiRet;
+    }
+
+    void appendCigarString( std::string sCigar, std::shared_ptr<NucSeq> pQuery, Pack& rPack )
+    {
+        if( sCigar.size( ) == 1 && sCigar[ 0 ] == '*' )
+            append( MatchType::match, pQuery->length( ) );
+        else
+        {
+            std::stringstream xStream( sCigar );
+            std::vector<std::pair<char, size_t>> vData;
+            while( !xStream.eof( ) )
+            {
+                size_t uiLen;
+                char cOp;
+                xStream >> uiLen;
+                xStream >> cOp;
+                vData.emplace_back( cOp, uiLen );
+                xStream.peek( ); // check if next element exists
+            } // while
+            if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
+                std::reverse( vData.begin( ), vData.end( ) );
+            for( size_t uiI = 0; uiI < vData.size( ); uiI++ )
+                switch( vData[ uiI ].first )
+                {
+                    case 'M':
+                        for( size_t uiX = 0; uiX < vData[ uiI ].second; uiX++ )
+                        {
+                            if( pQuery->pxSequenceRef[ uiEndOnQuery ] == rPack.vExtract( uiEndOnRef ) )
+                                append( MatchType::match, 1 );
+                            else
+                                append( MatchType::missmatch, 1 );
+                        }
+                        break;
+                    case 'I':
+                        append( MatchType::insertion, vData[ uiI ].second );
+                        break;
+                    case 'D':
+                        append( MatchType::deletion, vData[ uiI ].second );
+                        break;
+                    case 'N':
+                        append( MatchType::deletion, vData[ uiI ].second );
+                        break;
+                    case 'S':
+                    case 'H':
+                        if( uiI + 1 == vData.size( ) ) // clipping at the end of the cigar is OK
+                            break;
+                        else if( uiI == 0 ) // clipping at the start of the cigar is OK
+                        {
+                            shiftOnQuery( vData[ uiI ].second );
+                            break;
+                        }
+                        else
+                            throw std::runtime_error( "clipping can only be at start or end of cigar!" );
+                    case 'P':
+                        /*clipped sequences NOT present in SEQ*/
+                        break;
+                    case '=':
+                        append( MatchType::match, vData[ uiI ].second );
+                        break;
+                    case 'X':
+                        append( MatchType::missmatch, vData[ uiI ].second );
+                        break;
+
+                    default:
+                        throw std::runtime_error( "Unrecognized SAM CIGAR operation" );
+                        break;
+                } // switch
+        } // else
     } // method
 
     uint32_t getSamFlag( Pack& rPack ) const

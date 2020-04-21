@@ -9,7 +9,7 @@
 namespace libMA
 {
 
-class AlignmentToSeeds : public libMS::Module<Seeds, false, Alignment>
+class AlignmentToSeeds : public libMS::Module<Seeds, false, Alignment, Pack>
 {
   public:
     /**
@@ -18,9 +18,9 @@ class AlignmentToSeeds : public libMS::Module<Seeds, false, Alignment>
     AlignmentToSeeds( const ParameterSetManager& rParameters )
     {} // constructor
 
-    std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Alignment> pAlignment )
+    std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Alignment> pAlignment, std::shared_ptr<Pack> pPack )
     {
-        return pAlignment->toSeeds( );
+        return pAlignment->toSeeds( pPack );
     } // method
 
 }; // class AlignmentToSeeds
