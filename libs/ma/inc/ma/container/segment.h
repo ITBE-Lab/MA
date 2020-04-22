@@ -104,9 +104,8 @@ class Segment : public libMS::Container, public geom::Interval<nucSeqIndex>
                 assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) );
             } // if
             assert( ulIndexOnRefSeq < rxFMIndex.getRefSeqLength( ) / 2 );
-            // call the given function
             Seed xSeed( uiPosOnQuery, this->size( ) + 1, ulIndexOnRefSeq, (unsigned int)this->saInterval( ).size( ),
-                            bOnForw );
+                        bOnForw );
             if( !fDo( xSeed ) )
                 return false;
         } // for
@@ -338,7 +337,14 @@ class SegmentVector : public libMS::Container
                 uiJumpBy = rSegment.saInterval( ).size( ) / uiMAxAmbiguity;
             } // if
 
-            if( !rSegment.forEachSeed( rxFMIndex, [&]( Seed& rSeed ) { return fDo( rSeed ); }, uiJumpBy ) )
+            if( !rSegment.forEachSeed(
+                    rxFMIndex,
+                    [&]( Seed& rSeed ) {
+                        assert( rSeed.end( ) <= uiQLen );
+                        std::cout << "forEachSeed: " << rSeed.end() << std::endl;
+                        return fDo( rSeed );
+                    },
+                    uiJumpBy ) )
                 return;
         } // for
     } // function
@@ -353,8 +359,7 @@ class SegmentVector : public libMS::Container
      */
     template <class FUNCTOR>
     void emplaceAllEachSeeds( FMIndex& rxFMIndex, nucSeqIndex uiQLen, // <- uiQLen is unused for now
-                              size_t uiMAxAmbiguity, size_t uiMinLen,
-                              Seeds& rvSeedVector,
+                              size_t uiMAxAmbiguity, size_t uiMinLen, Seeds& rvSeedVector,
                               FUNCTOR&& fDo // this function is called after each seed is emplaced
     )
     {

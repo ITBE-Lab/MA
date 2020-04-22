@@ -46,111 +46,97 @@ def test_aligner():
     print("[Test Successful]")
 
 
-def quick_align(parameter_set, pack, fm_index, queries=None, output=None, paired_queries=None, paired_output=None):
+def quick_align(parameter_set, pack, fm_index, output_graph, file_queue, file_queue_2=None):
     fm_index_pledge = Pledge()
     fm_index_pledge.set(fm_index)
 
     pack_pledge = Pledge()
     pack_pledge.set(pack)
 
-    module_lock = Lock(parameter_set)
     module_seeding = BinarySeeding(parameter_set)
     module_soc = StripOfConsideration(parameter_set)
     module_harm = Harmonization(parameter_set)
     module_dp = NeedlemanWunsch(parameter_set)
     module_mapping_qual = MappingQuality(parameter_set)
-    modlue_inv = SmallInversions(parameter_set)
+    module_inv = SmallInversions(parameter_set)
 
-    res = VectorPledge()
-    if not queries is None:
-        assert(not output is None)
-        for _ in range(parameter_set.get_num_threads()):
-            locked_query = promise_me(module_lock, queries)
-            seeds = promise_me(module_seeding, fm_index_pledge, locked_query)
-            socs = promise_me(module_soc, seeds, locked_query,
-                              pack_pledge, fm_index_pledge)
-            harm = promise_me(module_harm, socs, locked_query, fm_index_pledge)
-            alignments = promise_me(module_dp, harm, locked_query, pack_pledge)
-            alignments_w_map_q = promise_me(
-                module_mapping_qual, locked_query, alignments)
-
-            if parameter_set.by_name("Detect Small Inversions").get():
-                alignments_w_map_q = promise_me(
-                    modlue_inv, alignments_w_map_q, locked_query, pack_pledge)
-
-            empty = promise_me(output, locked_query,
-                               alignments_w_map_q, pack_pledge)
-            unlock = promise_me(UnLock(parameter_set, locked_query), empty)
-            res.append(unlock)
-
-    if not paired_queries is None:
-        assert(not paired_output is None)
-        module_paired = PairedReads(parameter_set)
+    combined_queue = file_queue
+    lock = Lock(parameter_set)
+    if not file_queue_2 is None:
+        combined_queue = combine_file_streams(file_queue, file_queue_2)
         module_get_first = GetFirstQuery(parameter_set)
         module_get_second = GetSecondQuery(parameter_set)
-        for _ in range(parameter_set.get_num_threads()):
-            locked_query_pair = promise_me(module_lock, paired_queries)
-            # primary read
-            locked_query = promise_me(module_get_first, locked_query_pair)
-            seeds = promise_me(module_seeding, fm_index_pledge, locked_query)
-            socs = promise_me(module_soc, seeds, locked_query,
-                              pack_pledge, fm_index_pledge)
-            harm = promise_me(module_harm, socs, locked_query, fm_index_pledge)
-            alignments = promise_me(module_dp, harm, locked_query, pack_pledge)
+        module_paired = PairedReads(parameter_set)
+
+        #set up modules for paired read insert
+        queue_picker = PairedFilePicker(parameter_set)
+        queue_placer = PairedFileNucSeqPlacer(parameter_set)
+        file_reader = PairedFileReader(parameter_set)
+    else:
+        #set up modules for single read insert
+        queue_picker = FilePicker(parameter_set)
+        queue_placer = FileNucSeqPlacer(parameter_set)
+        file_reader = FileReader(parameter_set)
+    
+    queue_pledge = Pledge()
+    queue_pledge.set(combined_queue)
+
+    def query_to_alignment(query):
+        seeds = promise_me(module_seeding, fm_index_pledge, query)
+        socs = promise_me(module_soc, seeds, query,
+                            pack_pledge, fm_index_pledge)
+        harm = promise_me(module_harm, socs, query, fm_index_pledge)
+        alignments = promise_me(module_dp, harm, query, pack_pledge)
+        alignments_w_map_q = promise_me(
+            module_mapping_qual, query, alignments)
+        if parameter_set.by_name("Detect Small Inversions").get():
             alignments_w_map_q = promise_me(
-                module_mapping_qual, locked_query, alignments)
+                module_inv, alignments_w_map_q, query, pack_pledge)
+        return alignments_w_map_q
 
-            # mate read
-            locked_query_mate = promise_me(
-                module_get_second, locked_query_pair)
-            seeds_mate = promise_me(
-                module_seeding, fm_index_pledge, locked_query_mate)
-            socs_mate = promise_me(module_soc, seeds_mate, locked_query_mate,
-                                   pack_pledge, fm_index_pledge)
-            harm_mate = promise_me(module_harm, socs_mate,
-                                   locked_query_mate, fm_index_pledge)
-            alignments_mate = promise_me(
-                module_dp, harm_mate, locked_query_mate, pack_pledge)
-            alignments_w_map_q_mate = promise_me(
-                module_mapping_qual, locked_query_mate, alignments_mate)
+    res = VectorPledge()
+    for _ in range(parameter_set.get_num_threads()):
+        picked_file = promise_me(queue_picker, queue_pledge)
+        locked_file = promise_me(lock, picked_file)
+        query_ = promise_me(file_reader, locked_file)
 
-            if parameter_set.by_name("Detect Small Inversions").get():
-                alignments_w_map_q = promise_me(
-                    modlue_inv, alignments_w_map_q, locked_query, pack_pledge)
-                alignments_w_map_q_mate = promise_me(
-                    modlue_inv, alignments_w_map_q_mate, locked_query_mate, pack_pledge)
+        locked_query = promise_me(queue_placer, query_, locked_file, queue_pledge)
+        if not file_queue_2 is None:
+            query_prim = promise_me(module_get_first, locked_query)
+            alignment_pledge = query_to_alignment(query_prim)
 
-            # combine & output
-            combined_alignments = promise_me(
-                module_paired, locked_query, locked_query_mate, alignments_w_map_q, alignments_w_map_q_mate, pack_pledge)
-            empty = promise_me(paired_output, locked_query,
-                               locked_query_mate, combined_alignments, pack_pledge)
+            query_mate = promise_me(module_get_second, locked_query)
+            alignment_pledge_mate = query_to_alignment(query_mate)
 
-            # unlock
-            unlock = promise_me(
-                UnLock(parameter_set, locked_query_pair), empty)
-            res.append(unlock)
+            alignment_pledge_combined = promise_me(
+                module_paired, query_prim, query_mate, alignment_pledge, alignment_pledge_mate, pack_pledge)
+            empty = output_graph(alignment_pledge_combined, pack_pledge, query_prim, query_mate)
+        else:
+            alignment_pledge = query_to_alignment(locked_query)
+            empty = output_graph(alignment_pledge, pack_pledge, locked_query)
+
+        unlock = promise_me(UnLock(parameter_set, locked_file), empty)
+        res.append(unlock)
 
     res.simultaneous_get(parameter_set.get_num_threads())
 
 
 def quick_align_paths(queries, genome_prefix, parameter_set_manager=ParameterSetManager(),
                       output_path="alignments.sam"):
+    def to_file_queue(string_vec):
+        if string_vec is None:
+            return None
+        file_queue = FileQueue()
+        for string in string_vec:
+            file_queue.add(FileStreamFromPath(string))
+        return file_queue
     pack = Pack()
     pack.load(genome_prefix)
     fm_index = FMIndex()
     fm_index.load(genome_prefix)
 
-    query_vec_pledge = Pledge()
-    query_vec_pledge.set(ContainerVectorNucSeq(queries))
+    def output_graph(alignment_pledge, pack_pledge, locked_query):
+        return promise_me(FileWriter(parameter_set_manager, output_path, pack),
+                          locked_query, alignment_pledge, pack_pledge)
 
-    module_splitter = NucSeqSplitter(parameter_set_manager)
-    queries_pledge = promise_me(module_splitter, query_vec_pledge)
-
-    module_output = FileWriter(parameter_set_manager, output_path, pack)
-
-    quick_align(parameter_set_manager, queries_pledge,
-                pack, fm_index, module_output)
-
-# queries = [MA.NucSeq("ACCCGTGTGTACGACTACGGCATCAGACTACGAC")]
-# MA.quick_align_paths(queries, "/mnt/ssd0/genome/GRCh38.p12")
+    quick_align(parameter_set_manager, pack, fm_index, output_graph, to_file_queue(queries))
