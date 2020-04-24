@@ -649,15 +649,6 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     } // for
 #endif
 
-    // flip all seeds on the reverse strand @todo
-    for( Seed& rxSeed : *pSeeds )
-        if( !rxSeed.bOnForwStrand )
-        {
-            rxSeed.uiPosOnReference =
-                pRefPack->uiUnpackedSizeForwardStrand * 2 - ( rxSeed.uiPosOnReference + rxSeed.size( ) + 1 );
-            rxSeed.iStart = pQuery->length( ) - ( rxSeed.end( ) - 1 );
-        } // if
-
     // Determine the query and reverence coverage of the seeds
 
     nucSeqIndex beginRef = pSeeds->front( ).start_ref( );
@@ -878,6 +869,10 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
     DEBUG( if( pRet->uiEndOnQuery > pQuery->length( ) ) std::cerr << "Alignment longer than query (2). "
                                                                   << pRet->xStats.sName << std::endl; )
     DEBUG( pRet->checkLengthOnQuery( ); )
+
+    // std::cout << "uiBeginOnQuery: " << pRet->uiBeginOnQuery << " - " << pRet->uiEndOnQuery << std::endl;
+    // std::cout << "uiBeginOnRef: " << pRet->uiBeginOnRef << " - " << pRet->uiEndOnRef << std::endl;
+
     return pRet;
 } // function
 
@@ -1142,7 +1137,7 @@ void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
     // export the NeedlemanWunsch class
     exportModule<NeedlemanWunsch>( xOrganizer, "NeedlemanWunsch" );
 
-    xOrganizer.util().def( "runKsw", &runKsw );
-    xOrganizer.util().def( "runKswExtend", &runKswExtend );
+    xOrganizer.util( ).def( "runKsw", &runKsw );
+    xOrganizer.util( ).def( "runKswExtend", &runKswExtend );
 } // function
 #endif

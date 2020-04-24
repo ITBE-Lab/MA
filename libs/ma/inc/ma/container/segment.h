@@ -341,7 +341,6 @@ class SegmentVector : public libMS::Container
                     rxFMIndex,
                     [&]( Seed& rSeed ) {
                         assert( rSeed.end( ) <= uiQLen );
-                        std::cout << "forEachSeed: " << rSeed.end() << std::endl;
                         return fDo( rSeed );
                     },
                     uiJumpBy ) )

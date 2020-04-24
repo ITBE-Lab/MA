@@ -286,8 +286,9 @@ class TagGenerator
                 sSATag.append( std::to_string( pOtherAlignment->getSamPosition( *pPack ) ) ).append( "," );
                 sSATag.append( ( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) ? "-," : "+," ) );
                 sSATag
-                    .append( bOutputMInsteadOfXAndEqual ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
-                                                        : pOtherAlignment->cigarString( *pPack ) )
+                    .append( bOutputMInsteadOfXAndEqual
+                                 ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery->length( ) )
+                                 : pOtherAlignment->cigarString( *pPack, pQuery->length( ) ) )
                     .append( "," );
 
                 std::string sMapQual;
@@ -426,12 +427,12 @@ class FileWriter
           bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<libMS::Container>
-        DLL_PORT(MA) execute( std::shared_ptr<NucSeq> pQuery,
-                          std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
-                              pAlignments,
-                          std::shared_ptr<Pack>
-                              pPack );
+    virtual std::shared_ptr<libMS::Container> DLL_PORT( MA )
+        execute( std::shared_ptr<NucSeq> pQuery,
+                 std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>
+                     pAlignments,
+                 std::shared_ptr<Pack>
+                     pPack );
 
 }; // class
 
@@ -526,10 +527,10 @@ class PairedFileWriter : public libMS::Module<libMS::Container, false, NucSeq, N
           bNoSupplementary( rParameters.getSelected( )->xNoSupplementary->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<libMS::Container>
-        DLL_PORT(MA) execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
-                          std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
-                          std::shared_ptr<Pack> pPack );
+    virtual std::shared_ptr<libMS::Container> DLL_PORT( MA )
+        execute( std::shared_ptr<NucSeq> pQuery1, std::shared_ptr<NucSeq> pQuery2,
+                 std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
+                 std::shared_ptr<Pack> pPack );
 
 }; // class
 

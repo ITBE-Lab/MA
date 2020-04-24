@@ -89,6 +89,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
         DEBUG( pRet->check( ); )
         if( pRet->length( ) == 0 )
             throw std::runtime_error( "found empty read: " + pRet->sName );
+        advanceTillNext( pStream );
         return pRet;
     } // if
 #if WITH_QUALITY == 1
@@ -131,6 +132,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
         }
         if( pRet->length( ) == 0 )
             throw std::runtime_error( "found empty read: " + pRet->sName );
+        advanceTillNext( pStream );
         return pRet;
     } // if
 #else
@@ -188,6 +190,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
         } // while
         if( pRet->length( ) == 0 )
             throw std::runtime_error( "found empty read: " + pRet->sName );
+        advanceTillNext( pStream );
         return pRet;
     } // if
 #endif
@@ -204,7 +207,7 @@ void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<fs::path>( xOrganizer.util( ), "path" ).def( py::init<std::string>( ) );
     py::bind_vector<std::vector<fs::path>>( xOrganizer.util( ), "filePathVector", "docstr" );
     py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( xOrganizer.container( ), "FileStream" )
-        .def("eof", &FileStream::eof);
+        .def( "eof", &FileStream::eof );
     py::class_<PairedFileStream, libMS::Container, std::shared_ptr<PairedFileStream>>( xOrganizer.container( ),
                                                                                        "PairedFileStream" )
         .def( py::init<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>( ) );

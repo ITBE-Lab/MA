@@ -135,8 +135,9 @@ def quick_align_paths(queries, genome_prefix, parameter_set_manager=ParameterSet
     fm_index = FMIndex()
     fm_index.load(genome_prefix)
 
+    file_writer = FileWriter(parameter_set_manager, output_path, pack)
     def output_graph(alignment_pledge, pack_pledge, locked_query):
-        return promise_me(FileWriter(parameter_set_manager, output_path, pack),
+        return promise_me(file_writer,
                           locked_query, alignment_pledge, pack_pledge)
 
     quick_align(parameter_set_manager, pack, fm_index, output_graph, to_file_queue(queries))

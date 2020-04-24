@@ -450,12 +450,12 @@ std::shared_ptr<ContainerVector<SvJump>> SvJumpsFromSeeds::execute_helper( std::
 } // method
 
 std::shared_ptr<libMS::ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::shared_ptr<SegmentVector> pSegments,
-                                                                    std::shared_ptr<Pack>
-                                                                        pRefSeq,
-                                                                    std::shared_ptr<FMIndex>
-                                                                        pFM_index,
-                                                                    std::shared_ptr<NucSeq>
-                                                                        pQuery )
+                                                                           std::shared_ptr<Pack>
+                                                                               pRefSeq,
+                                                                           std::shared_ptr<FMIndex>
+                                                                               pFM_index,
+                                                                           std::shared_ptr<NucSeq>
+                                                                               pQuery )
 {
     return execute_helper( pSegments, pRefSeq, pFM_index, pQuery, nullptr );
 } // method
@@ -463,13 +463,13 @@ std::shared_ptr<libMS::ContainerVector<SvJump>> SvJumpsFromSeeds::execute( std::
 #ifdef WITH_PYTHON
 void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<geom::Interval<nucSeqIndex>>( xOrganizer.util(), "nucSeqInterval" )
+    py::class_<geom::Interval<nucSeqIndex>>( xOrganizer.util( ), "nucSeqInterval" )
         .def_readwrite( "start", &geom::Interval<nucSeqIndex>::iStart )
         .def_readwrite( "size", &geom::Interval<nucSeqIndex>::iSize );
-    py::class_<geom::Rectangle<nucSeqIndex>>( xOrganizer.util(), "nucSeqRectangle" )
+    py::class_<geom::Rectangle<nucSeqIndex>>( xOrganizer.util( ), "nucSeqRectangle" )
         .def_readwrite( "x_axis", &geom::Rectangle<nucSeqIndex>::xXAxis )
         .def_readwrite( "y_axis", &geom::Rectangle<nucSeqIndex>::xYAxis );
-    py::class_<libMSV::SvJumpsFromSeeds::HelperRetVal>( xOrganizer._util(), "SvJumpsFromSeedsHelperRetVal" )
+    py::class_<libMSV::SvJumpsFromSeeds::HelperRetVal>( xOrganizer._util( ), "SvJumpsFromSeedsHelperRetVal" )
         .def_readwrite( "layer_of_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
         .def_readwrite( "seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::pSeeds )
         .def_readwrite( "rectangles", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangles )
@@ -477,11 +477,12 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "rectangles_fill", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
         .def_readwrite( "rectangle_ambiguity", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
         .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
-    py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util(), "RectangleVector", "" );
-    py::bind_vector<std::vector<double>>( xOrganizer._util(), "DoubleVector", "" );
-    py::bind_vector<std::vector<bool>>( xOrganizer._util(), "BoolVector", "" );
+    py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util( ), "RectangleVector", "" );
+    py::bind_vector<std::vector<double>>( xOrganizer._util( ), "DoubleVector", "" );
+    py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );
     exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromSeeds", []( auto&& x ) {
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
     } );
+    exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
 } // function
 #endif

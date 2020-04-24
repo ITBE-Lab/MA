@@ -30,7 +30,8 @@ namespace libMA
  * Removes all contradicting seeds.
  * This should only be used in combination with the StripOfConsideration module.
  */
-class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FMIndex>
+class Harmonization
+    : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
 {
   private:
     /**
@@ -86,19 +87,11 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
         return std::abs( x - x_1 );
     } // method
 
-    std::pair<double, double> ransac( std::shared_ptr<libMA::Seeds> pSeedsIn );
-
-    std::shared_ptr<libMA::Seeds> applyLinesweeps( std::shared_ptr<libMA::Seeds> pSeedsIn
-#if DEBUG_LEVEL > 0
-                                                   ,
-                                                   bool bRecord
-#endif
-    );
-
     std::shared_ptr<Seeds> applyFilters( std::shared_ptr<Seeds>& pIn ) const;
 
-    std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Seeds>>> cluster( std::shared_ptr<Seeds> pSeedsIn,
-                                                                             nucSeqIndex uiQLen ) const;
+
+    std::shared_ptr<Seeds> harmonizeOne( std::shared_ptr<Seeds>& pIn, std::shared_ptr<NucSeq> pQuery,
+                                         std::shared_ptr<SoCPriorityQueue> pSoCIn );
 
   public:
     /**
@@ -124,6 +117,8 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
     /// @brief Stop the SoC extraction if the harmonized score drops more than x.
     const double fScoreTolerace;
 
+    /// @brief Extract at most x SoCs.
+    const size_t uiMaxTries;
     /// @brief Extract at least x SoCs.
     const size_t uiMinTries;
 
@@ -157,12 +152,11 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
 
     // const nucSeqIndex uiMaxGapArea;
 
-    const nucSeqIndex uiMaxDeltaDistanceInCLuster;
-
-    HarmonizationSingle( const ParameterSetManager& rParameters )
+    Harmonization( const ParameterSetManager& rParameters )
         : optimisticGapEstimation( rParameters.getSelected( )->xOptimisticGapCostEstimation->get( ) ),
           // fMinimalQueryCoverage( rParameters.getSelected( )->xMinQueryCoverage->get( ) ),
           fScoreTolerace( rParameters.getSelected( )->xSoCScoreDecreaseTolerance->get( ) ),
+          uiMaxTries( rParameters.getSelected( )->xMaxNumSoC->get( ) ),
           uiMinTries( rParameters.getSelected( )->xMinNumSoC->get( ) ),
           uiMaxEqualScoreLookahead( rParameters.getSelected( )->xMaxScoreLookahead->get( ) ),
           fScoreDiffTolerance( rParameters.getSelected( )->xScoreDiffTolerance->get( ) ),
@@ -172,68 +166,16 @@ class HarmonizationSingle : public libMS::Module<Seeds, false, Seeds, NucSeq, FM
           bDoHeuristics( !rParameters.getSelected( )->xDisableHeuristics->get( ) ),
           bDoGapCostEstimationCutting( !rParameters.getSelected( )->xDisableGapCostEstimationCutting->get( ) ),
           dMaxDeltaDist( rParameters.getSelected( )->xMaxDeltaDist->get( ) ),
-          uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist->get( ) ),
-          // dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
-          // iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
-          // uiMaxGapArea( rParameters.getSelected( )->xMaxGapArea->get( ) ),
-          uiMaxDeltaDistanceInCLuster( rParameters.getSelected( )->xMaxDeltaDistanceInCLuster->get( ) )
-    {} // default constructor
-
-    // overload
-    virtual std::shared_ptr<Seeds> DLL_PORT( MA )
-        execute( std::shared_ptr<Seeds> pPrimaryStrand, std::shared_ptr<NucSeq> pQuery,
-                 std::shared_ptr<FMIndex> pFMIndex );
-
-}; // class
-
-/**
- * @brief Extracts SoC from a priority queue and performs harmonization on all extracted SoC;s.
- * @ingroup module
- */
-class Harmonization
-    : public libMS::Module<libMS::ContainerVector<std::shared_ptr<Seeds>>, false, SoCPriorityQueue, NucSeq, FMIndex>
-{
-  public:
-    HarmonizationSingle xSingle;
-
-    /// @brief Extract at most x SoCs.
-    const size_t uiMaxTries;
-
-    Harmonization( const ParameterSetManager& rParameters )
-        : xSingle( rParameters ), uiMaxTries( rParameters.getSelected( )->xMaxNumSoC->get( ) )
+          uiMinDeltaDist( rParameters.getSelected( )->xMinDeltaDist->get( ) )
+    // dMaxSVRatio( rParameters.getSelected( )->xMaxSVRatio->get( ) ),
+    // iMinSVDistance( rParameters.getSelected( )->xMinSVDistance->get( ) ),
     {} // default constructor
 
     // overload
     virtual std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Seeds>>> DLL_PORT( MA )
-        execute( std::shared_ptr<SoCPriorityQueue> pSoCSsIn, std::shared_ptr<NucSeq> pQuery,
-                 std::shared_ptr<FMIndex> pFMIndex )
-    {
-        unsigned int uiNumTries = 0;
+        execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery,
+                 std::shared_ptr<FMIndex> pFM_Index );
 
-        auto pSoCs = std::make_shared<libMS::ContainerVector<std::shared_ptr<Seeds>>>( );
-
-        for( ; uiNumTries < uiMaxTries && !pSoCSsIn->empty( ); uiNumTries++ )
-        {
-            auto pSoC = pSoCSsIn->pop( );
-            // for(auto seed : *pSoC)
-            //     std::cout << seed.start() << ", " << seed.start_ref() << ", " << seed.size() << std::endl;
-            DEBUG( pSoC->pSoCIn = pSoCSsIn; ) // DEBUG
-            // split seeds into forward and reverse strand
-            auto pSecondaryStrand = pSoC->extractStrand( false );
-            // deal with seeds on forward strand
-            while( !pSoC->empty( ) )
-                pSoCs->push_back( xSingle.execute( pSoC, pQuery, pFMIndex ) );
-            // deal with seeds on reverse strand
-            while( !pSecondaryStrand->empty( ) )
-                pSoCs->push_back( xSingle.execute( pSecondaryStrand, pQuery, pFMIndex ) );
-        } // for
-
-        PRINT_BREAK_CRITERIA( if( pSoCSsIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl;
-                              else std::cout << "break after " << uiNumTries << " tries." << std::endl;
-                              std::cout << "computed " << pSoCs->size( ) << " SoCs." << std::endl; )
-
-        return pSoCs;
-    } // method
 }; // class
 
 

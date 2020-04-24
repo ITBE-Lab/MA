@@ -204,6 +204,27 @@ class SvJumpsFromSeeds
                      pQuery );
 }; // class
 
+class RecursiveReseeding : public libMS::Module<Seeds, false, SegmentVector, Pack, FMIndex, NucSeq>
+{
+    SvJumpsFromSeeds xJumpsFromSeeds;
+
+  public:
+    RecursiveReseeding( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
+        : xJumpsFromSeeds( rParameters, pRefSeq )
+    {}
+
+    virtual std::shared_ptr<Seeds> execute( std::shared_ptr<SegmentVector> pSegments,
+                                            std::shared_ptr<Pack>
+                                                pRefSeq,
+                                            std::shared_ptr<FMIndex>
+                                                pFM_index,
+                                            std::shared_ptr<NucSeq>
+                                                pQuery )
+    {
+        return xJumpsFromSeeds.execute_helper_py( pSegments, pRefSeq, pFM_index, pQuery ).pSeeds;
+    }
+}; // class
+
 }; // namespace libMSV
 
 #ifdef WITH_PYTHON

@@ -474,6 +474,16 @@ class FileStreamFromPath : public FileStream
  */
 class FileReader : public libMS::Module<NucSeq, true, FileStream>
 {
+    void advanceTillNext( std::shared_ptr<FileStream> pStream )
+    {
+        pStream->peek( );
+        while( !( pStream->eof( ) || pStream->peek( ) == '>' || pStream->peek( ) == '@' ) )
+        {
+            pStream->pop( );
+            pStream->peek( );
+        }
+    }
+
   public:
     /**
      * @brief creates a new FileReader.
@@ -481,7 +491,7 @@ class FileReader : public libMS::Module<NucSeq, true, FileStream>
     FileReader( const ParameterSetManager& rParameters )
     {} // constructor
 
-    std::shared_ptr<NucSeq> DLL_PORT(MA) execute( std::shared_ptr<FileStream> pStream );
+    std::shared_ptr<NucSeq> DLL_PORT( MA ) execute( std::shared_ptr<FileStream> pStream );
 
 }; // class
 
@@ -610,7 +620,8 @@ class PairedFileReader : public libMS::Module<PairedReadsContainer, true, Paired
  * @details
  * Prints out the files that are currently open and how far they are read
  */
-template <typename FileStreamQueue> class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Container, FileStreamQueue>
+template <typename FileStreamQueue>
+class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Container, FileStreamQueue>
 {
     std::mutex xMutex;
     using duration = std::chrono::duration<double>;
@@ -622,7 +633,8 @@ template <typename FileStreamQueue> class ProgressPrinter : public libMS::Module
     ProgressPrinter( const ParameterSetManager& rParameters ) : xLastTime( std::chrono::steady_clock::now( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::Container> execute( std::shared_ptr<libMS::Container> pContainer, std::shared_ptr<FileStreamQueue> pQueue )
+    std::shared_ptr<libMS::Container>
+    execute( std::shared_ptr<libMS::Container> pContainer, std::shared_ptr<FileStreamQueue> pQueue )
     {
         std::lock_guard<std::mutex> xLock( xMutex );
         auto xNow = std::chrono::steady_clock::now( );

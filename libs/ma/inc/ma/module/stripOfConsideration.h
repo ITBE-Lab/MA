@@ -61,34 +61,12 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
         return ( iMatch * uiQueryLength - iGap ) / iExtend;
     } // function
 
-    template <class FUNCTOR>
-    inline void forEachNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
-                                        FUNCTOR&& fDo, // std::function<void(const Seed &rxS)> fDo,
-                                        const nucSeqIndex uiQLen, nucSeqIndex addSize = 0 )
-    {
-        rSegmentVector.forEachSeed( rxFM_index, uiQLen, uiMaxAmbiguity, bSkipLongBWTIntervals,
-                                    [&rxRefSequence, &rxFM_index, &fDo, &addSize]( Seed&& xS ) {
-                                        // check if the match is bridging the forward/reverse strand
-                                        // or bridging between two chromosomes
-                                        if( !rxRefSequence.bridgingSubsection(
-                                                // prevent negative index
-                                                xS.start_ref( ) > addSize ? xS.start_ref( ) - addSize : 0, // from
-                                                // prevent index larger than reference
-                                                xS.end_ref( ) + addSize <= rxFM_index.getRefSeqLength( )
-                                                    ? xS.size( ) - 1 + addSize
-                                                    : rxFM_index.getRefSeqLength( ) - xS.start_ref( ) - 1 // to
-                                                ) )
-                                        {
-                                            // if non-bridging use this seed
-                                            fDo( xS );
-                                        } // if
-                                        // returning true since we want to continue extracting seeds
-                                        return true;
-                                    } // lambda
-        );
-    } // method
 
-
+    /**
+     * @brief extracts all seeds from a SegmentVector
+     * @details
+     * This mirrors seeds back to the reverse strand, so that the old harmonization & SoC code is not broken...
+     */
     inline void emplaceAllNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
@@ -115,7 +93,7 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
     } // method
 
   public:
-    StripOfConsideration( const ParameterSetManager& rParameters ) 
+    StripOfConsideration( const ParameterSetManager& rParameters )
         : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
           uiMinLen( rParameters.getSelected( )->xMinSeedLength->get( ) ),
           fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
@@ -125,13 +103,13 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
           bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds->get( ) )
     {} // default constructor
 
-    virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT(MA) execute( std::shared_ptr<SegmentVector> pSegments,
-                                                                std::shared_ptr<NucSeq>
-                                                                    pQuerySeq,
-                                                                std::shared_ptr<Pack>
-                                                                    pRefSeq,
-                                                                std::shared_ptr<FMIndex>
-                                                                    pFM_index );
+    virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT( MA ) execute( std::shared_ptr<SegmentVector> pSegments,
+                                                                      std::shared_ptr<NucSeq>
+                                                                          pQuerySeq,
+                                                                      std::shared_ptr<Pack>
+                                                                          pRefSeq,
+                                                                      std::shared_ptr<FMIndex>
+                                                                          pFM_index );
 }; // class
 
 

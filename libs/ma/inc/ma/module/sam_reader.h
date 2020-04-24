@@ -102,7 +102,7 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
             uiRefStart =
                 pRef->uiPositionToReverseStrand( uiRefStart - 1 )
                 // add reference length of cigar so that our alignment representation matches the one of the sam format
-                + Alignment::refLenCigar( vColumns[ 5 ] );
+                - Alignment::refLenCigar( vColumns[ 5 ] );
         auto pRet = std::make_shared<Alignment>( uiRefStart );
         pRet->xStats.sName = vColumns[ 0 ];
         pRet->appendCigarString( vColumns[ 5 ], pQuery, *pRef );
@@ -143,7 +143,7 @@ class SeedSetComp : public libMS::Container
 
     void addOverlap( Seeds::iterator& xDataIt, Seeds::iterator& xGroundTruthIt )
     {
-        int64_t iOverlap = (int64_t)std::min( xDataIt->end( ) - 1, xGroundTruthIt->end( ) - 1 ) -
+        int64_t iOverlap = (int64_t)std::min( xDataIt->end( ), xGroundTruthIt->end( ) ) -
                            (int64_t)std::max( xDataIt->start( ), xGroundTruthIt->start( ) );
         if( iOverlap < 0 )
             return;
