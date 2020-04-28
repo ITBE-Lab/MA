@@ -122,6 +122,7 @@ class SeedSetComp : public libMS::Container
     size_t uiAmountGroundTruth = 0;
     size_t uiAmountOverlap = 0;
     size_t uiAmountData = 0;
+    size_t uiAmountOverlappedAll = 0;
 
     size_t uiAmount90PercentOverlap = 0;
     std::map<size_t, size_t> xSeedsFound;
@@ -158,12 +159,16 @@ class SeedSetComp : public libMS::Container
     {
         xSeedsFound[ uiAmount90PercentOverlap ] += 1;
         uiAmount90PercentOverlap = 0;
-    }
+
+        if( uiNtOverlap * 10 >= uiNtGroundTruth * 9 )
+            uiAmountOverlappedAll++;
+    } // method
 
     void merge( const SeedSetComp& xOther )
     {
         uiNtGroundTruth += xOther.uiNtGroundTruth;
         uiNtOverlap += xOther.uiNtOverlap;
+        uiAmountOverlappedAll += xOther.uiAmountOverlappedAll;
         uiNtData += xOther.uiNtData;
 
         uiAmountGroundTruth += xOther.uiAmountGroundTruth;
@@ -180,11 +185,12 @@ class SeedSetComp : public libMS::Container
 
     void clear( )
     {
-        uiNtGroundTruth = 0;
+        // uiNtGroundTruth = 0;
         uiNtOverlap = 0;
+        uiAmountOverlappedAll = 0;
         uiNtData = 0;
 
-        uiAmountGroundTruth = 0;
+        // uiAmountGroundTruth = 0;
         uiAmountOverlap = 0;
         uiAmountData = 0;
 
@@ -209,6 +215,7 @@ class SeedsByName : public libMS::Container
     {
         xSeeds[ sName ] = pSeeds;
         xComps[ sName ] = std::make_shared<SeedSetComp>( );
+        xComps[ sName ]->addGroundTruth( pSeeds );
     } // method
 
     std::shared_ptr<Seeds> operator[]( std::string sName )
@@ -224,10 +231,9 @@ class SeedsByName : public libMS::Container
         return xComps[ sName ];
     } // method
 
-    std::shared_ptr<SeedSetComp> mergeAll( std::shared_ptr<SeedSetComp> pGroundTruth )
+    std::shared_ptr<SeedSetComp> mergeAll( )
     {
         auto pRet = std::make_shared<SeedSetComp>( );
-        pRet->merge( *pGroundTruth );
         for( auto xPair : xComps )
         {
             xPair.second->commitOverlap( );

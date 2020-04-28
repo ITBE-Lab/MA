@@ -14,7 +14,6 @@ using namespace libMA;
 
 void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended )
 {
-    return; //@todo fix 'n' and other symbols in reference...
     static const char chars[ 5 ] = {'A', 'C', 'G', 'T', 'N'};
     for( auto& rSeed : vContent )
     {
@@ -33,9 +32,12 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
             pRefSec->vReverseAll( );
             pRefSec->vSwitchAllBasePairsToComplement( );
         }
-        // pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( rSeed.end_ref( ) ),
-        //                           pRef->uiPositionToReverseStrand( rSeed.start_ref( ) ),
-        //                           *pRefSec );
+
+        // ignore cases where we have Ns in the reference
+        for( size_t uiI = 0; uiI < rSeed.size( ); uiI++ )
+            if( pRefSec->pxSequenceRef[ uiI ] >= 4 ) // have N
+                continue;
+
         uint8_t uiBefore = 4;
         if( rSeed.start_ref( ) > 0 && rSeed.bOnForwStrand )
             uiBefore = pRef->isHole( rSeed.start_ref( ) - 1 ) ? 4 : pRef->getNucleotideOnPos( rSeed.start_ref( ) - 1 );
@@ -50,6 +52,10 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
         uiX = rSeed.start_ref( ) - rSeed.size( ) + 1;
         if( uiX > 0 && !rSeed.bOnForwStrand )
             uiAfter = pRef->isHole( uiX - 1 ) ? 4 : 3 - pRef->getNucleotideOnPos( uiX - 1 );
+
+        // ignore cases where we have Ns in the reference
+        if(uiBefore >= 4 || uiAfter >= 4)
+            continue;
 
         bool bFailed = false;
         for( size_t uiI = 0; uiI < rSeed.size( ); uiI++ )
@@ -94,7 +100,7 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
 void exportSeed( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the Seed class
-    py::class_<Seed>( xOrganizer.util(), "Seed" )
+    py::class_<Seed>( xOrganizer.util( ), "Seed" )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, bool>( ) )
         .def_readwrite( "start", &Seed::iStart )
         .def_readwrite( "size", &Seed::iSize )
@@ -106,7 +112,7 @@ void exportSeed( libMS::SubmoduleOrganizer& xOrganizer )
 #endif
         .def( "__eq__", &Seed::operator==);
 
-    py::class_<AlignmentStatistics>( xOrganizer.util(), "AlignmentStatistics" )
+    py::class_<AlignmentStatistics>( xOrganizer.util( ), "AlignmentStatistics" )
         .def( py::init<>( ) )
         .def_readwrite( "index_of_strip", &AlignmentStatistics::index_of_strip )
         .def_readwrite( "num_seeds_in_strip", &AlignmentStatistics::num_seeds_in_strip )
@@ -119,7 +125,7 @@ void exportSeed( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "initial_r_end", &AlignmentStatistics::uiInitialRefEnd );
 
     // export the Seeds class
-    py::bind_vector_ext<Seeds, libMS::Container, std::shared_ptr<Seeds>>( xOrganizer.container(), "Seeds", "docstr" )
+    py::bind_vector_ext<Seeds, libMS::Container, std::shared_ptr<Seeds>>( xOrganizer.container( ), "Seeds", "docstr" )
         .def( py::init<std::shared_ptr<Seeds>>( ) )
         .def( py::init<>( ) )
         .def( "extractStrand", &Seeds::extractStrand )

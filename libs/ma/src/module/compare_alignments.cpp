@@ -22,10 +22,10 @@ void exportCompareAlignments( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "nt_data", &SeedSetComp::uiNtData )
         .def_readwrite( "amount_ground_truth", &SeedSetComp::uiAmountGroundTruth )
         .def_readwrite( "amount_overlap", &SeedSetComp::uiAmountOverlap )
+        .def_readwrite( "amount_overlap_all", &SeedSetComp::uiAmountOverlappedAll )
         .def_readwrite( "amount_90_percent_overlap", &SeedSetComp::uiAmount90PercentOverlap )
         .def_readwrite( "amount_data", &SeedSetComp::uiAmountData )
         .def_readwrite( "seeds_found", &SeedSetComp::xSeedsFound )
-        .def( "add_ground_truth", &SeedSetComp::addGroundTruth )
         .def( "merge", &SeedSetComp::merge );
 } // function
 
