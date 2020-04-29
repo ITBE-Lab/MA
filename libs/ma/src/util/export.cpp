@@ -63,6 +63,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportExecutionContext( xOrganizer );
     exportSamFileReader( xOrganizer );
     exportCompareAlignments( xOrganizer );
+    exportMinimizerSeeding(xOrganizer);
 } // function
 
 #endif

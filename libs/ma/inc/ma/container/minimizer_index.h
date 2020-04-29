@@ -20,7 +20,7 @@ namespace minimizer
  * @details
  * at the moment multipart indices are not supported
  */
-class Index
+class Index : public libMS::Container
 {
   private:
     mm_idx_t* pData;
@@ -197,74 +197,74 @@ class Index
             throw std::runtime_error( "failed to open file" + sIndexName );
     } // method
 
+    std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, std::shared_ptr<libMA::Pack> pPack )
+    {
+        auto pRet = std::make_shared<libMA::Seeds>( );
+        int64_t n_a = 0;
+
+        mm_tbuf_t* tbuf = mm_tbuf_init( );
+        const char* sSeq = sQuery.c_str( );
+        const int iSize = (int)sQuery.size( );
+        // const char* seqs = (const char*)&pQuery->pxSequenceRef;
+        mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
+        if( a != NULL )
+        {
+            for( int64_t uiI = 0; uiI < n_a; uiI++ )
+            {
+                if( ( a[ uiI ].x >> 63 ) == 0 )
+                {
+                    // std::cout << "q_span: " << ( int32_t )( a[ uiI ].y >> 32 ) << std::endl;
+                    // fprintf( stderr, "SD\t%d\t%c\t%d\t%d\t%d\n", (int32_t)a[ uiI ].x, "+-"[ a[ uiI ].x >> 63 ],
+                    //         (int32_t)a[ uiI ].y, ( int32_t )( a[ uiI ].y >> 32 & 0xff ),
+                    //         uiI == 0 ? 0
+                    //                  : ( (int32_t)a[ uiI ].y - (int32_t)a[ uiI - 1 ].y ) -
+                    //                        ( (int32_t)a[ uiI ].x - (int32_t)a[ uiI - 1 ].x ) );
+                    uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
+                    // assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
+                    // assert( (int32_t)a[ uiI ].x + 1 >= (int32_t)uiQSpan );
+                    pRet->emplace_back(
+                        /* minimap uses 1-based index i use 0-based indices...
+                           a[ uiI ].y = last base of minimizer */
+                        ( (int32_t)a[ uiI ].y ) + 1 - uiQSpan,
+                        uiQSpan,
+                        /* reference position is encoded in the lower 32 bits of x */
+                        ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
+                        true // minimap code : "+-"[a[i].x>>63]
+                    );
+                } // if
+                else
+                {
+                    uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
+                    pRet->emplace_back(
+                        /* minimap uses 1-based index i use 0-based indices...
+                           a[ uiI ].y = last base of minimizer */
+                        sQuery.length( ) - 1 - ( (int32_t)a[ uiI ].y ),
+                        uiQSpan,
+                        /* reference position is encoded in the lower 32 bits of x */
+                        (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
+                        false // minimap code : "+-"[a[i].x>>63]
+                    );
+                } // else
+            } // for
+            kfree( tbuf->km, a );
+        } // if
+        else if( n_a > 0 )
+            throw std::runtime_error( "minimizer vector is empty" );
+        mm_tbuf_destroy( tbuf );
+
+        return pRet;
+    } // method
+
     std::vector<std::shared_ptr<libMA::Seeds>>
     seed( std::vector<std::string> vQueries, std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
-        int64_t n_a = 0;
 
-        size_t uiNumSeeds = 0;
-
-        mm_tbuf_t* tbuf = mm_tbuf_init( );
         for( auto& sQuery : vQueries )
-        {
-            vRet.push_back( std::make_shared<libMA::Seeds>( ) );
-            const char* sSeq = sQuery.c_str( );
-            const int iSize = (int)sQuery.size( );
-            // const char* seqs = (const char*)&pQuery->pxSequenceRef;
-            mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
-            if( a != NULL )
-            {
-                for( int64_t uiI = 0; uiI < n_a; uiI++ )
-                {
-                    if( ( a[ uiI ].x >> 63 ) == 0 )
-                    {
-                        // std::cout << "q_span: " << ( int32_t )( a[ uiI ].y >> 32 ) << std::endl;
-                        // fprintf( stderr, "SD\t%d\t%c\t%d\t%d\t%d\n", (int32_t)a[ uiI ].x, "+-"[ a[ uiI ].x >> 63 ],
-                        //         (int32_t)a[ uiI ].y, ( int32_t )( a[ uiI ].y >> 32 & 0xff ),
-                        //         uiI == 0 ? 0
-                        //                  : ( (int32_t)a[ uiI ].y - (int32_t)a[ uiI - 1 ].y ) -
-                        //                        ( (int32_t)a[ uiI ].x - (int32_t)a[ uiI - 1 ].x ) );
-                        uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
-                        // assert( (int32_t)a[ uiI ].y + 1 >= (int32_t)uiQSpan );
-                        // assert( (int32_t)a[ uiI ].x + 1 >= (int32_t)uiQSpan );
-                        vRet.back( )->emplace_back(
-                            /* minimap uses 1-based index i use 0-based indices...
-                               a[ uiI ].y = last base of minimizer */
-                            ( (int32_t)a[ uiI ].y ) + 1 - uiQSpan,
-                            uiQSpan,
-                            /* reference position is encoded in the lower 32 bits of x */
-                            ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan +
-                                pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
-                            true // minimap code : "+-"[a[i].x>>63]
-                        );
-                    } // if
-                    else
-                    {
-                        uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
-                        vRet.back( )->emplace_back(
-                            /* minimap uses 1-based index i use 0-based indices...
-                               a[ uiI ].y = last base of minimizer */
-                            sQuery.length( ) - 1 - ( (int32_t)a[ uiI ].y ),
-                            uiQSpan,
-                            /* reference position is encoded in the lower 32 bits of x */
-                            (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
-                            false // minimap code : "+-"[a[i].x>>63]
-                        );
-                    } // else
-                }
-                kfree( tbuf->km, a );
-                // std::cout << n_a << std::endl;
-                uiNumSeeds += vRet.back( )->size( );
-            }
-            else if( n_a > 0 )
-                throw std::runtime_error( "minimizer vector is empty" );
-        } // for
-        mm_tbuf_destroy( tbuf );
-
+            vRet.push_back( seed_one( sQuery, pPack ) );
 
         return vRet;
-    }
+    } // method
 }; // class
 
 #endif
