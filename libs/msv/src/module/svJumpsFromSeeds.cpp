@@ -273,7 +273,9 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );
     exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromSeeds", []( auto&& x ) {
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
+        x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py2 );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
+    exportModule<RecursiveReseedingSegments, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSegments" );
 } // function
 #endif

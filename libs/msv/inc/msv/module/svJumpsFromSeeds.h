@@ -528,6 +528,13 @@ class SvJumpsFromSeeds
         execute_helper( pSegments, pRefSeq, pFM_index, pQuery, &xRet );
         return xRet;
     } // method
+    inline HelperRetVal execute_helper_py2( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq,
+                                            std::shared_ptr<NucSeq> pQuery )
+    {
+        HelperRetVal xRet;
+        computeJumps( reseed( pSeeds, pQuery, pRefSeq, &xRet ), pQuery, pRefSeq, &xRet );
+        return xRet;
+    } // method
 
     virtual std::shared_ptr<libMS::ContainerVector<SvJump>> DLL_PORT( MSV )
         execute( std::shared_ptr<SegmentVector> pSegments,
@@ -542,12 +549,12 @@ class SvJumpsFromSeeds
     }
 }; // class
 
-class RecursiveReseeding : public libMS::Module<Seeds, false, SegmentVector, Pack, FMIndex, NucSeq>
+class RecursiveReseedingSegments : public libMS::Module<Seeds, false, SegmentVector, Pack, FMIndex, NucSeq>
 {
     SvJumpsFromSeeds xJumpsFromSeeds;
 
   public:
-    RecursiveReseeding( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
+    RecursiveReseedingSegments( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
         : xJumpsFromSeeds( rParameters, pRefSeq )
     {}
 
@@ -561,6 +568,22 @@ class RecursiveReseeding : public libMS::Module<Seeds, false, SegmentVector, Pac
     {
         return xJumpsFromSeeds.reseed( xJumpsFromSeeds.extractSeeds( pSegments, pFM_index, pQuery, nullptr ), pQuery,
                                        pRefSeq, nullptr );
+    }
+}; // class
+
+class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, FMIndex>
+{
+    SvJumpsFromSeeds xJumpsFromSeeds;
+
+  public:
+    RecursiveReseeding( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
+        : xJumpsFromSeeds( rParameters, pRefSeq )
+    {}
+
+    virtual std::shared_ptr<Seeds> execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq,
+                                            std::shared_ptr<NucSeq> pQuery )
+    {
+        return xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr );
     }
 }; // class
 
