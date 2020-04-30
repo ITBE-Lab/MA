@@ -1,4 +1,5 @@
 from MSV import *
+from MA import *
 import tempfile
 
 #
@@ -46,19 +47,45 @@ if __name__ == "__main__":
     run_id = insert_calls(db_conn, "tmp_2")
     reference = get_reference()
 
-    expected_sequence = "GGATCGTCCGACGAAATGTTCA"
+    seeds, inserts = SvCallTable(db_conn).calls_to_seeds(reference, run_id)
 
-    reconstr = SvCallTable(db_conn).reconstruct_sequenced_genome(reference, run_id)
+    seed_printer = SeedPrinter(ParameterSetManager(), "seed")
+    seed_printer.execute(seeds)
 
-    if str(reconstr.extract_forward_strand_n()) != expected_sequence:
-        print("original sequence     ", reference.extract_forward_strand_n())
-        print("expected sequence     ", expected_sequence)
-        print("reconstructed sequence", reconstr.extract_forward_strand_n())
-        for i, l in enumerate(reconstr.contigLengths()):
-            print("contig", i,"length =", l)
+    seeds_to_expect = [
+        # q,r,l,forw
+        (0,0,1,True), # M
+        (1,19,1,True), # P
+        (2,1,4,True), # U
+        (6,7,2,True), # W - chr1
+        (8,9,1,True), # W - chr2
+        (9,15,5,False), # ~X
+        (14,15,2,True), # Y
+        (20,17,2,True), # Z
+    ]
+    assert len(seeds) == len(inserts)
+    assert len(seeds) == len(seeds_to_expect)
 
-    assert str(reconstr.extract_forward_strand_n()) == expected_sequence
-    if [*reconstr.contigLengths()] != [8, 14]:
-        print("contig lengths don't match; expects 8 14, got ", *reconstr.contigLengths())
-    assert reconstr.contigLengths()[0] == 8
-    assert reconstr.contigLengths()[1] == 14
+    for seed, (q,r,l,f) in zip(seeds, seeds_to_expect):
+        assert seed.start == q
+        assert seed.start_ref == r
+        assert seed.size == l
+        assert seed.on_forward_strand == f
+
+    for idx, insert in enumerate(inserts):
+        if idx != 5:
+            assert len(insert) == 0
+        else:
+            assert str(insert) == "TGTT"
+
+
+    #if str(reconstr.extract_forward_strand_n()) != expected_sequence:
+    #    print("original sequence     ", reference.extract_forward_strand_n())
+    #    print("expected sequence     ", expected_sequence)
+    #    print("reconstructed sequence", reconstr.extract_forward_strand_n())
+    #    for i, l in enumerate(reconstr.contigLengths()):
+    #        print("contig", i,"length =", l)
+
+    #assert str(reconstr.extract_forward_strand_n()) == expected_sequence
+    #assert reconstr.contigLengths()[0] == 8
+    #assert reconstr.contigLengths()[1] == 14

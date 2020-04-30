@@ -379,7 +379,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     else
                         uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
                                                  pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    pRet->emplace_back( pRet->empty( ) ? 0 : pRet->back( ).end( ), uiCurrPos, uiSize, bForwContext );
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
+                                        uiSize, uiCurrPos, bForwContext );
                     vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
 
                     /* extract all following contigs:
@@ -392,9 +393,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                          uiI += ( bForwContext ? 2 : -2 ) )
                     {
                         pRet->emplace_back( pRet->empty( ) ? 0 : pRet->back( ).end( ),
-                                            bForwContext ? pRef->startOfSequenceWithIdOrReverse( uiI )
-                                                         : pRef->endOfSequenceWithIdOrReverse( uiI ) - 1,
-                                            pRef->lengthOfSequenceWithIdOrReverse( uiI ), bForwContext );
+                                            pRef->lengthOfSequenceWithIdOrReverse( uiI ),
+                                            pRef->startOfSequenceWithIdOrReverse( uiI ),
+                                            bForwContext );
                         vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
                     } // for
                 } );
@@ -415,7 +416,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     else
                         uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
                                                  pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    pRet->emplace_back( pRet->empty( ) ? 0 : pRet->back( ).end( ), uiCurrPos, uiSize, bForwContext );
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
+                                        uiSize, uiCurrPos, bForwContext );
+                    vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
 
                     uiCurrPos = bForwContext ? (uint32_t)pRef->endOfSequenceWithIdOrReverse(
                                                    pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) )
@@ -425,11 +428,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 } // while
                 // the call is in the current chromosome / we have already appended all skipped chromosomes
                 if( bForwContext )
-                    pRet->emplace_back( pRet->empty( ) ? 0 : pRet->back( ).end( ), uiCurrPos,
-                                        std::get<1>( tNextCall ) - uiCurrPos, true );
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
+                                        std::get<1>( tNextCall ) - uiCurrPos + 1, uiCurrPos, true );
                 else
-                    pRet->emplace_back( pRet->empty( ) ? 0 : pRet->back( ).end( ), std::get<1>( tNextCall ),
-                                        uiCurrPos - std::get<1>( tNextCall ), false );
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
+                                        uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos + 1, false );
                 // append the skipped over sequence
                 if( std::get<3>( tNextCall ) != nullptr )
                     vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
@@ -450,6 +453,45 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return std::make_pair( pRet, vInsertions );
     } // method
 
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
+        std::shared_ptr<Seeds> pSeeds, std::vector<std::shared_ptr<NucSeq>> vInsertions, std::shared_ptr<Pack> pRef )
+    {
+        auto pRet = std::make_shared<Pack>( );
+        NucSeq xCurrChrom;
+        uint32_t uiContigCnt = 1;
+        for( size_t uiI = 0; uiI < pSeeds->size( ); uiI++ )
+        {
+            auto xSeed = ( *pSeeds )[ uiI ];
+
+            // if the seed starts at a contig beginning make the reconstructed genome have a new contig as well
+            if( xCurrChrom.length( ) > 0 &&
+                xSeed.start_ref( ) ==
+                    pRef->startOfSequenceWithId( pRef->uiSequenceIdForPosition( xSeed.start_ref( ) ) ) )
+            {
+                pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
+                                       xCurrChrom );
+                xCurrChrom.vClear( );
+            } // if
+
+            auto pNucSeq = vInsertions[ uiI ];
+            if( xSeed.bOnForwStrand )
+                pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
+            else
+                pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ) + 1,
+                                           pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ) + 1,
+                                           xCurrChrom,
+                                           true );
+            if( pNucSeq->length( ) > 0 )
+                xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
+        } // for
+
+        // append the last contig
+        pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
+                               xCurrChrom );
+        xCurrChrom.vClear( );
+        return pRet;
+    } // method
+
     /** @brief reconstruct a sequenced genome from a reference and the calls of the run with id iCallerRun.
      *  @details
      *  @todo at the moment this does not deal with jumped over sequences
@@ -459,35 +501,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
      */
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun )
     {
-        auto pRet = std::make_shared<Pack>( );
         auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun );
-        NucSeq xCurrChrom;
-        uint32_t uiContigCnt = 1;
-        for( size_t uiI = 0; uiI < xGenomeSeeds.first->size( ); uiI++ )
-        {
-            auto xSeed = ( *xGenomeSeeds.first )[ uiI ];
-            auto pNucSeq = xGenomeSeeds.second[ uiI ];
-            if( xSeed.bOnForwStrand )
-                pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
-            else
-                pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ),
-                                           pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ) + 1, //
-                                           xCurrChrom,
-                                           true );
-            if( pNucSeq->length( ) > 0 )
-                xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
-            if( ( xSeed.bOnForwStrand && xSeed.end_ref( ) == pRef->endOfSequenceWithId( pRef->uiSequenceIdForPosition(
-                                                                 xSeed.end_ref( ) ) ) ) ||
-                ( !xSeed.bOnForwStrand && xSeed.start_ref( ) - xSeed.size( ) ==
-                                              pRef->startOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPosition(
-                                                  xSeed.start_ref( ) - xSeed.size( ) ) ) ) )
-            {
-                pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                                       xCurrChrom );
-                xCurrChrom.vClear( );
-            } // if
-        } // for
-        return pRet;
+        return reconstructSequencedGenomeFromSeeds( xGenomeSeeds.first, xGenomeSeeds.second, pRef );
     } // method
 }; // namespace libMSV
 
