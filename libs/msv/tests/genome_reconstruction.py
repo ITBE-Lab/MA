@@ -56,9 +56,8 @@ if __name__ == "__main__":
         print("reconstructed sequence", reconstr.extract_forward_strand_n())
         for i, l in enumerate(reconstr.contigLengths()):
             print("contig", i,"length =", l)
-
     assert str(reconstr.extract_forward_strand_n()) == expected_sequence
+
     if [*reconstr.contigLengths()] != [8, 14]:
         print("contig lengths don't match; expects 8 14, got ", *reconstr.contigLengths())
-    assert reconstr.contigLengths()[0] == 8
-    assert reconstr.contigLengths()[1] == 14
+    assert [*reconstr.contigLengths()] == [8, 14]

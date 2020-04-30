@@ -50,7 +50,7 @@ if __name__ == "__main__":
     seeds, inserts = SvCallTable(db_conn).calls_to_seeds(reference, run_id)
 
     seed_printer = SeedPrinter(ParameterSetManager(), "seed")
-    seed_printer.execute(seeds)
+    #seed_printer.execute(seeds) # uncomment to draw the seeds with bokeh
 
     seeds_to_expect = [
         # q,r,l,forw
@@ -73,19 +73,7 @@ if __name__ == "__main__":
         assert seed.on_forward_strand == f
 
     for idx, insert in enumerate(inserts):
-        if idx != 5:
+        if idx != 6:
             assert len(insert) == 0
         else:
             assert str(insert) == "TGTT"
-
-
-    #if str(reconstr.extract_forward_strand_n()) != expected_sequence:
-    #    print("original sequence     ", reference.extract_forward_strand_n())
-    #    print("expected sequence     ", expected_sequence)
-    #    print("reconstructed sequence", reconstr.extract_forward_strand_n())
-    #    for i, l in enumerate(reconstr.contigLengths()):
-    #        print("contig", i,"length =", l)
-
-    #assert str(reconstr.extract_forward_strand_n()) == expected_sequence
-    #assert reconstr.contigLengths()[0] == 8
-    #assert reconstr.contigLengths()[1] == 14
