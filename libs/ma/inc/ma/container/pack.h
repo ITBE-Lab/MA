@@ -388,7 +388,7 @@ class Pack : public libMS::Container
     } // method
 
     /* WARNING! Never do this for some already used (filled) sequence collection.
-    
+
 
 
 
@@ -707,10 +707,10 @@ class Pack : public libMS::Container
 #ifdef FASTA_READER
     /* Appends a single FASTA record to the collection and pack.
      */
-    void DLL_PORT(MA) vAppendFastaSequence( const FastaDescriptor& rxFastaDescriptor );
+    void DLL_PORT( MA ) vAppendFastaSequence( const FastaDescriptor& rxFastaDescriptor );
     /* Appends a single FASTA record to the collection and pack.
      */
-    void DLL_PORT(MA) vAppendFastaFile( const char* pcFileName );
+    void DLL_PORT( MA ) vAppendFastaFile( const char* pcFileName );
 #endif
 
     /* Creates the reverse strand a saves the collection on the disk.
@@ -777,14 +777,14 @@ class Pack : public libMS::Container
      * pcPackPrefix is some prefix for the pack-files.
      * Reads all sequences on the file system and creates a sequence collection out of them.
      */
-    void DLL_PORT(MA) vPackFastaFilesDeprecated( const std::vector<std::string>& rxvFileNameOfFastaFiles,
-                                             const char* pcPackPrefix, bool bMakeReverseStand = false );
+    void DLL_PORT( MA ) vPackFastaFilesDeprecated( const std::vector<std::string>& rxvFileNameOfFastaFiles,
+                                                   const char* pcPackPrefix, bool bMakeReverseStand = false );
 
     /* Entry point, for the construction of packs.
      * pcPackPrefix is some prefix for the pack-files.
      * Reads all sequences on the file system and creates a sequence collection out of them.
      */
-    void DLL_PORT(MA) vAppendFASTA( const std::string& sFastaFilePath );
+    void DLL_PORT( MA ) vAppendFASTA( const std::string& sFastaFilePath );
 #endif
 
     /* Restores a nucleotide sequence collection from the file system using the prefix given as
@@ -1035,6 +1035,13 @@ class Pack : public libMS::Container
         return startOfSequenceWithId( iSequenceId / 2 );
     } // function
 
+    uint64_t lengthOfSequenceWithIdOrReverse( int64_t iSequenceId ) const
+    {
+        if( iSequenceId % 2 == 1 )
+            return uiPositionToReverseStrand( startOfSequenceWithId( iSequenceId / 2 ) ) - 1;
+        return lengthOfSequenceWithId( iSequenceId / 2 );
+    } // function
+
     /* Gives the relative position
      */
     inline uint64_t posInSequence( uint64_t uiBegin, uint64_t uiEnd ) const
@@ -1119,7 +1126,7 @@ class Pack : public libMS::Container
                              NucSeq& rxSequence, // receiver of the extraction process
                              bool bAppend = false // deliver true, if you would like to append to an
                                                   // existing nucleotide sequence
-                             ) const
+    ) const
     {
         /* Do range-check for begin and end of extraction.
          */
@@ -1210,7 +1217,7 @@ class Pack : public libMS::Container
                               NucSeq& rxSequence, // receiver of the extraction process
                               bool bAppend = false // deliver true, if you would like to append to
                                                    // an existing nucleotide sequence
-                              ) const
+    ) const
     {
         metaMeasureAndLogDuration<false>( "vExtractSubsectionN", [&]( ) {
             /* Prepare sequence
@@ -1307,7 +1314,7 @@ class Pack : public libMS::Container
                             NucSeq& rxSequence, // receiver of the extraction process
                             bool bAppend = false // deliver true, if you would like to append to
                                                  // an existing nucleotide sequence
-                            ) const
+    ) const
     {
         vExtractSubsectionN( startOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) ), iPos, rxSequence,
                              bAppend );
@@ -1321,7 +1328,7 @@ class Pack : public libMS::Container
                            NucSeq& rxSequence, // receiver of the extraction process
                            bool bAppend = false // deliver true, if you would like to append to
                                                 // an existing nucleotide sequence
-                           ) const
+    ) const
     {
         vExtractSubsectionN( iPos, endOfSequenceWithIdOrReverse( uiSequenceIdForPositionOrRev( iPos ) ), rxSequence,
                              bAppend );
@@ -1351,7 +1358,7 @@ class Pack : public libMS::Container
                          NucSeq& rxSequence, // receiver of the extraction process
                          bool bAppend = false // deliver true, if you would like to append to
                                               // an existing nucleotide sequence
-                         ) const
+    ) const
     {
         vExtractSubsectionN( startOfSequenceWithIdOrReverse( iId ), endOfSequenceWithIdOrReverse( iId ), rxSequence,
                              bAppend );
@@ -1409,7 +1416,7 @@ class Pack : public libMS::Container
      */
     std::shared_ptr<NucSeq> vExtract( const int64_t iBegin, // begin of extraction
                                       const int64_t iEnd // end of extraction
-                                      ) const
+    ) const
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
         vExtractSubsection( iBegin, iEnd,
@@ -1422,7 +1429,7 @@ class Pack : public libMS::Container
      */
     std::shared_ptr<NucSeq> vExtractPy( const int64_t iBegin, // begin of extraction
                                         const int64_t iEnd // end of extraction
-                                        ) const
+    ) const
     {
         std::shared_ptr<NucSeq> pRet( new NucSeq( ) );
         vExtractSubsectionN( iBegin, iEnd,
