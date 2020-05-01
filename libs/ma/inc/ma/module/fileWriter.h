@@ -434,6 +434,11 @@ class FileWriter
                  std::shared_ptr<Pack>
                      pPack );
 
+    void close()
+    {
+        pOut.reset();
+    } // method
+
 }; // class
 
 /**

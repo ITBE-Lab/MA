@@ -369,7 +369,8 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
 void exportFileWriter( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the FileWriter class
-    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( xOrganizer, "FileWriter" );
+    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>(
+        xOrganizer, "FileWriter", []( auto&& x ) { x.def( "close", &FileWriter::close ); } );
     exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( xOrganizer, "SyncFileWriter" );
 
     // export the PairedFileWriter class

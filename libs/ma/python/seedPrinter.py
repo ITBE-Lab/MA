@@ -3,9 +3,13 @@ from MA import *
 from bokeh.plotting import figure, show
 
 class SeedPrinter(Module):
-    def __init__(self, parameter_manager, name_a="Data", name_b="Ground Truth"):
+    def __init__(self, parameter_manager, name_a="Data", name_b="Ground Truth", x_range=None, y_range=None, 
+                 do_print=True):
         self.name_a = name_a
         self.name_b = name_b
+        self.x_range = x_range
+        self.y_range = y_range
+        self.do_print = do_print
 
     ##
     # @brief Execute LineSweep for all given seeds.
@@ -14,7 +18,7 @@ class SeedPrinter(Module):
     def execute(self, *input):
         assert(len(input) >= 1)
 
-        plot = figure(title="Seeds")
+        plot = figure(title="Seeds", x_range=self.x_range, y_range=self.y_range)
         if len(input) > 2:
             helper_ret = input[2]
             for rect in helper_ret.rectangles:
@@ -27,9 +31,8 @@ class SeedPrinter(Module):
             forw_y = []
             rev_x = []
             rev_y = []
-            max_seed_size = max(seed.size for seed in seeds)
             for seed in seeds:
-                if seed.size > max_seed_size*0.2 or True:
+                if self.do_print:
                     print(name, seed.start, seed.start_ref, seed.size, "forw" if seed.on_forward_strand else "rev")
                 if seed.on_forward_strand:
                     forw_x.append(seed.start_ref)

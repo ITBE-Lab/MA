@@ -53,6 +53,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome )
         .def( "calls_to_seeds", &SvCallTable<DBConSingle>::callsToSeeds )
+        .def( "reconstruct_sequenced_genome_from_seeds",
+              &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
         .def( "max_score", &SvCallTable<DBConSingle>::maxScore )
         .def( "min_score", &SvCallTable<DBConSingle>::minScore )
