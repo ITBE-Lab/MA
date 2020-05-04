@@ -158,8 +158,8 @@ class Alignment : public libMS::Container
     {
         auto pRet = std::make_shared<Seeds>( );
 
-        //std::cout << "uiBeginOnQuery2: " << this->uiBeginOnQuery << " - " << this->uiEndOnQuery << std::endl;
-        //std::cout << "uiBeginOnRef2: " << this->uiBeginOnRef << " - " << this->uiEndOnRef << std::endl;
+        // std::cout << "uiBeginOnQuery2: " << this->uiBeginOnQuery << " - " << this->uiEndOnQuery << std::endl;
+        // std::cout << "uiBeginOnRef2: " << this->uiBeginOnRef << " - " << this->uiEndOnRef << std::endl;
         nucSeqIndex uiQ = uiBeginOnQuery;
         nucSeqIndex uiR = uiBeginOnRef;
         for( auto& rPair : data )
@@ -363,17 +363,17 @@ class Alignment : public libMS::Container
         return aRet;
     } // method
 
-    std::string cigarString( Pack& rPack, size_t uiQuerySize )
+    std::string cigarString( Pack& rPack, size_t uiQuerySize, bool bSoftClip = false )
     {
         std::string sCigar = "";
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
         {
             if( uiEndOnQuery < uiQuerySize )
-                sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( "H" );
+                sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( bSoftClip ? "S" : "H" );
             std::reverse( data.begin( ), data.end( ) );
         }
         else if( uiBeginOnQuery > 0 )
-            sCigar.append( std::to_string( uiBeginOnQuery ) ).append( "H" );
+            sCigar.append( std::to_string( uiBeginOnQuery ) ).append( bSoftClip ? "S" : "H" );
 
         for( std::pair<MatchType, nucSeqIndex> section : data )
         {
@@ -401,25 +401,25 @@ class Alignment : public libMS::Container
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
         {
             if( uiBeginOnQuery > 0 )
-                sCigar.append( std::to_string( uiBeginOnQuery ) ).append( "H" );
+                sCigar.append( std::to_string( uiBeginOnQuery ) ).append( bSoftClip ? "S" : "H" );
             std::reverse( data.begin( ), data.end( ) );
         }
         else if( uiEndOnQuery < uiQuerySize )
-            sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( "H" );
+            sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( bSoftClip ? "S" : "H" );
         return sCigar;
     } // method
 
-    std::string cigarStringWithMInsteadOfXandEqual( Pack& rPack, size_t uiQuerySize )
+    std::string cigarStringWithMInsteadOfXandEqual( Pack& rPack, size_t uiQuerySize, bool bSoftClip = false )
     {
         std::string sCigar = "";
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
         {
             if( uiEndOnQuery < uiQuerySize )
-                sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( "H" );
+                sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( bSoftClip ? "S" : "H" );
             std::reverse( data.begin( ), data.end( ) );
         }
         else if( uiBeginOnQuery > 0 )
-            sCigar.append( std::to_string( uiBeginOnQuery ) ).append( "H" );
+            sCigar.append( std::to_string( uiBeginOnQuery ) ).append( bSoftClip ? "S" : "H" );
 
         size_t uiSequentialM = 0;
         for( std::pair<MatchType, nucSeqIndex> section : data )
@@ -457,11 +457,11 @@ class Alignment : public libMS::Container
         if( rPack.bPositionIsOnReversStrand( uiBeginOnRef ) )
         {
             if( uiBeginOnQuery > 0 )
-                sCigar.append( std::to_string( uiBeginOnQuery ) ).append( "H" );
+                sCigar.append( std::to_string( uiBeginOnQuery ) ).append( bSoftClip ? "S" : "H" );
             std::reverse( data.begin( ), data.end( ) );
         }
         else if( uiEndOnQuery < uiQuerySize )
-            sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( "H" );
+            sCigar.append( std::to_string( uiQuerySize - uiEndOnQuery ) ).append( bSoftClip ? "S" : "H" );
         return sCigar;
     } // method
 

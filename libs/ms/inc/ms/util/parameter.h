@@ -545,6 +545,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xEmulateNgmlrTags; // Emulate NGMLR's tag output
     AlignerParameterPointer<bool> xOutputMCigar; // Output M symbol in cigar
     AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
+    AlignerParameterPointer<bool> xSoftClip; // use soft clipping in alignments
 
     // SV caller options
     // @todo depre start
@@ -727,6 +728,9 @@ class Presetting : public ParameterSetBase
                   "Some programs crash, if cigars become too long. If this flag is enabled, the CG:B:I tag is used for "
                   "the output of long cigars (cigars with more than 65536 operations).",
                   SAM_PARAMETERS, true ),
+          xSoftClip( this, "Soft clip",
+                  "Output the full query for each alignment, instead of omitting the sequence before and after the alignment.",
+                  SAM_PARAMETERS, false ),
 
           // SV
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",

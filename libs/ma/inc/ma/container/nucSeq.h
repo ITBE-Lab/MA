@@ -656,6 +656,11 @@ class NucSeq : public libMS::Container
         return ret;
     } // function
 
+    std::string toStringComplement( )
+    {
+        return fromToComplement( 0, length( ) );
+    } // function
+
     std::string fromTo( nucSeqIndex uiStart, nucSeqIndex uiEnd ) const
     {
         std::string ret = "";

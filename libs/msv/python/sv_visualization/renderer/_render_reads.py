@@ -84,66 +84,69 @@ def render_reads(self):
 
     with self.measure("computing seeds"):
         if self.do_render_seeds:
-            read_table = ReadTable(self.db_conn)
-            all_seeds = []
-            for read_id in sorted(self.read_ids, reverse=True):
-                self.read_plot.nuc_plot.nucs_by_r_id[read_id] = {"p": [], "c": [], "i": []}
-                self.read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[], "dp": []}
-                read = read_table.get_read(read_id)
-                for y, nuc in enumerate(str(read)):
-                    append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
-                with self.measure("seeder.execute"):
-                    segments = seeder.execute(self.fm_index, read)
-                # execute_helper is not threadsave 
-                with self.measure("jumps_from_seeds.cpp_module.execute_helper"):
-                    helper_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read)
-                seeds = helper_ret.seeds
-                layer_of_seeds = helper_ret.layer_of_seeds
-                rectangles = helper_ret.rectangles
-                parlindromes = helper_ret.parlindrome
-                fill_of_rectangles = helper_ret.rectangles_fill
-                seed_sample_sizes = helper_ret.rectangle_ambiguity
-                rectangle_used_dp = helper_ret.rectangle_used_dp
-                # for
-                with self.measure("main seed loop"):
-                    seeds_n_idx = list(enumerate(sorted([(x, y, z, read_id, read.name) for x, y, z in zip(seeds,
-                                                                                                    layer_of_seeds,
-                                                                                                    parlindromes)],
-                                                        key=lambda x: x[0].start)))
-                    if len(self.read_ids) <= self.do_compressed_seeds:
-                        end_column = []
-                        max_seed_size = max(seed.size for seed in seeds)
-                        sorted_for_main_loop = sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref)
+            try:
+                read_table = ReadTable(self.db_conn)
+                all_seeds = []
+                for read_id in sorted(self.read_ids, reverse=True):
+                    self.read_plot.nuc_plot.nucs_by_r_id[read_id] = {"p": [], "c": [], "i": []}
+                    self.read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[], "dp": []}
+                    read = read_table.get_read(read_id)
+                    for y, nuc in enumerate(str(read)):
+                        append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
+                    with self.measure("seeder.execute"):
+                        segments = seeder.execute(self.fm_index, read)
+                    # execute_helper is not threadsave 
+                    with self.measure("jumps_from_seeds.cpp_module.execute_helper"):
+                        helper_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read)
+                    seeds = helper_ret.seeds
+                    layer_of_seeds = helper_ret.layer_of_seeds
+                    rectangles = helper_ret.rectangles
+                    parlindromes = helper_ret.parlindrome
+                    fill_of_rectangles = helper_ret.rectangles_fill
+                    seed_sample_sizes = helper_ret.rectangle_ambiguity
+                    rectangle_used_dp = helper_ret.rectangle_used_dp
+                    # for
+                    with self.measure("main seed loop"):
+                        seeds_n_idx = list(enumerate(sorted([(x, y, z, read_id, read.name) for x, y, z in zip(seeds,
+                                                                                                        layer_of_seeds,
+                                                                                                        parlindromes)],
+                                                            key=lambda x: x[0].start)))
+                        if len(self.read_ids) <= self.do_compressed_seeds:
+                            end_column = []
+                            max_seed_size = max(seed.size for seed in seeds)
+                            sorted_for_main_loop = sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref)
+                            for idx, (seed, layer, parlindrome, read_id, read_name) in sorted_for_main_loop:
+                                add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
+                                            parlindrome, layer, read_id, idx, read_name)
+                            if (len(end_column)-1) % 2 == 0:
+                                # prevent forming of float if possible (to stay javascript compatible)
+                                curr_col_id = category_counter + (len(end_column)-1)//2
+                            else:
+                                curr_col_id = category_counter + (len(end_column)-1)/2
+                            col_ids.append(curr_col_id)
+                        else:
+                            all_seeds.extend(seeds_n_idx)
+
+                        for rectangle, fill, seed_sample_size, use_dp in zip(rectangles, fill_of_rectangles,
+                                                                    seed_sample_sizes, rectangle_used_dp):
+                            self.add_rectangle(seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict,
+                                            end_column, category_counter, use_dp)
+
+                        if len(self.read_ids) <= self.do_compressed_seeds:
+                            category_counter += len(end_column) + 2
+                            read_id_n_cols[curr_col_id] = read_id
+
+                if len(self.read_ids) > self.do_compressed_seeds:
+                    end_column = []
+                    if len(all_seeds) > 0:
+                        max_seed_size = max(seed[1][0].size for seed in all_seeds)
+                        sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
                         for idx, (seed, layer, parlindrome, read_id, read_name) in sorted_for_main_loop:
                             add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
                                         parlindrome, layer, read_id, idx, read_name)
-                        if (len(end_column)-1) % 2 == 0:
-                            # prevent forming of float if possible (to stay javascript compatible)
-                            curr_col_id = category_counter + (len(end_column)-1)//2
-                        else:
-                            curr_col_id = category_counter + (len(end_column)-1)/2
-                        col_ids.append(curr_col_id)
-                    else:
-                        all_seeds.extend(seeds_n_idx)
-
-                    for rectangle, fill, seed_sample_size, use_dp in zip(rectangles, fill_of_rectangles,
-                                                                 seed_sample_sizes, rectangle_used_dp):
-                        self.add_rectangle(seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict,
-                                           end_column, category_counter, use_dp)
-
-                    if len(self.read_ids) <= self.do_compressed_seeds:
-                        category_counter += len(end_column) + 2
-                        read_id_n_cols[curr_col_id] = read_id
-
-            if len(self.read_ids) > self.do_compressed_seeds:
-                end_column = []
-                if len(all_seeds) > 0:
-                    max_seed_size = max(seed[1][0].size for seed in all_seeds)
-                    sorted_for_main_loop = sorted(all_seeds, key=lambda x: (x[1][0].start_ref, x[1][3]))
-                    for idx, (seed, layer, parlindrome, read_id, read_name) in sorted_for_main_loop:
-                        add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter,
-                                    parlindrome, layer, read_id, idx, read_name)
-                    category_counter += len(end_column)
+                        category_counter += len(end_column)
+            except Exception as e:
+                print(e)
 
     def callback():
         if len(read_dict["c"]) < self.get_max_num_ele():
