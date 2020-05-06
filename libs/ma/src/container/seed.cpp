@@ -34,9 +34,12 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
         }
 
         // ignore cases where we have Ns in the reference
-        for( size_t uiI = 0; uiI < rSeed.size( ); uiI++ )
+        bool bContinue = false;
+        for( size_t uiI = 0; uiI < pRefSec->length( ) && !bContinue; uiI++ )
             if( pRefSec->pxSequenceRef[ uiI ] >= 4 ) // have N
-                continue;
+                bContinue = true;
+        if(bContinue)
+            continue;
 
         uint8_t uiBefore = 4;
         if( rSeed.start_ref( ) > 0 && rSeed.bOnForwStrand )
@@ -54,7 +57,7 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
             uiAfter = pRef->isHole( uiX - 1 ) ? 4 : 3 - pRef->getNucleotideOnPos( uiX - 1 );
 
         // ignore cases where we have Ns in the reference
-        if(uiBefore >= 4 || uiAfter >= 4)
+        if( uiBefore >= 4 || uiAfter >= 4 )
             continue;
 
         bool bFailed = false;
@@ -69,6 +72,10 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
             bFailed = true;
         if( bFailed )
         {
+            if( bIsMaxExtended )
+                std::cout << "Expected max. extended seed" << std::endl;
+            else
+                std::cout << "Expected k-mer" << std::endl;
             std::cout << "Query:" << std::endl;
             if( rSeed.start( ) > 0 )
                 std::cout << chars[ pQuery->pxSequenceRef[ rSeed.start( ) - 1 ] ] << " ";

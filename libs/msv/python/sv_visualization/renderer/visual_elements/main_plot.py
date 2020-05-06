@@ -59,12 +59,12 @@ class MainPlot:
                        name="ground_truth_quad")
 
         self.call_x = ColumnDataSource({"x":[], "y":[]})
-        self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="green",
+        self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
                     source=self.call_x, name="call_x")
 
         self.ground_truth_x = ColumnDataSource({"x":[], "y":[]})
-        self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
-                    source=self.ground_truth_x, name="ground_truth_x")
+        self.plot.circle(x="x", y="y", size=20, line_width=3, line_alpha=0.5, line_color="green", fill_alpha=0,
+                         source=self.ground_truth_x, name="ground_truth_x")
 
         self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
                                                 ("ambiguity", "@c"),

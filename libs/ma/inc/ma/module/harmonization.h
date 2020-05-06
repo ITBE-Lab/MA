@@ -604,6 +604,7 @@ class MinLength : public libMS::Module<Seeds, false, Seeds>
         pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
                                        [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
                        pSeeds->end( ) );
+        //std::cout << pSeeds->size( ) << std::endl;
         return pSeeds;
     } // method
 
@@ -636,7 +637,7 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
         } // operator
     }; // struct
 
-  public:
+  public://
     MaxExtendedToMaxSpanning( const ParameterSetManager& rParameters )
     {} // default constructor
 

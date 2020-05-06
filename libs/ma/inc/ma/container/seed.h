@@ -269,6 +269,7 @@ class Seeds : public libMS::Container
     typedef typename TP_VEC::size_type size_type;
     typedef typename TP_VEC::difference_type difference_type;
     typedef typename TP_VEC::iterator iterator;
+    typedef typename TP_VEC::reverse_iterator reverse_iterator;
 
     nucSeqIndex mem_score = 0;
     // some statistics

@@ -132,8 +132,8 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
     print("done overlapping; combined", num_combined, "calls")
 
-
-
     analyze.analyze(out_file)
     if not out_file is None:
         out_file.write("run_id is " + str(sv_caller_run_id) + "\n")
+
+    return sv_caller_run_id

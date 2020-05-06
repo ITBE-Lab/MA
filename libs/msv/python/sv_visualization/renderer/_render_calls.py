@@ -76,8 +76,7 @@ def render_calls(self):
             accepted_boxes_data["s"].append(str(jump.get_score()))
             accepted_boxes_data["idx"].append(jump.id)
             accepted_boxes_data["supporing_jump_ids"].append(list(jump.supporing_jump_ids))
-            accepted_plus_data["x"].append(
-                jump.x.start + jump.x.size/2)
+            accepted_plus_data["x"].append(jump.x.start + jump.x.size/2)
             accepted_plus_data["y"].append(jump.y.start + jump.y.size/2)
         accepted_plus_data["idx"].append(jump.id)
         accepted_plus_data["n"].append(jump.num_supp_reads)
@@ -85,11 +84,11 @@ def render_calls(self):
         accepted_plus_data["r"].append(len(jump.supporing_jump_ids))
         accepted_plus_data["s"].append(str(jump.get_score()))
     with self.measure("SvCallFromDb(run_id)"):
-        calls_from_db = SvCallsFromDb(self.params, self.db_conn, self.get_gt_id(),
+        calls_from_db_gt = SvCallsFromDb(self.params, self.db_conn, self.get_gt_id(),
                                       int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
                                       self.get_min_score())
-    while calls_from_db.hasNext():
-        jump = calls_from_db.next()
+    while calls_from_db_gt.hasNext():
+        jump = calls_from_db_gt.next()
         if jump.x.size == 0 and jump.y.size == 0:
             ground_plus_data["x"].append(jump.x.start + 0.5)
             ground_plus_data["y"].append(jump.y.start + 0.5)
@@ -115,9 +114,9 @@ def render_calls(self):
     # the sv - boxes
     def callback():
         self.main_plot.call_quad.data = accepted_boxes_data
+        self.main_plot.call_x.data = accepted_plus_data
         self.main_plot.ground_truth_quad.data = ground_boxes_data
-        self.main_plot.call_x.data = ground_plus_data
-        self.main_plot.ground_truth_x.data = accepted_plus_data
+        self.main_plot.ground_truth_x.data = ground_plus_data
     self.curdoc.add_next_tick_callback(callback)
 
     with self.measure("get_num_jumps_in_area"):

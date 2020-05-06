@@ -130,13 +130,33 @@ class SvJumpsFromSeeds
         int64_t iSumA = xA.start_ref( ) + (int64_t)xA.start( );
         int64_t iSumB = xB.start_ref( ) + (int64_t)xB.start( );
 
-        int64_t iDeltaDist = std::abs( iDeltaA - iDeltaB );
+        int64_t iDeltaDist = std::abs( iDeltaA - iDeltaB ) / 10;
         int64_t iSumDiff = dist( iSumA, (int64_t)xA.size( ) * 2, iSumB, (int64_t)xB.size( ) * 2 );
 
         if( iSumDiff + iDeltaDist == 0 )
             return 1;
 
-        return 1 / (double)( iSumDiff + std::log2( iDeltaDist + 1 ) );
+        return 1 / (double)( iSumDiff + iDeltaDist );
+    }
+
+    double max_score_delta( const Seed& xA, const Seed& xB, nucSeqIndex uiQSize )
+    {
+        int64_t iDeltaA = ( xA.start_ref( ) - (int64_t)xA.start( ) ) + uiQSize;
+        int64_t iDeltaB = ( xB.start_ref( ) - (int64_t)xB.start( ) ) + uiQSize;
+
+        int64_t iDeltaDist = std::abs( iDeltaA - iDeltaB ) / 10;
+
+        if( iDeltaDist == 0 )
+            return 1;
+
+        return 1 / (double)( iDeltaDist );
+    }
+
+    bool continue_iterating( Seed& xSeed, Seed& xCurr, double dBestForw, double dBestBackw, nucSeqIndex uiQSize )
+    {
+        if( xCurr.size( ) == 0 )
+            return true;
+        return max_score_delta( xSeed, xCurr, uiQSize ) > std::max( dBestForw, dBestBackw );
     }
 
     void pickReseedingTargetHelper( Seed& xSeed, Seed& xCurr, Seed*& pBestForw, Seed*& pBestBackw, double& dBestForw,
@@ -178,24 +198,57 @@ class SvJumpsFromSeeds
         HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ){};
     }; // class
 
+    // @todo this doe snot work with inversions so far o.O
     void forMatchingSeeds( std::shared_ptr<Seeds> pSeeds, std::function<void( Seed&, Seed& )> fOut,
                            nucSeqIndex uiQSize )
     {
-        for( auto& xSeed : *pSeeds )
+        auto xRevEnd = std::make_reverse_iterator( pSeeds->begin( ) );
+        for( std::vector<Seed>::iterator xItSeed = pSeeds->begin( ); xItSeed != pSeeds->end( ); xItSeed++ )
         {
-            if( xSeed.size( ) == 0 )
+            if( xItSeed->size( ) == 0 ) // currently at duplicate seed.
                 continue;
             Seed* pBestForw = nullptr;
             Seed* pBestBackw = nullptr;
             double dBestForw = -1;
             double dBestBackw = -1;
-            for( auto& xCurr : *pSeeds )
-                if( xCurr.size( ) != 0 )
-                    pickReseedingTargetHelper( xSeed, xCurr, pBestForw, pBestBackw, dBestForw, dBestBackw, uiQSize );
+
+            std::vector<Seed>::iterator xForw = xItSeed;
+            ++xForw;
+            std::vector<Seed>::reverse_iterator xRev = std::make_reverse_iterator( xItSeed );
+            if( xRev != xRevEnd )
+                ++xRev;
+
+            while( xForw != pSeeds->end( ) && xRev != xRevEnd &&
+                   continue_iterating( *xItSeed, *xForw, dBestForw, dBestBackw, uiQSize ) &&
+                   continue_iterating( *xItSeed, *xRev, dBestForw, dBestBackw, uiQSize ) )
+            {
+                if( xForw->size( ) != 0 )
+                    pickReseedingTargetHelper( *xItSeed, *xForw, pBestForw, pBestBackw, dBestForw, dBestBackw,
+                                               uiQSize );
+                if( xRev->size( ) != 0 )
+                    pickReseedingTargetHelper( *xItSeed, *xRev, pBestForw, pBestBackw, dBestForw, dBestBackw, uiQSize );
+                ++xForw;
+                ++xRev;
+                // @todo to make the algorithm actually n log(n) we need to jump over seeds with equal delta values here
+            } // while
+            while( xForw != pSeeds->end( ) && continue_iterating( *xItSeed, *xForw, dBestForw, dBestBackw, uiQSize ) )
+            {
+                if( xForw->size( ) != 0 )
+                    pickReseedingTargetHelper( *xItSeed, *xForw, pBestForw, pBestBackw, dBestForw, dBestBackw,
+                                               uiQSize );
+                ++xForw;
+            } // while
+            while( xRev != xRevEnd && continue_iterating( *xItSeed, *xRev, dBestForw, dBestBackw, uiQSize ) )
+            {
+                if( xRev->size( ) != 0 )
+                    pickReseedingTargetHelper( *xItSeed, *xRev, pBestForw, pBestBackw, dBestForw, dBestBackw, uiQSize );
+                ++xRev;
+            } // while
+
             if( pBestForw != nullptr )
-                fOut( xSeed, *pBestForw );
+                fOut( *xItSeed, *pBestForw );
             if( pBestBackw != nullptr )
-                fOut( *pBestBackw, xSeed );
+                fOut( *pBestBackw, *xItSeed );
         } // for
     } // method
 
@@ -266,17 +319,17 @@ class SvJumpsFromSeeds
         pRet->append( pSeeds );
 
         size_t uiLayer = 1;
-        while( true )
+        while( uiLayer <= 3 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
         {
             // sort seeds and remove duplicates (from reseeding)
             eraseMarked( pRet );
             std::sort( pRet->begin( ), pRet->end( ), []( const Seed& rA, const Seed& rB ) {
+                if( SeedLumping::getDelta( rA ) != SeedLumping::getDelta( rB ) )
+                    return SeedLumping::getDelta( rA ) < SeedLumping::getDelta( rB );
                 if( rA.start( ) != rB.start( ) )
                     return rA.start( ) < rB.start( );
                 if( rA.bOnForwStrand != rB.bOnForwStrand )
                     return rA.bOnForwStrand;
-                if( rA.start_ref( ) != rB.start_ref( ) )
-                    return rA.start_ref( ) < rB.start_ref( );
                 return rA.size( ) < rB.size( );
             } );
             markDuplicates( pRet );
@@ -348,18 +401,22 @@ class SvJumpsFromSeeds
             uiLayer++;
         } // while
 
+        // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
         return pRet;
     } // mehtod
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> computeJumps( std::shared_ptr<Seeds> pSeeds,
-                                                                  std::shared_ptr<NucSeq>
-                                                                      pQuery,
-                                                                  std::shared_ptr<Pack>
-                                                                      pRefSeq,
-                                                                  HelperRetVal* pOutExtra )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    computeJumps( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq )
     {
-        std::sort( pSeeds->begin( ), pSeeds->end( ),
-                   []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
+        std::sort( pSeeds->begin( ), pSeeds->end( ), []( const Seed& rA, const Seed& rB ) {
+            if( SeedLumping::getDelta( rA ) != SeedLumping::getDelta( rB ) )
+                return SeedLumping::getDelta( rA ) < SeedLumping::getDelta( rB );
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.bOnForwStrand != rB.bOnForwStrand )
+                return rA.bOnForwStrand;
+            return rA.size( ) < rB.size( );
+        } );
         auto pRet = std::make_shared<libMS::ContainerVector<SvJump>>( );
         std::set<std::pair<Seed*, Seed*>> xExistingPairs;
         forMatchingSeeds(
@@ -445,8 +502,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -513,7 +570,7 @@ class SvJumpsFromSeeds
     {
         return computeJumps(
             reseed( extractSeeds( pSegments, pFM_index, pQuery, pOutExtra ), pQuery, pRefSeq, pOutExtra ), pQuery,
-            pRefSeq, pOutExtra );
+            pRefSeq );
     }
 
     inline HelperRetVal execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
@@ -532,7 +589,7 @@ class SvJumpsFromSeeds
                                             std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
-        computeJumps( reseed( pSeeds, pQuery, pRefSeq, &xRet ), pQuery, pRefSeq, &xRet );
+        computeJumps( reseed( pSeeds, pQuery, pRefSeq, &xRet ), pQuery, pRefSeq );
         return xRet;
     } // method
 
@@ -571,7 +628,7 @@ class RecursiveReseedingSegments : public libMS::Module<Seeds, false, SegmentVec
     }
 }; // class
 
-class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, FMIndex>
+class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, NucSeq>
 {
     SvJumpsFromSeeds xJumpsFromSeeds;
 

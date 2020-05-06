@@ -105,7 +105,7 @@ class TagGenerator
           bSATag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bCGTag( rParameters.getSelected( )->xCGTag->get( ) ),
           bForcedConsistentConsequtiveInsertionDeletionOrder( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
-          bSoftClip(rParameters.getSelected( )->xSoftClip->get( ))
+          bSoftClip( rParameters.getSelected( )->xSoftClip->get( ) )
     {} // constructor
 
     std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
@@ -289,8 +289,9 @@ class TagGenerator
                 sSATag.append( ( pPack->bPositionIsOnReversStrand( pOtherAlignment->uiBeginOnRef ) ? "-," : "+," ) );
                 sSATag
                     .append( bOutputMInsteadOfXAndEqual
-                                 ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery->length( ) )
-                                 : pOtherAlignment->cigarString( *pPack, pQuery->length( ) ) )
+                                 ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery->length( ),
+                                                                                        bSoftClip )
+                                 : pOtherAlignment->cigarString( *pPack, pQuery->length( ), bSoftClip ) )
                     .append( "," );
 
                 std::string sMapQual;
@@ -436,9 +437,9 @@ class FileWriter
                  std::shared_ptr<Pack>
                      pPack );
 
-    void close()
+    void close( )
     {
-        pOut.reset();
+        pOut.reset( );
     } // method
 
 }; // class

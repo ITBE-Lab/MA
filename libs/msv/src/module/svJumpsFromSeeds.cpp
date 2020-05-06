@@ -271,9 +271,15 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util( ), "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( xOrganizer._util( ), "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );
+
+    // can't expose as vector since copy of SvJumps is deleted
+    py::class_<ContainerVector<SvJump>, libMS::Container, std::shared_ptr<ContainerVector<SvJump>>>(
+        xOrganizer._util( ), "JumpVector", "docstr" );
+
     exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromSeeds", []( auto&& x ) {
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py2 );
+        x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumps );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
     exportModule<RecursiveReseedingSegments, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSegments" );

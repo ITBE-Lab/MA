@@ -21,10 +21,16 @@ class SeedPrinter(Module):
         plot = figure(title="Seeds", x_range=self.x_range, y_range=self.y_range)
         if len(input) > 2:
             helper_ret = input[2]
+            l = []
+            r = []
+            t = []
+            b = []
             for rect in helper_ret.rectangles:
-                plot.quad(left=rect.x_axis.start, right=rect.x_axis.start+rect.x_axis.size,
-                          bottom=rect.y_axis.start, top=rect.y_axis.start+rect.y_axis.size, color="lightgrey",
-                          alpha=0.2)
+                l.append(rect.x_axis.start)
+                r.append(rect.x_axis.start+rect.x_axis.size)
+                b.append(rect.y_axis.start)
+                t.append(rect.y_axis.start+rect.y_axis.size)
+            plot.quad(left=l, right=r, bottom=b, top=t, color="lightgrey", alpha=0.2)
 
         def render(seeds, name, dash=(10,0), width=1):
             forw_x = []
