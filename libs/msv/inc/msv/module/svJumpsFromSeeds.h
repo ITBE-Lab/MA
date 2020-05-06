@@ -114,73 +114,48 @@ class SvJumpsFromSeeds
                       << std::endl;
     } // destructor
 
-    int64_t dist( int64_t uiStartA, int64_t uiSizeA, int64_t uiStartB, int64_t uiSizeB )
+    double delta_dist( const Seed& xA, const Seed& xB )
     {
-        if( uiStartA + uiSizeA >= uiStartB && uiStartB + uiSizeB >= uiStartA )
-            return 0;
-        if( uiStartA + uiSizeA < uiStartB )
-            return uiStartB - ( uiStartA + uiSizeA );
-        return uiStartA - ( uiStartB + uiSizeB );
+        int64_t iDeltaA = ( xA.start_ref( ) - (int64_t)xA.start( ) );
+        int64_t iDeltaB = ( xB.start_ref( ) - (int64_t)xB.start( ) );
+
+        return std::abs( iDeltaA - iDeltaB );
     }
 
-    double score( const Seed& xA, const Seed& xB, nucSeqIndex uiQSize )
+    bool overlap( const Seed& xA, const Seed& xB )
     {
-        int64_t iDeltaA = ( xA.start_ref( ) - (int64_t)xA.start( ) ) + uiQSize;
-        int64_t iDeltaB = ( xB.start_ref( ) - (int64_t)xB.start( ) ) + uiQSize;
-        int64_t iSumA = xA.start_ref( ) + (int64_t)xA.start( );
-        int64_t iSumB = xB.start_ref( ) + (int64_t)xB.start( );
-
-        int64_t iDeltaDist = std::abs( iDeltaA - iDeltaB ) / 10;
-        int64_t iSumDiff = dist( iSumA, (int64_t)xA.size( ) * 2, iSumB, (int64_t)xB.size( ) * 2 );
-
-        if( iSumDiff + iDeltaDist == 0 )
-            return 1;
-
-        return 1 / (double)( iSumDiff + iDeltaDist );
+        // overlap at least 5 nt
+        return xA.end( ) > xB.start( ) + 5 && xB.end( ) > xA.start( ) + 5;
     }
 
-    double max_score_delta( const Seed& xA, const Seed& xB, nucSeqIndex uiQSize )
+    Seed* pickReseedingTargetHelper( Seeds& xSeeds, int iI, int iAdd )
     {
-        int64_t iDeltaA = ( xA.start_ref( ) - (int64_t)xA.start( ) ) + uiQSize;
-        int64_t iDeltaB = ( xB.start_ref( ) - (int64_t)xB.start( ) ) + uiQSize;
+        Seed* pSeed = &xSeeds[ iI ];
+        iI += iAdd;
+        while( iI > 0 && (size_t)iI < xSeeds.size( ) && xSeeds[ (size_t)iI ].size( ) == 0 )
+            iI += iAdd;
 
-        int64_t iDeltaDist = std::abs( iDeltaA - iDeltaB ) / 10;
+        if( iI < 0 || (size_t)iI >= xSeeds.size( ) )
+            return nullptr;
 
-        if( iDeltaDist == 0 )
-            return 1;
+        int64_t iMinDeltaDist = delta_dist( *pSeed, xSeeds[ (size_t)iI ] );
+        Seed* pRet = &xSeeds[ (size_t)iI ];
+        Seed* pFirst = pRet;
 
-        return 1 / (double)( iDeltaDist );
-    }
-
-    bool continue_iterating( Seed& xSeed, Seed& xCurr, double dBestForw, double dBestBackw, nucSeqIndex uiQSize )
-    {
-        if( xCurr.size( ) == 0 )
-            return true;
-        return max_score_delta( xSeed, xCurr, uiQSize ) > std::max( dBestForw, dBestBackw );
-    }
-
-    void pickReseedingTargetHelper( Seed& xSeed, Seed& xCurr, Seed*& pBestForw, Seed*& pBestBackw, double& dBestForw,
-                                    double& dBestBackw, nucSeqIndex uiQSize )
-    {
-        double dScore = score( xSeed, xCurr, uiQSize );
-        // other seed has no more than 5 overlapping nt
-        if( xCurr.start( ) + 5 > xSeed.end( ) )
+        iI += iAdd;
+        while( iI > 0 && (size_t)iI < xSeeds.size( ) &&
+               ( xSeeds[ (size_t)iI ].size( ) == 0 || overlap( xSeeds[ (size_t)iI ], *pFirst ) ) )
         {
-            if( dScore > dBestForw )
+            auto iDelta = delta_dist( *pSeed, xSeeds[ (size_t)iI ] );
+            if( xSeeds[ (size_t)iI ].size( ) != 0 && iDelta < iMinDeltaDist )
             {
-                dBestForw = dScore;
-                pBestForw = &xCurr;
+                iMinDeltaDist = iDelta;
+                pRet = &xSeeds[ (size_t)iI ];
             } // if
-        } // if
-        // other seed has no more than 5 overlapping nt
-        if( xCurr.end( ) < xSeed.start( ) + 5 )
-        {
-            if( dScore > dBestBackw )
-            {
-                dBestBackw = dScore;
-                pBestBackw = &xCurr;
-            } // if
-        } // if
+            iI += iAdd;
+        } // while
+
+        return pRet;
     } // method
 
     /// @brief this class exists mereley to expose the return value of execute_helper_py to python
@@ -199,57 +174,24 @@ class SvJumpsFromSeeds
         HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ){};
     }; // class
 
-    // @todo this doe snot work with inversions so far o.O
-    void forMatchingSeeds( std::shared_ptr<Seeds> pSeeds, std::function<void( Seed&, Seed& )> fOut,
-                           nucSeqIndex uiQSize )
+    void forMatchingSeeds( std::shared_ptr<Seeds> pSeeds, std::function<void( Seed&, Seed& )> fOut )
     {
-        auto xRevEnd = std::make_reverse_iterator( pSeeds->begin( ) );
-        for( std::vector<Seed>::iterator xItSeed = pSeeds->begin( ); xItSeed != pSeeds->end( ); xItSeed++ )
+        for( size_t uiI = 0; uiI < pSeeds->size( ); uiI++ )
         {
-            if( xItSeed->size( ) == 0 ) // currently at duplicate seed.
+            if( ( *pSeeds )[ uiI ].size( ) == 0 ) // currently at duplicate seed.
                 continue;
-            Seed* pBestForw = nullptr;
-            Seed* pBestBackw = nullptr;
-            double dBestForw = -1;
-            double dBestBackw = -1;
-
-            std::vector<Seed>::iterator xForw = xItSeed;
-            ++xForw;
-            std::vector<Seed>::reverse_iterator xRev = std::make_reverse_iterator( xItSeed );
-            if( xRev != xRevEnd )
-                ++xRev;
-
-            while( xForw != pSeeds->end( ) && xRev != xRevEnd &&
-                   continue_iterating( *xItSeed, *xForw, dBestForw, dBestBackw, uiQSize ) &&
-                   continue_iterating( *xItSeed, *xRev, dBestForw, dBestBackw, uiQSize ) )
-            {
-                if( xForw->size( ) != 0 )
-                    pickReseedingTargetHelper( *xItSeed, *xForw, pBestForw, pBestBackw, dBestForw, dBestBackw,
-                                               uiQSize );
-                if( xRev->size( ) != 0 )
-                    pickReseedingTargetHelper( *xItSeed, *xRev, pBestForw, pBestBackw, dBestForw, dBestBackw, uiQSize );
-                ++xForw;
-                ++xRev;
-                // @todo to make the algorithm actually n log(n) we need to jump over seeds with equal delta values here
-            } // while
-            while( xForw != pSeeds->end( ) && continue_iterating( *xItSeed, *xForw, dBestForw, dBestBackw, uiQSize ) )
-            {
-                if( xForw->size( ) != 0 )
-                    pickReseedingTargetHelper( *xItSeed, *xForw, pBestForw, pBestBackw, dBestForw, dBestBackw,
-                                               uiQSize );
-                ++xForw;
-            } // while
-            while( xRev != xRevEnd && continue_iterating( *xItSeed, *xRev, dBestForw, dBestBackw, uiQSize ) )
-            {
-                if( xRev->size( ) != 0 )
-                    pickReseedingTargetHelper( *xItSeed, *xRev, pBestForw, pBestBackw, dBestForw, dBestBackw, uiQSize );
-                ++xRev;
-            } // while
-
+            Seed* pBestForw = pickReseedingTargetHelper( *pSeeds, uiI, 1 );
+            //Seed* pBestRev = pickReseedingTargetHelper( *pSeeds, uiI, -1 );
             if( pBestForw != nullptr )
-                fOut( *xItSeed, *pBestForw );
-            if( pBestBackw != nullptr )
-                fOut( *pBestBackw, *xItSeed );
+            {
+                // if( ( *pSeeds )[ uiI ].bOnForwStrand )
+                fOut( ( *pSeeds )[ uiI ], *pBestForw );
+                // else
+                //    fOut( *pBest, ( *pSeeds )[ uiI ] );
+            } // if
+            //if( pBestRev != nullptr )
+            //    fOut( *pBestRev, ( *pSeeds )[ uiI ] );
+
         } // for
     } // method
 
@@ -273,18 +215,15 @@ class SvJumpsFromSeeds
         if( xItLast != pSeeds->rend( ) )
             fOut( getPositionsForSeeds( *xItLast, xDummySeed, 0, pQuery->length( ), pRefSeq ) );
 
-        forMatchingSeeds(
-            pSeeds,
-            [&]( Seed& rA, Seed& rB ) {
+        forMatchingSeeds( pSeeds, [&]( Seed& rA, Seed& rB ) {
 #if SV_JUMP_FROM_SEED_DEBUG_PRINT
-                std::cout << "collectRectangles 1 " << rA.start( ) << ", " << rA.start_ref( ) << ", " << rA.size( )
-                          << ( rA.bOnForwStrand ? " forw" : " rev" ) << std::endl;
-                std::cout << "collectRectangles 2 " << rB.start( ) << ", " << rB.start_ref( ) << ", " << rB.size( )
-                          << ( rB.bOnForwStrand ? " forw" : " rev" ) << std::endl;
+            std::cout << "collectRectangles 1 " << rA.start( ) << ", " << rA.start_ref( ) << ", " << rA.size( )
+                      << ( rA.bOnForwStrand ? " forw" : " rev" ) << std::endl;
+            std::cout << "collectRectangles 2 " << rB.start( ) << ", " << rB.start_ref( ) << ", " << rB.size( )
+                      << ( rB.bOnForwStrand ? " forw" : " rev" ) << std::endl;
 #endif
-                fOut( getPositionsForSeeds( rA, rB, 0, pQuery->length( ), pRefSeq ) );
-            },
-            pQuery->length( ) );
+            fOut( getPositionsForSeeds( rA, rB, 0, pQuery->length( ), pRefSeq ) );
+        } );
     } // method
 
     void markDuplicates( std::shared_ptr<Seeds> pSeeds )
@@ -325,10 +264,10 @@ class SvJumpsFromSeeds
             // sort seeds and remove duplicates (from reseeding)
             eraseMarked( pRet );
             std::sort( pRet->begin( ), pRet->end( ), []( const Seed& rA, const Seed& rB ) {
-                if( SeedLumping::getDelta( rA ) != SeedLumping::getDelta( rB ) )
-                    return SeedLumping::getDelta( rA ) < SeedLumping::getDelta( rB );
                 if( rA.start( ) != rB.start( ) )
                     return rA.start( ) < rB.start( );
+                if( rA.start_ref( ) != rB.start_ref( ) )
+                    return rA.start_ref( ) < rB.start_ref( );
                 if( rA.bOnForwStrand != rB.bOnForwStrand )
                     return rA.bOnForwStrand;
                 return rA.size( ) < rB.size( );
@@ -413,40 +352,28 @@ class SvJumpsFromSeeds
                                                                       pRefSeq,
                                                                   HelperRetVal* pOutExtra )
     {
-        std::sort( pSeeds->begin( ), pSeeds->end( ), []( const Seed& rA, const Seed& rB ) {
-            if( SeedLumping::getDelta( rA ) != SeedLumping::getDelta( rB ) )
-                return SeedLumping::getDelta( rA ) < SeedLumping::getDelta( rB );
-            if( rA.start( ) != rB.start( ) )
-                return rA.start( ) < rB.start( );
-            if( rA.bOnForwStrand != rB.bOnForwStrand )
-                return rA.bOnForwStrand;
-            return rA.size( ) < rB.size( );
-        } );
+        std::sort( pSeeds->begin( ), pSeeds->end( ),
+                   []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
         auto pRet = std::make_shared<libMS::ContainerVector<SvJump>>( );
         std::set<std::pair<Seed*, Seed*>> xExistingPairs;
-        forMatchingSeeds(
-            pSeeds,
-            [&]( Seed& rA, Seed& rB ) {
-                // filter out all duplicates
-                if( xExistingPairs.count( std::make_pair( &rA, &rB ) ) != 0 ||
-                    xExistingPairs.count( std::make_pair( &rB, &rA ) ) != 0 )
-                    return;
-                xExistingPairs.emplace( &rA, &rB );
-                if( pOutExtra != nullptr )
-                    pOutExtra->vJumpSeeds.emplace_back( rA, rB );
+        forMatchingSeeds( pSeeds, [&]( Seed& rA, Seed& rB ) {
+            // filter out all duplicates
+            if( xExistingPairs.count( std::make_pair( &rA, &rB ) ) != 0 ||
+                xExistingPairs.count( std::make_pair( &rB, &rA ) ) != 0 )
+                return;
+            xExistingPairs.emplace( &rA, &rB );
+            if( pOutExtra != nullptr )
+                pOutExtra->vJumpSeeds.emplace_back( rA, rB );
 
-                // we have to insert a jump between two seeds
-                if( SvJump::validJump( rB, rA, true ) )
-                    pRet->emplace_back( rB, rA, true, pQuery->iId );
-                if( SvJump::validJump( rA, rB, false ) )
-                    pRet->emplace_back( rA, rB, false, pQuery->iId );
-            },
-            pQuery->length( ) );
+            // we have to insert a jump between two seeds
+            if( SvJump::validJump( rA, rB, false ) )
+                pRet->emplace_back( rA, rB, false, pQuery->iId );
+            if( SvJump::validJump( rB, rA, true ) )
+                pRet->emplace_back( rB, rA, true, pQuery->iId );
+        } );
         // dummy jumps for first and last seed
         if( bDoDummyJumps )
         {
-            std::sort( pSeeds->begin( ), pSeeds->end( ),
-                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
             auto xItFirst = pSeeds->begin( );
             while( xItFirst != pSeeds->end( ) && xItFirst->size( ) == 0 )
                 xItFirst++;
