@@ -267,7 +267,8 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "parlindrome", &libMSV::SvJumpsFromSeeds::HelperRetVal::vParlindromeSeed )
         .def_readwrite( "rectangles_fill", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
         .def_readwrite( "rectangle_ambiguity", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
-        .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp );
+        .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp )
+        .def_readwrite( "jump_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vJumpSeeds );
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util( ), "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( xOrganizer._util( ), "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );
@@ -279,7 +280,8 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromSeeds", []( auto&& x ) {
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py2 );
-        x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumps );
+        x.def( "execute_helper_no_reseed", &SvJumpsFromSeeds::execute_helper_py3 );
+        x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumpsPy );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
     exportModule<RecursiveReseedingSegments, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSegments" );

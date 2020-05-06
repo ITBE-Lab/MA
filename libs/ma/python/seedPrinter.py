@@ -31,6 +31,11 @@ class SeedPrinter(Module):
                 b.append(rect.y_axis.start)
                 t.append(rect.y_axis.start+rect.y_axis.size)
             plot.quad(left=l, right=r, bottom=b, top=t, color="lightgrey", alpha=0.2)
+            
+            if self.do_print:
+                for a, b in helper_ret.jump_seeds:
+                    print("jump", a.start, a.start_ref, a.size, "forw" if a.on_forward_strand else "rev", "-",
+                          b.start, b.start_ref, b.size, "forw" if b.on_forward_strand else "rev")
 
         def render(seeds, name, dash=(10,0), width=1):
             forw_x = []
@@ -60,7 +65,7 @@ class SeedPrinter(Module):
                         legend_label=name + " - reverse", line_color="orange", line_dash=dash,
                         line_width=width)
 
-        if len(input) > 1:
+        if len(input) > 1 and not input[1] is None:
             seeds_b = input[1]
             render(seeds_b, self.name_b, dash=(10,10), width=4)
 

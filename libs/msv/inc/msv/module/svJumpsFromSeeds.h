@@ -194,6 +194,7 @@ class SvJumpsFromSeeds
         std::vector<double> vRectangleFillPercentage;
         std::vector<size_t> vRectangleReferenceAmbiguity;
         std::vector<bool> vRectangleUsedDp;
+        std::vector<std::pair<Seed, Seed>> vJumpSeeds;
 
         HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ){};
     }; // class
@@ -405,8 +406,12 @@ class SvJumpsFromSeeds
         return pRet;
     } // mehtod
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>>
-    computeJumps( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq )
+    std::shared_ptr<libMS::ContainerVector<SvJump>> computeJumps( std::shared_ptr<Seeds> pSeeds,
+                                                                  std::shared_ptr<NucSeq>
+                                                                      pQuery,
+                                                                  std::shared_ptr<Pack>
+                                                                      pRefSeq,
+                                                                  HelperRetVal* pOutExtra )
     {
         std::sort( pSeeds->begin( ), pSeeds->end( ), []( const Seed& rA, const Seed& rB ) {
             if( SeedLumping::getDelta( rA ) != SeedLumping::getDelta( rB ) )
@@ -427,6 +432,8 @@ class SvJumpsFromSeeds
                     xExistingPairs.count( std::make_pair( &rB, &rA ) ) != 0 )
                     return;
                 xExistingPairs.emplace( &rA, &rB );
+                if( pOutExtra != nullptr )
+                    pOutExtra->vJumpSeeds.emplace_back( rA, rB );
 
                 // we have to insert a jump between two seeds
                 if( SvJump::validJump( rB, rA, true ) )
@@ -438,19 +445,36 @@ class SvJumpsFromSeeds
         // dummy jumps for first and last seed
         if( bDoDummyJumps )
         {
+            std::sort( pSeeds->begin( ), pSeeds->end( ),
+                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
             auto xItFirst = pSeeds->begin( );
             while( xItFirst != pSeeds->end( ) && xItFirst->size( ) == 0 )
                 xItFirst++;
             if( xItFirst != pSeeds->end( ) && xItFirst->start( ) > uiMinDistDummy )
+            {
                 pRet->emplace_back( *xItFirst, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
+                if( pOutExtra != nullptr )
+                    pOutExtra->vJumpSeeds.emplace_back( *xItFirst, xDummySeed );
+            } // if
             auto xItLast = pSeeds->rbegin( );
             while( xItLast != pSeeds->rend( ) && xItLast->size( ) == 0 )
                 xItLast++;
             if( xItLast != pSeeds->rend( ) && xItLast->end( ) + uiMinDistDummy <= pQuery->length( ) )
-                pRet->emplace_back( pSeeds->back( ), pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
+            {
+                pRet->emplace_back( *xItLast, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
+                if( pOutExtra != nullptr )
+                    pOutExtra->vJumpSeeds.emplace_back( xDummySeed, *xItLast );
+            } // if
         } // if
 
         return pRet;
+    } // method
+
+
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    computeJumpsPy( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq )
+    {
+        return computeJumps( pSeeds, pQuery, pRefSeq, nullptr );
     } // method
 
     std::shared_ptr<Seeds> extractSeeds( std::shared_ptr<SegmentVector> pSegments, std::shared_ptr<FMIndex> pFM_index,
@@ -502,8 +526,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -570,7 +594,7 @@ class SvJumpsFromSeeds
     {
         return computeJumps(
             reseed( extractSeeds( pSegments, pFM_index, pQuery, pOutExtra ), pQuery, pRefSeq, pOutExtra ), pQuery,
-            pRefSeq );
+            pRefSeq, pOutExtra );
     }
 
     inline HelperRetVal execute_helper_py( std::shared_ptr<SegmentVector> pSegments,
@@ -589,7 +613,15 @@ class SvJumpsFromSeeds
                                             std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
-        computeJumps( reseed( pSeeds, pQuery, pRefSeq, &xRet ), pQuery, pRefSeq );
+        computeJumps( reseed( pSeeds, pQuery, pRefSeq, &xRet ), pQuery, pRefSeq, &xRet );
+        return xRet;
+    } // method
+
+    inline HelperRetVal execute_helper_py3( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq,
+                                            std::shared_ptr<NucSeq> pQuery )
+    {
+        HelperRetVal xRet;
+        computeJumps( pSeeds, pQuery, pRefSeq, &xRet );
         return xRet;
     } // method
 
