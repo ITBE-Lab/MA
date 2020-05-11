@@ -29,14 +29,14 @@ class MainPlot:
 
         # the sv jumps
         self.jump_quads = []
-        for _ in range(4):
+        for _ in range(6):
             self.jump_quads.append(ColumnDataSource({"x":[], "y":[], "w":[], "h":[], "c":[], "a":[]}))
             self.plot.quad(left="x", bottom="y", right="w", top="h", fill_color="c",
                            line_color="c", line_width=3, fill_alpha="a",
                            source=self.jump_quads[-1], name="jump_quads")
 
         self.jump_x = ColumnDataSource({"x":[], "y":[]})
-        self.plot.multi_line(xs="x", ys="y", line_width=1.5, line_alpha=0.5, color="black", source=self.jump_x)
+        self.plot.multi_line(xs="x", ys="y", line_width=1, line_alpha=0.5, color="black", source=self.jump_x)
 
         self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
                                                 ("read id", "@r"),
@@ -49,21 +49,21 @@ class MainPlot:
                                       name="Hover jumps"))
 
         # the quads and x's for the calls:
-        self.call_quad = ColumnDataSource({"x":[], "y":[], "w":[], "h":[]})
-        self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="magenta", line_width=3,
+        self.call_quad = ColumnDataSource({"x":[], "y":[], "w":[], "h":[], "col":[]})
+        self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="col", line_width=3,
                        fill_alpha=0, source=self.call_quad, name="call_quad")
 
-        self.ground_truth_quad = ColumnDataSource({"x":[], "y":[], "w":[], "h":[]})
-        self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="green",
+        self.ground_truth_quad = ColumnDataSource({"x":[], "y":[], "w":[], "h":[], "col":[]})
+        self.plot.quad(left="x", bottom="y", right="w", top="h", line_color="col",
                        line_width=3, fill_alpha=0, source=self.ground_truth_quad,
                        name="ground_truth_quad")
 
-        self.call_x = ColumnDataSource({"x":[], "y":[]})
-        self.plot.x(x="x", y="y", size=20, line_width=3, line_alpha=0.5, color="magenta",
+        self.call_x = ColumnDataSource({"x":[], "y":[], "col":[]})
+        self.plot.x(x="x", y="y", size=20, line_width=4, line_alpha=0.5, color="col",
                     source=self.call_x, name="call_x")
 
-        self.ground_truth_x = ColumnDataSource({"x":[], "y":[]})
-        self.plot.circle(x="x", y="y", size=20, line_width=3, line_alpha=0.5, line_color="green", fill_alpha=0,
+        self.ground_truth_x = ColumnDataSource({"x":[], "y":[], "col":[]})
+        self.plot.circle(x="x", y="y", size=20, line_width=3, line_alpha=0.5, line_color="col", fill_alpha=0,
                          source=self.ground_truth_x, name="ground_truth_x")
 
         self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
@@ -116,7 +116,8 @@ class MainPlot:
                     repl_dict = copy.copy(self.jump_quads[quad_idx].data)
                     for idx, _ in enumerate(repl_dict["c"]):
                         if condition(quad_idx, idx):
-                            repl_dict["c"][idx] = ["orange", "blue", "lightgreen", "yellow"][quad_idx]
+                            repl_dict["c"][idx] = ["lightgreen", "yellow", "darkblue", "darkturquoise",
+                                                   "darkviolet", "darkorange"][quad_idx]
                         else:
                             repl_dict["c"][idx] = "lightgrey"
                     # this copy is inefficient
@@ -197,6 +198,6 @@ class MainPlot:
             jump_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[], "a":[]}
         self.call_quad.data = {"x":[], "y":[], "w":[], "h":[]}
         self.ground_truth_quad.data = {"x":[], "y":[], "w":[], "h":[]}
-        self.call_x.data = {"x":[], "y":[]}
-        self.ground_truth_x.data = {"x":[], "y":[]}
+        self.call_x.data = {"x":[], "y":[], "col":[]}
+        self.ground_truth_x.data = {"x":[], "y":[], "col":[]}
         self.overview_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[]}

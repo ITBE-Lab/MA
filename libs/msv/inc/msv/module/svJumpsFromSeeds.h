@@ -114,7 +114,7 @@ class SvJumpsFromSeeds
                       << std::endl;
     } // destructor
 
-    double delta_dist( const Seed& xA, const Seed& xB )
+    int64_t delta_dist( const Seed& xA, const Seed& xB )
     {
         int64_t iDeltaA = ( xA.start_ref( ) - (int64_t)xA.start( ) );
         int64_t iDeltaB = ( xB.start_ref( ) - (int64_t)xB.start( ) );
@@ -180,18 +180,13 @@ class SvJumpsFromSeeds
         {
             if( ( *pSeeds )[ uiI ].size( ) == 0 ) // currently at duplicate seed.
                 continue;
-            Seed* pBestForw = pickReseedingTargetHelper( *pSeeds, uiI, 1 );
-            //Seed* pBestRev = pickReseedingTargetHelper( *pSeeds, uiI, -1 );
+            Seed* pBestForw = pickReseedingTargetHelper( *pSeeds, (int)uiI, 1 );
             if( pBestForw != nullptr )
-            {
-                // if( ( *pSeeds )[ uiI ].bOnForwStrand )
                 fOut( ( *pSeeds )[ uiI ], *pBestForw );
-                // else
-                //    fOut( *pBest, ( *pSeeds )[ uiI ] );
-            } // if
-            //if( pBestRev != nullptr )
-            //    fOut( *pBestRev, ( *pSeeds )[ uiI ] );
 
+            Seed* pBestRev = pickReseedingTargetHelper( *pSeeds, (int)uiI, -1 );
+            if( pBestRev != nullptr )
+                fOut( *pBestRev, ( *pSeeds )[ uiI ] );
         } // for
     } // method
 
@@ -358,18 +353,17 @@ class SvJumpsFromSeeds
         std::set<std::pair<Seed*, Seed*>> xExistingPairs;
         forMatchingSeeds( pSeeds, [&]( Seed& rA, Seed& rB ) {
             // filter out all duplicates
-            if( xExistingPairs.count( std::make_pair( &rA, &rB ) ) != 0 ||
-                xExistingPairs.count( std::make_pair( &rB, &rA ) ) != 0 )
+            if( xExistingPairs.count( std::make_pair( &rA, &rB ) ) != 0 )
                 return;
             xExistingPairs.emplace( &rA, &rB );
             if( pOutExtra != nullptr )
                 pOutExtra->vJumpSeeds.emplace_back( rA, rB );
 
             // we have to insert a jump between two seeds
-            if( SvJump::validJump( rA, rB, false ) )
-                pRet->emplace_back( rA, rB, false, pQuery->iId );
-            if( SvJump::validJump( rB, rA, true ) )
-                pRet->emplace_back( rB, rA, true, pQuery->iId );
+            // if( SvJump::validJump( rA, rB, false ) )
+            pRet->emplace_back( rA, rB, false, pQuery->iId );
+            // if( SvJump::validJump( rB, rA, false ) )
+            //    pRet->emplace_back( rB, rA, false, pQuery->iId );
         } );
         // dummy jumps for first and last seed
         if( bDoDummyJumps )
@@ -453,8 +447,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )

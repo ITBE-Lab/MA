@@ -42,9 +42,6 @@ class JumpInserterContainer
 
             assert( rJump.iReadId != -1 );
 
-            if( rJump.does_switch_strand( ) )
-                assert( rJump.from_start( ) >= std::numeric_limits<int64_t>::max( ) / 2 );
-
             auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>(
                 rJump.from_start_same_strand( ), rJump.to_start( ), rJump.from_size( ), rJump.to_size( ) ) );
             rJump.iId = ParentType::pInserter->insert(

@@ -13,6 +13,8 @@ using namespace libMS;
 
 #include "ms/container/sv_db/py_db_conf.h"
 
+bool AbstractFilter::bSilent = false;
+
 void exportSweepSvJump( libMS::SubmoduleOrganizer& xOrganizer )
 {
     py::class_<GenomeSection, Container, std::shared_ptr<GenomeSection>>( xOrganizer.container( ), "GenomeSection" )
@@ -44,5 +46,8 @@ void exportSweepSvJump( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<FilterDiagonalLineCalls>( xOrganizer, "FilterDiagonalLineCalls" );
     exportModule<FilterFuzzyCalls>( xOrganizer, "FilterFuzzyCalls" );
     exportModule<ComputeCallAmbiguity>( xOrganizer, "ComputeCallAmbiguity" );
+
+    py::class_<AbstractFilter>( xOrganizer.util( ), "AbstractFilter" )
+        .def_readwrite_static( "silent", &AbstractFilter::bSilent );
 } // function
 #endif

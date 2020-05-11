@@ -67,7 +67,8 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
                                                          (uint32_t)rCall.xYAxis.start( ), //
                                                          (uint32_t)rCall.xXAxis.size( ), //
                                                          (uint32_t)rCall.xYAxis.size( ), //
-                                                         rCall.bSwitchStrand, //
+                                                         rCall.bFromForward, //
+                                                         rCall.bToForward, //
                                                          // can deal with nullpointers
                                                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
                                                          (uint32_t)rCall.uiNumSuppReads, //

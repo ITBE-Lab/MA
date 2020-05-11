@@ -2,8 +2,8 @@
 
 #include "ma/container/nucSeq.h"
 #include "ma/container/seed.h"
-#include "util/geom.h"
 #include "ms/util/parameter.h"
+#include "util/geom.h"
 #include <cmath>
 #include <limits>
 
@@ -18,10 +18,10 @@ class SvJump : public libMS::Container
         return uiA < uiB ? uiB - uiA : uiA - uiB;
     } // method
 
-    nucSeqIndex sDFActivate() const
+    nucSeqIndex sDFActivate( ) const
     {
-        return (nucSeqIndex)pGlobalParams->xSeedDirFuzziness->get() * 2;
-    } //method
+        return (nucSeqIndex)pGlobalParams->xSeedDirFuzziness->get( ) * 2;
+    } // method
   public:
     static bool validJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart )
     {
@@ -37,13 +37,13 @@ class SvJump : public libMS::Container
         return false;
     } // method
 
+    const bool bFromSeedStart; // this should be called was_mirrored
     const nucSeqIndex uiFrom; // inclusive
     const nucSeqIndex uiTo; // inclusive
     const nucSeqIndex uiQueryFrom; // inclusive
     const nucSeqIndex uiQueryTo; // inclusive
     const bool bFromForward;
     const bool bToForward;
-    const bool bFromSeedStart; // this should be call seed start or end of first seed
     nucSeqIndex uiNumSupportingNt;
     int64_t iId;
     int64_t iReadId;
@@ -53,8 +53,34 @@ class SvJump : public libMS::Container
     size_t uiSeedAId = 0, uiSeedBId = 0;
 #endif
 
-    SvJump( const nucSeqIndex uiFrom,
-            const nucSeqIndex uiTo,
+    SvJump( const nucSeqIndex uiFrom_,
+            const nucSeqIndex uiTo_,
+            const nucSeqIndex uiQueryFrom,
+            const nucSeqIndex uiQueryTo,
+            const bool bFromForward,
+            const bool bToForward,
+            const nucSeqIndex uiNumSupportingNt,
+            int64_t iId,
+            int64_t iReadId)
+        : bFromSeedStart( uiTo_ < uiFrom_ && uiFrom_ != std::numeric_limits<uint32_t>::max( ) ),
+          uiFrom( bFromSeedStart ? uiTo_ : uiFrom_ ),
+          uiTo( bFromSeedStart ? uiFrom_ : uiTo_ ),
+          uiQueryFrom( uiQueryFrom ),
+          uiQueryTo( uiQueryTo ),
+          bFromForward( bFromSeedStart ? !bToForward : bFromForward ),
+          bToForward( bFromSeedStart ? !bFromForward : bToForward ),
+          uiNumSupportingNt( uiNumSupportingNt ),
+          iId( iId ),
+          iReadId( iReadId )
+    {
+        assert( uiQueryFrom <= uiQueryTo );
+        // necessary for mapping switch strand jumps rightwards
+        assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
+    } // constructor
+
+    // @todo combine constructors
+    SvJump( const nucSeqIndex uiFrom_,
+            const nucSeqIndex uiTo_,
             const nucSeqIndex uiQueryFrom,
             const nucSeqIndex uiQueryTo,
             const bool bFromForward,
@@ -63,24 +89,23 @@ class SvJump : public libMS::Container
             const nucSeqIndex uiNumSupportingNt,
             int64_t iId = -1, /* -1 == no id obtained */
             int64_t iReadId = -1 /* -1 == no id obtained */ )
-        : uiFrom( uiFrom ),
-          uiTo( uiTo ),
+        : bFromSeedStart( bFromSeedStart ),
+          uiFrom( uiFrom_ ),
+          uiTo( uiTo_ ),
           uiQueryFrom( uiQueryFrom ),
           uiQueryTo( uiQueryTo ),
           bFromForward( bFromForward ),
           bToForward( bToForward ),
-          bFromSeedStart( bFromSeedStart ),
           uiNumSupportingNt( uiNumSupportingNt ),
           iId( iId ),
           iReadId( iReadId )
     {
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
-        assert( uiFrom * 2 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
+        assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
-    SvJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart,
-            int64_t iReadId )
+    SvJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart, int64_t iReadId )
         : SvJump(
               /* uiFrom = */
               bFromSeedStart
@@ -100,19 +125,24 @@ class SvJump : public libMS::Container
               std::max( bFromSeedStart ? rA.start( ) : rA.end( ) - 1, !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
-              /* bFromSeedStart = */ bFromSeedStart,
               /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
               /* iID */ -1,
               /* iReadId */ iReadId )
     {
+#if 0
+        std::string vS[] = {"false", "true"};
+        std::cout << "jump -- " << rA.start( ) << ", " << rA.start_ref( ) << ", " << rA.size( ) << " -> " << rB.start( )
+                  << ", " << rB.start_ref( ) << ", " << rB.size( ) << ": " << uiFrom << " - " << uiTo << ", "
+                  << vS[ bFromForward ] << ", " << vS[ bToForward ] << ", " << vS[ bFromSeedStart ] << std::endl;
+#endif
 #if DEBUG_LEVEL > 0
         uiSeedAId = rA.uiId;
         uiSeedBId = rB.uiId;
 #endif
     } // constructor
 
-    SvJump( const Seed& rA, const nucSeqIndex qLen,
-            const bool bFromSeedStart, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
+    SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFromSeedStart, int64_t iReadId,
+            nucSeqIndex uiMaxJumpLen )
         : SvJump( /* uiFrom = */
                   bFromSeedStart
                       // if we jump to the start of the first seed we don't know where we are coming from
@@ -132,7 +162,6 @@ class SvJump : public libMS::Container
                                   : rA.start( ),
                   /* bFromForward = */ rA.bOnForwStrand,
                   /* bToForward = */ rA.bOnForwStrand,
-                  /* bFromSeedStart = */ bFromSeedStart,
                   /* uiNumSupportingNt = */ rA.size( ),
                   /* iID */ -1,
                   /* iReadId */ iReadId )
@@ -203,8 +232,8 @@ class SvJump : public libMS::Container
     int64_t getSeedDirFuzziness( ) const
     {
         if( !from_known( ) || !to_known( ) )
-            return query_distance( ) > sDFActivate() ? (int64_t)pGlobalParams->xSeedDirFuzziness->get() : 0;
-        return fuzziness( ) > sDFActivate() ? (int64_t)pGlobalParams->xSeedDirFuzziness->get() : 0;
+            return query_distance( ) > sDFActivate( ) ? (int64_t)pGlobalParams->xSeedDirFuzziness->get( ) : 0;
+        return fuzziness( ) > sDFActivate( ) ? (int64_t)pGlobalParams->xSeedDirFuzziness->get( ) : 0;
     }
 
     int64_t from_start_same_strand( ) const
@@ -221,8 +250,13 @@ class SvJump : public libMS::Container
 
     int64_t from_start( ) const
     {
-        return from_start_same_strand( ) +
-               ( does_switch_strand( ) ? std::numeric_limits<int64_t>::max( ) / (int64_t)2 : 0 );
+        auto iRet = from_start_same_strand( );
+        // separate the 4 different types on the x axis
+        if( !bFromForward )
+            iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)2;
+        if( !bToForward )
+            iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)4;
+        return iRet;
     } // method
 
     nucSeqIndex from_size( ) const
@@ -276,7 +310,7 @@ class SvJump : public libMS::Container
     nucSeqIndex size( ) const
     {
         if( !from_known( ) || !to_known( ) )
-            return std::numeric_limits<nucSeqIndex>::max( ) / (nucSeqIndex)2;
+            return std::numeric_limits<nucSeqIndex>::max( ) / (nucSeqIndex)4;
         return std::max( query_distance( ), ref_distance( ) );
     } // method
 
@@ -288,7 +322,7 @@ class SvJump : public libMS::Container
     int64_t insert_ratio( ) const
     {
         if( !switch_strand_known( ) )
-            return std::numeric_limits<int64_t>::max( ) / 2;
+            return std::numeric_limits<int64_t>::max( ) / 4;
         return (int64_t)query_distance( ) - (int64_t)ref_distance( );
     } // method
 }; // class
@@ -356,7 +390,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     }; // class
 #endif
 
-    bool bSwitchStrand;
+    bool bFromForward;
+    bool bToForward;
     nucSeqIndex uiNumSuppReads;
     nucSeqIndex uiReferenceAmbiguity;
     std::vector<int64_t> vSupportingJumpIds;
@@ -378,7 +413,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
             nucSeqIndex uiToStart,
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
-            bool bSwitchStrand,
+            bool bFromForward,
+            bool bToForward,
             nucSeqIndex uiNumSuppReads,
             std::vector<int64_t> vSupportingJumpIds = {},
             int64_t iId = -1 /* -1 == no id obtained */
@@ -387,7 +423,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 #endif
             )
         : Rectangle( uiFromStart, uiToStart, uiFromSize, uiToSize ),
-          bSwitchStrand( bSwitchStrand ),
+          bFromForward( bFromForward ),
+          bToForward( bToForward ),
           uiNumSuppReads( uiNumSuppReads ),
           uiReferenceAmbiguity( 1 ),
           vSupportingJumpIds( vSupportingJumpIds ),
@@ -402,10 +439,11 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
             nucSeqIndex uiToStart,
             nucSeqIndex uiFromSize,
             nucSeqIndex uiToSize,
-            bool bSwitchStrand,
+            bool bFromForward,
+            bool bToForward,
             nucSeqIndex uiNumSuppReads,
             uint32_t uiReferenceAmbiguity )
-        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bSwitchStrand, uiNumSuppReads )
+        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bFromForward, bToForward, uiNumSuppReads )
     {
         this->uiReferenceAmbiguity = uiReferenceAmbiguity;
     } // constructor
@@ -415,7 +453,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
                   pJump->to_start( ),
                   pJump->from_size( ),
                   pJump->to_size( ),
-                  pJump->does_switch_strand( ),
+                  pJump->bFromForward,
+                  pJump->bToForward,
                   1,
                   std::vector<int64_t>{pJump->iId} )
     {
@@ -603,7 +642,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
      */
     void join( SvCall& rOther )
     {
-        assert( this->bSwitchStrand == rOther.bSwitchStrand );
+        assert( this->bFromForward == rOther.bFromForward );
+        assert( this->bToForward == rOther.bToForward );
         nucSeqIndex uiFromEnd = std::max( this->xXAxis.end( ), rOther.xXAxis.end( ) );
         nucSeqIndex uiToEnd = std::max( this->xYAxis.end( ), rOther.xYAxis.end( ) );
         this->xXAxis.start( std::min( this->xXAxis.start( ), rOther.xXAxis.start( ) ) );

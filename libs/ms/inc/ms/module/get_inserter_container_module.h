@@ -11,7 +11,7 @@
 namespace libMS
 {
 
-#define PROFILE_INSERTER 1
+#define PROFILE_INSERTER 0
 #if PROFILE_INSERTER
 
 using duration = std::chrono::duration<double>;
@@ -87,7 +87,11 @@ class InserterProfiler
 
 // @see docu above
 class SharedInserterProfiler
-{}; // class
+{
+  public:
+    SharedInserterProfiler( std::string sName )
+    {} // constructor
+}; // class
 
 // @see docu above
 class InserterProfiler
@@ -450,14 +454,14 @@ void exportModule2( SubmoduleOrganizer& xOrganizer, // pybind module variable
 )
 {
     // export the GetInserterContainerModule
-    py::class_<TP_MODULE>( xOrganizer._module(), ( std::string( "Cpp_Get" ) + sName ).c_str( ) )
+    py::class_<TP_MODULE>( xOrganizer._module( ), ( std::string( "Cpp_Get" ) + sName ).c_str( ) )
         .def_readonly( "id", &TP_MODULE::iId );
 
     // export GetInserterContainerModule python wrapper
     // ModuleWrapperCppToPy2 is needed in order to allow two constructors
     typedef ModuleWrapperCppToPy2<TP_MODULE, TP_CONSTR_PARAMS...> TP_TO_EXPORT;
     py::class_<TP_TO_EXPORT, PyModule<TP_MODULE::IS_VOLATILE>, std::shared_ptr<TP_TO_EXPORT>>(
-        xOrganizer.module(), ( std::string( "Get" ) + sName ).c_str( ) )
+        xOrganizer.module( ), ( std::string( "Get" ) + sName ).c_str( ) )
         // export the constructor that generates the foreign key by creating a new row
         .def( py::init<const ParameterSetManager&, std::shared_ptr<typename TP_MODULE::DBConInitForw>,
                        TP_CONSTR_PARAMS...>( ) )

@@ -5,15 +5,18 @@ import datetime
 
 
 def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequencer_ids, pack,
-                       out_file=None):
+                       out_file=None, silent=False):
     #parameter_set_manager.by_name("Number of Threads").set(2)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 2
 
+    AbstractFilter.silent = silent
+
     # creates scope so that destructor of call inserter is triggered (commits insert transaction)
     def graph(pool):
         analyze = AnalyzeRuntimes()
-        print("\tsetting up graph...")
+        if not silent:
+            print("\tsetting up graph...")
 
         pack_pledge = Pledge()
         pack_pledge.set(pack)
@@ -87,12 +90,14 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             res.append(unlock_pledge)
 
         # drain all sources
-        print("\texecuting graph...")
+        if not silent:
+            print("\texecuting graph...")
         res.simultaneous_get( parameter_set_manager.get_num_threads() )
         for inserter in inserter_vec:
             inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
-        print("\tdone executing")
-        analyze.analyze(out_file)
+        if not silent:
+            print("\tdone executing")
+            analyze.analyze(out_file)
 
         return get_call_inserter.cpp_module.id
 
@@ -101,39 +106,43 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
     pool = PoolContainer(parameter_set_manager.get_num_threads() + 1, dataset_name)
     sv_caller_run_id = graph(pool)
-    print("done sweeping")
+    if not silent:
+        print("done sweeping")
     analyze = AnalyzeRuntimes()
 
     call_table = SvCallTable(conn)
 
-    print("num calls:", call_table.num_calls(sv_caller_run_id, 0))
+    if not silent:
+        print("num calls:", call_table.num_calls(sv_caller_run_id, 0))
 
-    print("computing index...")
+        print("computing index...")
     start = datetime.datetime.now()
     call_table.gen_indices(sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("compute_index", delta.total_seconds(), False, lambda x: x)
-    print("done computing index")
+    if not silent:
+        print("done computing index")
 
-    print("high score filter...")
+        print("high score filter...")
     start = datetime.datetime.now()
     call_table.filter_calls_with_high_score(sv_caller_run_id, 0.1)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("high_score_filter", delta.total_seconds(), False, lambda x: x)
-    print("done high score filter")
+    if not silent:
+        print("done high score filter")
 
-    print("overlapping...")
+        print("overlapping...")
     start = datetime.datetime.now()
     num_combined = combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
-    print("done overlapping; combined", num_combined, "calls")
-
-    analyze.analyze(out_file)
-    if not out_file is None:
-        out_file.write("run_id is " + str(sv_caller_run_id) + "\n")
+    if not silent:
+        print("done overlapping; combined", num_combined, "calls")
+        analyze.analyze(out_file)
+        if not out_file is None:
+            out_file.write("run_id is " + str(sv_caller_run_id) + "\n")
 
     return sv_caller_run_id

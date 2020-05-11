@@ -5,11 +5,11 @@
 #pragma once
 
 #include "ma/container/pack.h"
-#include "msv/container/squeezedVector.h"
 #include "ms/container/sv_db/pool_container.h"
+#include "ms/module/module.h"
+#include "msv/container/squeezedVector.h"
 #include "msv/container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
 #include "msv/container/sv_db/query_objects/fetchSvJump.h"
-#include "ms/module/module.h"
 #include "msv/util/statisticSequenceAnalysis.h"
 #include <cmath>
 #include <csignal>
@@ -50,21 +50,19 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           iCurrStart( 0 )
     {} // constructor
 
-    virtual std::shared_ptr<GenomeSection> DLL_PORT(MSV) execute( )
+    virtual std::shared_ptr<GenomeSection> DLL_PORT( MSV ) execute( )
     {
         std::unique_lock<std::mutex> xLock( xMutex );
         // setFinished( );
         // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
-        std::shared_ptr<GenomeSection> pRet;
-        if( iCurrStart % 2 == 0 ) // forward strand
-            pRet = std::make_shared<GenomeSection>( ( iCurrStart / 2 ) * iSectionSize, iSectionSize );
-        else // reverse strand
-            pRet = std::make_shared<GenomeSection>(
-                ( iCurrStart / 2 ) * iSectionSize + std::numeric_limits<int64_t>::max( ) / (int64_t)2, iSectionSize );
+        auto pRet = std::make_shared<GenomeSection>( ( iCurrStart / 4 ) * iSectionSize +
+                                                         ( iCurrStart % 4 ) *
+                                                             ( std::numeric_limits<int64_t>::max( ) / (int64_t)4 ),
+                                                     iSectionSize );
 
         iCurrStart++;
-        if( ( iCurrStart / 2 ) * iSectionSize >= iRefSize )
+        if( ( iCurrStart / 4 ) * iSectionSize >= iRefSize )
             return nullptr;
         return pRet;
     } // method
@@ -106,9 +104,9 @@ class CompleteBipartiteSubgraphSweep
     {} // constructor
 
     // @todo document this function it is the main loop of the sv caller
-    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-        DLL_PORT(MSV) execute( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<GenomeSection> pSection,
-                          std::shared_ptr<Pack> pPack )
+    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector> DLL_PORT( MSV )
+        execute( std::shared_ptr<PoolContainer<DBCon>> pPool, std::shared_ptr<GenomeSection> pSection,
+                 std::shared_ptr<Pack> pPack )
     {
         return pPool->xPool.run(
             [this]( auto pConnection, std::shared_ptr<GenomeSection> pSection, std::shared_ptr<Pack> pPack ) {
@@ -124,16 +122,14 @@ class CompleteBipartiteSubgraphSweep
                     pSection->end( ) + iMaxFuzziness );
 
                 // std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
-                nucSeqIndex uiForwStrandStart = (nucSeqIndex)pSection->start( );
-                nucSeqIndex uiForwStrandEnd = (nucSeqIndex)pSection->end( );
-                if( pSection->iStart >= std::numeric_limits<int64_t>::max( ) / (int64_t)2 )
-                {
-                    uiForwStrandStart =
-                        ( nucSeqIndex )( pSection->start( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
-                    uiForwStrandEnd =
-                        ( nucSeqIndex )( pSection->end( ) - std::numeric_limits<int64_t>::max( ) / (int64_t)2 );
-                } // if
 
+                // bring section start and end back to genome
+                nucSeqIndex uiForwStrandStart =
+                    ( nucSeqIndex )( pSection->start( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)4 ) );
+                nucSeqIndex uiForwStrandEnd =
+                    ( nucSeqIndex )( pSection->end( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)4 ) );
+
+                // @todo we only need a positively squeezed vector now so this is overkill...
                 SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,
                                                                      uiCenterStripDown );
 
@@ -455,8 +451,8 @@ class ExactCompleteBipartiteSubgraphSweep
         } // while
     } // method
 
-    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector> DLL_PORT(MSV)
-    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pClusters, std::shared_ptr<Pack> pPack )
+    virtual std::shared_ptr<CompleteBipartiteSubgraphClusterVector> DLL_PORT( MSV )
+        execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pClusters, std::shared_ptr<Pack> pPack )
     {
         auto pRet = std::make_shared<CompleteBipartiteSubgraphClusterVector>( );
 
@@ -477,6 +473,7 @@ class AbstractFilter
     size_t uiFilterKept = 0;
     size_t uiFilterTotal = 0;
     std::mutex xLock;
+    static bool bSilent;
 #endif
     AbstractFilter( std::string sName )
 #if ANALYZE_FILTERS
@@ -487,7 +484,7 @@ class AbstractFilter
 
     ~AbstractFilter( )
     {
-        if( uiFilterTotal > 0 )
+        if( !bSilent && uiFilterTotal > 0 )
             std::cout << std::fixed << std::setprecision( 2 ) << "~" << sName << ": filter kept and eliminated "
                       << uiFilterKept << " and " << uiFilterTotal - uiFilterKept
                       << " elements respectiveley.\n\tThat's " << 100.0 * uiFilterKept / (double)uiFilterTotal
@@ -710,7 +707,7 @@ class ComputeCallAmbiguity
         {
             auto f = pCall->xXAxis.start( ) + pCall->xXAxis.size( ) / 2;
             auto t = pCall->xYAxis.start( ) + pCall->xYAxis.size( ) / 2;
-            // std::abs is ambigious under msvc...
+            // std::abs is ambiguous under msvc...
             auto uiCallSize = f >= t ? f - t : t - f;
 
             if( uiCallSize > uiDistance )
@@ -721,7 +718,7 @@ class ComputeCallAmbiguity
                 auto pRightTo = getRegion( pCall->xYAxis.start( ), false, pPack );
 
                 // if we switch strand we have to compare forward and reverse strands
-                if( pCall->bSwitchStrand )
+                if( pCall->bFromForward != pCall->bToForward )
                 {
                     pLeftTo->vReverseAll( );
                     pLeftTo->vSwitchAllBasePairsToComplement( );
@@ -729,8 +726,10 @@ class ComputeCallAmbiguity
                     pRightTo->vSwitchAllBasePairsToComplement( );
                 } // if
 
-                auto a = sampleAmbiguity( pLeftFrom, pCall->bSwitchStrand ? pRightTo : pLeftTo );
-                auto b = sampleAmbiguity( pRightFrom, pCall->bSwitchStrand ? pLeftTo : pRightTo );
+                auto a =
+                    sampleAmbiguity( pLeftFrom, ( pCall->bFromForward != pCall->bToForward ) ? pRightTo : pLeftTo );
+                auto b =
+                    sampleAmbiguity( pRightFrom, ( pCall->bFromForward != pCall->bToForward ) ? pLeftTo : pRightTo );
 
                 pCall->uiReferenceAmbiguity = std::max( a, b );
             } // if

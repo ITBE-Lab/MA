@@ -15,21 +15,21 @@ def insert_calls(db_conn, dataset_name):
     sv_inserter = get_inserter.execute(pool)
 
     # deletion
-    sv_inserter.insert(SvCall(4, 7, 0, 0, False, 1000))  # a
+    sv_inserter.insert(SvCall(4, 7, 0, 0, True, True, 1000))  # a
 
     # inversion
-    sv_inserter.insert(SvCall(9, 14, 0, 0, True, 1000))  # b
-    sv_inserter.insert(SvCall(15, 10, 0, 0, True, 1000)) # c
+    sv_inserter.insert(SvCall(9, 14, 0, 0, True, False, 1000))  # b
+    sv_inserter.insert(SvCall(10, 15, 0, 0, False, True, 1000)) # c
 
     # insertion
-    insertion = SvCall(16, 17, 0, 0, False, 1000)
+    insertion = SvCall(16, 17, 0, 0, True, True, 1000)
     insertion.inserted_sequence = NucSeq("TGTT")
     sv_inserter.insert(insertion) # d
 
     # translocation
-    sv_inserter.insert(SvCall(0, 19, 0, 0, False, 1000))  # e
-    sv_inserter.insert(SvCall(19, 1, 0, 0, False, 1000))  # f
-    sv_inserter.insert(SvCall(18, 20, 0, 0, False, 1000))  # g
+    sv_inserter.insert(SvCall(0, 19, 0, 0, True, True, 1000))  # e
+    sv_inserter.insert(SvCall(1, 19, 0, 0, False, False, 1000))  # f
+    sv_inserter.insert(SvCall(18, 20, 0, 0, True, True, 1000))  # g
 
     sv_inserter.close(pool)
 
@@ -41,10 +41,11 @@ def get_reference():
     reference.append("chr2", "chr2-desc", NucSeq("CTCGTCAACAG"))
     return reference
 
-if __name__ == "__main__":
-    db_conn = DbConn({"SCHEMA": {"NAME": "tmp_2", "FLAGS": ["DROP_ON_CLOSURE"]}})
 
-    run_id = insert_calls(db_conn, "tmp_2")
+if __name__ == "__main__":
+    db_conn = DbConn({"SCHEMA": {"NAME": "tmp_2_seeds", "FLAGS": ["DROP_ON_CLOSURE"]}})
+
+    run_id = insert_calls(db_conn, "tmp_2_seeds")
     reference = get_reference()
 
     seeds, inserts = SvCallTable(db_conn).calls_to_seeds(reference, run_id)

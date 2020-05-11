@@ -77,7 +77,7 @@ class ConnectorPatternFilter : public Module<CompleteBipartiteSubgraphClusterVec
                         pRef->unBridgeSubsection( iBegin, iSize );
                     auto pNucSeqUp = pRef->vExtract( iBegin, iBegin + iSize );
 
-                    if( pCall->bSwitchStrand )
+                    if( pCall->bFromForward != pCall->bToForward )
                     {
                         pNucSeqUp.swap( pNucSeqDown );
                         pNucSeqUp->vSwitchAllBasePairsToComplement( );

@@ -13,7 +13,7 @@ def render_jumps(self, jump_list=[]):
         "x": [],
         "y": []
     }
-    for _ in range(4):
+    for _ in range(6):
         out_dicts.append({
             "x": [],
             "y": [],
@@ -39,18 +39,21 @@ def render_jumps(self, jump_list=[]):
         if not self.do_render_call_jumps_only:
             while sweeper.has_next():
                 jump_list.append(sweeper.get_next())
+        max_supp_nt = 1
+        for jump in jump_list:
+            max_supp_nt = max(jump.num_supp_nt(), max_supp_nt)
         for jump in jump_list:
             idx = None
-            if jump.switch_strand_known():
-                if jump.does_switch_strand():
-                    idx = 0
-                else:
-                    idx = 1
+            if not jump.to_known():
+                idx = 0
+            if not jump.from_known():
+                idx = 1
             else:
-                if jump.from_known():
-                    idx = 2
-                else:
-                    idx = 3
+                idx = 2
+                if not jump.from_forward:
+                    idx += 2
+                if not jump.to_forward:
+                    idx += 1
 
             f_dir = ""
             if not jump.from_fuzziness_is_rightwards():
@@ -71,7 +74,7 @@ def render_jumps(self, jump_list=[]):
             out_dicts[idx]["w"].append(
                 jump.from_start_same_strand() + jump.from_size() + 1.0)
             out_dicts[idx]["h"].append(jump.to_start() + jump.to_size() + 1.0)
-            out_dicts[idx]["a"].append(jump.num_supp_nt() / 1000)
+            out_dicts[idx]["a"].append(jump.num_supp_nt() / (max_supp_nt*2))
             out_dicts[idx]["n"].append(jump.num_supp_nt())
             out_dicts[idx]["r"].append(jump.read_id)
             out_dicts[idx]["q"].append(jump.query_distance())

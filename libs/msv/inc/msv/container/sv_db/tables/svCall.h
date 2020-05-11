@@ -28,7 +28,8 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                   uint32_t, // to_pos (geometry)
                                                   uint32_t, // from_size (geometry)
                                                   uint32_t, // to_size (geometry)
-                                                  bool, // switch_strand
+                                                  bool, // from_forward
+                                                  bool, // to_forward
                                                   std::shared_ptr<CompressedNucSeq>, // inserted_sequence
                                                   uint32_t, // supporting_reads
                                                   uint32_t, // reference_ambiguity
@@ -63,7 +64,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "to_pos"}},
               {{COLUMN_NAME, "from_size"}},
               {{COLUMN_NAME, "to_size"}},
-              {{COLUMN_NAME, "switch_strand"}},
+              {{COLUMN_NAME, "from_forward"}},
+              {{COLUMN_NAME, "to_forward"}},
               {{COLUMN_NAME, "inserted_sequence"}},
               {{COLUMN_NAME, "supporting_reads"}},
               {{COLUMN_NAME, "reference_ambiguity"}},
@@ -121,7 +123,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    to_pos = ?, "
                        "    from_size = ?, "
                        "    to_size = ?, "
-                       "    switch_strand = ?, "
+                       "    from_forward = ?, "
+                       "    to_forward = ?, "
                        "    inserted_sequence = ?, "
                        "    supporting_reads = ?, "
                        "    reference_ambiguity = ?, "
@@ -188,7 +191,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                           (uint32_t)rCall.xYAxis.start( ), //
                           (uint32_t)rCall.xXAxis.size( ), //
                           (uint32_t)rCall.xYAxis.size( ), //
-                          rCall.bSwitchStrand,
+                          rCall.bFromForward, //
+                          rCall.bToForward,
                           // can deal with nullpointers
                           makeSharedCompNucSeq( rCall.pInsertedSequence ), //
                           (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, -1, xRectangle );
@@ -201,7 +205,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
         xUpdateCall.exec( (uint32_t)rCall.xXAxis.start( ), (uint32_t)rCall.xYAxis.start( ),
-                          (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bSwitchStrand,
+                          (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bFromForward,
+                          rCall.bToForward,
                           // can deal with nullpointers
                           makeSharedCompNucSeq( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppReads,
                           (uint32_t)rCall.uiReferenceAmbiguity, xRectangle, rCall.iId );
@@ -233,10 +238,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     } // method
 
 
-    using NextCallType =
-        SQLQuery<DBCon, int64_t, bool, uint32_t, uint32_t, std::shared_ptr<CompressedNucSeq>, uint32_t>;
+    using NextCallType = SQLQuery<DBCon, int64_t, bool, bool, uint32_t, uint32_t, uint32_t, uint32_t,
+                                  std::shared_ptr<CompressedNucSeq>, bool>;
 
-    /** @brief returns call id, jump start pos, next context, next from position, jump end position
+    /** @brief returns call id, jump start pos, next context, inserted sequence, jump end position
      *  @details helper function for reconstructSequencedGenome */
     inline std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t>
     getNextCall( int64_t iCallerRun, //
@@ -249,23 +254,38 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         std::get<0>( xRet ) = -1;
         std::get<2>( xRet ) = bForwardContext; // does nothing...
         std::get<3>( xRet ) = nullptr;
-        if( bForwardContext && xNextCallForwardContext.execAndFetch( uiFrom ) )
+
+        NextCallType* pCaller = ( bForwardContext ? &xNextCallForwardContext : &xNextCallBackwardContext );
+        if( pCaller->execAndFetch( uiFrom ) )
         {
-            auto xQ = xNextCallForwardContext.get( );
+            auto xQ = pCaller->get( );
+            // if the call was reverted
+            if( std::get<8>( xQ ) )
+            {
+                // reverse the call
+                std::get<1>( xQ ) = !std::get<1>( xQ );
+                std::get<2>( xQ ) = !std::get<2>( xQ );
+                std::swap( std::get<1>( xQ ), std::get<2>( xQ ) );
+
+                std::swap( std::get<3>( xQ ), std::get<4>( xQ ) );
+                std::swap( std::get<5>( xQ ), std::get<6>( xQ ) );
+            } // if
+
+            // from context of call must match search
+            assert( std::get<1>( xQ ) == bForwardContext );
+
             std::get<0>( xRet ) = std::get<0>( xQ );
-            std::get<1>( xRet ) = std::get<5>( xQ );
-            std::get<2>( xRet ) = !std::get<1>( xQ );
-            std::get<3>( xRet ) = std::get<4>( xQ ) == nullptr ? nullptr : std::get<4>( xQ )->pUncomNucSeq;
-            std::get<4>( xRet ) = std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
-        } // if
-        else if( !bForwardContext && xNextCallBackwardContext.execAndFetch( uiFrom ) )
-        {
-            auto xQ = xNextCallBackwardContext.get( );
-            std::get<0>( xRet ) = std::get<0>( xQ );
-            std::get<1>( xRet ) = std::get<5>( xQ );
-            std::get<2>( xRet ) = std::get<1>( xQ );
-            std::get<3>( xRet ) = std::get<4>( xQ ) == nullptr ? nullptr : std::get<4>( xQ )->pUncomNucSeq;
-            std::get<4>( xRet ) = !std::get<1>( xQ ) ? std::get<2>( xQ ) + std::get<3>( xQ ) : std::get<2>( xQ );
+            // if we are in a forward context, the start of the jump is at the right of the call
+            // if we are in a backward context, the start of the jump is at the left of the call
+            std::get<1>( xRet ) = bForwardContext ? std::get<3>( xQ ) + std::get<5>( xQ ) : std::get<3>( xQ );
+            // next context is simply the output of the call
+            std::get<2>( xRet ) = std::get<2>( xQ );
+            // check if we have an insertion
+            std::get<3>( xRet ) = std::get<7>( xQ ) == nullptr ? nullptr : std::get<7>( xQ )->pUncomNucSeq;
+
+            // if we have a forward context next, the end of the jump is at the bottom of the call
+            // if we have a backward context next, the end of the jump is at the top of the call
+            std::get<4>( xRet ) = std::get<2>( xQ ) ? std::get<4>( xQ ) : std::get<4>( xQ ) + std::get<6>( xQ );
         } // if
         return xRet;
     } // method
@@ -276,52 +296,64 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         auto pRet = std::make_shared<Seeds>( );
         std::vector<std::shared_ptr<NucSeq>> vInsertions;
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t> xReconstructionTable(
+        SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool> xReconstructionTable(
             this->pConnection,
             json{{TABLE_NAME, "reconstruction_table"},
                  {CPP_EXTRA, "DROP ON DESTRUCTION"},
                  {TABLE_COLUMNS,
                   {
-                      {{COLUMN_NAME, "call_id"},
-                       {REFERENCES, "sv_call_table(id)"},
-                       {CONSTRAINTS, "NOT NULL PRIMARY KEY"}},
+                      {{COLUMN_NAME, "call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}},
                       {{COLUMN_NAME, "from_pos"}},
-                      {{COLUMN_NAME, "to_pos"}}
+                      {{COLUMN_NAME, "to_pos"}},
+                      {{COLUMN_NAME, "from_forward"}},
+                      {{COLUMN_NAME, "do_reverse"}}
                       //
                   }}} );
 
-        SQLStatement<DBCon> xInsert( this->pConnection, "INSERT INTO reconstruction_table (call_id, from_pos, to_pos) "
-                                                        "SELECT id, from_pos, to_pos "
+        SQLStatement<DBCon> xInsert( this->pConnection, "INSERT INTO reconstruction_table (call_id, from_pos, "
+                                                        "                           to_pos, from_forward, do_reverse) "
+                                                        "SELECT id, from_pos, to_pos, from_forward, False "
                                                         "FROM sv_call_table "
                                                         "WHERE sv_caller_run_id = ? " );
+        SQLStatement<DBCon> xInsert2( this->pConnection, "INSERT INTO reconstruction_table (call_id, from_pos, "
+                                                         "                           to_pos, from_forward, do_reverse) "
+                                                         "SELECT id, to_pos, from_pos, NOT to_forward, True "
+                                                         "FROM sv_call_table "
+                                                         "WHERE sv_caller_run_id = ? " );
         SQLStatement<DBCon> xDelete( this->pConnection, "DELETE FROM reconstruction_table "
                                                         "WHERE call_id = ? " );
 
-        metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) { xInsert.exec( iCallerRun ); } );
+        metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) {
+            xInsert.exec( iCallerRun );
+            xInsert2.exec( iCallerRun );
+        } );
 
         metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
-            xReconstructionTable.addIndex( json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "from_pos, call_id"}} );
-            xReconstructionTable.addIndex( json{{INDEX_NAME, "tmp_rct_to"}, {INDEX_COLUMNS, "to_pos, call_id"}} );
+            xReconstructionTable.addIndex(
+                json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "from_forward, from_pos, call_id"}} );
         } );
 
         NextCallType xNextCallForwardContext(
             this->pConnection,
-            "SELECT id, switch_strand, sv_call_table.to_pos, to_size, inserted_sequence, "
-            "       sv_call_table.from_pos + from_size "
+            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos >= ? "
+            "AND reconstruction_table.from_forward "
             "ORDER BY reconstruction_table.from_pos ASC "
             "LIMIT 1 " );
         NextCallType xNextCallBackwardContext(
             this->pConnection,
-            "SELECT id, switch_strand, sv_call_table.from_pos, from_size, "
-            "       inserted_sequence, sv_call_table.to_pos "
+            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-            "WHERE reconstruction_table.to_pos <= ? "
-            "ORDER BY reconstruction_table.to_pos DESC "
+            "WHERE reconstruction_table.from_pos <= ? "
+            "AND NOT reconstruction_table.from_forward "
+            "ORDER BY reconstruction_table.from_pos DESC "
             "LIMIT 1 " );
+
 
 #if DEBUG_LEVEL > 0
         std::set<int64_t> xVisitedCalls;
@@ -358,8 +390,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                ? "nullptr"
                                : ( std::get<3>( tNextCall )->uiSize == 0 ? "empty"
                                                                          : std::get<3>( tNextCall )->toString( ) ) )
-                      //<< " curr_genome: " << pRet->vColletionWithoutReverseStrandAsNucSeq( )->toString( ) << " "
-                      << xCurrChrom.toString( ) << std::endl;
+                      << std::endl;
 #endif
             if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
             {
@@ -403,7 +434,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 break;
             } // if
 
-            // we reach this point if there are more calls, so tNextCall is set properly here
+            // we reach this point only if there are more calls, so tNextCall is set properly here
             metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
                 // if the next call is in a different chromosome
                 while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
@@ -520,13 +551,13 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
      * and sorts calls by score
      * call multiple times using different x and y to obtain complete result
      */
-    class NumOverlapsQuery : public SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType>
+    class NumOverlapsQuery : public SQLQuery<DBCon, WKBUint64Rectangle, bool, bool, double, PriKeyDefaultType>
     {
       public:
         NumOverlapsQuery( std::shared_ptr<DBCon> pConnection )
-            : SQLQuery<DBCon, WKBUint64Rectangle, bool, double, PriKeyDefaultType>(
+            : SQLQuery<DBCon, WKBUint64Rectangle, bool, bool, double, PriKeyDefaultType>(
                   pConnection,
-                  "SELECT ST_AsBinary(rectangle), switch_strand, score, id "
+                  "SELECT ST_AsBinary(rectangle), from_forward, to_forward, score, id "
                   "FROM sv_call_table "
                   "WHERE sv_caller_run_id = ? "
                   "AND score >= ? "
@@ -547,7 +578,8 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                          "FROM sv_call_table "
                                          "WHERE sv_caller_run_id = ? "
                                          "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                                         "AND switch_strand = ? "
+                                         "AND from_forward = ? "
+                                         "AND to_forward = ? "
                                          "AND (score, id) > (?, ?) "
                                          "LIMIT 1 ",
                                          json{}, "SvCallTable::xHelperIntersecCallWHigherScore" )
@@ -564,7 +596,8 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                                    "FROM sv_call_table "
                                                    "WHERE sv_caller_run_id = ? "
                                                    "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                                                   "AND switch_strand = ? "
+                                                   "AND from_forward = ? "
+                                                   "AND to_forward = ? "
                                                    // ST_Envelope returns MBR of rectangle
                                                    // otherwise mysql throws an error - don't understand why
                                                    "ORDER BY ST_Distance(ST_Envelope(rectangle), "
@@ -677,14 +710,14 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
             forAllCalls<uint32_t>(
                 []( ) { return 0; },
                 [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection, WKBUint64Rectangle& xWKB,
-                     bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
+                     bool bFromForward, bool bToForward, double fScore, PriKeyDefaultType iId ) {
                     auto xRect = xWKB.getRect( );
                     WKBPoint xCenter( (double)xRect.xXAxis.center( ), (double)xRect.xYAxis.center( ) );
                     xRect.resize( iAllowedDist );
                     WKBUint64Rectangle xWKBResized( xRect );
                     // check that call overlaps with at least one ground truth
-                    if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
-                                                                                      bSwitchStrand, xCenter ) )
+                    if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch(
+                            iCallerRunIdB, xWKBResized, bFromForward, bToForward, xCenter ) )
                     {
                         // in order to check for overlapping calls from the same run_id we need to increase the size
                         // twice, since both calls would have increased
@@ -692,7 +725,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                         WKBUint64Rectangle xWKBResized2( xRect );
                         // check that call does not overlap other call with higher score
                         if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar(
-                                iCallerRunIdA, xWKBResized2, bSwitchStrand, fScore, iId ) == 0 )
+                                iCallerRunIdA, xWKBResized2, bFromForward, bToForward, fScore, iId ) == 0 )
                             uiIntermediate++;
                     }
                 },
@@ -715,21 +748,22 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
             forAllCalls<std::pair<uint32_t, uint32_t>>(
                 []( ) { return std::make_pair<uint32_t, uint32_t>( 0, 0 ); },
                 [&]( std::pair<uint32_t, uint32_t>& xIntermediate, std::shared_ptr<DBCon> pConnection,
-                     WKBUint64Rectangle& xWKB, bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
+                     WKBUint64Rectangle& xWKB, bool bFromForward, bool bToForward, double fScore,
+                     PriKeyDefaultType iId ) {
                     auto xRect = xWKB.getRect( );
                     WKBPoint xCenter( (double)xRect.xXAxis.center( ), (double)xRect.xYAxis.center( ) );
                     xRect.resize( iAllowedDist );
                     WKBUint64Rectangle xWKBResized( xRect );
                     // check that call overlaps with at least one ground truth
-                    if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch( iCallerRunIdB, xWKBResized,
-                                                                                      bSwitchStrand, xCenter ) )
+                    if( vIntersectQueries[ pConnection->getTaskId( ) ]->execAndFetch(
+                            iCallerRunIdB, xWKBResized, bFromForward, bToForward, xCenter ) )
                     {
                         // in order to check for overlapping calls from the same run_id we need to increase the size
                         // twice, since both calls would have increased
                         xRect.resize( iAllowedDist );
                         WKBUint64Rectangle xWKBResized2( xRect );
                         if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar(
-                                iCallerRunIdA, xWKBResized2, bSwitchStrand, fScore, iId ) == 0 )
+                                iCallerRunIdA, xWKBResized2, bFromForward, bToForward, fScore, iId ) == 0 )
                         {
                             auto xRectInner = vIntersectQueries[ pConnection->getTaskId( ) ]->getVal( ).getRect( );
                             xIntermediate.first += (uint32_t)xRectInner.manhattonDistance( xWKB.getRect( ) );
@@ -754,22 +788,22 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
 
         uint32_t uiRet = 0;
         metaMeasureAndLogDuration<bLog>( "numInvalidCalls", [&]( ) {
-            forAllCalls<uint32_t>(
-                []( ) { return 0; },
-                [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection, WKBUint64Rectangle& xWKB,
-                     bool bSwitchStrand, double fScore, PriKeyDefaultType iId ) {
-                    auto xRect = xWKB.getRect( );
-                    // in order to check for overlapping calls from the same run_id we need to increase the size
-                    // twice, since both calls would have increased
-                    xRect.resize( iAllowedDist * 2 );
-                    WKBUint64Rectangle xWKBResized( xRect );
-                    // check if call overlaps higher scored one
-                    if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar( iCallerRunIdA, xWKBResized,
-                                                                                     bSwitchStrand, fScore, iId ) > 0 )
-                        uiIntermediate++;
-                },
-                [&]( uint32_t uiIntermediate ) { uiRet += uiIntermediate; }, //
-                iCallerRunIdA, dMinScore, dMaxScore );
+            forAllCalls<uint32_t>( []( ) { return 0; },
+                                   [&]( uint32_t& uiIntermediate, std::shared_ptr<DBCon> pConnection,
+                                        WKBUint64Rectangle& xWKB, bool bFromForward, bool bToForward, double fScore,
+                                        PriKeyDefaultType iId ) {
+                                       auto xRect = xWKB.getRect( );
+                                       // in order to check for overlapping calls from the same run_id we need to
+                                       // increase the size twice, since both calls would have increased
+                                       xRect.resize( iAllowedDist * 2 );
+                                       WKBUint64Rectangle xWKBResized( xRect );
+                                       // check if call overlaps higher scored one
+                                       if( vIntersectScoreQueries[ pConnection->getTaskId( ) ]->scalar(
+                                               iCallerRunIdA, xWKBResized, bFromForward, bToForward, fScore, iId ) > 0 )
+                                           uiIntermediate++;
+                                   },
+                                   [&]( uint32_t uiIntermediate ) { uiRet += uiIntermediate; }, //
+                                   iCallerRunIdA, dMinScore, dMaxScore );
         } );
         return uiRet;
     } // method

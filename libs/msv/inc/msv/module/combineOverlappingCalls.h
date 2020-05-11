@@ -13,8 +13,8 @@ namespace libMSV
  * Also computes the average insert size of the supporting jumps.
  */
 std::pair<SvCall, size_t>
-fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
-                    uint32_t>& xGetCall,
+fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool,
+                    std::shared_ptr<CompressedNucSeq>, uint32_t>& xGetCall,
            SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t>& xGetSupportingJumps,
            PriKeyDefaultType iId )
 {
@@ -24,11 +24,12 @@ fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool
                                                         std::get<2>( xCallTup ), // uiToStart
                                                         std::get<3>( xCallTup ), // uiFromSize
                                                         std::get<4>( xCallTup ), // uiToSize
-                                                        std::get<5>( xCallTup ), // bSwitchStrand
-                                                        std::get<7>( xCallTup ) // supporting_reads
+                                                        std::get<5>( xCallTup ), // from_forward
+                                                        std::get<6>( xCallTup ), // to_forward
+                                                        std::get<8>( xCallTup ) // supporting_reads
                                                         ),
                                                 0 );
-    xRet.first.pInsertedSequence = std::get<6>( xCallTup ) == nullptr ? nullptr : std::get<6>( xCallTup )->pUncomNucSeq;
+    xRet.first.pInsertedSequence = std::get<7>( xCallTup ) == nullptr ? nullptr : std::get<7>( xCallTup )->pUncomNucSeq;
     xRet.first.iId = std::get<0>( xCallTup );
 
     metaMeasureAndLogDuration<LOG>( "xGetSupprotingJumps",
@@ -82,9 +83,9 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiI ) {
                         // @todo this triggers multiple full table scans...
-                        SQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool> xFetchCalls(
+                        SQLQuery<DBCon, PriKeyDefaultType, WKBUint64Rectangle, bool, bool> xFetchCalls(
                             pConnection,
-                            "SELECT id, ST_AsBinary(rectangle), switch_strand "
+                            "SELECT id, ST_AsBinary(rectangle), from_forward, to_forward "
                             "FROM sv_call_table "
                             "WHERE sv_caller_run_id = ? "
                             "AND id % ? = ? ",
@@ -99,11 +100,14 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
                             "WHERE sv_caller_run_id = ? "
                             "AND id > ? "
                             "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                            "AND switch_strand = ? ",
+                            "AND from_forward = ? "
+                            "AND to_forward = ? ",
                             "combineOverlappingCalls::xInsertIntoOverlapTable" );
                         xFetchCalls.execAndForAll(
-                            [&]( PriKeyDefaultType iOuterId, WKBUint64Rectangle& xRect, bool bSwitchStrand ) {
-                                xInsertIntoOverlapTable.exec( iOuterId, iSvCallerId, iOuterId, xRect, bSwitchStrand );
+                            [&]( PriKeyDefaultType iOuterId, WKBUint64Rectangle& xRect, bool bFromForward,
+                                 bool bToForward ) {
+                                xInsertIntoOverlapTable.exec( iOuterId, iSvCallerId, iOuterId, xRect, bFromForward,
+                                                              bToForward );
                             }, // lambda
                             iSvCallerId, uiNumTasks, uiI );
                     },
@@ -133,10 +137,10 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
                                                                  json{},
                                                                  "combineOverlappingCalls::xGetOverlappingCalls" );
 
-        SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, std::shared_ptr<CompressedNucSeq>,
+        SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, std::shared_ptr<CompressedNucSeq>,
                  uint32_t>
             xGetCall( pOuterConnection,
-                      "SELECT id, from_pos, to_pos, from_size, to_size, switch_strand, inserted_sequence, "
+                      "SELECT id, from_pos, to_pos, from_size, to_size, from_forward, to_forward, inserted_sequence, "
                       "supporting_reads "
                       "FROM sv_call_table "
                       "WHERE id = ? ",
