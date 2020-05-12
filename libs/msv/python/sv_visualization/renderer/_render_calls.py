@@ -17,6 +17,7 @@ def render_calls(self):
         "col": [],
         "r": [],
         "idx": [],
+        "desc": [],
         "supporing_jump_ids": [],
         "s": []
     }
@@ -28,6 +29,7 @@ def render_calls(self):
         "col": [],
         "r": [],
         "idx": [],
+        "desc": [],
         "s": []
     }
     ground_boxes_data = {
@@ -40,6 +42,7 @@ def render_calls(self):
         "col": [],
         "r": [],
         "idx": [],
+        "desc": [],
         "supporing_jump_ids": [],
         "s": []
     }
@@ -51,6 +54,7 @@ def render_calls(self):
         "col": [],
         "r": [],
         "idx": [],
+        "desc": [],
         "s": []
     }
     call_colors = {
@@ -63,6 +67,7 @@ def render_calls(self):
             False: "darkorange",
         }
     }
+    desc_table = CallDescTable(self.db_conn)
     num_call_jumps = 0
     jump_list = []
     with self.measure("SvCallFromDb(run_id)"):
@@ -90,6 +95,7 @@ def render_calls(self):
             accepted_boxes_data["r"].append(len(call.supporing_jump_ids))
             accepted_boxes_data["s"].append(str(call.get_score()))
             accepted_boxes_data["idx"].append(call.id)
+            accepted_boxes_data["desc"].append(desc_table.get_desc(call.id))
             accepted_boxes_data["supporing_jump_ids"].append(list(call.supporing_jump_ids))
             accepted_plus_data["x"].append(call.x.start + call.x.size/2)
             accepted_plus_data["y"].append(call.y.start + call.y.size/2)
@@ -99,6 +105,7 @@ def render_calls(self):
         accepted_plus_data["col"].append(call_colors[call.from_forward][call.to_forward])
         accepted_plus_data["r"].append(len(call.supporing_jump_ids))
         accepted_plus_data["s"].append(str(call.get_score()))
+        accepted_plus_data["desc"].append(desc_table.get_desc(call.id))
     with self.measure("SvCallFromDb(run_id)"):
         calls_from_db_gt = SvCallsFromDb(self.params, self.db_conn, self.get_gt_id(),
                                       int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
@@ -122,12 +129,14 @@ def render_calls(self):
             ground_boxes_data["r"].append(len(call.supporing_jump_ids))
             ground_plus_data["x"].append(call.x.start + call.x.size/2)
             ground_plus_data["y"].append(call.y.start + call.y.size/2)
+            ground_boxes_data["desc"].append(desc_table.get_desc(call.id))
         ground_plus_data["idx"].append(call.id)
         ground_plus_data["n"].append(call.num_supp_reads)
         ground_plus_data["c"].append(call.reference_ambiguity)
         ground_plus_data["col"].append(call_colors[call.from_forward][call.to_forward])
         ground_plus_data["r"].append(len(call.supporing_jump_ids))
         ground_plus_data["s"].append(str(call.get_score()))
+        ground_plus_data["desc"].append(desc_table.get_desc(call.id))
 
     # the sv - boxes
     def callback():

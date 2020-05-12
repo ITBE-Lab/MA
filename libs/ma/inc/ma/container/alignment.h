@@ -916,6 +916,11 @@ class Alignment : public libMS::Container
         } // if
 #endif
     } // method
+    
+    void setOther(std::shared_ptr<Alignment> pOther)
+    {
+        this->xStats.pOther = pOther;
+    }
 }; // class
 } // namespace libMA
 

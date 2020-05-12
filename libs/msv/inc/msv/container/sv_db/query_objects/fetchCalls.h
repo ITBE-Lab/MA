@@ -51,8 +51,7 @@ template <typename DBCon> class SvCallsFromDb
     SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
         : SvCallsFromDb( pConnection,
                          "SELECT id, from_pos, to_pos, from_size, to_size, from_forward, to_forward, "
-                         "inserted_sequence, supporting_reads, "
-                         "       reference_ambiguity "
+                         "       inserted_sequence, supporting_reads, reference_ambiguity "
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? ",
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "

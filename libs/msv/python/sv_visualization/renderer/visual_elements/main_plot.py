@@ -70,7 +70,8 @@ class MainPlot:
                                                 ("ambiguity", "@c"),
                                                 ("#reads", "@r"),
                                                 ("score", "@s"),
-                                                ("id", "@idx")],
+                                                ("id", "@idx"),
+                                                ("desc", "@desc")],
                                       names=["call_quad", "ground_truth_quad", "call_x", "ground_truth_x"],
                                       name="Hover calls"))
         # the overview plot

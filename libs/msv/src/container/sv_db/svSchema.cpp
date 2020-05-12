@@ -73,6 +73,11 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
+    py::class_<CallDescTable<DBConSingle>, std::shared_ptr<CallDescTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                         "CallDescTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "insert", &CallDescTable<DBConSingle>::insert_py )
+        .def( "get_desc", &CallDescTable<DBConSingle>::getDesc );
 
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( xOrganizer.util( ), "SvJumpTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
@@ -93,6 +98,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "getIds", &SvCallerRunTable<DBConSingle>::getIds )
         .def( "getName", &SvCallerRunTable<DBConSingle>::getName )
+        .def( "exists", &SvCallerRunTable<DBConSingle>::exists )
         .def( "getDesc", &SvCallerRunTable<DBConSingle>::getDesc )
         .def( "jump_run_id", &SvCallerRunTable<DBConSingle>::getSvJumpRunId )
         .def( "newest_unique_runs", &SvCallerRunTable<DBConSingle>::getNewestUnique )

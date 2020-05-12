@@ -540,6 +540,10 @@ class PairedFileWriter : public libMS::Module<libMS::Container, false, NucSeq, N
                  std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>> pAlignments,
                  std::shared_ptr<Pack> pPack );
 
+    void close( )
+    {
+        pOut.reset( );
+    } // method
 }; // class
 
 } // namespace libMA

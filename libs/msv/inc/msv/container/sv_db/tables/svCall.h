@@ -809,4 +809,34 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     } // method
 }; // class
 
+template <typename DBCon>
+using CallDescTable_t = SQLTable<DBCon,
+                                 int64_t, // call_id
+                                 std::string // _desc_
+                                 >;
+const json jCallDescTableDef = {{TABLE_NAME, "call_desc_table"},
+                                {TABLE_COLUMNS, {{{COLUMN_NAME, "call_id"}}, {{COLUMN_NAME, "_desc_"}}}}};
+
+template <typename DBCon> class CallDescTable : public CallDescTable_t<DBCon>
+{
+  public:
+    SQLQuery<DBCon, std::string> xGetDesc;
+    CallDescTable( std::shared_ptr<DBCon> pDB )
+        : CallDescTable_t<DBCon>( pDB, jCallDescTableDef ),
+          xGetDesc( pDB, "SELECT _desc_ FROM call_desc_table WHERE call_id = ?" )
+    {} // default constructor
+
+    inline std::string getDesc( int64_t iId )
+    {
+        if( xGetDesc.execAndFetch( iId ) )
+            return xGetDesc.getVal( );
+        return "";
+    } // method
+
+    void insert_py( int64_t iId, std::string sDesc )
+    {
+        this->insert( iId, sDesc );
+    }
+}; // class
+
 } // namespace libMSV

@@ -1,6 +1,7 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
+from bokeh.models import BasicTickFormatter
 from bokeh.palettes import Plasma256
 from bokeh.events import Tap
 
@@ -17,6 +18,7 @@ class ReadPlotNucs:
         self.left_plot.xaxis.visible = False
         self.left_plot.grid.visible = False
         self.left_plot.yaxis.axis_label = "Read Position"
+        self.left_plot.yaxis[0].formatter = BasicTickFormatter(use_scientific=False)
 
         self.bottom_plot = figure(
             width=900,
@@ -29,6 +31,7 @@ class ReadPlotNucs:
         self.bottom_plot.yaxis.visible = False
         self.bottom_plot.grid.visible = False
         self.bottom_plot.xaxis.axis_label = "Reference Position"
+        self.bottom_plot.xaxis[0].formatter = BasicTickFormatter(use_scientific=False)
 
         # the nucleotides from the read
         self.nucs_by_r_id = {} # dict of {"p": [], "c": [], "i": []}

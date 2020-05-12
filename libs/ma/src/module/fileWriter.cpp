@@ -93,8 +93,7 @@ std::shared_ptr<libMS::Container> FileWriter::execute( std::shared_ptr<NucSeq> p
         if( std::isnan( pAlignment->fMappingQuality ) )
             sMapQual = "255";
         else
-            sMapQual =
-                std::to_string( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ) );
+            sMapQual = std::to_string( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ) );
 
         assert( sTag.empty( ) || sTag[ 0 ] == '\t' );
         sCombined +=
@@ -391,7 +390,8 @@ void exportFileWriter( libMS::SubmoduleOrganizer& xOrganizer )
     exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( xOrganizer, "SyncFileWriter" );
 
     // export the PairedFileWriter class
-    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( xOrganizer, "PairedFileWriter" );
+    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>(
+        xOrganizer, "PairedFileWriter", []( auto&& x ) { x.def( "close", &PairedFileWriter::close ); } );
     exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<FileWriter>>( xOrganizer,
                                                                                      "SyncPairedFileWriter" );
     exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<PairedFileWriter>>(

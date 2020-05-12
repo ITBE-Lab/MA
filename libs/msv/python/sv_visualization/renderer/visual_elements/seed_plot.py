@@ -1,6 +1,7 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
+from bokeh.models import BasicTickFormatter
 from bokeh.events import Tap
 import math
 import copy
@@ -20,6 +21,7 @@ class SeedPlot:
         self.left_plot.xaxis.major_label_orientation = math.pi/2
         self.left_plot.yaxis.axis_label = "Reference Position"
         self.left_plot.xaxis.axis_label = "Read Id"
+        self.left_plot.yaxis[0].formatter = BasicTickFormatter(use_scientific=False)
 
         self.bottom_plot = figure(
             width=900,
@@ -32,6 +34,7 @@ class SeedPlot:
         )
         self.bottom_plot.xaxis.axis_label = "Reference Position"
         self.bottom_plot.yaxis.axis_label = "Read Id"
+        self.bottom_plot.xaxis[0].formatter = BasicTickFormatter(use_scientific=False)
 
         # ambigious regions (red rectangles)
         self.ambiguous_regions = ColumnDataSource({"l":[], "b":[], "r":[], "t":[]})
