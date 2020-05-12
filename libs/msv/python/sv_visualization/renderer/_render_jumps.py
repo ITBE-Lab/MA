@@ -46,7 +46,7 @@ def render_jumps(self, jump_list=[]):
             idx = None
             if not jump.to_known():
                 idx = 0
-            if not jump.from_known():
+            elif not jump.from_known():
                 idx = 1
             else:
                 idx = 2
@@ -74,6 +74,9 @@ def render_jumps(self, jump_list=[]):
             out_dicts[idx]["w"].append(
                 jump.from_start_same_strand() + jump.from_size() + 1.0)
             out_dicts[idx]["h"].append(jump.to_start() + jump.to_size() + 1.0)
+            if not jump.from_known():
+                out_dicts[idx]["y"][-1] += jump.from_size() + 1
+                out_dicts[idx]["h"][-1] += jump.from_size() + 1
             out_dicts[idx]["a"].append(jump.num_supp_nt() / (max_supp_nt*2))
             out_dicts[idx]["n"].append(jump.num_supp_nt())
             out_dicts[idx]["r"].append(jump.read_id)

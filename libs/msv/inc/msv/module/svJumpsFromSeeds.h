@@ -373,7 +373,7 @@ class SvJumpsFromSeeds
                 xItFirst++;
             if( xItFirst != pSeeds->end( ) && xItFirst->start( ) > uiMinDistDummy )
             {
-                pRet->emplace_back( *xItFirst, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
+                pRet->emplace_back( *xItFirst, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
                 if( pOutExtra != nullptr )
                     pOutExtra->vJumpSeeds.emplace_back( *xItFirst, xDummySeed );
             } // if
@@ -382,7 +382,7 @@ class SvJumpsFromSeeds
                 xItLast++;
             if( xItLast != pSeeds->rend( ) && xItLast->end( ) + uiMinDistDummy <= pQuery->length( ) )
             {
-                pRet->emplace_back( *xItLast, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
+                pRet->emplace_back( *xItLast, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
                 if( pOutExtra != nullptr )
                     pOutExtra->vJumpSeeds.emplace_back( xDummySeed, *xItLast );
             } // if

@@ -160,8 +160,8 @@ class SvJump : public libMS::Container
                   /* uiQueryTo = */
                   !bFromSeedStart ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen - 1 )
                                   : rA.start( ),
-                  /* bFromForward = */ rA.bOnForwStrand,
-                  /* bToForward = */ rA.bOnForwStrand,
+                  /* bFromForward = */ true,
+                  /* bToForward = */ true,
                   /* uiNumSupportingNt = */ rA.size( ),
                   /* iID */ -1,
                   /* iReadId */ iReadId )
@@ -275,9 +275,9 @@ class SvJump : public libMS::Container
     int64_t to_start( ) const
     {
         if( !from_known( ) )
-            return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)query_distance( ) + getSeedDirFuzziness( ) );
+            return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)query_distance( ) + getSeedDirFuzziness( ) ) + 1;
         if( !to_known( ) )
-            return std::max( (int64_t)0, ( (int64_t)uiFrom ) - getSeedDirFuzziness( ) );
+            return std::max( (int64_t)0, ( (int64_t)uiFrom ) - getSeedDirFuzziness( ) ) + 1;
 
         if( !to_fuzziness_is_downwards( ) )
             return std::max( (int64_t)0, ( (int64_t)uiTo ) - (int64_t)getSeedDirFuzziness( ) );

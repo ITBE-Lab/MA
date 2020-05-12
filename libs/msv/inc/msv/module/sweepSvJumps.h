@@ -622,7 +622,7 @@ class FilterDiagonalLineCalls
             int64_t iStdA, iStdB;
             iStdA = getStd( vDiagonalA );
             iStdB = std::max( getStd( vDiagonalB ), (int64_t)1 );
-            if( iStdA / iStdB < iFilterDiagonalLineCalls )
+            if( iStdA / iStdB < iFilterDiagonalLineCalls || iStdB < 10 )
                 pRet->vContent.push_back( pCall );
         } // for
 #if ANALYZE_FILTERS
