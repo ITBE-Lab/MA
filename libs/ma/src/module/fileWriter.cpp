@@ -248,8 +248,8 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
 #endif
         } // if
 #if DEBUG_LEVEL > 0
-        else if( !pAlignment->bSecondary && !pAlignment->bSupplementary )
-            std::cerr << "[Info] read " << pQuery1->sName << " is unpaired." << std::endl;
+        //else if( !pAlignment->bSecondary && !pAlignment->bSupplementary )
+        //    std::cerr << "[Info] read " << pQuery1->sName << " is unpaired." << std::endl;
 #endif
 
         // sam file format has 1-based indices bam 0-based...

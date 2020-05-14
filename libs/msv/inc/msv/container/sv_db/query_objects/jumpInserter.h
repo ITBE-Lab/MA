@@ -47,7 +47,7 @@ class JumpInserterContainer
             rJump.iId = ParentType::pInserter->insert(
                 ParentType::iId /* <- id of the sv jump run */, rJump.iReadId, rJump.from_start( ), rJump.from_end( ),
                 (uint32_t)rJump.uiFrom, (uint32_t)rJump.uiTo, (uint32_t)rJump.uiQueryFrom, (uint32_t)rJump.uiQueryTo,
-                (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bFromSeedStart,
+                (uint32_t)rJump.uiNumSupportingNt, rJump.bFromForward, rJump.bToForward, rJump.bWasMirrored,
                 xRectangle );
         } // for
         return pJumps->size( );

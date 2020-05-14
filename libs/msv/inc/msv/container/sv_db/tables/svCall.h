@@ -484,8 +484,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return std::make_pair( pRet, vInsertions );
     } // method
 
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
-        std::shared_ptr<Seeds> pSeeds, std::vector<std::shared_ptr<NucSeq>> vInsertions, std::shared_ptr<Pack> pRef )
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds( std::shared_ptr<Seeds> pSeeds,
+                                                                      std::vector<std::shared_ptr<NucSeq>> vInsertions,
+                                                                      std::shared_ptr<Pack> pRef )
     {
         auto pRet = std::make_shared<Pack>( );
         NucSeq xCurrChrom;
@@ -515,6 +516,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             if( pNucSeq->length( ) > 0 )
                 xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
         } // for
+
+        // add leftover insertions
+        for( size_t uiI = pSeeds->size( ); uiI < vInsertions.size( ); uiI++ )
+            xCurrChrom.vAppend( vInsertions[ uiI ]->pxSequenceRef, vInsertions[ uiI ]->length( ) );
 
         // append the last contig
         pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",

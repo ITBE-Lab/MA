@@ -37,7 +37,7 @@ class SvJump : public libMS::Container
         return false;
     } // method
 
-    const bool bFromSeedStart; // this should be called was_mirrored
+    const bool bWasMirrored; // this should be called was_mirrored
     const nucSeqIndex uiFrom; // inclusive
     const nucSeqIndex uiTo; // inclusive
     const nucSeqIndex uiQueryFrom; // inclusive
@@ -52,46 +52,24 @@ class SvJump : public libMS::Container
 #if DEBUG_LEVEL > 0
     size_t uiSeedAId = 0, uiSeedBId = 0;
 #endif
-
-    SvJump( const nucSeqIndex uiFrom_,
-            const nucSeqIndex uiTo_,
+    /**
+     * @brief creates a jump from completely given data
+     * @details
+     * Used for constructing jump objects with data from the DB
+     */
+    SvJump( const nucSeqIndex uiFrom,
+            const nucSeqIndex uiTo,
             const nucSeqIndex uiQueryFrom,
             const nucSeqIndex uiQueryTo,
             const bool bFromForward,
             const bool bToForward,
-            const nucSeqIndex uiNumSupportingNt,
-            int64_t iId,
-            int64_t iReadId)
-        : bFromSeedStart( uiTo_ < uiFrom_ && uiFrom_ != std::numeric_limits<uint32_t>::max( ) ),
-          uiFrom( bFromSeedStart ? uiTo_ : uiFrom_ ),
-          uiTo( bFromSeedStart ? uiFrom_ : uiTo_ ),
-          uiQueryFrom( uiQueryFrom ),
-          uiQueryTo( uiQueryTo ),
-          bFromForward( bFromSeedStart ? !bToForward : bFromForward ),
-          bToForward( bFromSeedStart ? !bFromForward : bToForward ),
-          uiNumSupportingNt( uiNumSupportingNt ),
-          iId( iId ),
-          iReadId( iReadId )
-    {
-        assert( uiQueryFrom <= uiQueryTo );
-        // necessary for mapping switch strand jumps rightwards
-        assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
-    } // constructor
-
-    // @todo combine constructors
-    SvJump( const nucSeqIndex uiFrom_,
-            const nucSeqIndex uiTo_,
-            const nucSeqIndex uiQueryFrom,
-            const nucSeqIndex uiQueryTo,
-            const bool bFromForward,
-            const bool bToForward,
-            const bool bFromSeedStart,
+            const bool bWasMirrored,
             const nucSeqIndex uiNumSupportingNt,
             int64_t iId = -1, /* -1 == no id obtained */
             int64_t iReadId = -1 /* -1 == no id obtained */ )
-        : bFromSeedStart( bFromSeedStart ),
-          uiFrom( uiFrom_ ),
-          uiTo( uiTo_ ),
+        : bWasMirrored( bWasMirrored ),
+          uiFrom( uiFrom ),
+          uiTo( uiTo ),
           uiQueryFrom( uiQueryFrom ),
           uiQueryTo( uiQueryTo ),
           bFromForward( bFromForward ),
@@ -105,24 +83,49 @@ class SvJump : public libMS::Container
         assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
-    SvJump( const Seed& rA, const Seed& rB, const bool bFromSeedStart, int64_t iReadId )
+    SvJump( const nucSeqIndex uiFrom_,
+            const nucSeqIndex uiTo_,
+            const nucSeqIndex uiQueryFrom,
+            const nucSeqIndex uiQueryTo,
+            const bool bFromForward,
+            const bool bToForward,
+            const nucSeqIndex uiNumSupportingNt,
+            int64_t iId,
+            int64_t iReadId )
+        : bWasMirrored( uiTo_ < uiFrom_ && uiFrom_ != std::numeric_limits<uint32_t>::max( ) ),
+          uiFrom( bWasMirrored ? uiTo_ : uiFrom_ ),
+          uiTo( bWasMirrored ? uiFrom_ : uiTo_ ),
+          uiQueryFrom( uiQueryFrom ),
+          uiQueryTo( uiQueryTo ),
+          bFromForward( bWasMirrored ? !bToForward : bFromForward ),
+          bToForward( bWasMirrored ? !bFromForward : bToForward ),
+          uiNumSupportingNt( uiNumSupportingNt ),
+          iId( iId ),
+          iReadId( iReadId )
+    {
+        assert( uiQueryFrom <= uiQueryTo );
+        // necessary for mapping switch strand jumps rightwards
+        assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
+    } // constructor
+
+
+    /**
+     * @brief creates a jump between the given two seeds
+     * @details
+     * rB must occur after rA on the query
+     */
+    SvJump( const Seed& rA, const Seed& rB, int64_t iReadId )
         : SvJump(
               /* uiFrom = */
-              bFromSeedStart
-                  ? rA.start_ref( )
-                  : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
-                                       // @note rA's direction is mirrored on reference if rA is on rev comp strand
-                                       : rA.start_ref( ) - rA.size( ) + 1 ),
+              rA.bOnForwStrand ? rA.end_ref( ) - 1
+                               // @note rA's direction is mirrored on reference if rA is on rev comp strand
+                               : rA.start_ref( ) - rA.size( ) + 1,
               /* uiTo = */
-              !bFromSeedStart
-                  ? rB.start_ref( )
-                  : ( rB.bOnForwStrand ? rB.end_ref( ) - 1
-                                       // @note rB's direction is mirrored on reference if rB is on rev comp strand
-                                       : rB.start_ref( ) - rB.size( ) + 1 ),
+              rB.start_ref( )
               /* uiQueryFrom = */
-              std::min( bFromSeedStart ? rA.start( ) : rA.end( ) - 1, !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
+              std::min( rA.end( ) - 1, rB.start( ) ),
               /* uiQueryTo = */
-              std::max( bFromSeedStart ? rA.start( ) : rA.end( ) - 1, !bFromSeedStart ? rB.start( ) : rB.end( ) - 1 ),
+              std::max( rA.end( ) - 1, rB.start( ) ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
               /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
@@ -133,7 +136,7 @@ class SvJump : public libMS::Container
         std::string vS[] = {"false", "true"};
         std::cout << "jump -- " << rA.start( ) << ", " << rA.start_ref( ) << ", " << rA.size( ) << " -> " << rB.start( )
                   << ", " << rB.start_ref( ) << ", " << rB.size( ) << ": " << uiFrom << " - " << uiTo << ", "
-                  << vS[ bFromForward ] << ", " << vS[ bToForward ] << ", " << vS[ bFromSeedStart ] << std::endl;
+                  << vS[ bFromForward ] << ", " << vS[ bToForward ] << std::endl;
 #endif
 #if DEBUG_LEVEL > 0
         uiSeedAId = rA.uiId;
@@ -141,25 +144,23 @@ class SvJump : public libMS::Container
 #endif
     } // constructor
 
-    SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFromSeedStart, int64_t iReadId,
-            nucSeqIndex uiMaxJumpLen )
+    SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFirstSeed, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
         : SvJump( /* uiFrom = */
-                  bFromSeedStart
+                  bFirstSeed
                       // if we jump to the start of the first seed we don't know where we are coming from
                       ? std::numeric_limits<uint32_t>::max( )
                       : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
                                            // @note rA's direction is mirrored on reference if rA is on rev comp strand
                                            : rA.start_ref( ) - rA.size( ) + 1 ),
                   /* uiTo = */
-                  !bFromSeedStart
+                  !bFirstSeed
                       // if we jump from the end of the last seed we don't know where we are going to
                       ? std::numeric_limits<uint32_t>::max( )
                       : rA.start_ref( ),
                   /* uiQueryFrom = */
-                  bFromSeedStart ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
+                  bFirstSeed ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
                   /* uiQueryTo = */
-                  !bFromSeedStart ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen - 1 )
-                                  : rA.start( ),
+                  !bFirstSeed ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen - 1 ) : rA.start( ),
                   /* bFromForward = */ true,
                   /* bToForward = */ true,
                   /* uiNumSupportingNt = */ rA.size( ),
@@ -198,7 +199,7 @@ class SvJump : public libMS::Container
             return false;
         if( !to_known( ) )
             return true;
-        return !does_switch_strand( ) || bFromForward != bFromSeedStart;
+        return !does_switch_strand( ) || bFromForward != bWasMirrored;
     } // method
 
     nucSeqIndex fuzziness( ) const
@@ -221,7 +222,7 @@ class SvJump : public libMS::Container
             return true;
         if( !to_known( ) )
             return false;
-        return !does_switch_strand( ) || bToForward != bFromSeedStart;
+        return !does_switch_strand( ) || bToForward != bWasMirrored;
     } // method
 
     nucSeqIndex query_distance( ) const

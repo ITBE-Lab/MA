@@ -359,11 +359,7 @@ class SvJumpsFromSeeds
             if( pOutExtra != nullptr )
                 pOutExtra->vJumpSeeds.emplace_back( rA, rB );
 
-            // we have to insert a jump between two seeds
-            // if( SvJump::validJump( rA, rB, false ) )
-            pRet->emplace_back( rA, rB, false, pQuery->iId );
-            // if( SvJump::validJump( rB, rA, false ) )
-            //    pRet->emplace_back( rB, rA, false, pQuery->iId );
+            pRet->emplace_back( rA, rB, pQuery->iId );
         } );
         // dummy jumps for first and last seed
         if( bDoDummyJumps )

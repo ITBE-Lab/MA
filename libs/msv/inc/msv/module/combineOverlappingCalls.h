@@ -147,7 +147,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
                       json{}, "combineOverlappingCalls::xGetCall" );
         SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, int64_t> xGetSupportingJumps(
             pOuterConnection,
-            "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+            "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
             "sv_jump_table.id "
             "FROM sv_call_support_table "
             "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "

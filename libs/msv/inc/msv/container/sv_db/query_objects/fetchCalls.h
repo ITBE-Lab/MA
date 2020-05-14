@@ -54,7 +54,7 @@ template <typename DBCon> class SvCallsFromDb
                          "       inserted_sequence, supporting_reads, reference_ambiguity "
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? ",
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
@@ -107,7 +107,7 @@ template <typename DBCon> class SvCallsFromDb
                   "     AND inner2.from_forward = inner.from_forward "
                   "     AND inner2.to_forward = inner.to_forward "
                   ") ",
-              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
               "       num_supporting_nt, sv_jump_table.id, read_id "
               "FROM sv_call_support_table "
               "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
@@ -131,7 +131,7 @@ template <typename DBCon> class SvCallsFromDb
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
                          "AND score >= ? ",
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
@@ -153,7 +153,7 @@ template <typename DBCon> class SvCallsFromDb
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
                          "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) ",
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
                          "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
@@ -176,7 +176,7 @@ template <typename DBCon> class SvCallsFromDb
               "WHERE sv_caller_run_id = ? "
               "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
               "AND score >= ? ",
-              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, from_seed_start, "
+              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
               "       num_supporting_nt, sv_jump_table.id, read_id "
               "FROM sv_call_support_table "
               "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
