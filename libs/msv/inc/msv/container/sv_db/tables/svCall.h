@@ -341,7 +341,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos >= ? "
             "AND reconstruction_table.from_forward "
-            "ORDER BY reconstruction_table.from_pos ASC "
+            "ORDER BY "
+            "       reconstruction_table.call_id ASC, "
+            "       reconstruction_table.from_pos ASC "
             "LIMIT 1 " );
         NextCallType xNextCallBackwardContext(
             this->pConnection,
@@ -351,7 +353,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos <= ? "
             "AND NOT reconstruction_table.from_forward "
-            "ORDER BY reconstruction_table.from_pos DESC "
+            "ORDER BY "
+            "       reconstruction_table.call_id ASC, "
+            "       reconstruction_table.from_pos DESC "
             "LIMIT 1 " );
 
 

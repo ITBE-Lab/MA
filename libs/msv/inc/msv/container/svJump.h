@@ -121,7 +121,7 @@ class SvJump : public libMS::Container
                                // @note rA's direction is mirrored on reference if rA is on rev comp strand
                                : rA.start_ref( ) - rA.size( ) + 1,
               /* uiTo = */
-              rB.start_ref( )
+              rB.start_ref( ),
               /* uiQueryFrom = */
               std::min( rA.end( ) - 1, rB.start( ) ),
               /* uiQueryTo = */
@@ -144,6 +144,10 @@ class SvJump : public libMS::Container
 #endif
     } // constructor
 
+    /**
+     * @brief creates a dummy jump
+     * @details
+     */
     SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFirstSeed, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
         : SvJump( /* uiFrom = */
                   bFirstSeed
@@ -199,7 +203,7 @@ class SvJump : public libMS::Container
             return false;
         if( !to_known( ) )
             return true;
-        return !does_switch_strand( ) || bFromForward != bWasMirrored;
+        return bFromForward ^ bWasMirrored;
     } // method
 
     nucSeqIndex fuzziness( ) const
@@ -222,7 +226,7 @@ class SvJump : public libMS::Container
             return true;
         if( !to_known( ) )
             return false;
-        return !does_switch_strand( ) || bToForward != bWasMirrored;
+        return bToForward ^ bWasMirrored;
     } // method
 
     nucSeqIndex query_distance( ) const
