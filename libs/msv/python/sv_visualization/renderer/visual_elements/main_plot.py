@@ -38,11 +38,12 @@ class MainPlot:
         self.jump_x = ColumnDataSource({"x":[], "y":[]})
         self.plot.multi_line(xs="x", ys="y", line_width=1, line_alpha=0.5, color="black", source=self.jump_x)
 
-        self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
+        self.plot.add_tools(HoverTool(tooltips=[("supp. nt", "@n"),
                                                 ("read id", "@r"),
-                                                ("|query|", "@q"),
-                                                ("from", "@f"),
-                                                ("to", "@t"),
+                                                ("|read|", "@q"),
+                                                ("from", "@f @fs"),
+                                                ("to", "@t @ts"),
+                                                ("mirrored", "@m"),
                                                 ("fuzziness", "@fuzz nt @f_dir"),
                                                 ("id", "@i")],
                                       names=["jump_quads"],

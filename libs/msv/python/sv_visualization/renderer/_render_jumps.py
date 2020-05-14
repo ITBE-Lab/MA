@@ -24,7 +24,10 @@ def render_jumps(self, jump_list=[]):
             "r": [],
             "q": [],
             "f": [],
+            "fs": [],
             "t": [],
+            "ts": [],
+            "m": [],
             "c": [],
             "fuzz": [],
             "f_dir": [],
@@ -68,7 +71,10 @@ def render_jumps(self, jump_list=[]):
             out_dicts[idx]["c"].append("lightgrey")
             out_dicts[idx]["f_dir"].append(f_dir)
             out_dicts[idx]["f"].append(jump.from_pos if jump.from_known() else "unknown")
+            out_dicts[idx]["fs"].append("forw" if jump.from_forward else "rev")
             out_dicts[idx]["t"].append(jump.to_pos if jump.to_known() else "unknown")
+            out_dicts[idx]["ts"].append("forw" if jump.to_forward else "rev")
+            out_dicts[idx]["m"].append("yes" if jump.was_mirrored else "no")
             out_dicts[idx]["x"].append(jump.from_start_same_strand())
             out_dicts[idx]["y"].append(jump.to_start())
             out_dicts[idx]["w"].append(
@@ -77,7 +83,7 @@ def render_jumps(self, jump_list=[]):
             if not jump.from_known():
                 out_dicts[idx]["y"][-1] += jump.from_size() + 1
                 out_dicts[idx]["h"][-1] += jump.from_size() + 1
-            out_dicts[idx]["a"].append(jump.num_supp_nt() / (max_supp_nt*2))
+            out_dicts[idx]["a"].append(0.1)
             out_dicts[idx]["n"].append(jump.num_supp_nt())
             out_dicts[idx]["r"].append(jump.read_id)
             out_dicts[idx]["q"].append(jump.query_distance())
@@ -92,14 +98,16 @@ def render_jumps(self, jump_list=[]):
             t = jump.to_pos
             if not jump.from_known():
                 f = t
+                t += 1
             if not jump.to_known():
                 t = f
+                f -= 1
             patch["x"].append([f + 0.25, f + 0.75])
             patch["x"].append([f + 0.25, f + 0.75])
             patch["y"].append([t + 0.25, t + 0.75])
             patch["y"].append([t + 0.75, t + 0.25])
         def callback():
-            for idx in range(4):
+            for idx in range(6):
                 self.main_plot.jump_quads[idx].data = out_dicts[idx]
             self.main_plot.jump_x.data = patch
             self.main_plot.update_selection(self)
