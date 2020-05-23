@@ -16,6 +16,7 @@ using namespace libMA;
 #ifdef WITH_PYTHON
 #include "ms/util/pybind11.h"
 #include "pybind11/pybind11.h"
+#include <pybind11/stl.h>
 
 void exportSplitter( libMS::SubmoduleOrganizer& xOrganizer )
 {
@@ -62,6 +63,10 @@ void exportSplitter( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<Collector<NucSeq, ContainerVector<std::shared_ptr<Seeds>>>>(
         xOrganizer, "NucSeqSeedsCollector", []( auto&& x ) {
             x.def_readwrite( "collection", &Collector<NucSeq, ContainerVector<std::shared_ptr<Seeds>>>::vCollection );
+        } );
+    exportModule<Collector<NucSeq, Seeds>>(
+        xOrganizer, "NucSeqSeedCollector", []( auto&& x ) {
+            x.def_readwrite( "collection", &Collector<NucSeq, Seeds>::vCollection );
         } );
 
     exportModule<Join<libMS::Container, libMS::Container>>( xOrganizer, "ContainerJoin" );
