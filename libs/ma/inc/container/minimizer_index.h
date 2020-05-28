@@ -107,7 +107,7 @@ class Index : public libMA::Container
         //    opt->mid_occ = mm_idx_cal_max_occ( mi, opt->mid_occ_frac );
         // if( opt->mid_occ < opt->min_mid_occ )
         //    opt->mid_occ = opt->min_mid_occ;
-        opt->mid_occ = 200;
+        opt->mid_occ = 2000;
         // if( mm_verbose >= 3 )
         //    fprintf( stderr, "[M::%s::%.3f*%.2f] mid_occ = %d\n", __func__, realtime( ) - mm_realtime0,
         //             cputime( ) / ( realtime( ) - mm_realtime0 ), opt->mid_occ );
@@ -189,6 +189,12 @@ class Index : public libMA::Container
             throw std::runtime_error( "failed to open file" + sIndexName );
     } // method
 
+
+    void setMidOcc(int32_t iNewVal)
+    {
+        xMapOpt.mid_occ = iNewVal;
+    }
+
     std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, std::shared_ptr<libMA::Pack> pPack )
     {
         auto pRet = std::make_shared<libMA::Seeds>( );
@@ -222,11 +228,11 @@ class Index : public libMA::Container
                         ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 )
 #if AMBIGUITY == ( 1 )
                             ,
-                        1 // @todo get ambiguity from within the index
+                        1
 #endif
                     );
                 } // if
-                else // @todo old version does not have flag for forward/reverse strand
+                else
                 {
                     uint64_t uiQSpan = ( int32_t )( a[ uiI ].y >> 32 & 0xff );
                     pRet->emplace_back(
@@ -239,7 +245,7 @@ class Index : public libMA::Container
                                                           pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ) )
 #if AMBIGUITY == ( 1 )
                             ,
-                        1 // @todo get ambiguity from within the index
+                        1
 #endif
                     );
                 } // else

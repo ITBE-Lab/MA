@@ -3,6 +3,7 @@
  * @author Markus Schmidt
  */
 #include "module/binarySeeding.h"
+#include "util/pybind11.h"
 
 using namespace libMA;
 
@@ -82,8 +83,8 @@ void BinarySeeding::procesInterval( Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index,
-                                                       std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector>
+BinarySeeding::execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
@@ -178,7 +179,11 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<FMIndex> 
 void exportBinarySeeding( py::module& rxPyModuleId )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
-                                 []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
+    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding", []( auto&& x ) {
+        x.def( "seed", &BinarySeeding::seed );
+        x.def( "get_segments", &BinarySeeding::getSegments );
+    } );
+    
+    py::bind_vector<std::vector<std::shared_ptr<SegmentVector>>>( rxPyModuleId, "VectorOfSegmentVectors", "docstr" );
 } // function
 #endif

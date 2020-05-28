@@ -11,6 +11,7 @@ void exportMinimizerIndex( py::module& rxPyModuleId )
         .def( py::init<const ParameterSetManager&, std::string>( ) )
         .def( py::init<const ParameterSetManager&, std::vector<std::string>, std::vector<std::string>>( ) )
         .def( "dump", &Index::dump )
+        .def( "set_mid_occ", &Index::setMidOcc )
         .def( "seed", &Index::seed );
 #endif
 } // function

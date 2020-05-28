@@ -56,6 +56,11 @@ class Segment : public Container, public Interval<nucSeqIndex>
         return xSaInterval;
     } // function
 
+    inline nucSeqIndex saSize() const
+    {
+        return xSaInterval.size();
+    }
+
     /**
      * @brief Copys from another Segment.
      * @note override

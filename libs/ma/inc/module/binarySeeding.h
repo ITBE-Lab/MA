@@ -72,7 +72,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // start I(q[x]) in T (start in BWT used for backward search) + 1,
         // because very first string in SA-array starts with $
         // size in T and T' is equal due to symmetry
-        SAInterval ik = pFM_index->init_interval( complement( q[ center ]) );
+        SAInterval ik = pFM_index->init_interval( complement( q[ center ] ) );
         // if the symbol in the query does not exist on the reference we get an empty sa interval here.
         if( ik.size( ) == 0 )
             // return that we covered the interval
@@ -276,7 +276,7 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         // start I(q[x]) in T (start in BWT used for backward search) + 1,
         // because very first string in SA-array starts with $
         // size in T and T' is equal due to symmetry
-        SAInterval ik = pFM_index->init_interval( complement(q[ center ]) );
+        SAInterval ik = pFM_index->init_interval( complement( q[ center ] ) );
 
         /*
          * forward extension first
@@ -343,8 +343,6 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
         std::vector<Segment> prev;
         // pointers for easy swapping of the lists
 
-        // FIXME: for some reason valgrind does NOT like this
-        // maybe it cant deal with the pointers?
         std::vector<Segment>*pPrev, *pCurr, *pTemp;
         pPrev = &curr;
         pCurr = &prev;
@@ -360,10 +358,10 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
                 /*
                  * we need to remember weather finished extending some interval in this step.
                  * because:
-                 *         if we already have found one with this length
-                 *             then all following intervals that we find have to be enclosed
-                 *             (this is due to the fact that they we know they start further right
-                 * but end at the same point)
+                 *    if we already have found one with this length
+                 *    then all following intervals that we find have to be enclosed
+                 *    (this is due to the fact that they we know they start further right but end at the same point)
+                 *    these enclosed intervals are MEMs not SMEMs.
                  */
                 bool bHaveOne = false;
 
@@ -399,7 +397,6 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
                     {
                         // if so add the intervals to the list
                         Segment xSeg = Segment( i, ik.size( ) + 1, ok );
-                        // FIXME: memory leak here according to valgrind ?!?
                         pCurr->push_back( xSeg );
                         assert( xSeg.end( ) <= pQuerySeq->length( ) );
                     } // if
@@ -410,7 +407,6 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
                 pTemp = pPrev;
                 pPrev = pCurr;
                 pCurr = pTemp;
-                // FIXME: memory leak here according to valgrind ?!?
                 pCurr->clear( );
                 pCurr->shrink_to_fit( );
 
@@ -561,16 +557,24 @@ class BinarySeeding : public Module<SegmentVector, false, FMIndex, NucSeq>
           uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) )
     {} // constructor
 
-    virtual std::shared_ptr<SegmentVector>
-        EXPORTED execute( std::shared_ptr<FMIndex> pFM_index, std::shared_ptr<NucSeq> pQuerySeq );
+    virtual std::shared_ptr<SegmentVector> EXPORTED execute( std::shared_ptr<FMIndex> pFM_index,
+                                                             std::shared_ptr<NucSeq> pQuerySeq );
 
-    std::vector<std::shared_ptr<Seeds>> seed( std::shared_ptr<FMIndex> pFM_index,
-                                              std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    std::vector<std::shared_ptr<Seeds>>
+    seed( std::shared_ptr<FMIndex> pFM_index, std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
     {
         std::vector<std::shared_ptr<Seeds>> vRet;
         for( auto pQuery : vQueries )
             vRet.push_back( execute( pFM_index, pQuery )
                                 ->extractSeeds( pFM_index, uiMaxAmbiguity, (unsigned int)uiMinSeedSize, true ) );
+        return vRet;
+    } // method
+    std::vector<std::shared_ptr<SegmentVector>>
+    getSegments( std::shared_ptr<FMIndex> pFM_index, std::vector<std::shared_ptr<libMA::NucSeq>> vQueries )
+    {
+        std::vector<std::shared_ptr<SegmentVector>> vRet;
+        for( auto pQuery : vQueries )
+            vRet.push_back( execute( pFM_index, pQuery ) );
         return vRet;
     } // method
 }; // class
