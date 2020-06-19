@@ -846,6 +846,11 @@ template <typename DBCon> class CallDescTable : public CallDescTable_t<DBCon>
     {
         this->insert( iId, sDesc );
     }
+    
+    inline void genIndex( )
+    {
+        this->addIndex( json{{INDEX_NAME, "call_desc_index"}, {INDEX_COLUMNS, "call_id"}} );
+    }
 }; // class
 
 } // namespace libMSV

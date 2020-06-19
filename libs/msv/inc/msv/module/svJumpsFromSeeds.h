@@ -70,6 +70,7 @@ class SvJumpsFromSeeds
     const bool bDoDummyJumps;
     const size_t uiMinDistDummy;
     const size_t uiMaxDistDummy;
+    const size_t uiMinSizeJump;
     SeedLumping xSeedLumper;
     NeedlemanWunsch xNW;
     ParlindromeFilter xParlindromeFilter;
@@ -98,6 +99,7 @@ class SvJumpsFromSeeds
           bDoDummyJumps( rParameters.getSelected( )->xDoDummyJumps->get( ) ),
           uiMinDistDummy( rParameters.getSelected( )->xMinDistDummy->get( ) ),
           uiMaxDistDummy( rParameters.getSelected( )->xMaxDistDummy->get( ) ),
+          uiMinSizeJump( (size_t)rParameters.getSelected( )->xMinSizeEdge->get( ) ),
           xSeedLumper( rParameters ),
           xNW( rParameters ),
           xParlindromeFilter( rParameters )
@@ -360,6 +362,9 @@ class SvJumpsFromSeeds
                 pOutExtra->vJumpSeeds.emplace_back( rA, rB );
 
             pRet->emplace_back( rA, rB, pQuery->iId );
+            // remove jump again if it is too short (max of query and ref size)
+            if( pRet->back( ).size( ) < uiMinSizeJump )
+                pRet->pop_back( );
         } );
         // dummy jumps for first and last seed
         if( bDoDummyJumps )
@@ -443,8 +448,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )

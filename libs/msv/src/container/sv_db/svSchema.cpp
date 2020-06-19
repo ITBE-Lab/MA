@@ -77,6 +77,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
                                                                                          "CallDescTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "insert", &CallDescTable<DBConSingle>::insert_py )
+        .def( "gen_index", &CallDescTable<DBConSingle>::genIndex )
         .def( "get_desc", &CallDescTable<DBConSingle>::getDesc );
 
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( xOrganizer.util( ), "SvJumpTable" )
