@@ -73,6 +73,9 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
+    py::class_<SequencerTable<DBConSingle>, std::shared_ptr<SequencerTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                           "SequencerTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) );
     py::class_<CallDescTable<DBConSingle>, std::shared_ptr<CallDescTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                          "CallDescTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )

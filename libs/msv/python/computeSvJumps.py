@@ -25,10 +25,12 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         pool_pledge.set(PoolContainer(parameter_set_manager.get_num_threads() + 1, dataset_name))
 
         if not isinstance(seq_ids, list):
-            seq_ids = [seq_ids]
+            _seq_ids = [seq_ids]
+        else:
+            _seq_ids = seq_ids
 
         jobs = parameter_set_manager.get_num_threads()
-        for seq_id in seq_ids:
+        for seq_id in _seq_ids:
             analyze = AnalyzeRuntimes()
             res = VectorPledge()
             inserter_vec = []
@@ -67,7 +69,10 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
 
         return get_jump_inserter.cpp_module.id
 
-    jump_table = SvJumpTable(DbConn(dataset_name))
+    db_conn = DbConn(dataset_name)
+    JumpRunTable(db_conn)
+
+    jump_table = SvJumpTable(db_conn)
     jump_table.drop_indices(0) # number does nothing at the moment
 
     jump_id = scope()

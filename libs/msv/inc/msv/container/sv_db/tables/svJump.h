@@ -94,6 +94,8 @@ template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 
         // index intended for the sweep over the end of all sv-rectangles
         this->dropIndex( json{{INDEX_NAME, "sort_end"}} );
+
+        this->dropIndex( json{{INDEX_NAME, "rectangle"}} );
     }
 
     inline uint32_t numJumps( int64_t jump_run_id )
