@@ -230,6 +230,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline int64_t filterCallsWithHighScore( int64_t iCallerRunId, double dPercentToFilter )
     {
+        if( numCalls( iCallerRunId, 0 ) == 0 )
+            return 0;
         auto xTransaction = this->pConnection->sharedGuardedTrxn( );
         double dMinScore = minScore( iCallerRunId );
         double dMaxScore = maxScore( iCallerRunId );
@@ -488,9 +490,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return std::make_pair( pRet, vInsertions );
     } // method
 
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds( std::shared_ptr<Seeds> pSeeds,
-                                                                      std::vector<std::shared_ptr<NucSeq>> vInsertions,
-                                                                      std::shared_ptr<Pack> pRef )
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
+        std::shared_ptr<Seeds> pSeeds, std::vector<std::shared_ptr<NucSeq>> vInsertions, std::shared_ptr<Pack> pRef )
     {
         auto pRet = std::make_shared<Pack>( );
         NucSeq xCurrChrom;
@@ -846,7 +847,7 @@ template <typename DBCon> class CallDescTable : public CallDescTable_t<DBCon>
     {
         this->insert( iId, sDesc );
     }
-    
+
     inline void genIndex( )
     {
         this->addIndex( json{{INDEX_NAME, "call_desc_index"}, {INDEX_COLUMNS, "call_id"}} );

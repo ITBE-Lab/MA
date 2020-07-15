@@ -1158,9 +1158,16 @@ class MySQLConDB
         auto pShowVariablesStmt =
             std::make_unique<PreparedQueryTmpl<MySQLConDB*, std::string, std::string>>( this, "SHOW VARIABLES" );
         pShowVariablesStmt->execBind( );
+        mMySQLVars.clear();
         while( pShowVariablesStmt->fetchNextRow( ) )
             mMySQLVars.emplace( std::get<0>( pShowVariablesStmt->getCellValues( ) ),
                                 std::get<1>( pShowVariablesStmt->getCellValues( ) ) );
+    } // method
+
+    void setMySQLTimeoutVars( )
+    {
+        this->execSQL( "SET wait_timeout=10368000" );
+        this->execSQL( "SET interactive_timeout=10368000" );
     } // method
 
     /** @brief Casts a MySQL (in rsMySQLVal) string to a C++ string (in rCPPVal) */
@@ -1238,6 +1245,25 @@ class MySQLConDB
         // Mirror all client side MySQL variables locally.
         this->mirrorMySQLVars( );
 
+        // std::string sTimeout;
+        // getMySQLVar( "wait_timeout", sTimeout );
+        // std::cout << "wait_timeout1 : " << sTimeout << std::endl;
+        // std::string sTimeout2;
+        // getMySQLVar( "interactive_timeout", sTimeout2 );
+        // std::cout << "interactive_timeout1 : " << sTimeout2 << std::endl;
+
+        // Set selcted global variables (e.g connetion timeout)
+        this->setMySQLTimeoutVars( );
+
+
+        // this->mirrorMySQLVars( );
+        // std::string sTimeout1;
+        // getMySQLVar( "wait_timeout", sTimeout1 );
+        // std::cout << "wait_timeout2 : " << sTimeout1 << std::endl;
+        // std::string sTimeout3;
+        // getMySQLVar( "interactive_timeout", sTimeout3 );
+        // std::cout << "interactive_timeout2 : " << sTimeout3 << std::endl;
+    
         // Collect client info in numeric form.
         this->uiCLientVersion = mysql_get_client_version( );
         // std::cout << "MySQL client version: " << uiCLientVersion << std::endl;

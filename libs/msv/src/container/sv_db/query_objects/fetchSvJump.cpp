@@ -19,6 +19,7 @@ void exportSvJump( libMS::SubmoduleOrganizer& xOrganizer )
 
     py::class_<SvJumpFromSql<DBConSingle>>( xOrganizer.util( ), "SvJumpFromSql" )
         .def( py::init<std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, uint32_t, uint32_t>( ) )
+        .def( py::init<std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, uint32_t, uint32_t, int64_t>( ) )
         .def( "has_next", &SvJumpFromSql<DBConSingle>::hasNext )
         .def( "get_next", &SvJumpFromSql<DBConSingle>::getNext );
 } // function

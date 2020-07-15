@@ -37,13 +37,13 @@ class SvJump : public libMS::Container
         return false;
     } // method
 
-    const bool bWasMirrored; // this should be called was_mirrored
-    const nucSeqIndex uiFrom; // inclusive
-    const nucSeqIndex uiTo; // inclusive
-    const nucSeqIndex uiQueryFrom; // inclusive
-    const nucSeqIndex uiQueryTo; // inclusive
-    const bool bFromForward;
-    const bool bToForward;
+    /*const*/ bool bWasMirrored; // this should be called was_mirrored
+    /*const*/ nucSeqIndex uiFrom; // inclusive
+    /*const*/ nucSeqIndex uiTo; // inclusive
+    /*const*/ nucSeqIndex uiQueryFrom; // inclusive
+    /*const*/ nucSeqIndex uiQueryTo; // inclusive
+    /*const*/ bool bFromForward;
+    /*const*/ bool bToForward;
     nucSeqIndex uiNumSupportingNt;
     int64_t iId;
     int64_t iReadId;
@@ -52,6 +52,22 @@ class SvJump : public libMS::Container
 #if DEBUG_LEVEL > 0
     size_t uiSeedAId = 0, uiSeedBId = 0;
 #endif
+
+#if 0
+    SvJump( SvJump&& rOther )
+        : bWasMirrored( rOther.bWasMirrored ),
+          uiFrom( rOther.uiFrom ),
+          uiTo( rOther.uiTo ),
+          uiQueryFrom( rOther.uiQueryFrom ),
+          uiQueryTo( rOther.uiQueryTo ),
+          bFromForward( rOther.bFromForward ),
+          bToForward( rOther.bToForward ),
+          uiNumSupportingNt( rOther.uiNumSupportingNt ),
+          iId( rOther.iId ),
+          iReadId( rOther.iReadId )
+    {}
+#endif
+
     /**
      * @brief creates a jump from completely given data
      * @details
@@ -92,7 +108,8 @@ class SvJump : public libMS::Container
             const nucSeqIndex uiNumSupportingNt,
             int64_t iId,
             int64_t iReadId )
-        : bWasMirrored( uiTo_ < uiFrom_ && uiFrom_ != std::numeric_limits<uint32_t>::max( ) ),
+        : bWasMirrored( ( uiTo_ < uiFrom_ || ( uiTo_ == uiFrom_ && !bFromForward && bToForward ) ) &&
+                        uiFrom_ != std::numeric_limits<uint32_t>::max( ) ),
           uiFrom( bWasMirrored ? uiTo_ : uiFrom_ ),
           uiTo( bWasMirrored ? uiFrom_ : uiTo_ ),
           uiQueryFrom( uiQueryFrom ),
@@ -276,6 +293,11 @@ class SvJump : public libMS::Container
     int64_t from_end( ) const
     {
         return from_start( ) + (int64_t)from_size( );
+    } // method
+
+    int64_t from_end_same_strand( ) const
+    {
+        return from_start_same_strand( ) + (int64_t)from_size( );
     } // method
 
     int64_t to_start( ) const
@@ -678,6 +700,11 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         this->vUp.insert( this->vUp.end( ), rOther.vUp.begin( ), rOther.vUp.end( ) );
         this->vDown.insert( this->vDown.end( ), rOther.vDown.begin( ), rOther.vDown.end( ) );
     } // method
+
+    size_t numJumps( ) const
+    {
+        return vSupportingJumpIds.size( );
+    }
 }; // class
 
 

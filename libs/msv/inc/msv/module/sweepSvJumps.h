@@ -46,7 +46,7 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
           // 50 * 2 because forw & rev. further the sections should all be at least 10000nt long
           // otherwise we do so much extra work with re overlapping parts between sections,
           // that parallel execution is not worth it.
-          iSectionSize( std::max( iRefSize / ( int64_t )( rParameters.getNumThreads( ) * 50 ), (int64_t)500000 ) ),
+          iSectionSize( 10000 ),
           iCurrStart( 0 )
     {} // constructor
 

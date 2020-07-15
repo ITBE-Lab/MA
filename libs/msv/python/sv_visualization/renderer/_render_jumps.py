@@ -37,7 +37,8 @@ def render_jumps(self, jump_list=[]):
         with self.measure("SvJumpFromSql"):
             sweeper = SvJumpFromSql(self.db_conn, 
                                           SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
-                                          int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3)
+                                          int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
+                                          self.get_max_num_ele())
     with self.measure("render jumps"):
         if not self.do_render_call_jumps_only:
             while sweeper.has_next():

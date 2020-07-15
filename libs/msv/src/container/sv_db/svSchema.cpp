@@ -35,11 +35,14 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
     auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
 
     SQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
-                                            "SELECT COUNT(*) "
-                                            "FROM sv_jump_table "
-                                            "WHERE sv_jump_run_id = ? "
-                                            "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                                            "LIMIT ? " );
+                                            "SELECT COUNT(*) FROM ( "
+                                            // requires subquery here so that limit actually optimizes the count
+                                            "   SELECT id "
+                                            "   FROM sv_jump_table "
+                                            "   WHERE sv_jump_run_id = ? "
+                                            "   AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "   LIMIT ? "
+                                            ") AS tmp_table " );
     // FIXME: Don't use scalar anymore!
     return xQuery.scalar( iRunId, xRectangle, uiLimit );
 } // function

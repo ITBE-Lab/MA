@@ -18,12 +18,15 @@ template <typename DBCon> class CountCallsQuery : public SQLQuery<DBCon, uint32_
 {
   public:
     CountCallsQuery( std::shared_ptr<DBCon> pConn )
-        : SQLQuery<DBCon, uint32_t>( pConn, "SELECT COUNT(*) "
-                                            "FROM sv_call_table "
-                                            "WHERE sv_caller_run_id = ? "
-                                            "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
-                                            "AND score >= ? "
-                                            "LIMIT ? " )
+        : SQLQuery<DBCon, uint32_t>( pConn, "SELECT COUNT(*) FROM ( "
+                                            // requires subquery here so that limit actually optimizes the count
+                                            "   SELECT id "
+                                            "   FROM sv_call_table "
+                                            "   WHERE sv_caller_run_id = ? "
+                                            "   AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "   AND score >= ? "
+                                            "   LIMIT ? "
+                                            ") AS tmp_table " )
     {} // constructor
 }; // class
 

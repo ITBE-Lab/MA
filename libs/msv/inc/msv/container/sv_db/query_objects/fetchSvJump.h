@@ -182,6 +182,22 @@ template <typename DBCon> class SvJumpFromSql
         xQuery.execAndFetch( iSvCallerRunId, xRectangle );
     } // constructor
 
+    SvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iX, int64_t iY,
+                         uint32_t uiW, uint32_t uiH, int64_t iLimit )
+        : pConnection( pConnection ),
+          pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
+          xQuery( pConnection,
+                  "SELECT sort_pos_start, from_pos, to_pos, query_from, query_to, from_forward, to_forward, "
+                  "       was_mirrored, num_supporting_nt, id, read_id "
+                  "FROM sv_jump_table "
+                  "WHERE sv_jump_run_id = ? "
+                  "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                  "LIMIT ? " )
+    {
+        auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( iX, iY, uiW, uiH ) );
+        xQuery.execAndFetch( iSvCallerRunId, xRectangle, iLimit );
+    } // constructor
+
 
     /// @brief returns whether there is another jump in the start-sorted iterator
     bool hasNext( )

@@ -56,6 +56,9 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             analyze.register("CompleteBipartiteSubgraphSweep::inner_while", sweep1, True,
                              lambda x: x.cpp_module.time_inner_while / parameter_set_manager.get_num_threads())
             sweep2_pledge = promise_me(sweep2, sweep1_pledge, pack_pledge)
+
+
+
             analyze.register("ExactCompleteBipartiteSubgraphSweep", sweep2_pledge, True)
 
             #### FILTERS ####
@@ -80,6 +83,12 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
             call_inserter = promise_me(get_call_inserter, pool_pledge)
             inserter_vec.append(call_inserter)
+
+            
+            unlock_pledge = promise_me(UnLock(parameter_set_manager, section_pledge), filter6_pledge)
+            analyze.register("UnLock", unlock_pledge, True)
+            res.append(unlock_pledge)
+            continue
 
             # filter6_pledge
             write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, filter6_pledge)

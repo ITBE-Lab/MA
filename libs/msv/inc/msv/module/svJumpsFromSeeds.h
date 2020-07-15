@@ -448,8 +448,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -596,6 +596,33 @@ class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, NucSe
     {
         return xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr );
     }
+}; // class
+
+class FilterJumpsByRegion : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>>
+{
+  public:
+    int64_t iFrom;
+    int64_t iTo;
+
+    FilterJumpsByRegion( const ParameterSetManager& rParameters, int64_t iFrom, int64_t iTo )
+        : iFrom( iFrom ), iTo( iTo )
+    {} // constructor
+
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps )
+    {
+        pJumps->erase( std::remove_if( pJumps->begin( ), pJumps->end( ),
+                                       [&]( SvJump& rJ ) {
+                                           if( rJ.from_start_same_strand( ) < iTo &&
+                                               rJ.from_end_same_strand( ) >= iFrom )
+                                               return false;
+                                           if( rJ.to_start( ) < iTo && rJ.to_end( ) >= iFrom )
+                                               return false;
+                                           return true;
+                                       } ),
+                       pJumps->end( ) );
+        return pJumps;
+    } // method
+
 }; // class
 
 }; // namespace libMSV

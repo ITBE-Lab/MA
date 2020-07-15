@@ -3,7 +3,8 @@ from MS import *
 from MA import *
 import datetime
 
-def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_ids=0, runtime_file=None):
+def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_ids=0, runtime_file=None,
+                     filter_jumps=None):
     #parameter_set_manager.by_name("Number of Threads").set(1)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
@@ -13,6 +14,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         lock_module = Lock(parameter_set_manager)
         seeding_module = BinarySeeding(parameter_set_manager)
         jumps_from_seeds = SvJumpsFromSeeds(parameter_set_manager, pack)
+        if not filter_jumps is None:
+            filter_jumps_module = FilterJumpsByRegion(parameter_set_manager, *filter_jumps)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, DbConn(dataset_name), "MS-SV",
                                             "python built comp graph")
         jump_inserter_module = JumpInserterModule(parameter_set_manager)
@@ -49,6 +52,9 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
                 analyze.register("BinarySeeding", segments_pledge, True)
                 jumps_pledge = promise_me(jumps_from_seeds, segments_pledge, pack_pledge, fm_pledge, query_pledge)
                 analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
+                if not filter_jumps is None:
+                    jumps_pledge = promise_me(filter_jumps_module, jumps_pledge)
+                    analyze.register("FilterJumpsByRegion", jumps_pledge, True)
 
                 jump_inserter = promise_me(get_jump_inserter, pool_pledge)
                 inserter_vec.append(jump_inserter)
@@ -78,7 +84,6 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
     jump_id = scope()
 
     analyze = AnalyzeRuntimes()
-
 
     print("num jumps:", jump_table.num_jumps(jump_id))
 
