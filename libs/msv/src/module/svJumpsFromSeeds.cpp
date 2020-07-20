@@ -286,5 +286,7 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
     exportModule<RecursiveReseedingSegments, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSegments" );
     exportModule<FilterJumpsByRegion, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegion" );
+    exportModule<FilterJumpsByRegionSquare, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegionSquare" );
+    exportModule<FilterJumpsByRefAmbiguity>( xOrganizer, "FilterJumpsByRefAmbiguity" );
 } // function
 #endif

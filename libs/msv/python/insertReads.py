@@ -98,3 +98,13 @@ def insert_reads_path_string_vec(parameter_set, dataset_name, sequencer_name, st
 
     return insert_reads(parameter_set, dataset_name, sequencer_name, to_file_queue(string_vec),
                         to_file_queue(string_vec_2), runtime_file)
+
+def write_used_reads_to_file(dataset_name, file_name):
+    reads = ReadTable(DbConn(dataset_name)).get_used_reads()
+    with open(file_name + ".fasta", "w") as fasta_out:
+        for read in reads:
+            fasta_out.write(">")
+            fasta_out.write(read.name)
+            fasta_out.write("\n")
+            fasta_out.write(str(read))
+            fasta_out.write("\n")

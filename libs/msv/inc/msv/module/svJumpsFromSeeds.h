@@ -14,6 +14,7 @@
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/svJump.h"
 #include "msv/util/statisticSequenceAnalysis.h"
+#include "msv/module/abstractFilter.h"
 
 namespace libMSV
 {
@@ -72,6 +73,7 @@ class SvJumpsFromSeeds
     const size_t uiMaxDistDummy;
     const size_t uiMinSizeJump;
     SeedLumping xSeedLumper;
+    SortRemoveDuplicates xRemoveDuplicates;
     NeedlemanWunsch xNW;
     ParlindromeFilter xParlindromeFilter;
     double dMaxSequenceSimilarity = 0.2;
@@ -101,6 +103,7 @@ class SvJumpsFromSeeds
           uiMaxDistDummy( rParameters.getSelected( )->xMaxDistDummy->get( ) ),
           uiMinSizeJump( (size_t)rParameters.getSelected( )->xMinSizeEdge->get( ) ),
           xSeedLumper( rParameters ),
+          xRemoveDuplicates( rParameters ),
           xNW( rParameters ),
           xParlindromeFilter( rParameters )
     {} // constructor
@@ -339,7 +342,7 @@ class SvJumpsFromSeeds
         } // while
 
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
-        return pRet;
+        return xRemoveDuplicates.execute( pRet );
     } // mehtod
 
     std::shared_ptr<libMS::ContainerVector<SvJump>> computeJumps( std::shared_ptr<Seeds> pSeeds,
@@ -448,8 +451,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -623,6 +626,69 @@ class FilterJumpsByRegion : public libMS::Module<libMS::ContainerVector<SvJump>,
         return pJumps;
     } // method
 
+}; // class
+
+class FilterJumpsByRegionSquare
+    : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>>
+{
+  public:
+    int64_t iFrom;
+    int64_t iTo;
+
+    FilterJumpsByRegionSquare( const ParameterSetManager& rParameters, int64_t iFrom, int64_t iTo )
+        : iFrom( iFrom ), iTo( iTo )
+    {} // constructor
+
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps )
+    {
+        pJumps->erase( std::remove_if( pJumps->begin( ), pJumps->end( ),
+                                       [&]( SvJump& rJ ) {
+                                           if( rJ.from_start_same_strand( ) < iTo &&
+                                               rJ.from_end_same_strand( ) >= iFrom && rJ.to_start( ) < iTo &&
+                                               rJ.to_end( ) >= iFrom )
+                                               return false;
+                                           return true;
+                                       } ),
+                       pJumps->end( ) );
+        return pJumps;
+    } // method
+
+}; // class
+
+class FilterJumpsByRefAmbiguity
+    : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>, Pack>,
+      public AbstractFilter
+{
+    nucSeqIndex uiDistance;
+    nucSeqIndex uiMaxRefAmbiguity;
+
+  public:
+    FilterJumpsByRefAmbiguity( const ParameterSetManager& rParameters )
+        : AbstractFilter( "FilterJumpsByRefAmbiguity" ),
+          uiDistance( rParameters.getSelected( )->xMaxCallSizeShortCallFilter->get( ) ),
+          uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
+    {} // constructor
+
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
+                                                             std::shared_ptr<Pack> pPack )
+    {
+#if ANALYZE_FILTERS
+        auto uiSizeBefore = pJumps->size( );
+#endif
+        pJumps->erase( std::remove_if( pJumps->begin( ), pJumps->end( ),
+                                       [&]( SvJump& rJ ) {
+                                           return sampleSequenceAmbiguity( rJ.uiFrom, rJ.uiTo, rJ.bFromForward,
+                                                                           rJ.bToForward, pPack, uiDistance,
+                                                                           5 ) > uiMaxRefAmbiguity;
+                                       } ),
+                       pJumps->end( ) );
+#if ANALYZE_FILTERS
+        std::lock_guard<std::mutex> xGuard( xLock );
+        uiFilterTotal += uiSizeBefore;
+        uiFilterKept += pJumps->size( );
+#endif
+        return pJumps;
+    } // method
 }; // class
 
 }; // namespace libMSV

@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 /* Generic conversion of string to different value types.
  * (Specialized for some types)
  */
-template <typename VALUE_TYPE> DLL_PORT(MS) VALUE_TYPE genericStringToValue( const std::string& sString );
+template <typename VALUE_TYPE> DLL_PORT( MS ) VALUE_TYPE genericStringToValue( const std::string& sString );
 
 // template <typename VALUE_TYPE> VALUE_TYPE genericStringToValue( const std::string& sString )
 // {
@@ -192,7 +192,7 @@ template <typename VALUE_TYPE> class AlignerParameter : public AlignerParameterB
         this->value = pOtherDerived->value;
     } // method
 
-    virtual DLL_PORT(MS) std::string asText( ) const;
+    virtual DLL_PORT( MS ) std::string asText( ) const;
 }; // class
 
 /* Parameter class for choices (list of different textual alternatives)
@@ -566,6 +566,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxFuzzinessFilter; // maximal fuzziness for sv calls
     AlignerParameterPointer<int> xMaxSuppNtShortCallFilter; // maximal number of nt for short call low support filter
     AlignerParameterPointer<int> xMaxCallSizeShortCallFilter; // maximal call size for short call low support filter
+    AlignerParameterPointer<int> xMaxRefAmbiguityJump; // Max Ref Ambiguity Jump
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -729,8 +730,9 @@ class Presetting : public ParameterSetBase
                   "the output of long cigars (cigars with more than 65536 operations).",
                   SAM_PARAMETERS, true ),
           xSoftClip( this, "Soft clip",
-                  "Output the full query for each alignment, instead of omitting the sequence before and after the alignment.",
-                  SAM_PARAMETERS, false ),
+                     "Output the full query for each alignment, instead of omitting the sequence before and after the "
+                     "alignment.",
+                     SAM_PARAMETERS, false ),
 
           // SV
           xMaxDeltaDistanceInCLuster( this, "Maximal distance between clusters",
@@ -753,6 +755,7 @@ class Presetting : public ParameterSetBase
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
+          xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

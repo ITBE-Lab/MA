@@ -4,7 +4,7 @@ from MA import *
 import datetime
 
 def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_ids=0, runtime_file=None,
-                     filter_jumps=None):
+                     filter_jumps=None, filter_as_square=False):
     #parameter_set_manager.by_name("Number of Threads").set(1)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
@@ -15,7 +15,11 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         seeding_module = BinarySeeding(parameter_set_manager)
         jumps_from_seeds = SvJumpsFromSeeds(parameter_set_manager, pack)
         if not filter_jumps is None:
-            filter_jumps_module = FilterJumpsByRegion(parameter_set_manager, *filter_jumps)
+            if filter_as_square:
+                filter_jumps_module = FilterJumpsByRegionSquare(parameter_set_manager, *filter_jumps)
+            else:
+                filter_jumps_module = FilterJumpsByRegion(parameter_set_manager, *filter_jumps)
+        filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, DbConn(dataset_name), "MS-SV",
                                             "python built comp graph")
         jump_inserter_module = JumpInserterModule(parameter_set_manager)
@@ -52,14 +56,16 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
                 analyze.register("BinarySeeding", segments_pledge, True)
                 jumps_pledge = promise_me(jumps_from_seeds, segments_pledge, pack_pledge, fm_pledge, query_pledge)
                 analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
+                filtered_jumps_pledge = promise_me(filter_by_ambiguity, jumps_pledge, pack_pledge)
+                analyze.register("FilterJumpsByRefAmbiguity", filtered_jumps_pledge, True)
                 if not filter_jumps is None:
-                    jumps_pledge = promise_me(filter_jumps_module, jumps_pledge)
-                    analyze.register("FilterJumpsByRegion", jumps_pledge, True)
+                    filtered_jumps_pledge = promise_me(filter_jumps_module, filtered_jumps_pledge)
+                    analyze.register("FilterJumpsByRegion", filtered_jumps_pledge, True)
 
                 jump_inserter = promise_me(get_jump_inserter, pool_pledge)
                 inserter_vec.append(jump_inserter)
                 analyze.register("GetJumpInserter", jump_inserter, True)
-                write_to_db_pledge = promise_me(jump_inserter_module, jump_inserter, pool_pledge, jumps_pledge,
+                write_to_db_pledge = promise_me(jump_inserter_module, jump_inserter, pool_pledge, filtered_jumps_pledge,
                                                 query_pledge)
                 analyze.register("JumpInserterModule", write_to_db_pledge, True)
                 unlock_pledge = promise_me(UnLock(parameter_set_manager, query_pledge), write_to_db_pledge)

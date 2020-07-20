@@ -94,7 +94,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
 
     py::class_<ReadTable<DBConSingle>, std::shared_ptr<ReadTable<DBConSingle>>>( xOrganizer.util( ), "ReadTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "get_read", &ReadTable<DBConSingle>::getRead );
+        .def( "get_read", &ReadTable<DBConSingle>::getRead )
+        .def( "get_used_reads", &ReadTable<DBConSingle>::getUsedReads );
 
     py::class_<SvCallSupportTable<DBConSingle>, std::shared_ptr<SvCallSupportTable<DBConSingle>>>(
         xOrganizer.util( ), "SvCallSupportTable" )

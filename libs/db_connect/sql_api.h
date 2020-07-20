@@ -640,15 +640,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
       public:
         SQLIndexView( const SQLTable<DBCon, ColTypes...>* pTable,
-                      const json& rjIndexDef ) // index definition in JSON)
+                      const json& rjIndexDef,
+                      const bool bWithLock=true ) // index definition in JSON)
             : jIndexDef( rjIndexDef ) // copy the index def. to attribute
         {
             // If there is no index name in the JSON, generate one.
             std::string sIdxName = jIndexDef.count( INDEX_NAME ) ? std::string( jIndexDef[ INDEX_NAME ] )
                                                                  : pTable->getTableName( ) + "_idx";
 
-            // In a pooled environment the creation of indexes should be serialized.
-            pTable->pDB->doPoolSafe( [&] {
+            auto fLambdaCode = [&] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -661,7 +661,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     std::cout << "Index exists already, skip creation." << std::endl;
 #endif
                 } // else
-            } ); // doPoolSafe
+            };
+
+            // In a pooled environment the creation of indexes should be serialized.
+            if(bWithLock)
+                pTable->pDB->doPoolSafe( fLambdaCode ); // doPoolSafe
+            else
+                fLambdaCode();
         } // constructor
     }; // inner class SQL Index
 
@@ -680,15 +686,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
       public:
         SQLIndexDropView( const SQLTable<DBCon, ColTypes...>* pTable,
-                          const json& rjIndexDef ) // index definition in JSON)
+                          const json& rjIndexDef,
+                          const bool bWithLock=true ) // index definition in JSON)
             : jIndexDef( rjIndexDef ) // copy the index def. to attribute
         {
             // If there is no index name in the JSON, generate one.
             std::string sIdxName = jIndexDef.count( INDEX_NAME ) ? std::string( jIndexDef[ INDEX_NAME ] )
                                                                  : pTable->getTableName( ) + "_idx";
 
-            // In a pooled environment the creation of indexes should be serialized.
-            pTable->pDB->doPoolSafe( [&] {
+            auto fLambdaCode = [&] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -701,7 +707,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     std::cout << "Index does not exist, skip dropping." << std::endl;
 #endif
                 } // else
-            } ); // doPoolSafe
+            };
+
+            // In a pooled environment the creation of indexes should be serialized.
+            if(bWithLock)
+                pTable->pDB->doPoolSafe( fLambdaCode ); // doPoolSafe
+            else
+                fLambdaCode();
         } // constructor
     }; // inner class SQL Index
 
@@ -1508,15 +1520,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     } // method
 
     /** @brief: Creates requested index if not already existing. */
-    void addIndex( const json& rjIndexDef )
+    void addIndex( const json& rjIndexDef, const bool bWithLock=true )
     {
-        SQLIndexView( this, rjIndexDef );
+        SQLIndexView( this, rjIndexDef, bWithLock );
     } // method
 
     /** @brief: drops requested index if existing. */
-    void dropIndex( const json& rjIndexDef )
+    void dropIndex( const json& rjIndexDef, const bool bWithLock=true )
     {
-        SQLIndexDropView( this, rjIndexDef );
+        SQLIndexDropView( this, rjIndexDef, bWithLock );
     } // method
 
     SQLTable( const SQLTable& ) = delete; // no table copies

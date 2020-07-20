@@ -1255,6 +1255,9 @@ class MySQLConDB
         // Set selcted global variables (e.g connetion timeout)
         this->setMySQLTimeoutVars( );
 
+        // std::string sReadIoThreads;
+        // getMySQLVar( "innodb_read_io_threads", sReadIoThreads );
+        // std::cout << "innodb_read_io_threads : " << sReadIoThreads << std::endl;
 
         // this->mirrorMySQLVars( );
         // std::string sTimeout1;

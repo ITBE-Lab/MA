@@ -57,6 +57,18 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
         assert( !xGetRead.next( ) );
         return std::get<0>( xTuple )->pUncomNucSeq;
     } // method
+
+    inline std::vector<std::shared_ptr<NucSeq>> getUsedReads( std::shared_ptr<DBCon> pDB )
+    {
+        SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetAllUsedReads(
+            pDB, "SELECT sequence, name FROM read_table WHERE id IN (SELECT DISTINCT read_id FROM sv_jump_table)" );
+        std::vector<std::shared_ptr<NucSeq>> vRet;
+        xGetAllUsedReads.execAndForAll( [&]( std::shared_ptr<CompressedNucSeq> pComp, std::string sName ) {
+            vRet.push_back( pComp->pUncomNucSeq );
+            vRet.back( )->sName = sName;
+        } );
+        return vRet;
+    } // method
 }; // class
 
 } // namespace libMSV

@@ -10,6 +10,7 @@
 #include "msv/container/squeezedVector.h"
 #include "msv/container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
 #include "msv/container/sv_db/query_objects/fetchSvJump.h"
+#include "msv/module/abstractFilter.h"
 #include "msv/util/statisticSequenceAnalysis.h"
 #include <cmath>
 #include <csignal>
@@ -463,37 +464,6 @@ class ExactCompleteBipartiteSubgraphSweep
     } // method
 }; // class
 
-#define ANALYZE_FILTERS ( 1 )
-
-class AbstractFilter
-{
-  public:
-#if ANALYZE_FILTERS
-    std::string sName;
-    size_t uiFilterKept = 0;
-    size_t uiFilterTotal = 0;
-    std::mutex xLock;
-    static bool bSilent;
-#endif
-    AbstractFilter( std::string sName )
-#if ANALYZE_FILTERS
-        : sName( sName )
-#endif
-    {} // constructor
-#if ANALYZE_FILTERS
-
-    ~AbstractFilter( )
-    {
-        if( !bSilent && uiFilterTotal > 0 )
-            std::cout << std::fixed << std::setprecision( 2 ) << "~" << sName << ": filter kept and eliminated "
-                      << uiFilterKept << " and " << uiFilterTotal - uiFilterKept
-                      << " elements respectiveley.\n\tThat's " << 100.0 * uiFilterKept / (double)uiFilterTotal
-                      << "% and " << 100.0 - 100.0 * uiFilterKept / (double)uiFilterTotal << "% respectiveley."
-                      << std::endl
-                      << std::defaultfloat;
-    } // deconstructor
-#endif
-}; // class
 
 /**
  * @brief filters out short calls with low support
@@ -660,46 +630,6 @@ class ComputeCallAmbiguity
         : uiDistance( rParameters.getSelected( )->xMaxCallSizeShortCallFilter->get( ) )
     {} // constructor
 
-    std::shared_ptr<NucSeq> getRegion( nucSeqIndex uiPos, bool bLeftDirection, std::shared_ptr<Pack> pPack )
-    {
-        // due to their fuzziness calls can reach past the end of the genome
-        if( uiPos >= pPack->uiUnpackedSizeForwardStrand )
-            uiPos = pPack->uiUnpackedSizeForwardStrand - 1;
-
-        auto uiSeqId = pPack->uiSequenceIdForPosition( uiPos );
-        if( bLeftDirection )
-        {
-            nucSeqIndex iStartOfContig = pPack->startOfSequenceWithId( uiSeqId );
-            nucSeqIndex uiStart = uiPos > iStartOfContig + uiDistance ? uiPos - uiDistance : iStartOfContig;
-            nucSeqIndex uiSize = uiPos - uiStart;
-            // return empty sequence for size = 0 cause pack throws exception otherwise
-            if( uiSize == 0 )
-                return std::make_shared<NucSeq>( );
-            if( pPack->bridgingSubsection( uiStart, uiSize ) )
-                pPack->unBridgeSubsection( uiStart, uiSize );
-            return pPack->vExtract( uiStart, uiStart + uiSize );
-        } // if
-        else
-        {
-            nucSeqIndex iEndOfContig = pPack->endOfSequenceWithId( uiSeqId );
-            nucSeqIndex uiEnd = uiPos + uiDistance < iEndOfContig ? uiPos + uiDistance : iEndOfContig;
-            nucSeqIndex uiSize = uiEnd - uiPos;
-            // return empty sequence for size = 0 cause pack throws exception otherwise
-            if( uiSize == 0 )
-                return std::make_shared<NucSeq>( );
-            if( pPack->bridgingSubsection( uiPos, uiSize ) )
-                pPack->unBridgeSubsection( uiPos, uiSize );
-            return pPack->vExtract( uiPos, uiPos + uiSize );
-        } // else
-    } // method
-
-    nucSeqIndex sampleAmbiguity( std::shared_ptr<NucSeq> pSeqA, std::shared_ptr<NucSeq> pSeqB )
-    {
-        // + 1 to avoind division by zero error
-        return std::max( 1, (int)sampleSequenceAmbiguity( *pSeqA, *pSeqB, 0.001 ) - (int)pSeqA->length( ) -
-                                (int)pSeqB->length( ) );
-    } // method
-
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
     execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pPack )
     {
@@ -707,35 +637,9 @@ class ComputeCallAmbiguity
         {
             auto f = pCall->xXAxis.start( ) + pCall->xXAxis.size( ) / 2;
             auto t = pCall->xYAxis.start( ) + pCall->xYAxis.size( ) / 2;
-            // std::abs is ambiguous under msvc...
-            auto uiCallSize = f >= t ? f - t : t - f;
 
-            if( uiCallSize > uiDistance )
-            {
-                auto pLeftFrom = getRegion( pCall->xXAxis.end( ), true, pPack );
-                auto pRightFrom = getRegion( pCall->xXAxis.start( ), false, pPack );
-                auto pLeftTo = getRegion( pCall->xYAxis.end( ), true, pPack );
-                auto pRightTo = getRegion( pCall->xYAxis.start( ), false, pPack );
-
-                // if we switch strand we have to compare forward and reverse strands
-                if( pCall->bFromForward != pCall->bToForward )
-                {
-                    pLeftTo->vReverseAll( );
-                    pLeftTo->vSwitchAllBasePairsToComplement( );
-                    pRightTo->vReverseAll( );
-                    pRightTo->vSwitchAllBasePairsToComplement( );
-                } // if
-
-                auto a =
-                    sampleAmbiguity( pLeftFrom, ( pCall->bFromForward != pCall->bToForward ) ? pRightTo : pLeftTo );
-                auto b =
-                    sampleAmbiguity( pRightFrom, ( pCall->bFromForward != pCall->bToForward ) ? pLeftTo : pRightTo );
-
-                pCall->uiReferenceAmbiguity = std::max( a, b );
-            } // if
-            else
-                // @todo how to evaluate such calls?
-                pCall->uiReferenceAmbiguity = 1;
+            pCall->uiReferenceAmbiguity =
+                sampleSequenceAmbiguity( f, t, pCall->bFromForward, pCall->bToForward, pPack, uiDistance, 5 );
         } // for
         return pCalls;
     } // method
