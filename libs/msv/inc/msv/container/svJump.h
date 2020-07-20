@@ -3,6 +3,7 @@
 #include "ma/container/nucSeq.h"
 #include "ma/container/seed.h"
 #include "ms/util/parameter.h"
+#include "msv/util/statisticSequenceAnalysis.h"
 #include "util/geom.h"
 #include <cmath>
 #include <limits>
@@ -353,6 +354,12 @@ class SvJump : public libMS::Container
             return std::numeric_limits<int64_t>::max( ) / 4;
         return (int64_t)query_distance( ) - (int64_t)ref_distance( );
     } // method
+
+    nucSeqIndex referenceAmbiguity( nucSeqIndex uiDistanceMin, nucSeqIndex uiDistanceMax, std::shared_ptr<Pack> pPack )
+    {
+        return sampleSequenceAmbiguity( uiFrom, uiTo, bFromForward, bToForward, pPack, uiDistanceMin,
+                                        uiDistanceMax );
+    }
 }; // class
 
 // @todo move this to it's own file

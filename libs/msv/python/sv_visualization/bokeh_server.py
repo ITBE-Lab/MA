@@ -29,6 +29,7 @@ curdoc().add_root(row(
            renderer.widgets.score_slider,
            renderer.widgets.max_elements_slider,
            renderer.widgets.range_link_radio,
+           renderer.widgets.full_render_button,
            renderer.widgets.render_mems_button,
            renderer.widgets.delete_button,
            grid([[renderer.read_plot.nuc_plot.left_plot, renderer.read_plot.plot], 

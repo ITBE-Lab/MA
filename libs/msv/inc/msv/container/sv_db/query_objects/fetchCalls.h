@@ -192,7 +192,7 @@ template <typename DBCon> class SvCallsFromDb
      * @details
      * behaviour is undefined if libMSV::SvCallsFromDb::hasNext returns false
      */
-    SvCall next( )
+    SvCall next( bool bWithSupport=true )
     {
         auto xTup = xQuery.get( );
         SvCall xRet( std::get<1>( xTup ), // uiFromStart
@@ -207,17 +207,20 @@ template <typename DBCon> class SvCallsFromDb
         xRet.pInsertedSequence = std::get<7>( xTup ).pNucSeq;
         xRet.iId = std::get<0>( xTup );
 
-        xQuerySupport.execAndFetch( std::get<0>( xTup ) );
-        while( !xQuerySupport.eof( ) )
+        if(bWithSupport)
         {
-            auto xTup = xQuerySupport.get( );
-            xRet.vSupportingJumpIds.push_back( std::get<8>( xTup ) );
-            xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
-                std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
-                std::get<9>( xTup ) ) );
-            xQuerySupport.next( );
-        } // while
+            xQuerySupport.execAndFetch( std::get<0>( xTup ) );
+            while( !xQuerySupport.eof( ) )
+            {
+                auto xTup = xQuerySupport.get( );
+                xRet.vSupportingJumpIds.push_back( std::get<8>( xTup ) );
+                xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
+                    std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
+                    std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
+                    std::get<9>( xTup ) ) );
+                xQuerySupport.next( );
+            } // while
+        } // if
 
         xQuery.next( );
         return xRet;

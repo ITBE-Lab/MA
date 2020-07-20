@@ -45,6 +45,7 @@ class MainPlot:
                                                 ("to", "@t @ts"),
                                                 ("mirrored", "@m"),
                                                 ("fuzziness", "@fuzz nt @f_dir"),
+                                                ("ref ambiguity", "@ref_ambig nt"),
                                                 ("id", "@i")],
                                       names=["jump_quads"],
                                       name="Hover jumps"))
@@ -69,7 +70,6 @@ class MainPlot:
 
         self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
                                                 ("ambiguity", "@c"),
-                                                ("#reads", "@r"),
                                                 ("score", "@s"),
                                                 ("id", "@idx"),
                                                 ("desc", "@desc")],

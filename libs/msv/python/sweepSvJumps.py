@@ -138,7 +138,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
         print("overlapping...")
     start = datetime.datetime.now()
-    num_combined = combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
+    num_combined = 0 #combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)

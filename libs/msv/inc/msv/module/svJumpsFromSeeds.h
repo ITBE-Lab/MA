@@ -13,7 +13,6 @@
 #include "ms/module/module.h"
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/svJump.h"
-#include "msv/util/statisticSequenceAnalysis.h"
 #include "msv/module/abstractFilter.h"
 
 namespace libMSV
@@ -451,8 +450,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -669,17 +668,15 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );
 #endif
         pJumps->erase( std::remove_if( pJumps->begin( ), pJumps->end( ),
                                        [&]( SvJump& rJ ) {
-                                           return sampleSequenceAmbiguity( rJ.uiFrom, rJ.uiTo, rJ.bFromForward,
-                                                                           rJ.bToForward, pPack, uiDistance,
-                                                                           5 ) > uiMaxRefAmbiguity;
+                                           return rJ.referenceAmbiguity( uiDistance, 5, pPack ) > uiMaxRefAmbiguity;
                                        } ),
                        pJumps->end( ) );
 #if ANALYZE_FILTERS

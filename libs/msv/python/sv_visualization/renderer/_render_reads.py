@@ -29,7 +29,7 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
         read_ambiguous_reg_dict["f"].append("lightgrey")
         read_ambiguous_reg_dict["s"].append(seed_sample_size)
 
-def render_reads(self):
+def render_reads(self, render_all=False):
     seeder = BinarySeeding(self.params)
     with self.measure("SvJumpsFromSeeds"):
         jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
@@ -149,7 +149,7 @@ def render_reads(self):
                 print(e)
 
     def callback():
-        if len(read_dict["c"]) < self.get_max_num_ele():
+        if len(read_dict["c"]) < self.get_max_num_ele() or render_all:
             with self.measure("rendering seeds"):
                 # render ambiguous regions on top and left
                 self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict

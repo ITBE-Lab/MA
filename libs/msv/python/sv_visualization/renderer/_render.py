@@ -2,7 +2,7 @@ from MA import *
 from MSV import *
 from threading import Thread
 
-def render(self):
+def render(self, render_all=False):
     print("rendering")
     self.widgets.show_spinner(self)
     self.reset_runtimes()
@@ -37,10 +37,10 @@ def render(self):
                                                     self.get_min_score(),
                                                     int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
                                                     self.get_max_num_ele() + 1)
-            if num_ele > self.get_max_num_ele():
+            if num_ele > self.get_max_num_ele() and not render_all:
                 self.render_overview()
             else:
-                self.render_calls()
+                self.render_calls(render_all)
 
         print("done")
         self.widgets.hide_spinner(self)

@@ -21,6 +21,7 @@ class Widgets:
                                           callback_policy='mouseup', title="max render")
         self.range_link_radio = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"],
                                            active=0)
+        self.full_render_button = Button(label="render everything")
         self.render_mems_button = Button(label="render MEMs")
         self.delete_button = Button(label="Delete Dataset")
 
@@ -30,6 +31,7 @@ class Widgets:
         self.score_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
         self.max_elements_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
 
+        self.full_render_button.on_event(ButtonClick, lambda x: self.full_render(renderer))
         self.render_mems_button.on_event(ButtonClick, lambda x: self.render_mems_button_event(renderer))
         self.delete_button.on_event(ButtonClick, lambda x: self.delete_button_event(renderer))
 
@@ -70,6 +72,9 @@ class Widgets:
 
     def slider_change(self, renderer):
         renderer.render()
+
+    def full_render(self, renderer):
+        renderer.render(render_all=True)
 
     def render_mems_button_event(self, renderer):
         if not renderer.selected_read_id is None:

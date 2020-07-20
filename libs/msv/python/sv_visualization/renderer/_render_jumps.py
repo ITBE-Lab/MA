@@ -6,7 +6,7 @@ from MSV import *
 import math
 from .util import *
 
-def render_jumps(self, jump_list=[]):
+def render_jumps(self, jump_list=[], render_all=False):
     self.read_ids = set()
     out_dicts = []
     patch = {
@@ -31,6 +31,7 @@ def render_jumps(self, jump_list=[]):
             "c": [],
             "fuzz": [],
             "f_dir": [],
+            "ref_ambig": [],
             "i": []
         })
     if not self.do_render_call_jumps_only:
@@ -71,6 +72,7 @@ def render_jumps(self, jump_list=[]):
 
             out_dicts[idx]["c"].append("lightgrey")
             out_dicts[idx]["f_dir"].append(f_dir)
+            out_dicts[idx]["ref_ambig"].append(jump.ref_ambiguity(5, 20, self.pack))
             out_dicts[idx]["f"].append(jump.from_pos if jump.from_known() else "unknown")
             out_dicts[idx]["fs"].append("forw" if jump.from_forward else "rev")
             out_dicts[idx]["t"].append(jump.to_pos if jump.to_known() else "unknown")
@@ -114,15 +116,15 @@ def render_jumps(self, jump_list=[]):
             self.main_plot.update_selection(self)
         self.curdoc.add_next_tick_callback(callback)
 
-    if self.w*3+self.h*3 < self.get_max_num_ele():
+    if self.w*3+self.h*3 < self.get_max_num_ele() or render_all:
         # render nucs in read plot
         # render nucs in sv plot
         with self.measure("render_nucs"):
             self.render_nucs()
 
     # render the seeds in the main seed plot
-    if len(self.read_ids)*self.read_penalty_factor < self.get_max_num_ele():
+    if len(self.read_ids)*self.read_penalty_factor < self.get_max_num_ele() or render_all:
         with self.measure("render_reads"):
-            self.render_reads()
+            self.render_reads(render_all)
 
     self.analyze.analyze()
