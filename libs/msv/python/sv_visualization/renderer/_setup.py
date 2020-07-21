@@ -11,6 +11,7 @@ def setup(self):
         with open(JSON_PREFIX + dataset_name + "/info.json", "r") as json_file:
             json_info_file = json.loads(json_file.read(), object_hook=decode)
         ref_genome = json_info_file["reference_path"] + "/ma/genome"
+        print("Genome:", json_info_file["reference_path"] + "/ma/genome")
 
         self.pack = Pack()
         self.pack.load(ref_genome)

@@ -22,6 +22,8 @@ class Renderer():
         self.w = None
         self.h = None
         self.params = ParameterSetManager()
+        self.params.by_name("Min Size Edge").set(5)
+        self.params.by_name("Maximal Ambiguity SV").set(1)
         self.quads = []
         self.read_ids = set() # @todo make two dicts? read ids new and read ids old?
         self.give_up_factor = 1000

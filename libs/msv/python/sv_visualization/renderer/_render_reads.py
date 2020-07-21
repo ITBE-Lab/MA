@@ -111,7 +111,7 @@ def render_reads(self, render_all=False):
                                                                                                         layer_of_seeds,
                                                                                                         parlindromes)],
                                                             key=lambda x: x[0].start)))
-                        if len(self.read_ids) <= self.do_compressed_seeds:
+                        if len(self.read_ids) <= self.do_compressed_seeds and not seeds is None and len(seeds) > 0:
                             end_column = []
                             max_seed_size = max(seed.size for seed in seeds)
                             sorted_for_main_loop = sorted(seeds_n_idx, key=lambda x: x[1][0].start_ref)
