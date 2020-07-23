@@ -124,6 +124,9 @@ class SvJump : public libMS::Container
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
         assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
+
+        assert( ( (uint32_t)uiFrom ) != std::numeric_limits<uint32_t>::max( ) ||
+                ( (uint32_t)uiTo ) != std::numeric_limits<uint32_t>::max( ) );
     } // constructor
 
 
@@ -165,7 +168,6 @@ class SvJump : public libMS::Container
     /**
      * @brief creates a dummy jump
      * @details
-     * @todo some dummy jumps are off by +/- 1
      */
     SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFirstSeed, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
         : SvJump( /* uiFrom = */
@@ -174,12 +176,12 @@ class SvJump : public libMS::Container
                       ? std::numeric_limits<uint32_t>::max( )
                       : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
                                            // @note rA's direction is mirrored on reference if rA is on rev comp strand
-                                           : rA.start_ref( ) - rA.size( ) ),
+                                           : 1 + rA.start_ref( ) - rA.size( ) ),
                   /* uiTo = */
                   !bFirstSeed
                       // if we jump from the end of the last seed we don't know where we are going to
                       ? std::numeric_limits<uint32_t>::max( )
-                      : rA.bOnForwStrand ? rA.start_ref( ) : rA.start_ref( ) - 1,
+                      : rA.start_ref( ),
                   /* uiQueryFrom = */
                   bFirstSeed ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
                   /* uiQueryTo = */
@@ -194,6 +196,9 @@ class SvJump : public libMS::Container
         uiSeedAId = rA.uiId;
         uiSeedBId = rA.uiId;
 #endif
+
+        assert( ( (uint32_t)uiFrom ) != std::numeric_limits<uint32_t>::max( ) ||
+                ( (uint32_t)uiTo ) != std::numeric_limits<uint32_t>::max( ) );
     } // constructor
 
     bool does_switch_strand( ) const

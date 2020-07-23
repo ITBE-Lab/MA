@@ -15,7 +15,7 @@
 #include <cmath>
 #include <csignal>
 
-#define ADDITIONAL_DEBUG 0
+#define ADDITIONAL_DEBUG 1
 
 namespace libMSV
 {
@@ -215,8 +215,9 @@ class CompleteBipartiteSubgraphSweep
                         assert( xVisitedStart.count( pEndJump->iId ) != 0 );
 #endif
                         // find the correct cluster for this edge
-                        auto pCluster = xPointerVec.get( )[ xPointerVec.to_physical_coord(
-                            pEndJump->from_start_same_strand( ) + pEndJump->from_size( ), pEndJump->to_start( ) ) ];
+                        size_t uiClusterIdx = xPointerVec.to_physical_coord(
+                            pEndJump->from_start_same_strand( ) + pEndJump->from_size( ), pEndJump->to_start( ) );
+                        auto pCluster = xPointerVec.get( )[ uiClusterIdx ];
                         assert( pCluster != nullptr );
                         assert( std::find( pCluster->vSupportingJumpIds.begin( ), pCluster->vSupportingJumpIds.end( ),
                                            pEndJump->iId ) != pCluster->vSupportingJumpIds.end( ) );

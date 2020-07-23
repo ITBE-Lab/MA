@@ -126,41 +126,18 @@ class SvJumpsFromSeeds
         return std::abs( iDeltaA - iDeltaB );
     }
 
-    bool overlap( const Seed& xA, const Seed& xB )
+    double overlap( const Seed& xA, const Seed& xB )
     {
-        // overlap at least 5 nt
-        return xA.end( ) > xB.start( ) + 5 && xB.end( ) > xA.start( ) + 5;
+        nucSeqIndex uiOverlap =
+            std::max( 0, ( (int)std::min( xA.end( ), xB.end( ) ) ) - ( (int)std::max( xA.start( ), xB.start( ) ) ) );
+
+        nucSeqIndex uiMinSize = std::min( xA.size( ), xB.size( ) );
+        if( uiMinSize == 0 )
+            return 1;
+
+        return uiOverlap / (double)uiMinSize;
     }
 
-    Seed* pickReseedingTargetHelper( Seeds& xSeeds, int iI, int iAdd )
-    {
-        Seed* pSeed = &xSeeds[ iI ];
-        iI += iAdd;
-        while( iI > 0 && (size_t)iI < xSeeds.size( ) && xSeeds[ (size_t)iI ].size( ) == 0 )
-            iI += iAdd;
-
-        if( iI < 0 || (size_t)iI >= xSeeds.size( ) )
-            return nullptr;
-
-        int64_t iMinDeltaDist = delta_dist( *pSeed, xSeeds[ (size_t)iI ] );
-        Seed* pRet = &xSeeds[ (size_t)iI ];
-        Seed* pFirst = pRet;
-
-        iI += iAdd;
-        while( iI > 0 && (size_t)iI < xSeeds.size( ) &&
-               ( xSeeds[ (size_t)iI ].size( ) == 0 || overlap( xSeeds[ (size_t)iI ], *pFirst ) ) )
-        {
-            auto iDelta = delta_dist( *pSeed, xSeeds[ (size_t)iI ] );
-            if( xSeeds[ (size_t)iI ].size( ) != 0 && iDelta < iMinDeltaDist )
-            {
-                iMinDeltaDist = iDelta;
-                pRet = &xSeeds[ (size_t)iI ];
-            } // if
-            iI += iAdd;
-        } // while
-
-        return pRet;
-    } // method
 
     /// @brief this class exists mereley to expose the return value of execute_helper_py to python
     class HelperRetVal
@@ -184,13 +161,23 @@ class SvJumpsFromSeeds
         {
             if( ( *pSeeds )[ uiI ].size( ) == 0 ) // currently at duplicate seed.
                 continue;
-            Seed* pBestForw = pickReseedingTargetHelper( *pSeeds, (int)uiI, 1 );
-            if( pBestForw != nullptr )
-                fOut( ( *pSeeds )[ uiI ], *pBestForw );
 
-            Seed* pBestRev = pickReseedingTargetHelper( *pSeeds, (int)uiI, -1 );
-            if( pBestRev != nullptr )
-                fOut( *pBestRev, ( *pSeeds )[ uiI ] );
+            size_t uiJ = uiI + 1;
+
+            // skip seeds that overlap with uiI more the 95% on query
+            // (size 0 seeds are skipped automatically)
+            while( uiJ < pSeeds->size( ) && overlap( ( *pSeeds )[ uiI ], ( *pSeeds )[ uiJ ] ) > 0.95 )
+                uiJ++;
+
+            // uiJ now points to the first seeds that follows uiI and is not overlapping
+            size_t uiK = uiJ;
+            // create entry from uiI to all seeds overlapping more than 95% with uiJ (incl. itself)
+            while( uiK < pSeeds->size( ) && overlap( ( *pSeeds )[ uiK ], ( *pSeeds )[ uiJ ] ) > 0.95 )
+            {
+                if( ( *pSeeds )[ uiK ].size( ) != 0 ) // make sure uiK was not deleted earlier
+                    fOut( ( *pSeeds )[ uiI ], ( *pSeeds )[ uiK ] );
+                ++uiK;
+            } // while
         } // for
     } // method
 
@@ -356,6 +343,8 @@ class SvJumpsFromSeeds
         auto pRet = std::make_shared<libMS::ContainerVector<SvJump>>( );
         std::set<std::pair<Seed*, Seed*>> xExistingPairs;
         forMatchingSeeds( pSeeds, [&]( Seed& rA, Seed& rB ) {
+            assert( rA.size( ) != 0 );
+            assert( rB.size( ) != 0 );
             // filter out all duplicates
             if( xExistingPairs.count( std::make_pair( &rA, &rB ) ) != 0 )
                 return;
@@ -450,8 +439,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -563,8 +552,7 @@ class SvJumpsFromSeeds
 }; // class
 
 
-class SvJumpsFromExtractedSeeds
-    : public libMS::Module<libMS::ContainerVector<SvJump>, false, Seeds, Pack, NucSeq>
+class SvJumpsFromExtractedSeeds : public libMS::Module<libMS::ContainerVector<SvJump>, false, Seeds, Pack, NucSeq>
 {
     SvJumpsFromSeeds xJumpsFromSeeds;
 
@@ -573,11 +561,8 @@ class SvJumpsFromExtractedSeeds
         : xJumpsFromSeeds( rParameters, pRefSeq )
     {}
 
-    virtual std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<Seeds> pSeeds,
-                                                                     std::shared_ptr<Pack>
-                                                                         pRefSeq,
-                                                                     std::shared_ptr<NucSeq>
-                                                                         pQuery )
+    virtual std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
     {
         return xJumpsFromSeeds.computeJumps( xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr ), pQuery,
                                              pRefSeq, nullptr );
@@ -720,8 +705,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>>
-    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
+                                                             std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );
