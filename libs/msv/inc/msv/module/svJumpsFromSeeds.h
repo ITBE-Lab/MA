@@ -258,7 +258,7 @@ class SvJumpsFromSeeds
         pRet->append( pSeeds );
 
         size_t uiLayer = 1;
-        while( uiLayer <= 3 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
+        while( uiLayer <= 4 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
         {
             // sort seeds and remove duplicates (from reseeding)
             eraseMarked( pRet );
@@ -335,7 +335,7 @@ class SvJumpsFromSeeds
                 } // if
             } // for
 #if SV_JUMP_FROM_SEED_DEBUG_PRINT
-            std::cout << "--- Layer --- " << std::endl;
+            std::cout << " --- Layer --- " << std::endl;
 #endif
             uiLayer++;
         } // while
@@ -559,6 +559,58 @@ class SvJumpsFromSeeds
                      pQuery )
     {
         return execute_helper( pSegments, pRefSeq, pFM_index, pQuery, nullptr );
+    }
+}; // class
+
+
+class SvJumpsFromExtractedSeeds
+    : public libMS::Module<libMS::ContainerVector<SvJump>, false, Seeds, Pack, NucSeq>
+{
+    SvJumpsFromSeeds xJumpsFromSeeds;
+
+  public:
+    SvJumpsFromExtractedSeeds( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
+        : xJumpsFromSeeds( rParameters, pRefSeq )
+    {}
+
+    virtual std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<Seeds> pSeeds,
+                                                                     std::shared_ptr<Pack>
+                                                                         pRefSeq,
+                                                                     std::shared_ptr<NucSeq>
+                                                                         pQuery )
+    {
+        return xJumpsFromSeeds.computeJumps( xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr ), pQuery,
+                                             pRefSeq, nullptr );
+    }
+}; // class
+
+class ExtractSeedsFilter : public libMS::Module<Seeds, false, SegmentVector, Pack, FMIndex, NucSeq>
+{
+    SvJumpsFromSeeds xJumpsFromSeeds;
+    nucSeqIndex uiFrom;
+    nucSeqIndex uiTo;
+
+
+  public:
+    ExtractSeedsFilter( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq, nucSeqIndex uiFrom,
+                        nucSeqIndex uiTo )
+        : xJumpsFromSeeds( rParameters, pRefSeq ), uiFrom( uiFrom ), uiTo( uiTo )
+    {}
+
+    virtual std::shared_ptr<Seeds> execute( std::shared_ptr<SegmentVector> pSegments,
+                                            std::shared_ptr<Pack>
+                                                pRefSeq,
+                                            std::shared_ptr<FMIndex>
+                                                pFM_index,
+                                            std::shared_ptr<NucSeq>
+                                                pQuery )
+    {
+        auto pSeeds = xJumpsFromSeeds.extractSeeds( pSegments, pFM_index, pQuery, nullptr );
+
+        pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
+                                       [&]( Seed& rS ) { return rS.start_ref( ) > uiTo || rS.end_ref( ) < uiFrom; } ),
+                       pSeeds->end( ) );
+        return pSeeds;
     }
 }; // class
 

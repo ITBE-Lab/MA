@@ -357,8 +357,7 @@ class SvJump : public libMS::Container
 
     nucSeqIndex referenceAmbiguity( nucSeqIndex uiDistanceMin, nucSeqIndex uiDistanceMax, std::shared_ptr<Pack> pPack )
     {
-        return sampleSequenceAmbiguity( uiFrom, uiTo, bFromForward, bToForward, pPack, uiDistanceMin,
-                                        uiDistanceMax );
+        return sampleSequenceAmbiguity( uiFrom, uiTo, bFromForward, bToForward, pPack, uiDistanceMin, uiDistanceMax );
     }
 }; // class
 
@@ -435,10 +434,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     Regex xRegex;
 #endif
     size_t uiOpenEdges = 0;
-    std::vector<nucSeqIndex> vLeft;
-    std::vector<nucSeqIndex> vRight;
-    std::vector<nucSeqIndex> vUp;
-    std::vector<nucSeqIndex> vDown;
+    std::vector<nucSeqIndex> vHorizontal;
+    std::vector<nucSeqIndex> vVertical;
 
     // these can be empty
     std::shared_ptr<NucSeq> pInsertedSequence;
@@ -501,13 +498,10 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 
     inline void resetEstimateClusterSize( )
     {
-        vLeft.clear( );
-        vRight.clear( );
-        vUp.clear( );
-        vDown.clear( );
+        vHorizontal.clear( );
+        vVertical.clear( );
     } // method
 
-    // @todo there is a glitch/bug in here
     inline void addJumpToEstimateClusterSize( std::shared_ptr<SvJump> pJump )
     {
         nucSeqIndex uiF = pJump->uiFrom;
@@ -522,33 +516,9 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
             uiT = uiF;
             --uiF;
         } // else if
-        nucSeqIndex uiDelToInsRatio = 1; // @todo check if 1 is a well enough approximation
-        if( pJump->from_fuzziness_is_rightwards( ) )
-        {
-            this->vLeft.push_back( uiF );
-            this->vRight.push_back( uiF + std::min( pJump->ref_distance( ) / uiDelToInsRatio,
-                                                    pJump->query_distance( ) * uiDelToInsRatio ) );
-        } // if
-        else
-        {
-            this->vRight.push_back( uiF );
-            nucSeqIndex uiX =
-                std::min( pJump->ref_distance( ) / uiDelToInsRatio, pJump->query_distance( ) * uiDelToInsRatio );
-            this->vLeft.push_back( uiF > uiX ? uiF - uiX : 0 );
-        } // else
-        if( pJump->to_fuzziness_is_downwards( ) )
-        {
-            this->vUp.push_back( uiT );
-            nucSeqIndex uiX =
-                std::min( pJump->ref_distance( ) / uiDelToInsRatio, pJump->query_distance( ) * uiDelToInsRatio );
-            this->vDown.push_back( uiT > uiX ? uiT - uiX : 0 );
-        } // if
-        else
-        {
-            this->vDown.push_back( uiT );
-            this->vUp.push_back( uiT + std::min( pJump->ref_distance( ) / uiDelToInsRatio,
-                                                 pJump->query_distance( ) * uiDelToInsRatio ) );
-        } // else
+
+        vHorizontal.push_back( uiF );
+        vVertical.push_back( uiT );
     } // method
 
     inline double getScore( ) const
@@ -613,53 +583,17 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         return vSupportingJumpIds.size( );
     } // method
 
-    static const size_t uiT = 5;
-    static const nucSeqIndex uiT2 = 0;
-    inline nucSeqIndex right( )
-    {
-        std::sort( vRight.begin( ), vRight.end( ) );
-        return vRight[ vRight.size( ) / uiT ] + uiT2;
-    } // method
-
-    inline nucSeqIndex left( )
-    {
-        std::sort( vLeft.begin( ), vLeft.end( ), []( nucSeqIndex uiA, nucSeqIndex uiB ) { return uiA > uiB; } );
-        nucSeqIndex uiX = vLeft[ vLeft.size( ) / uiT ];
-        return uiX > uiT2 ? uiX - uiT2 : 0;
-    } // method
-    inline nucSeqIndex up( )
-    {
-        std::sort( vUp.begin( ), vUp.end( ) );
-        return vUp[ vUp.size( ) / uiT ] + uiT2;
-    } // method
-
-    inline nucSeqIndex down( )
-    {
-        std::sort( vDown.begin( ), vDown.end( ), []( nucSeqIndex uiA, nucSeqIndex uiB ) { return uiA > uiB; } );
-        nucSeqIndex uiX = vDown[ vDown.size( ) / uiT ];
-        return uiX > uiT2 ? uiX - uiT2 : 0;
-    } // method
 
     inline void reEstimateClusterSize( )
     {
-        nucSeqIndex uiRight = this->right( );
-        nucSeqIndex uiUp = this->up( );
-        this->xXAxis.start( this->left( ) );
-        this->xYAxis.start( this->down( ) );
-        if( uiRight < this->xXAxis.start( ) )
-        {
-            this->xXAxis.start( ( this->xXAxis.start( ) + uiRight ) / 2 - 3 );
-            this->xXAxis.size( 5 );
-        } // if
-        else
-            this->xXAxis.size( uiRight - this->xXAxis.start( ) );
-        if( uiUp < this->xYAxis.start( ) )
-        {
-            this->xYAxis.start( ( this->xYAxis.start( ) + uiUp ) / 2 - 3 );
-            this->xYAxis.size( 5 );
-        } // if
-        else
-            this->xYAxis.size( uiUp - this->xYAxis.start( ) );
+        std::sort( vHorizontal.begin( ), vHorizontal.end( ) );
+        std::sort( vVertical.begin( ), vVertical.end( ) );
+
+
+        this->xXAxis.start( vHorizontal[ ( (size_t)vHorizontal.size( ) * ( bFromForward ? 0.95 : 0.05 ) ) ] );
+        this->xYAxis.start( vVertical[ ( (size_t)vVertical.size( ) * ( bToForward ? 0.05 : 0.95 ) ) ] );
+        this->xXAxis.size( 1 );
+        this->xYAxis.size( 1 );
     } // method
 
     inline nucSeqIndex size( ) const
@@ -702,10 +636,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         assert( !this->insertedSequenceComputed( ) );
         assert( !rOther.insertedSequenceComputed( ) );
 
-        this->vLeft.insert( this->vLeft.end( ), rOther.vLeft.begin( ), rOther.vLeft.end( ) );
-        this->vRight.insert( this->vRight.end( ), rOther.vRight.begin( ), rOther.vRight.end( ) );
-        this->vUp.insert( this->vUp.end( ), rOther.vUp.begin( ), rOther.vUp.end( ) );
-        this->vDown.insert( this->vDown.end( ), rOther.vDown.begin( ), rOther.vDown.end( ) );
+        this->vHorizontal.insert( this->vHorizontal.end( ), rOther.vHorizontal.begin( ), rOther.vHorizontal.end( ) );
+        this->vVertical.insert( this->vVertical.end( ), rOther.vVertical.begin( ), rOther.vVertical.end( ) );
     } // method
 
     size_t numJumps( ) const

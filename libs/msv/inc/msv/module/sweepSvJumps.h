@@ -421,6 +421,9 @@ class ExactCompleteBipartiteSubgraphSweep
                            std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pRet, std::shared_ptr<Pack> pPack )
     {
         std::vector<std::shared_ptr<SvJump>>& rvEdges = pCluster->vSupportingJumps;
+        this->exact_sweep( rvEdges, 0, rvEdges.size( ) - 1, pRet, pPack ); // just clump all jumps together for now
+        return;
+
         std::sort( rvEdges.begin( ), rvEdges.end( ), []( std::shared_ptr<SvJump> pA, std::shared_ptr<SvJump> pB ) {
             if( pA->insert_ratio( ) != pB->insert_ratio( ) )
                 return pA->insert_ratio( ) < pB->insert_ratio( );

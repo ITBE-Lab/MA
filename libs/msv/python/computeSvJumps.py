@@ -15,6 +15,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         seeding_module = BinarySeeding(parameter_set_manager)
         jumps_from_seeds = SvJumpsFromSeeds(parameter_set_manager, pack)
         if not filter_jumps is None:
+            extract_seeds = ExtractSeedsFilter(parameter_set_manager, pack, *filter_jumps)
+            jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
             if filter_as_square:
                 filter_jumps_module = FilterJumpsByRegionSquare(parameter_set_manager, *filter_jumps)
             else:
@@ -54,7 +56,11 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
                 analyze.register("Lock", query_pledge, True)
                 segments_pledge = promise_me(seeding_module, fm_pledge, query_pledge)
                 analyze.register("BinarySeeding", segments_pledge, True)
-                jumps_pledge = promise_me(jumps_from_seeds, segments_pledge, pack_pledge, fm_pledge, query_pledge)
+                if not filter_jumps is None:
+                    seeds_pledge = promise_me(extract_seeds, segments_pledge, pack_pledge, fm_pledge, query_pledge)
+                    jumps_pledge = promise_me(jumps_from_seeds, seeds_pledge, pack_pledge, query_pledge)
+                else:
+                    jumps_pledge = promise_me(jumps_from_seeds, segments_pledge, pack_pledge, fm_pledge, query_pledge)
                 analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
                 filtered_jumps_pledge = promise_me(filter_by_ambiguity, jumps_pledge, pack_pledge)
                 analyze.register("FilterJumpsByRefAmbiguity", filtered_jumps_pledge, True)

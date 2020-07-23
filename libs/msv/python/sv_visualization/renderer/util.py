@@ -79,7 +79,7 @@ def append_nuc_type(dict_, nuc, pos, pos_key):
         dict_["i"].append("T @" + str(pos))
     else:
         dict_["c"].append("lightgray")
-        dict_["i"].append(nuc)
+        dict_["i"].append(nuc + " @" + str(pos))
     dict_[pos_key].append(pos + 0.5)
 
 def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter, parlindrome, layer,

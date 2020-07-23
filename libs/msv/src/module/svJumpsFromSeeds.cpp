@@ -284,6 +284,9 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumpsPy );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
+    exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );
+    exportModule<ExtractSeedsFilter, std::shared_ptr<Pack>, nucSeqIndex, nucSeqIndex>( xOrganizer,
+                                                                                       "ExtractSeedsFilter" );
     exportModule<RecursiveReseedingSegments, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSegments" );
     exportModule<FilterJumpsByRegion, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegion" );
     exportModule<FilterJumpsByRegionSquare, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegionSquare" );

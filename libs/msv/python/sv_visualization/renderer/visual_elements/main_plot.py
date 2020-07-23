@@ -203,4 +203,4 @@ class MainPlot:
         self.call_x.data = {"x":[], "y":[], "col":[]}
         self.ground_truth_x.data = {"x":[], "y":[], "col":[]}
         self.overview_quad.data = {"x":[], "y":[], "w":[], "h":[], "c":[]}
-        self.jump_x = ColumnDataSource({"x":[], "y":[]})
+        self.jump_x.data = {"x":[], "y":[]}

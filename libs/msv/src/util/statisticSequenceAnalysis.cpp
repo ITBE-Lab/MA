@@ -61,8 +61,8 @@ nucSeqIndex libMSV::sampleSequenceAmbiguity( NucSeq& rSequenceA, NucSeq& rSequen
     xSeeder.uiSeedSize = getKMerSizeForRectangle( xRect, t );
 
     auto pLumped = SeedLumping( ).execute( xSeeder.execute( rSequenceA, rSequenceB ), rSequenceA, rSequenceB );
-    pLumped->append( SeedLumping( ).execute( xSeeder.execute( rSequenceA, rSequenceA ), rSequenceA, rSequenceA ) );
-    pLumped->append( SeedLumping( ).execute( xSeeder.execute( rSequenceB, rSequenceB ), rSequenceB, rSequenceB ) );
+    //pLumped->append( SeedLumping( ).execute( xSeeder.execute( rSequenceA, rSequenceA ), rSequenceA, rSequenceA ) );
+    //pLumped->append( SeedLumping( ).execute( xSeeder.execute( rSequenceB, rSequenceB ), rSequenceB, rSequenceB ) );
 
     nucSeqIndex uiSum = 0;
     for( auto xSeed : *pLumped )
