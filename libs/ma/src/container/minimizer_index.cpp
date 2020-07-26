@@ -13,7 +13,8 @@ void exportMinimizerIndex( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<const ParameterSetManager&, std::string>( ) )
         .def( py::init<const ParameterSetManager&, std::vector<std::string>, std::vector<std::string>>( ) )
         .def( "dump", &Index::dump )
-        .def( "seed", &Index::seed );
+        .def( "seed", &Index::seed )
+        .def( "set_max_occ", &Index::setMaxOcc );
 #endif
 } // function
 #endif

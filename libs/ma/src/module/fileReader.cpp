@@ -65,8 +65,9 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
                 if( character == 'N' || character == 'n' )
                 {
                     if( pStream->uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << pStream->uiNumLinesRead
-                                  << " (this is only printed once)" << std::endl;
+                        std::cerr << "WARNING: " << sLine.substr( 0, 100 )
+                                  << " contains Ns! line: " << pStream->uiNumLinesRead << " (this is only printed once)"
+                                  << std::endl;
                     pStream->uiNumLinesWithNs++;
                     continue;
                 }
@@ -159,8 +160,9 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
                 if( character == 'N' || character == 'n' )
                 {
                     if( pStream->uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << pStream->uiNumLinesRead
-                                  << " (this is only printed once)" << std::endl;
+                        std::cerr << "WARNING: " << sLine.substr( 0, 100 )
+                                  << " contains Ns! line: " << pStream->uiNumLinesRead << " (this is only printed once)"
+                                  << std::endl;
                     pStream->uiNumLinesWithNs++;
                     continue;
                 }

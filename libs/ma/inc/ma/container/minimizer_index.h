@@ -265,6 +265,11 @@ class Index : public libMS::Container
 
         return vRet;
     } // method
+
+    void setMaxOcc(size_t uiNewMaxOcc)
+    {
+        xMapOpt.mid_occ = uiNewMaxOcc;
+    }
 }; // class
 
 #endif

@@ -15,7 +15,7 @@
 #include <cmath>
 #include <csignal>
 
-#define ADDITIONAL_DEBUG 1
+#define ADDITIONAL_DEBUG 0
 
 namespace libMSV
 {
