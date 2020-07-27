@@ -1,5 +1,5 @@
 /**
- * @file sequencer.h
+ * @file read.h
  * @details
  * Database interface for the structural variant caller.
  * One table of the database.

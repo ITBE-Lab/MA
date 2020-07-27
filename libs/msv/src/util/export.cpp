@@ -7,6 +7,7 @@
 #include "msv/module/svJumpsFromSeeds.h"
 #include "msv/module/connectorPatternFilter.h"
 #include "msv/container/sv_db/svSchema.h"
+#include "msv/module/count_k_mers.h"
 
 using namespace libMA;
 
@@ -23,6 +24,7 @@ PYBIND11_MODULE( libMSV, libMsvModule )
     exportSweepSvJump( xOrganizer );
     exportConnectorPatternFilter( xOrganizer );
     exportSoCDbWriter( xOrganizer );
+    exportCountKMers( xOrganizer );
 } // function
 
 #endif

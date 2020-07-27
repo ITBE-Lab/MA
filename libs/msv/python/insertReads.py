@@ -11,6 +11,8 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
 
     combined_queue = file_queue
     lock = Lock(parameter_set)
+    get_k_mer_counter = GetKMerCounter(parameter_set, 18, 1)
+    k_mer_counter_module = KMerCounterModule(parameter_set)
     if not file_queue_2 is None:
         combined_queue = combine_file_streams(file_queue, file_queue_2)
         module_get_first = GetFirstQuery(parameter_set)
@@ -43,6 +45,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     # put together the graph
     res = VectorPledge()
     inserter_vec = []
+    counter_vec = []
     for _ in range(parameter_set.get_num_threads()):
         picked_file = promise_me(queue_picker, queue_pledge)
         analyze.register("queue_picker", picked_file, True)
@@ -55,19 +58,30 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         query = promise_me(queue_placer, query_, locked_file, queue_pledge)
         analyze.register("queue_placer", query, True)
 
+        k_mer_counter = promise_me(get_k_mer_counter)
+        counter_vec.append(k_mer_counter)
+
         read_inserter = promise_me(get_read_inserter, pool_pledge)
         analyze.register("get_read_inserter", read_inserter, True)
         inserter_vec.append(read_inserter)
 
         if not file_queue_2 is None:
-            query_primary = promise_me(module_get_first, query)
-            analyze.register("get_first", query_primary, True)
-            query_mate = promise_me(module_get_second, query)
-            analyze.register("get_second", query_mate, True)
+            query_primary_nc = promise_me(module_get_first, query)
+            analyze.register("get_first", query_primary_nc, True)
+            query_primary = promise_me(k_mer_counter_module, query_primary_nc, k_mer_counter)
+            analyze.register("k_mer_counter", query_primary, True)
+
+            query_mate_nc = promise_me(module_get_second, query)
+            analyze.register("get_second", query_mate_nc, True)
+            query_mate = promise_me(k_mer_counter_module, query_mate_nc, k_mer_counter)
+            analyze.register("k_mer_counter", query_mate, True)
 
             empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query_primary, query_mate)
         else:
-            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query)
+            query_c = promise_me(k_mer_counter_module, query, k_mer_counter)
+            analyze.register("k_mer_counter", query_c, True)
+
+            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query_c)
         analyze.register("read_inserter", empty, True)
 
         empty_2 = promise_me(printer, empty, queue_pledge)
@@ -81,6 +95,17 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
 
     for inserter in inserter_vec:
         inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
+
+    for counter in counter_vec[1:]:
+        counter_vec[0].get().merge(counter.get())
+
+    with open("tmp_k_mers.txt", "w") as out_file:
+        for k_mer, cnt in counter_vec[0].get().c_map.items():
+            if cnt > 1:
+                out_file.write(k_mer)
+                out_file.write("\t")
+                out_file.write(str(cnt))
+                out_file.write("\n")
 
     analyze.analyze(runtime_file)
 

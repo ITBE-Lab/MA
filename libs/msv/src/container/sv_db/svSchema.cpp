@@ -11,6 +11,7 @@
 #include "msv/container/sv_db/query_objects/jumpInserter.h"
 #include "msv/container/sv_db/query_objects/nucSeqSql.h"
 #include "msv/container/sv_db/query_objects/readInserter.h"
+#include "msv/container/sv_db/query_objects/kMerInserter.h"
 #include "pybind11/stl.h"
 
 using namespace libMSV;
@@ -73,6 +74,9 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "num_invalid_calls", &X::numInvalidCalls )
         .def( "blur_on_overlaps", &X::blurOnOverlaps );
 
+    py::class_<KMerFilterTable<DBConSingle>, std::shared_ptr<KMerFilterTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                           "KMerFilterTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) );
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
@@ -138,5 +142,6 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     exportSvJumpInserter( xOrganizer );
     exportNucSeqSql( xOrganizer );
     exportReadInserter( xOrganizer );
+    exportKMerInserter( xOrganizer );
 } // function
 #endif // WITH_PYTHON

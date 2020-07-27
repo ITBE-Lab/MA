@@ -250,6 +250,11 @@ class ByteBuffer
         return pBuffer;
     } // method
 
+    inline size_t size( ) const
+    {
+        return uiBufSize;
+    }
+
     /** @brief Returns the size of the actually allocated buffer */
     template <typename Type> inline Type resize( Type uiReq )
     {
@@ -274,6 +279,54 @@ class ByteBuffer
             free( pBuffer );
     } // destructor
 }; // class
+
+// make ByteBuffer usable in std::unordered_map
+inline int cmp( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    if( lhs.size( ) != rhs.size( ) )
+        return lhs.size( ) - rhs.size( );
+    return std::memcmp( lhs.get( ), rhs.get( ), lhs.size( ) );
+}
+
+inline bool operator==( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    return cmp( lhs, rhs ) == 0;
+}
+inline bool operator!=( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    return cmp( lhs, rhs ) != 0;
+}
+inline bool operator<( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    return cmp( lhs, rhs ) < 0;
+}
+inline bool operator>( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    return cmp( lhs, rhs ) > 0;
+}
+inline bool operator<=( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    return cmp( lhs, rhs ) <= 0;
+}
+inline bool operator>=( const ByteBuffer& lhs, const ByteBuffer& rhs )
+{
+    return cmp( lhs, rhs ) >= 0;
+}
+
+// custom specialization of std::hash can be injected in namespace std
+namespace std
+{
+template <> struct hash<ByteBuffer>
+{
+    std::size_t operator( )( ByteBuffer const& xBuff ) const noexcept
+    {
+        size_t uiRet = 0;
+        for( size_t uiI = 0; uiI < xBuff.size( ); uiI++ )
+            uiRet = std::hash<char>{}( xBuff.get( )[ uiI ] ) ^ ( uiRet << 1 );
+        return uiRet;
+    }
+};
+} // namespace std
 
 
 /* Basic class for a single cell in row for a query outcome.
@@ -961,12 +1014,13 @@ class MySQLConDB
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
-            for_each_in_tuple_pairwise( tCellWrappers,
-                                        [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
-                                            // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
-                                            rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
-                                        },
-                                        tCellValues );
+            for_each_in_tuple_pairwise(
+                tCellWrappers,
+                [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                    // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
+                    rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
+                },
+                tCellValues );
 
             // Parse the JSON configuration of the query.
             parseJsonConfig( rjConfig );
@@ -1158,7 +1212,7 @@ class MySQLConDB
         auto pShowVariablesStmt =
             std::make_unique<PreparedQueryTmpl<MySQLConDB*, std::string, std::string>>( this, "SHOW VARIABLES" );
         pShowVariablesStmt->execBind( );
-        mMySQLVars.clear();
+        mMySQLVars.clear( );
         while( pShowVariablesStmt->fetchNextRow( ) )
             mMySQLVars.emplace( std::get<0>( pShowVariablesStmt->getCellValues( ) ),
                                 std::get<1>( pShowVariablesStmt->getCellValues( ) ) );
@@ -1266,7 +1320,7 @@ class MySQLConDB
         // std::string sTimeout3;
         // getMySQLVar( "interactive_timeout", sTimeout3 );
         // std::cout << "interactive_timeout2 : " << sTimeout3 << std::endl;
-    
+
         // Collect client info in numeric form.
         this->uiCLientVersion = mysql_get_client_version( );
         // std::cout << "MySQL client version: " << uiCLientVersion << std::endl;

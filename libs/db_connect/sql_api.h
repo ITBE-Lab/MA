@@ -1328,7 +1328,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
      *  uiNumberVals determines the number of values (rows) in the case of multiple row inserts.
      *  @details Syntax should work with most SQL dialects.
      */
-    std::string makeInsertStmt( const size_t uiNumVals = 1 ) const
+    virtual std::string makeInsertStmt( const size_t uiNumVals = 1 ) const
     {
         // Number of columns
         assert( this->rjTableCols.size( ) == sizeof...( ColTypes ) );
@@ -1350,6 +1350,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 #endif
         return sStmt;
     } // function
+
   protected:
     /** @brief Make the text of an appropriate SQL table deletion statement. */
     std::string makeTableDropStmt( )
@@ -1530,6 +1531,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     {
         SQLIndexDropView( this, rjIndexDef, bWithLock );
     } // method
+
+    /** @brief holds the columns types.
+     *  @details
+     *  since a parameter pack cannot be held in a using, we hold the type TypePack<ColTypes...>.
+     *  pack is a completely empty struct.
+     *  @see get_inserter_container_module.h, there this is used to extract the types of all column from a tabletype
+     * that is given as a template parameter.
+     */
+    using ColTypesForw = TypePack<ColTypes...>;
 
     SQLTable( const SQLTable& ) = delete; // no table copies
 

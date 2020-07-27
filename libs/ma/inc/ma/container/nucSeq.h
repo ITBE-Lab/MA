@@ -224,6 +224,15 @@ class NucSeq : public libMS::Container
         vAppend( rOther.pxSequenceRef, rOther.uiSize );
     } // constructor
 
+    /** Move constructor on the foundation of text sequences.
+     * Reuses the space of the text-sequence! TO DO: move & to &&
+     */
+    NucSeq( const NucSeq& rOther, nucSeqIndex uiFrom, nucSeqIndex uiTo )
+    {
+        vResetProtectedAttributes( );
+        vAppend( rOther.pxSequenceRef + uiFrom, uiTo - uiFrom );
+    } // constructor
+
 
     /** is implicitly deleted by geneticSequence but boost python needs to know */
     // AK: VSC++ complained: NucSeq( const NucSeq& ) = delete;
@@ -793,67 +802,6 @@ class NucSeq : public libMS::Container
     } // method
 }; // class NucSeq
 
-#if 0
-/** @brief This class is for cases where we want to have a simple byte buffer without the initialization as it
- *  occurs in std::vector.
- *  FIXME: Move this class to the util section
- */
-class ByteBuffer
-{
-  private:
-    size_t uiBufSize = 0;
-    uint8_t* pBuffer = NULL;
-    static const size_t SEG_SIZE = 512; // segment size chosen in the context of allocations
-
-  public:
-    /** @brief Delivers pointer to buffer. */
-    inline uint8_t* get( ) const
-    {
-        return pBuffer;
-    } // method
-
-    /** @brief Returns the size of the actually allocated buffer */
-    template <typename Type> inline Type resize( Type uiReq )
-    {
-        if( uiReq > uiBufSize )
-        {
-            // uiReq is guaranteed to be one at least
-            // allocate multiple of SEG_SIZE
-            uiBufSize = ( ( ( uiReq - 1 ) / SEG_SIZE ) + 1 ) * SEG_SIZE;
-
-            // realloc frees automatically in the case of relocation
-            pBuffer = static_cast<uint8_t*>( realloc( pBuffer, uiBufSize ) );
-            if( !pBuffer )
-                throw std::runtime_error( "ByteBuffer reports out of memory for size " + std::to_string( uiBufSize ) );
-        }
-        return static_cast<Type>( uiBufSize );
-    } // method
-
-    /** @brief Returns the buffer as hex string. */
-    std::string getHexString( )
-    {
-        static const char hex_digits[] = "0123456789ABCDEF";
-
-        std::string sHexStr;
-        sHexStr.reserve( this->uiBufSize * 2 );
-        for( auto pItr = this->pBuffer; pItr < this->pBuffer + this->uiBufSize; pItr++ )
-        {
-            uint8_t c = *pItr;
-            sHexStr.push_back( hex_digits[ c >> 4 ] );
-            sHexStr.push_back( hex_digits[ c & 15 ] );
-        } // for
-        return sHexStr;
-    } // method
-
-    /* Free at destruction */
-    ~ByteBuffer( )
-    {
-        if( pBuffer != NULL )
-            free( pBuffer );
-    } // destructor
-}; // class
-#endif
-
 /** @brief Compressed representation of nucleotide sequences without quality information.
  *  @details
  *  Header: uint64 value that tells the size of the uncompressed sequence.
@@ -1264,7 +1212,7 @@ struct /* MySQLConDB:: */ RowCell<CompNucSeqSharedPtr> : public /* MySQLConDB::*
         // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
         if( !( this->is_null ) )
         {
-            if( *pCellValue == nullptr ) // @todo ask arne again... i don't quite get what i'm doing wrong
+            if( *pCellValue == nullptr )
                 *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
             ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
         }
