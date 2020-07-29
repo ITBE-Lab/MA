@@ -73,6 +73,8 @@ class SvJumpsFromSeeds
     const size_t uiMinSizeJump;
     SeedLumping xSeedLumper;
     SortRemoveDuplicates xRemoveDuplicates;
+    MaxExtendedToSMEM xToSMEM;
+    FilterOverlappingSeeds xFilterOverlapping;
     NeedlemanWunsch xNW;
     ParlindromeFilter xParlindromeFilter;
     double dMaxSequenceSimilarity = 0.2;
@@ -103,6 +105,8 @@ class SvJumpsFromSeeds
           uiMinSizeJump( (size_t)rParameters.getSelected( )->xMinSizeEdge->get( ) ),
           xSeedLumper( rParameters ),
           xRemoveDuplicates( rParameters ),
+          xToSMEM( rParameters ),
+          xFilterOverlapping( rParameters ),
           xNW( rParameters ),
           xParlindromeFilter( rParameters )
     {} // constructor
@@ -245,7 +249,7 @@ class SvJumpsFromSeeds
         pRet->append( pSeeds );
 
         size_t uiLayer = 1;
-        while( uiLayer <= 4 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
+        while( uiLayer <= 100 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
         {
             // sort seeds and remove duplicates (from reseeding)
             eraseMarked( pRet );
@@ -328,7 +332,7 @@ class SvJumpsFromSeeds
         } // while
 
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
-        return xRemoveDuplicates.execute( pRet );
+        return xFilterOverlapping.execute( xToSMEM.execute( pRet ) );
     } // mehtod
 
     std::shared_ptr<libMS::ContainerVector<SvJump>> computeJumps( std::shared_ptr<Seeds> pSeeds,
@@ -439,8 +443,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -705,8 +709,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

@@ -116,6 +116,15 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
+
+    if(iRectQEnd - iRectQStart > iMaxSizeReseed/2)
+    {
+        if(&rLast == &xDummySeed)
+            iRectQStart = iRectQEnd - iMaxSizeReseed/2;
+        else
+            iRectQEnd = iRectQStart + iMaxSizeReseed/2;
+    } // if
+
     return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
                                                          (nucSeqIndex)iRefSize,
                                                          ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),

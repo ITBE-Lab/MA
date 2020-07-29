@@ -1137,6 +1137,54 @@ inline std::shared_ptr<CompressedNucSeq> makeSharedCompNucSeq( const std::shared
 
 } // namespace libMA
 
+// make std::shared_ptr<CompressedNucSeq> usable in std::unordered_map
+inline int cmp( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    if( lhs.size( ) != rhs.size( ) )
+        return lhs.size( ) - rhs.size( );
+    return std::memcmp( lhs.get( ), rhs.get( ), lhs.size( ) );
+}
+
+inline bool operator==( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    return cmp( lhs, rhs ) == 0;
+}
+inline bool operator!=( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    return cmp( lhs, rhs ) != 0;
+}
+inline bool operator<( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    return cmp( lhs, rhs ) < 0;
+}
+inline bool operator>( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    return cmp( lhs, rhs ) > 0;
+}
+inline bool operator<=( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    return cmp( lhs, rhs ) <= 0;
+}
+inline bool operator>=( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
+{
+    return cmp( lhs, rhs ) >= 0;
+}
+
+// custom specialization of std::hash can be injected in namespace std
+namespace std
+{
+template <> struct hash<libMA::CompressedNucSeq>
+{
+    std::size_t operator( )( libMA::CompressedNucSeq const& xBuff ) const noexcept
+    {
+        size_t uiRet = 0;
+        for( size_t uiI = 0; uiI < xBuff.size( ); uiI++ )
+            uiRet = std::hash<char>{}( xBuff.get( )[ uiI ] ) ^ ( uiRet << 1 );
+        return uiRet;
+    }
+};
+} // namespace std
+
 inline std::string buf_to_hex( char* pBuf, size_t uiSize )
 {
     static const char hex_digits[] = "0123456789ABCDEF";

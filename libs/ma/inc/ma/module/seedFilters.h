@@ -545,11 +545,11 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
  */
 class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 {
-    nucSeqIndex uiMaxOverlap;
+    nucSeqIndex uiFuzz = 5;
+    nucSeqIndex uiMinFree = 5;
 
   public:
-    FilterOverlappingSeeds( const ParameterSetManager& rParameters, nucSeqIndex uiMaxOverlap )
-        : uiMaxOverlap( uiMaxOverlap )
+    FilterOverlappingSeeds( const ParameterSetManager& rParameters )
     {} // default constructor
 
     // overload
@@ -558,19 +558,50 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
         std::sort( pSeeds->begin( ), pSeeds->end( ),
                    []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
 
-        std::shared_ptr<Seeds> pRet;
-        pRet->reserve( pSeeds->size( ) );
+        //                     q_start      end         largest_seed
+        std::vector<std::tuple<nucSeqIndex, nucSeqIndex, nucSeqIndex>> vOverlapAreas;
+        vOverlapAreas.reserve( pSeeds->size( ) ); // allocate all space at once
 
-
+        nucSeqIndex uiMax = 0;
         for( auto& rS : *pSeeds )
         {
-            if( pRet->size( ) == 0 || rS.start( ) > pRet->back( ).end( ) + uiMaxOverlap )
-                pRet->push_back( rS );
-            else if( pRet->back( ).size( ) > rS.size( ) )
+            if( rS.start( ) < uiMax )
             {
-                pRet->pop_back( );
+                if( vOverlapAreas.empty( ) || std::get<1>( vOverlapAreas.back( ) ) < rS.start( ) )
+                    vOverlapAreas.emplace_back( rS.start( ), uiMax, rS.size( ) );
+                else
+                {
+                    std::get<1>( vOverlapAreas.back( ) ) = std::max( std::get<1>( vOverlapAreas.back( ) ), rS.end( ) );
+                    std::get<2>( vOverlapAreas.back( ) ) = std::max( std::get<2>( vOverlapAreas.back( ) ), rS.size( ) );
+                } // else
+            } // if
+            uiMax = std::max( uiMax, rS.end( ) );
+        } // for
+
+        auto pRet = std::make_shared<Seeds>();
+        pRet->reserve( pSeeds->size( ) ); // allocate all space at once
+
+        size_t uiIdx = 0;
+        for( auto& rS : *pSeeds )
+        {
+            while( uiIdx < vOverlapAreas.size( ) && std::get<1>( vOverlapAreas[ uiIdx ] ) < rS.start( ) )
+                uiIdx++;
+            nucSeqIndex uiNumOverlap = 0;
+            size_t uiJ = uiIdx;
+            while( uiJ < vOverlapAreas.size( ) && std::get<0>( vOverlapAreas[ uiJ ] ) < rS.end( ) )
+            {
+                if( std::get<2>( vOverlapAreas[ uiJ ] ) + uiFuzz >= rS.size( ) )
+                {
+                    auto uiStart = std::max( rS.start( ), std::get<0>( vOverlapAreas[ uiJ ] ) );
+                    auto uiEnd = std::min( rS.end( ), std::get<1>( vOverlapAreas[ uiJ ] ) );
+                    if( uiEnd > uiStart )
+                        uiNumOverlap += uiEnd - uiStart;
+                } // if
+                uiJ++;
+            } // while
+
+            if( rS.size( ) >= uiNumOverlap + uiMinFree )
                 pRet->push_back( rS );
-            }
         } // for
 
         return pRet;

@@ -11,8 +11,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
 
     combined_queue = file_queue
     lock = Lock(parameter_set)
-    get_k_mer_counter = GetKMerCounter(parameter_set, 18, 1)
-    k_mer_counter_module = KMerCounterModule(parameter_set)
+    single_con = DbConn(dataset_name)
     if not file_queue_2 is None:
         combined_queue = combine_file_streams(file_queue, file_queue_2)
         module_get_first = GetFirstQuery(parameter_set)
@@ -22,7 +21,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         queue_picker = PairedFilePicker(parameter_set)
         queue_placer = PairedFileNucSeqPlacer(parameter_set)
         file_reader = PairedFileReader(parameter_set)
-        get_read_inserter = GetPairedReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
+        get_read_inserter = GetPairedReadInserter(parameter_set, single_con, sequencer_name)
         read_inserter_module = PairedReadInserterModule(parameter_set)
         printer = ProgressPrinterPairedFileStreamQueue(parameter_set)
     else:
@@ -30,9 +29,14 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         queue_picker = FilePicker(parameter_set)
         queue_placer = FileNucSeqPlacer(parameter_set)
         file_reader = FileReader(parameter_set)
-        get_read_inserter = GetReadInserter(parameter_set, DbConn(dataset_name), sequencer_name)
+        get_read_inserter = GetReadInserter(parameter_set, single_con, sequencer_name)
         read_inserter_module = ReadInserterModule(parameter_set)
         printer = ProgressPrinterFileStreamQueue(parameter_set)
+
+    k_mer_counter_container = KMerCounter(18, 1)
+    k_mer_counter = Pledge()
+    k_mer_counter.set(k_mer_counter_container)
+    k_mer_counter_module = KMerCounterModule(parameter_set)
 
     queue_pledge = Pledge()
     queue_pledge.set(combined_queue)
@@ -45,7 +49,6 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     # put together the graph
     res = VectorPledge()
     inserter_vec = []
-    counter_vec = []
     for _ in range(parameter_set.get_num_threads()):
         picked_file = promise_me(queue_picker, queue_pledge)
         analyze.register("queue_picker", picked_file, True)
@@ -58,36 +61,37 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         query = promise_me(queue_placer, query_, locked_file, queue_pledge)
         analyze.register("queue_placer", query, True)
 
-        k_mer_counter = promise_me(get_k_mer_counter)
-        counter_vec.append(k_mer_counter)
-
         read_inserter = promise_me(get_read_inserter, pool_pledge)
         analyze.register("get_read_inserter", read_inserter, True)
         inserter_vec.append(read_inserter)
 
         if not file_queue_2 is None:
-            query_primary_nc = promise_me(module_get_first, query)
-            analyze.register("get_first", query_primary_nc, True)
-            query_primary = promise_me(k_mer_counter_module, query_primary_nc, k_mer_counter)
-            analyze.register("k_mer_counter", query_primary, True)
+            query_primary = promise_me(module_get_first, query)
+            analyze.register("get_first", query_primary, True)
 
-            query_mate_nc = promise_me(module_get_second, query)
-            analyze.register("get_second", query_mate_nc, True)
-            query_mate = promise_me(k_mer_counter_module, query_mate_nc, k_mer_counter)
-            analyze.register("k_mer_counter", query_mate, True)
+            counted_primary = promise_me(k_mer_counter_module, query_primary, k_mer_counter)
+            analyze.register("k_mer_counter", counted_primary , True)
 
-            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query_primary, query_mate)
+            query_mate = promise_me(module_get_second, query)
+            analyze.register("get_second", query_mate, True)
+
+            counted_mate = promise_me(k_mer_counter_module, query_mate, k_mer_counter)
+            analyze.register("k_mer_counter", counted_mate , True)
+
+            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, counted_primary, counted_mate)
+            analyze.register("read_inserter", empty, True)
+
         else:
-            query_c = promise_me(k_mer_counter_module, query, k_mer_counter)
-            analyze.register("k_mer_counter", query_c, True)
+            counted_query = promise_me(k_mer_counter_module, query, k_mer_counter)
+            analyze.register("k_mer_counter", counted_query, True)
 
-            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, query_c)
-        analyze.register("read_inserter", empty, True)
+            empty = promise_me(read_inserter_module, read_inserter, pool_pledge, counted_query)
+            analyze.register("read_inserter", empty, True)
 
-        empty_2 = promise_me(printer, empty, queue_pledge)
-        analyze.register("printer", empty_2, True)
+        empty_print = promise_me(printer, empty, queue_pledge)
+        analyze.register("printer", empty_print, True)
 
-        unlock = promise_me(UnLock(parameter_set, locked_file), empty_2)
+        unlock = promise_me(UnLock(parameter_set, locked_file), empty_print)
         res.append(unlock)
 
     # run the graph
@@ -96,16 +100,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     for inserter in inserter_vec:
         inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
-    for counter in counter_vec[1:]:
-        counter_vec[0].get().merge(counter.get())
-
-    with open("tmp_k_mers.txt", "w") as out_file:
-        for k_mer, cnt in counter_vec[0].get().c_map.items():
-            if cnt > 1:
-                out_file.write(k_mer)
-                out_file.write("\t")
-                out_file.write(str(cnt))
-                out_file.write("\n")
+    KMerFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, k_mer_counter_container, 300)
 
     analyze.analyze(runtime_file)
 

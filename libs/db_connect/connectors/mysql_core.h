@@ -280,54 +280,6 @@ class ByteBuffer
     } // destructor
 }; // class
 
-// make ByteBuffer usable in std::unordered_map
-inline int cmp( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    if( lhs.size( ) != rhs.size( ) )
-        return lhs.size( ) - rhs.size( );
-    return std::memcmp( lhs.get( ), rhs.get( ), lhs.size( ) );
-}
-
-inline bool operator==( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    return cmp( lhs, rhs ) == 0;
-}
-inline bool operator!=( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    return cmp( lhs, rhs ) != 0;
-}
-inline bool operator<( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    return cmp( lhs, rhs ) < 0;
-}
-inline bool operator>( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    return cmp( lhs, rhs ) > 0;
-}
-inline bool operator<=( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    return cmp( lhs, rhs ) <= 0;
-}
-inline bool operator>=( const ByteBuffer& lhs, const ByteBuffer& rhs )
-{
-    return cmp( lhs, rhs ) >= 0;
-}
-
-// custom specialization of std::hash can be injected in namespace std
-namespace std
-{
-template <> struct hash<ByteBuffer>
-{
-    std::size_t operator( )( ByteBuffer const& xBuff ) const noexcept
-    {
-        size_t uiRet = 0;
-        for( size_t uiI = 0; uiI < xBuff.size( ); uiI++ )
-            uiRet = std::hash<char>{}( xBuff.get( )[ uiI ] ) ^ ( uiRet << 1 );
-        return uiRet;
-    }
-};
-} // namespace std
-
 
 /* Basic class for a single cell in row for a query outcome.
  * Full support of C++17 would allow moving all these specializations inside MySQLConDB.

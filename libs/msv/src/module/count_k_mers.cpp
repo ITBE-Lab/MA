@@ -15,6 +15,7 @@ void exportCountKMers( libMS::SubmoduleOrganizer& xOrganizer )
 {
 
     py::class_<KMerCounter, Container, std::shared_ptr<KMerCounter>>( xOrganizer.container( ), "KMerCounter" )
+        .def( py::init<nucSeqIndex, nucSeqIndex>( ) )
         .def( "merge", &KMerCounter::merge )
         .def_readwrite( "c_map", &KMerCounter::xCountMap );
     // export the ConnectorPatternFilter class

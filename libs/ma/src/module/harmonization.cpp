@@ -568,7 +568,7 @@ void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer )
                                             []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
     exportModule<MinLength, size_t>( xOrganizer, "MinLength",
                                      []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
-    exportModule<FilterOverlappingSeeds, size_t>( xOrganizer, "FilterOverlappingSeeds",
+    exportModule<FilterOverlappingSeeds>( xOrganizer, "FilterOverlappingSeeds",
                                      []( auto&& x ) { x.def( "filter", &FilterOverlappingSeeds::filter ); } );
     exportModule<SortRemoveDuplicates>( xOrganizer, "SortRemoveDuplicates",
                                         []( auto&& x ) { x.def( "filter", &SortRemoveDuplicates::filter ); } );
