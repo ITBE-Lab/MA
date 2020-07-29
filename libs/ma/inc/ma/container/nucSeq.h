@@ -1137,54 +1137,6 @@ inline std::shared_ptr<CompressedNucSeq> makeSharedCompNucSeq( const std::shared
 
 } // namespace libMA
 
-// make std::shared_ptr<CompressedNucSeq> usable in std::unordered_map
-inline int cmp( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    if( lhs.size( ) != rhs.size( ) )
-        return lhs.size( ) - rhs.size( );
-    return std::memcmp( lhs.get( ), rhs.get( ), lhs.size( ) );
-}
-
-inline bool operator==( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    return cmp( lhs, rhs ) == 0;
-}
-inline bool operator!=( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    return cmp( lhs, rhs ) != 0;
-}
-inline bool operator<( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    return cmp( lhs, rhs ) < 0;
-}
-inline bool operator>( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    return cmp( lhs, rhs ) > 0;
-}
-inline bool operator<=( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    return cmp( lhs, rhs ) <= 0;
-}
-inline bool operator>=( const libMA::CompressedNucSeq& lhs, const libMA::CompressedNucSeq& rhs )
-{
-    return cmp( lhs, rhs ) >= 0;
-}
-
-// custom specialization of std::hash can be injected in namespace std
-namespace std
-{
-template <> struct hash<libMA::CompressedNucSeq>
-{
-    std::size_t operator( )( libMA::CompressedNucSeq const& xBuff ) const noexcept
-    {
-        size_t uiRet = 0;
-        for( size_t uiI = 0; uiI < xBuff.size( ); uiI++ )
-            uiRet = std::hash<char>{}( xBuff.get( )[ uiI ] ) ^ ( uiRet << 1 );
-        return uiRet;
-    }
-};
-} // namespace std
-
 inline std::string buf_to_hex( char* pBuf, size_t uiSize )
 {
     static const char hex_digits[] = "0123456789ABCDEF";
@@ -1352,6 +1304,44 @@ template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQ
     {
         if( !( this->is_null ) )
             pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
+    } // method
+}; // specialized class
+
+
+// Part1 : Spatial types require an indication that the argument passed at a placeholder's
+//          position has the format 'WKB'.
+template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<libMA::NucSeq>( )
+{
+    return "LONGBLOB";
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void MySQLConDB::StmtArg::set( const libMA::NucSeq& rxBlob )
+{
+    this->uiLength = static_cast<unsigned long>( rxBlob.uiSize );
+    pMySQLBind->buffer_length = static_cast<unsigned long>( rxBlob.uiSize );
+    pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
+    pMySQLBind->buffer = (void*)( rxBlob.pxSequenceRef );
+} // specialized method
+
+// Part 3: Code for supporting query output:
+//         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
+//         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
+template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeq> : public /* MySQLConDB::*/ RowCellBase<libMA::NucSeq>
+{
+    inline void init( MYSQL_BIND* pMySQLBind, libMA::NucSeq* pCellValue, size_t uiColNum )
+    {
+        RowCellBase<libMA::NucSeq>::init( pMySQLBind, pCellValue, MYSQL_TYPE_LONG_BLOB, uiColNum );
+    } // method
+
+    // Fetch the blob from the buffer.
+    inline void storeVarSizeCell( )
+    {
+        // assert( this->uiLength == geom::Rectangle<uint64_t>::uiSizeWKB );
+        // Fill the buffer with WKB values
+
+        if( !( this->is_null ) )
+            pCellValue->vAppend( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
 

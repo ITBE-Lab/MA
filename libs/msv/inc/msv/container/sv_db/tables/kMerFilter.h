@@ -16,7 +16,7 @@ namespace libMSV
 template <typename DBCon>
 using KMerFilterTableType = SQLTable<DBCon,
                                      PriKeyDefaultType, // sequencer id (foreign key)
-                                     std::shared_ptr<libMA::CompressedNucSeq>, // k_mer
+                                     NucSeq, // k_mer
                                      uint32_t // num_occ
                                      >;
 const json jKMerFilterDef = {
@@ -35,9 +35,10 @@ template <typename DBCon> class KMerFilterTable : public KMerFilterTableType<DBC
     void insert_counter_set( PriKeyDefaultType uiSequencerId, std::shared_ptr<KMerCounter> pCounter, size_t uiT )
     {
         auto pBulkInserter = this->template getBulkInserter<500>( );
-        for( auto& xP : pCounter->xCountMap )
-            if( xP.second.uiCnt.load( ) > uiT )
-                pBulkInserter->insert( uiSequencerId, xP.first, xP.second.uiCnt.load( ) );
+        pCounter->iterate( [&]( const NucSeq& xNucSeq, size_t uiCnt ) {
+            if( uiCnt > uiT )
+                pBulkInserter->insert( uiSequencerId, xNucSeq, uiCnt );
+        } );
     } // method
 }; // class
 

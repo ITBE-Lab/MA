@@ -648,7 +648,7 @@ class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Con
             pQueue->iter( [&]( auto pStream ) {
                 if( pStream->tellg( ) == 0 )
                     uiRemaining++;
-                else if( pStream->tellg( ) == pStream->fileSize( ) )
+                else if( pStream->tellg( ) >= pStream->fileSize( ) )
                     uiDone++;
                 else
                     std::cout << pStream->status( ) << std::endl;

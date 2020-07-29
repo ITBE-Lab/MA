@@ -280,7 +280,6 @@ class ByteBuffer
     } // destructor
 }; // class
 
-
 /* Basic class for a single cell in row for a query outcome.
  * Full support of C++17 would allow moving all these specializations inside MySQLConDB.
  */

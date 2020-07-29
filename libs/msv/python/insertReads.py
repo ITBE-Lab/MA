@@ -33,7 +33,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         read_inserter_module = ReadInserterModule(parameter_set)
         printer = ProgressPrinterFileStreamQueue(parameter_set)
 
-    k_mer_counter_container = KMerCounter(18, 1)
+    k_mer_counter_container = KMerCounter(1)
     k_mer_counter = Pledge()
     k_mer_counter.set(k_mer_counter_container)
     k_mer_counter_module = KMerCounterModule(parameter_set)

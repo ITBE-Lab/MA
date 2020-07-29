@@ -7,8 +7,8 @@
 
 #include "ms/module/get_inserter_container_module.h"
 #include "msv/container/sv_db/tables/kMerFilter.h"
-#include "msv/module/count_k_mers.h"
 #include "msv/container/sv_db/tables/sequencer.h"
+#include "msv/module/count_k_mers.h"
 
 using namespace libMA;
 using namespace libMS;
@@ -29,11 +29,12 @@ class KMerInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
     virtual size_t insert_override( std::shared_ptr<NucSeq> pRead )
     {
         size_t uiCnt = 0;
-        KMerCounter::toKMers( pRead, 0, pRead->length( ), 18, 1, [&]( std::shared_ptr<CompressedNucSeq> pCompSeq ) {
-            uiCnt++;
-            ParentType::pInserter->insert( ParentType::iId, pCompSeq, (uint32_t)1 );
-            return true;
-        } );
+        KMerCounter::toKMers( pRead, 0, pRead->length( ), 1,
+                              [&]( const NucSeq& xNucSeq ) {
+                                  uiCnt++;
+                                  ParentType::pInserter->insert( ParentType::iId, xNucSeq, (uint32_t)1 );
+                                  return true;
+                              } );
         return uiCnt;
     } // method
 }; // class
