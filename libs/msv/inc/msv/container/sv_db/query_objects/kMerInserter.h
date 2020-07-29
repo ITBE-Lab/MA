@@ -29,12 +29,12 @@ class KMerInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
     virtual size_t insert_override( std::shared_ptr<NucSeq> pRead )
     {
         size_t uiCnt = 0;
-        KMerCounter::toKMers( pRead, 0, pRead->length( ), 1,
-                              [&]( const NucSeq& xNucSeq ) {
-                                  uiCnt++;
-                                  ParentType::pInserter->insert( ParentType::iId, xNucSeq, (uint32_t)1 );
-                                  return true;
-                              } );
+        KMerCounter::toKMers( pRead, 0, pRead->length( ), 1, [&]( const NucSeq& xNucSeq ) {
+            uiCnt++;
+            auto pInsert = std::make_shared<NucSeq>( xNucSeq );
+            ParentType::pInserter->insert( ParentType::iId, NucSeqSql(pInsert), (uint32_t)1 );
+            return true;
+        } );
         return uiCnt;
     } // method
 }; // class

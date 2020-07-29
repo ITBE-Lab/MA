@@ -36,12 +36,14 @@ namespace libMSV
  * @details
  * Performs thread-SAVE counting of k-mers.
  * Tries to minimize locking by using chunks
+ * make sure that NUM_CHUNKS <= size(size_t)*2
+ * make sure that ( K - NUM_CHUNKS ) % 4 == 0
  */
 template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Container
 {
     class Chunk
     {
-        using ARR_T = std::array<uint8_t, ( K - NUM_CHUNKS ) / 2>;
+        using ARR_T = std::array<uint8_t, ( K - NUM_CHUNKS ) / 4>;
         std::unordered_map<ARR_T, size_t> xCountMap;
 #define SPIN_LOCK 1
 #if SPIN_LOCK
@@ -73,22 +75,26 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 #endif
         } // method
 
-        uint8_t comp( const NucSeq& xSeq, size_t uiI )
-        {
-            uint8_t uiA = xSeq[ 2 * uiI + NUM_CHUNKS ];
-            if( uiA >= 4 )
-                uiA = 0;
-            uint8_t uiB = xSeq[ 2 * uiI + NUM_CHUNKS ];
-            if( uiB >= 4 )
-                uiB = 0;
-            return ( uiA << 2 ) ^ uiB;
-        }
+
+        inline void vSetNucleotideOnPos( ARR_T& vArr, const uint64_t uiPosition, const uint8_t uiValue )
+        { /* We expect a correct position, when we come here.
+           */
+            vArr[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
+        } // inline method
+        /* Get the value at position uiPosition in the unpacked sequence.
+         * Works only for the virtual forward strand.
+         */
+        inline uint8_t getNucleotideOnPos( ARR_T& vArr, const uint64_t uiPosition )
+        { /* We expect a correct position, when we come here.
+           */
+            return vArr[ ( size_t )( uiPosition >> 2 ) ] >> ( ( ~uiPosition & 3UL ) << 1 ) & 3;
+        } // inline method
 
         ARR_T toArray( const NucSeq& xSeq )
         {
             ARR_T vRet;
-            for( size_t uiI = 0; uiI < ( K - NUM_CHUNKS ) / 2; uiI++ )
-                vRet[ uiI ] = comp( xSeq, uiI );
+            for( size_t uiI = 0; uiI < xCountMap.size( ); uiI++ )
+                vSetNucleotideOnPos( vRet, uiI, xSeq[ uiI + NUM_CHUNKS ] );
             return vRet;
         }
 
@@ -98,15 +104,12 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
             xRet.resize( K );
             for( size_t uiI = 0; uiI < NUM_CHUNKS; uiI++ )
             {
-                xRet[ uiI ] = uiIdx ^ 3;
+                xRet[ NUM_CHUNKS - ( uiI + 1 ) ] = uiIdx & 3;
                 uiIdx >>= 2;
             } // for
 
-            for( size_t uiI = 0; uiI < K - NUM_CHUNKS; uiI += 2 )
-            {
-                xRet[ uiI + NUM_CHUNKS ] = vArr[ uiI ] ^ 3;
-                xRet[ uiI + NUM_CHUNKS + 1 ] = ( vArr[ uiI ] >> 2 ) ^ 3;
-            } // for
+            for( size_t uiI = 0; uiI < xCountMap.size( ); uiI++ )
+                xRet[ uiI + NUM_CHUNKS ] = getNucleotideOnPos( vArr, uiI );
             return xRet;
         }
 
@@ -147,7 +150,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
     template <typename F>
     static bool toKMers( std::shared_ptr<NucSeq> pSeq, nucSeqIndex uiFrom, nucSeqIndex uiTo, nucSeqIndex uiW, F&& fDo )
     {
-        for( nucSeqIndex uiI = uiFrom; uiI < uiTo - K; uiI += uiW )
+        for( nucSeqIndex uiI = uiFrom; uiI <= uiTo - K; uiI += uiW )
         {
             NucSeq xSection( *pSeq, uiI, uiI + K );
             if( !fDo( xSection ) )
@@ -168,6 +171,11 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 
     void addKMer( const NucSeq& xSeq, size_t uiCnt )
     {
+        if( xSeq.length( ) != K )
+            return;
+        for( size_t uiI = 0; uiI < K; uiI++ )
+            if( xSeq[ uiI ] > 3 )
+                return;
         vChunks[ getChunkId( xSeq ) ].inc( xSeq, uiCnt );
     }
 
@@ -189,6 +197,9 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 
     bool isUnique( std::shared_ptr<NucSeq> pSeq, nucSeqIndex uiFrom, nucSeqIndex uiTo, nucSeqIndex uiMaxOcc )
     {
+        for( size_t uiI = 0; uiI < pSeq->length( ); uiI++ )
+            if( ( *pSeq )[ uiI ] > 3 )
+                return false;
         return toKMers( pSeq, uiFrom, uiTo,
                         [&]( const NucSeq& xSeq ) { return vChunks[ getChunkId( xSeq ) ].get( xSeq ) <= uiMaxOcc; } );
     } // method
@@ -198,14 +209,19 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
         return isUnique( pSeq, 0, pSeq->length( ), uiMaxOcc );
     } // method
 
+    bool isUnique( std::shared_ptr<NucSeq> pSeq )
+    {
+        return isUnique( pSeq, 0 );
+    } // method
+
     template <typename F> void iterate( F&& fDo )
     {
-        for( size_t uiI = 0; uiI < vChunks.size(); uiI++ )
+        for( size_t uiI = 0; uiI < vChunks.size( ); uiI++ )
             vChunks[ uiI ].iterate( fDo, uiI );
     } // method
 }; // class
 
-using KMerCounter = __KMerCounter<8, 18>;
+using KMerCounter = __KMerCounter<6, 18>;
 
 class GetKMerCounter : public Module<KMerCounter, false>
 {

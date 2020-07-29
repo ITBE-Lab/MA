@@ -641,7 +641,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
       public:
         SQLIndexView( const SQLTable<DBCon, ColTypes...>* pTable,
                       const json& rjIndexDef,
-                      const bool bWithLock=true ) // index definition in JSON)
+                      const bool bWithLock = true ) // index definition in JSON)
             : jIndexDef( rjIndexDef ) // copy the index def. to attribute
         {
             // If there is no index name in the JSON, generate one.
@@ -664,10 +664,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             };
 
             // In a pooled environment the creation of indexes should be serialized.
-            if(bWithLock)
+            if( bWithLock )
                 pTable->pDB->doPoolSafe( fLambdaCode ); // doPoolSafe
             else
-                fLambdaCode();
+                fLambdaCode( );
         } // constructor
     }; // inner class SQL Index
 
@@ -687,7 +687,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
       public:
         SQLIndexDropView( const SQLTable<DBCon, ColTypes...>* pTable,
                           const json& rjIndexDef,
-                          const bool bWithLock=true ) // index definition in JSON)
+                          const bool bWithLock = true ) // index definition in JSON)
             : jIndexDef( rjIndexDef ) // copy the index def. to attribute
         {
             // If there is no index name in the JSON, generate one.
@@ -710,10 +710,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             };
 
             // In a pooled environment the creation of indexes should be serialized.
-            if(bWithLock)
+            if( bWithLock )
                 pTable->pDB->doPoolSafe( fLambdaCode ); // doPoolSafe
             else
-                fLambdaCode();
+                fLambdaCode( );
         } // constructor
     }; // inner class SQL Index
 
@@ -1521,13 +1521,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     } // method
 
     /** @brief: Creates requested index if not already existing. */
-    void addIndex( const json& rjIndexDef, const bool bWithLock=true )
+    void addIndex( const json& rjIndexDef, const bool bWithLock = true )
     {
         SQLIndexView( this, rjIndexDef, bWithLock );
     } // method
 
     /** @brief: drops requested index if existing. */
-    void dropIndex( const json& rjIndexDef, const bool bWithLock=true )
+    void dropIndex( const json& rjIndexDef, const bool bWithLock = true )
     {
         SQLIndexDropView( this, rjIndexDef, bWithLock );
     } // method

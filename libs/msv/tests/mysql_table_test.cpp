@@ -12,6 +12,7 @@
 
 int main( void )
 {
+#ifdef __GNUC__
     std::vector<std::future<void>> vFutures;
     {
         doNoExcept( [&] {
@@ -42,6 +43,7 @@ int main( void )
         doNoExcept( [&] { rFurture.get( ); } );
 
     std::cout << "ALL WORK DONE ..." << std::endl;
+#endif
 
     return EXIT_SUCCESS;
 } /// main function

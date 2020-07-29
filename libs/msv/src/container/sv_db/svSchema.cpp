@@ -77,6 +77,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<KMerFilterTable<DBConSingle>, std::shared_ptr<KMerFilterTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                              "KMerFilterTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "get_counter", &KMerFilterTable<DBConSingle>::getCounter )
         .def( "insert_counter_set", &KMerFilterTable<DBConSingle>::insert_counter_set );
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )

@@ -16,7 +16,7 @@ namespace libMSV
 template <typename DBCon>
 using KMerFilterTableType = SQLTable<DBCon,
                                      PriKeyDefaultType, // sequencer id (foreign key)
-                                     NucSeq, // k_mer
+                                     NucSeqSql, // k_mer
                                      uint32_t // num_occ
                                      >;
 const json jKMerFilterDef = {
@@ -29,7 +29,10 @@ const json jKMerFilterDef = {
 template <typename DBCon> class KMerFilterTable : public KMerFilterTableType<DBCon>
 {
   public:
-    KMerFilterTable( std::shared_ptr<DBCon> pDB ) : KMerFilterTableType<DBCon>( pDB, jKMerFilterDef )
+    SQLQuery<DBCon, NucSeqSql, uint32_t> xGetAll;
+    KMerFilterTable( std::shared_ptr<DBCon> pDB )
+        : KMerFilterTableType<DBCon>( pDB, jKMerFilterDef ),
+          xGetAll( pDB, "SELECT k_mer, num_occ FROM k_mer_filter_table WHERE sequencer_id = ? " )
     {} // default constructor
 
     void insert_counter_set( PriKeyDefaultType uiSequencerId, std::shared_ptr<KMerCounter> pCounter, size_t uiT )
@@ -37,9 +40,20 @@ template <typename DBCon> class KMerFilterTable : public KMerFilterTableType<DBC
         auto pBulkInserter = this->template getBulkInserter<500>( );
         pCounter->iterate( [&]( const NucSeq& xNucSeq, size_t uiCnt ) {
             if( uiCnt > uiT )
-                pBulkInserter->insert( uiSequencerId, xNucSeq, uiCnt );
+            {
+                auto pInsert = std::make_shared<NucSeq>( xNucSeq );
+                pBulkInserter->insert( uiSequencerId, NucSeqSql( pInsert ), uiCnt );
+            } // if
         } );
     } // method
+
+    std::shared_ptr<KMerCounter> getCounter( PriKeyDefaultType uiSeqId, size_t uiW )
+    {
+        auto pCnt = std::make_shared<KMerCounter>( uiW );
+        xGetAll.execAndForAll(
+            [&]( NucSeqSql xNucSeq, uint32_t uiNumOcc ) { pCnt->addKMer( *xNucSeq.pNucSeq, uiNumOcc ); }, uiSeqId );
+        return pCnt;
+    }
 }; // class
 
 } // namespace libMSV

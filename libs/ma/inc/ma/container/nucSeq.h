@@ -648,7 +648,7 @@ class NucSeq : public libMS::Container
         vAppend( pcString );
     } // method
 
-    std::string toString( )
+    std::string toString( ) const
     {
         std::string ret = "";
         for( unsigned int i = 0; i < length( ); i++ )
@@ -1304,44 +1304,6 @@ template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQ
     {
         if( !( this->is_null ) )
             pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
-    } // method
-}; // specialized class
-
-
-// Part1 : Spatial types require an indication that the argument passed at a placeholder's
-//          position has the format 'WKB'.
-template <> inline std::string MySQLConDB::TypeTranslator::getSQLTypeName<libMA::NucSeq>( )
-{
-    return "LONGBLOB";
-} // specialized method
-
-// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
-template <> inline void MySQLConDB::StmtArg::set( const libMA::NucSeq& rxBlob )
-{
-    this->uiLength = static_cast<unsigned long>( rxBlob.uiSize );
-    pMySQLBind->buffer_length = static_cast<unsigned long>( rxBlob.uiSize );
-    pMySQLBind->buffer_type = MYSQL_TYPE_LONG_BLOB; // this type must be equal to the type in Part 3.
-    pMySQLBind->buffer = (void*)( rxBlob.pxSequenceRef );
-} // specialized method
-
-// Part 3: Code for supporting query output:
-//         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
-//         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
-template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeq> : public /* MySQLConDB::*/ RowCellBase<libMA::NucSeq>
-{
-    inline void init( MYSQL_BIND* pMySQLBind, libMA::NucSeq* pCellValue, size_t uiColNum )
-    {
-        RowCellBase<libMA::NucSeq>::init( pMySQLBind, pCellValue, MYSQL_TYPE_LONG_BLOB, uiColNum );
-    } // method
-
-    // Fetch the blob from the buffer.
-    inline void storeVarSizeCell( )
-    {
-        // assert( this->uiLength == geom::Rectangle<uint64_t>::uiSizeWKB );
-        // Fill the buffer with WKB values
-
-        if( !( this->is_null ) )
-            pCellValue->vAppend( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
 
