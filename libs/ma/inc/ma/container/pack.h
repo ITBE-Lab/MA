@@ -153,10 +153,12 @@ class Pack : public libMS::Container
     /* The 6 leading bits of uiValue should be zero.
      * Keep this function inline, so that the compiler can optimize.
      * Works only for the virtual forward strand.
+     * @note this only works if the respective bit is zero initialized!
      */
     inline void vSetNucleotideOnPos( const uint64_t uiPosition, const uint8_t uiValue )
     { /* We expect a correct position, when we come here.
        */
+        // xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] &= ~( 3 << ( ( ~uiPosition & 3UL ) << 1 ) );
         xPackedNucSeqs[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
     } // inline method
   public:

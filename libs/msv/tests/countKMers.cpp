@@ -38,34 +38,39 @@ std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen, // length sequence
 
 int main( void )
 {
-    // srand( static_cast<unsigned int>( time( NULL ) ) );
-
+    srand( static_cast<unsigned int>( time( NULL ) ) );
 
     std::map<std::string, size_t> vTestSet;
 
     auto pCnt = std::make_shared<KMerCounter>( 1 );
 
-    for( size_t uiI = 0; uiI < 1; uiI++ )
+    for( size_t uiI = 0; uiI < 100; uiI++ )
     {
         auto pNuc = randomNucSeq( 18 );
         size_t uiCnt = ( std::rand( ) % 3 ) + 1;
         vTestSet[ pNuc->toString( ) ] = uiCnt;
         std::cout << "inserting: " << pNuc->toString( ) << " " << uiCnt << std::endl;
+
+        // each sequence is also inserted as it's reverse complement, so mirror that in vTestSet
         pNuc->vReverseAll( );
         pNuc->vSwitchAllBasePairsToComplement( );
         vTestSet[ pNuc->toString( ) ] = uiCnt;
         std::cout << "inserting: " << pNuc->toString( ) << " " << uiCnt << std::endl;
     }
-    pCnt->iterate( [&]( const NucSeq& xSeq, size_t uiCnt ) {
-        std::cout << "have: " << xSeq.toString( ) << " " << uiCnt << std::endl;
-    } );
+
     for( auto& xPair : vTestSet )
         for( size_t uiI = 0; uiI < xPair.second; uiI++ )
             pCnt->addSequence( std::make_shared<NucSeq>( xPair.first ) );
 
+    pCnt->iterate( [&]( const NucSeq& xSeq, size_t uiCnt ) {
+        std::cout << "have: " << xSeq.toString( ) << " " << uiCnt << std::endl;
+    } );
+
+    // check that all inserted sequences actually exist
     for( auto& xPair : vTestSet )
         assert( !pCnt->isUnique( std::make_shared<NucSeq>( xPair.first ) ) );
 
+    // check that no new sequences are in the KMerCounter
     for( size_t uiI = 0; uiI < 100; uiI++ )
     {
         auto pSeq = randomNucSeq( 18 );
@@ -73,9 +78,10 @@ int main( void )
             assert( pCnt->isUnique( pSeq ) );
     } // for
 
+    // check that the backcomputing of NucSeqs works and that all sequences are extracted correctly
     pCnt->iterate( [&]( const NucSeq& xSeq, size_t uiCnt ) {
         auto xIt = vTestSet.find( xSeq.toString( ) );
-        assert( xIt->second == uiCnt * 2 );
+        assert( xIt->second * 2 == uiCnt );
         vTestSet.erase( xIt );
     } );
     assert( vTestSet.size( ) == 0 );

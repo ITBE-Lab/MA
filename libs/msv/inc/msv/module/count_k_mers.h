@@ -35,12 +35,14 @@ namespace libMSV
  * @brief k-mer counting datastructure
  * @details
  * Performs thread-SAVE counting of k-mers.
- * Tries to minimize locking by using chunks
- * make sure that NUM_CHUNKS <= size(size_t)*2
- * make sure that ( K - NUM_CHUNKS ) % 4 == 0
+ * Minimizes locking by using chunks abd spin locks.
  */
 template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Container
 {
+    // make sure there is no empty space in the uint8_t arrays
+    static_assert( ( K - NUM_CHUNKS ) % 4 == 0 );
+    // make sure NUM_CHUNKS nt actually fit in the uint32_t index that is used
+    static_assert( NUM_CHUNKS <= sizeof( uint32_t ) * 2 );
     class Chunk
     {
         using ARR_T = std::array<uint8_t, ( K - NUM_CHUNKS ) / 4>;
@@ -79,6 +81,9 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
         inline void vSetNucleotideOnPos( ARR_T& vArr, const uint64_t uiPosition, const uint8_t uiValue )
         { /* We expect a correct position, when we come here.
            */
+            // clear the two bits
+            vArr[ ( size_t )( uiPosition >> 2 ) ] &= ~( 3 << ( ( ~uiPosition & 3UL ) << 1 ) );
+            // add the new value
             vArr[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
         } // inline method
         /* Get the value at position uiPosition in the unpacked sequence.
@@ -93,12 +98,12 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
         ARR_T toArray( const NucSeq& xSeq )
         {
             ARR_T vRet;
-            for( size_t uiI = 0; uiI < xCountMap.size( ); uiI++ )
+            for( size_t uiI = 0; uiI < K - NUM_CHUNKS; uiI++ )
                 vSetNucleotideOnPos( vRet, uiI, xSeq[ uiI + NUM_CHUNKS ] );
             return vRet;
-        }
+        } // method
 
-        NucSeq fromArray( ARR_T vArr, size_t uiIdx )
+        NucSeq fromArray( ARR_T vArr, uint32_t uiIdx )
         {
             NucSeq xRet;
             xRet.resize( K );
@@ -108,10 +113,10 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
                 uiIdx >>= 2;
             } // for
 
-            for( size_t uiI = 0; uiI < xCountMap.size( ); uiI++ )
+            for( size_t uiI = 0; uiI < K - NUM_CHUNKS; uiI++ )
                 xRet[ uiI + NUM_CHUNKS ] = getNucleotideOnPos( vArr, uiI );
             return xRet;
-        }
+        } // method
 
         size_t get( const NucSeq& xSeq )
         {
@@ -121,7 +126,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
             return 0;
         } // method
 
-        template <typename F> void iterate( F&& fDo, size_t uiIdx )
+        template <typename F> void iterate( F&& fDo, uint32_t uiIdx )
         {
             for( auto& xPair : xCountMap )
                 fDo( fromArray( xPair.first, uiIdx ), xPair.second );
@@ -139,13 +144,14 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 
     __KMerCounter operator=( const __KMerCounter& rOther ) = delete;
 
-    static size_t getChunkId( const NucSeq& xSection )
+    static uint32_t getChunkId( const NucSeq& xSection )
     {
-        size_t uiRet = 0;
+        uint32_t uiRet = 0;
         for( size_t uiI = 0; uiI < NUM_CHUNKS && uiI < xSection.length( ); uiI++ )
             uiRet = ( uiRet << 2 ) ^ ( xSection[ uiI ] < 4 ? xSection[ uiI ] : 0 );
+        assert( uiRet < ( 2 << ( NUM_CHUNKS * 2 ) ) );
         return uiRet;
-    }
+    } // method
 
     template <typename F>
     static bool toKMers( std::shared_ptr<NucSeq> pSeq, nucSeqIndex uiFrom, nucSeqIndex uiTo, nucSeqIndex uiW, F&& fDo )
@@ -177,7 +183,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
             if( xSeq[ uiI ] > 3 )
                 return;
         vChunks[ getChunkId( xSeq ) ].inc( xSeq, uiCnt );
-    }
+    } // method
 
     void addSequence( std::shared_ptr<NucSeq> pSeq )
     {
@@ -216,7 +222,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 
     template <typename F> void iterate( F&& fDo )
     {
-        for( size_t uiI = 0; uiI < vChunks.size( ); uiI++ )
+        for( uint32_t uiI = 0; uiI < vChunks.size( ); uiI++ )
             vChunks[ uiI ].iterate( fDo, uiI );
     } // method
 }; // class
