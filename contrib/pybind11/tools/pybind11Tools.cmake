@@ -194,8 +194,9 @@ function(pybind11_add_module target_name)
 
   _pybind11_add_lto_flags(${target_name} ${ARG_THIN_LTO})
 
-  if (NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug)
+  if (NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug AND NOT ${CMAKE_BUILD_TYPE} MATCHES RELWITHDEBINFO)
     # Strip unnecessary sections of the binary on Linux/Mac OS
+    message("Pybind11: stripping libraries of unused symbols")
     if(CMAKE_STRIP)
       if(APPLE)
         add_custom_command(TARGET ${target_name} POST_BUILD

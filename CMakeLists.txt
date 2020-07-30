@@ -68,7 +68,7 @@ endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO" )
 	if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
-		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MDd /Zi /O2 /Ob2")
+		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O0 -g -DNDEBUG")
 	elseif( MSVC )
 		# FOr MSVC with have to adapt the RelWithDebInfo setting in order to avoid linking problems
 		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MDd /Zi /O2 /Ob2")

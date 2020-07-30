@@ -54,8 +54,7 @@ class SvJump : public libMS::Container
     size_t uiSeedAId = 0, uiSeedBId = 0;
 #endif
 
-#if 0
-    SvJump( SvJump&& rOther )
+    SvJump( const SvJump& rOther )
         : bWasMirrored( rOther.bWasMirrored ),
           uiFrom( rOther.uiFrom ),
           uiTo( rOther.uiTo ),
@@ -67,7 +66,6 @@ class SvJump : public libMS::Container
           iId( rOther.iId ),
           iReadId( rOther.iReadId )
     {}
-#endif
 
     /**
      * @brief creates a jump from completely given data
@@ -445,6 +443,23 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     // these can be empty
     std::shared_ptr<NucSeq> pInsertedSequence;
     std::vector<std::shared_ptr<SvJump>> vSupportingJumps;
+
+    SvCall( const SvCall& rOther )
+        : bFromForward( rOther.bFromForward ),
+          bToForward( rOther.bToForward ),
+          uiNumSuppReads( rOther.uiNumSuppReads ),
+          uiReferenceAmbiguity( rOther.uiReferenceAmbiguity ),
+          vSupportingJumpIds( rOther.vSupportingJumpIds ),
+          iId( rOther.iId ),
+          uiOpenEdges( rOther.uiOpenEdges ),
+          vHorizontal( rOther.vHorizontal ),
+          vVertical( rOther.vVertical ),
+          pInsertedSequence(
+              rOther.pInsertedSequence == nullptr ? nullptr : std::make_shared<NucSeq>( *rOther.pInsertedSequence ) )
+    {
+        for( auto pJump : rOther.vSupportingJumps )
+            vSupportingJumps.push_back( std::make_shared<SvJump>( *pJump ) );
+    }
 
     SvCall( nucSeqIndex uiFromStart,
             nucSeqIndex uiToStart,

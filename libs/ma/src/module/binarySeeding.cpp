@@ -184,6 +184,5 @@ void exportBinarySeeding( libMS::SubmoduleOrganizer& xOrganizer )
     // export the BinarySeeding class
     exportModule<BinarySeeding>( xOrganizer, "BinarySeeding",
                                  []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
-    exportModule<ExtractSeeds>( xOrganizer, "ExtractSeeds" );
 } // function
 #endif

@@ -35,7 +35,7 @@ namespace libMSV
  * @brief k-mer counting datastructure
  * @details
  * Performs thread-SAVE counting of k-mers.
- * Minimizes locking by using chunks abd spin locks.
+ * Minimizes locking by using chunks and spin locks.
  */
 template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Container
 {
@@ -53,17 +53,17 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 #else
         std::mutex xLock;
 #endif
-
       public:
-        Chunk( )
+        Chunk( ) : xCountMap()
         {} // constructor
+
         Chunk( const Chunk& rOther ) = delete;
 
         void inc( const NucSeq& xSeq, size_t uiCnt )
         {
 #if SPIN_LOCK
-            while( xLock.test_and_set( std::memory_order_acquire ) ) // acquire lock
-                ; // spin
+            while( xLock.test_and_set( std::memory_order_acquire ) )
+                ; // spin to acquire lock
 #else
             std::lock_guard<std::mutex> xGuard( xLock );
 #endif
@@ -78,6 +78,9 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
         } // method
 
 
+        /* Set the value at position uiPosition in the packed array vArr.
+         * Works only for the virtual forward strand.
+         */
         inline void vSetNucleotideOnPos( ARR_T& vArr, const uint64_t uiPosition, const uint8_t uiValue )
         { /* We expect a correct position, when we come here.
            */
@@ -86,6 +89,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
             // add the new value
             vArr[ ( size_t )( uiPosition >> 2 ) ] |= uiValue << ( ( ~uiPosition & 3UL ) << 1 );
         } // inline method
+
         /* Get the value at position uiPosition in the unpacked sequence.
          * Works only for the virtual forward strand.
          */
@@ -97,7 +101,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
 
         ARR_T toArray( const NucSeq& xSeq )
         {
-            ARR_T vRet;
+            ARR_T vRet{};
             for( size_t uiI = 0; uiI < K - NUM_CHUNKS; uiI++ )
                 vSetNucleotideOnPos( vRet, uiI, xSeq[ uiI + NUM_CHUNKS ] );
             return vRet;
@@ -134,11 +138,12 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
     }; // class
   public:
     // array size should be 4 ^ NUM_CHUNKS which is 2 ^ (NUM_CHUNKS * 2)...
-    std::array<Chunk, 2 << ( NUM_CHUNKS * 2 )> vChunks;
+    std::array<Chunk, 2 << ( NUM_CHUNKS * 2 )> vChunks{};
     const nucSeqIndex uiW;
 
     __KMerCounter( nucSeqIndex uiW ) : uiW( uiW )
-    {} // constructor
+    {
+    } // constructor
 
     __KMerCounter( const __KMerCounter& rOther ) = delete;
 

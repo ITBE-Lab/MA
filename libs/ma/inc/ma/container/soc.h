@@ -306,6 +306,11 @@ class SoCPriorityQueue : public libMS::Container
         return std::make_tuple( uiStart, uiEnd, uiScore );
     } // method
 
+    inline uint32_t getScoreOfNextSoC()
+    {
+        return (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
+    }
+
     /**
      * @brief Add a new SoC (usable in first state only).
      * @details

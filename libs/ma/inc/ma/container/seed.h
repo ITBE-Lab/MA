@@ -339,6 +339,11 @@ class Seeds : public libMS::Container
         return vContent.size( );
     } // method
 
+    inline void resize( size_type uiCount )
+    {
+        vContent.resize( uiCount );
+    } // method
+
     inline bool mainStrandIsForward( ) const
     {
         size_type uiForw = 0;
