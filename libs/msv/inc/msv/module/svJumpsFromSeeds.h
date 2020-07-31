@@ -247,6 +247,14 @@ class SvJumpsFromSeeds
         xReseededRectangles.emplace( 0, 0, 0, 0 ); // emplace an empty rectangle so that we never reseed an empty one
         auto pRet = std::make_shared<Seeds>( );
         pRet->append( pSeeds );
+        // push original seeds
+        if( pOutExtra != nullptr )
+            for( auto& rSeed : *pSeeds )
+            {
+                pOutExtra->pSeeds->push_back( rSeed );
+                pOutExtra->vLayerOfSeeds.push_back( 0 );
+                pOutExtra->vParlindromeSeed.push_back( false );
+            } // for
 
         size_t uiLayer = 1;
         while( uiLayer <= 100 ) // @todo emergency limit -> adjust seed sizes and rectangle size...

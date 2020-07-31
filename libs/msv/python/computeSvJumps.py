@@ -8,7 +8,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
 
-    parameter_set_manager.by_name("Fixed SoC Width").set(50)
+    self.params.by_name("Fixed SoC Width").set(50)
+    self.params.by_name("Max Size Reseed").set(2000)
     def scope():
         single_con = DbConn(dataset_name)
 
@@ -18,7 +19,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         extract_seeds = ExtractSeeds(parameter_set_manager)
         k_mer_filter = KMerCountFilterModule(parameter_set_manager, 300)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
-        soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 150)
+        soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 50)
         jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, single_con, "MS-SV",
