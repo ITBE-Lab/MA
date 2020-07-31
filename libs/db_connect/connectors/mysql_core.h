@@ -509,7 +509,7 @@ template <typename DBConPtrType> class ImmediateQueryTmpl
         while( ( ppRow = mysql_fetch_row( this->pQueryRes ) ) )
         {
             std::vector<std::string> vRow;
-            for( size_t uiItr = 0; uiItr < num_fields; uiItr++ )
+            for( size_t uiItr = 0; uiItr < (size_t)num_fields; uiItr++ )
                 vRow.emplace_back( ppRow[ uiItr ] ? std::string( ppRow[ uiItr ] ) : "NULL" );
             xretTbl.addRow( vRow );
         } // while

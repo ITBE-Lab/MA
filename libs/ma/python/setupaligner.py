@@ -95,7 +95,7 @@ def quick_align(parameter_set, pack, fm_index, output_graph, file_queue, file_qu
         return alignments_w_map_q
 
     res = VectorPledge()
-    for _ in range(parameter_set.get_num_threads()):
+    for _ in parallel_graph(parameter_set.get_num_threads()):
         picked_file = promise_me(queue_picker, queue_pledge)
         locked_file = promise_me(lock, picked_file)
         query_ = promise_me(file_reader, locked_file)

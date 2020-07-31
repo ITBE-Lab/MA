@@ -68,7 +68,8 @@ int main( void )
 
     // check that all inserted sequences actually exist
     for( auto& xPair : vTestSet )
-        assert( !pCnt->isUnique( std::make_shared<NucSeq>( xPair.first ) ) );
+        if( pCnt->isUnique( std::make_shared<NucSeq>( xPair.first ) ) )
+            assert( false );
 
     // check that no new sequences are in the KMerCounter
     for( size_t uiI = 0; uiI < 100; uiI++ )

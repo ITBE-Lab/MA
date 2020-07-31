@@ -63,7 +63,7 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportExecutionContext( xOrganizer );
     exportSamFileReader( xOrganizer );
     exportCompareAlignments( xOrganizer );
-    exportMinimizerSeeding(xOrganizer);
+    exportMinimizerSeeding( xOrganizer );
 } // function
 
 #endif
@@ -92,8 +92,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
-    for( unsigned int i = 0; i < uiThreads; i++ )
-    {
+    BasePledge::parallelGraph( uiThreads, [&]( ) {
         auto pQuery = promiseMe( pLock, pQueries );
         auto pSeeds = promiseMe( pSeeding, promiseMe( pCast, pFMDIndex ), pQuery );
         auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack, pFMDIndex );
@@ -115,7 +114,7 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
                 promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQuery ), pEmptyContainer );
             aRet.push_back( pUnlockResult );
         } // else
-    } // for
+    } ); // parallelGraph
     return aRet;
 } // function
 
@@ -146,8 +145,7 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
-    for( unsigned int i = 0; i < uiThreads; i++ )
-    {
+    BasePledge::parallelGraph( uiThreads, [&]( ) {
         auto pQueryTuple = promiseMe( pLock, pQueries );
         auto pQueryA = promiseMe( pGetFirst, pQueryTuple );
         auto pQueryB = promiseMe( pGetSecond, pQueryTuple );
@@ -181,6 +179,6 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
                 promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQueryTuple ), pEmptyContainer );
             aRet.push_back( pUnlockResult );
         } // else
-    } // for
+    } ); // parallelGraph
     return aRet;
 } // function

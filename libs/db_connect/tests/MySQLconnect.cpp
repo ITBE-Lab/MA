@@ -227,7 +227,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         //     std::get<4>( aArr[ i ] ) = "This is a bit longer text that has to be written with every row";
 
         // LOAD DATA INFILE "C:\ProgramData\MySQL\MySQL Server 5.7\Uploads\0.csv" INTO TABLE test_table0;
-        int numValues = 1000;
+        //int numValues = 1000;
         {
             auto pTrxnGuard = pMySQLDB->uniqueGuardedTrxn( );
             std::cout << "Make xBulkInserter" << std::endl;
@@ -626,7 +626,7 @@ int main( int argc, char** argv )
                 vFutures.push_back( xDBPool.enqueue( []( auto pDBCon ) {
                     doNoExcept(
                         [&] {
-                            typedef decltype( *pDBCon ) Type;
+                            //typedef decltype( *pDBCon ) Type;
                             // typedef typename SubType :: element_type Type;
                             // using Type = typename decltype( pDBCon )::element_type;
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;

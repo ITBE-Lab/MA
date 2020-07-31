@@ -5,6 +5,9 @@
 #include "ms/module/module.h"
 using namespace libMS;
 
+const size_t BasePledge::uiDefaultGraphThread = 0;
+size_t BasePledge::uiThreadCurrentlyBuildingGraph = uiDefaultGraphThread;
+
 #ifdef WITH_PYTHON
 
 void exportModuleClass( SubmoduleOrganizer& xOrganizer )
@@ -23,7 +26,9 @@ void exportModuleClass( SubmoduleOrganizer& xOrganizer )
         .def( py::init<>( ) ) // default constructor
         .def( "execute", &PyModule<true>::execute );
 
-    py::class_<BasePledge, std::shared_ptr<BasePledge>>( xOrganizer._util( ), "BasePledge" );
+    py::class_<BasePledge, std::shared_ptr<BasePledge>>( xOrganizer.util( ), "BasePledge" )
+        .def_readonly_static( "default_graph_thread", &BasePledge::uiDefaultGraphThread )
+        .def_readwrite_static( "current_graph_thread", &BasePledge::uiThreadCurrentlyBuildingGraph );
 
     py::class_<PyPledgeVector, std::shared_ptr<PyPledgeVector>>( xOrganizer.util( ), "VectorPledge" )
         .def( py::init<>( ) ) // default constructor

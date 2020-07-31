@@ -11,3 +11,14 @@ def promise_me(module, *args):
     else:
         raise Exception(
             "module must be an instance of Module or VolatileModule")
+
+##
+# @brief call this to set up a parallel section of a computational graph
+# @details
+# set up the parallel section in fSetUpGraph.
+#
+def parallel_graph(num_threads):
+    for idx in range(num_threads):
+        BasePledge.current_graph_thread = idx + 1
+        yield idx + 1
+    BasePledge.current_graph_thread = BasePledge.default_graph_thread

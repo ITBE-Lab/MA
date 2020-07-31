@@ -49,7 +49,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     # put together the graph
     res = VectorPledge()
     inserter_vec = []
-    for _ in range(parameter_set.get_num_threads()):
+    for _ in parallel_graph(parameter_set.get_num_threads()):
         picked_file = promise_me(queue_picker, queue_pledge)
         analyze.register("queue_picker", picked_file, True)
         locked_file = promise_me(lock, picked_file)

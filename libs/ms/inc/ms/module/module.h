@@ -17,6 +17,7 @@
 #include <chrono>
 #include <ctime>
 #include <iostream>
+#include <set>
 #include <thread>
 #include <typeinfo>
 /// @endcond
@@ -207,6 +208,8 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
 class BasePledge
 {
   public:
+    static const size_t uiDefaultGraphThread;
+    static size_t uiThreadCurrentlyBuildingGraph;
     /**
      * @brief Reset the pledge
      */
@@ -356,6 +359,24 @@ class BasePledge
             throw std::runtime_error( sExceptionMessageFromWorker );
         } // if
     } // function
+
+    /**
+     * @brief call this to set up a parallel section of a computational graph
+     * @details
+     * set up the parallel section in fSetUpGraph.
+     */
+    template <typename F, typename... Args>
+    static inline void parallelGraph( size_t uiNumThreads, F&& fSetUpGraph, Args... args )
+    {
+        for( size_t uiCurrTid = 0; uiCurrTid < uiNumThreads; uiCurrTid++ )
+        {
+            // set the current thread, so that we can recognize if modules without lock are used by multiple threads...
+            uiThreadCurrentlyBuildingGraph = uiCurrTid + 1;
+            fSetUpGraph( args... );
+        } // for
+        // reset current thread to default
+        uiThreadCurrentlyBuildingGraph = uiDefaultGraphThread;
+    }
 }; // class
 
 
@@ -396,6 +417,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     std::shared_ptr<TP_PLEDGER> pPledger;
     // all pledges that have this pledge as predecessor
     std::vector<BasePledge*> vSuccessors;
+    std::set<size_t> vThreadsAccessing;
 
   private:
     // content of the pledge
@@ -417,6 +439,20 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     void addSuccessor( BasePledge* pX )
     {
         vSuccessors.push_back( pX );
+        // if this pledge is created by a module without lock
+        if( pPledger != nullptr && pPledger->requiresLock( ) == false )
+        {
+            // remember the threads that acces the pledge
+            vThreadsAccessing.insert( BasePledge::uiThreadCurrentlyBuildingGraph );
+            // if we find more that one thread we have a potential write collision between the threads
+            if( vThreadsAccessing.size( ) > 1 )
+                // so we throw an exception
+                throw std::runtime_error( "WARNING: have pledge from lock-free module with successors from " +
+                                          std::to_string( vThreadsAccessing.size( ) ) +
+                                          " different threads. Pledge type: " + type_name( this ) +
+                                          "; Container type: " + type_name( pContent ) +
+                                          "; Module type: " + type_name( pPledger ) );
+        } // if
     } // method
 
     void removeSuccessor( BasePledge* pX )

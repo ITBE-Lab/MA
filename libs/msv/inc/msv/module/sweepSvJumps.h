@@ -36,7 +36,6 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
     int64_t iRefSize;
     int64_t iSectionSize;
     int64_t iCurrStart;
-    std::mutex xMutex;
     /**
      * @brief
      * @details
@@ -53,7 +52,6 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
 
     virtual std::shared_ptr<GenomeSection> DLL_PORT( MSV ) execute( )
     {
-        std::unique_lock<std::mutex> xLock( xMutex );
         // setFinished( );
         // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
@@ -66,6 +64,12 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
         if( ( iCurrStart / 4 ) * iSectionSize >= iRefSize )
             return nullptr;
         return pRet;
+    } // method
+
+    // overload
+    virtual bool requiresLock( ) const
+    {
+        return true;
     } // method
 }; // class
 
@@ -165,8 +169,8 @@ class CompleteBipartiteSubgraphSweep
                         size_t uiEnd =
                             xPointerVec.to_physical_coord( pNewCluster->xXAxis.start( ), pNewCluster->xYAxis.end( ) );
                         assert( uiEnd >= uiStart );
-                        // set the clusters y coodinate to the physical coords (we won't use the actual coords anyways)
-                        // this is necessary, since we need to work with these coords when joining clusters
+                        // set the clusters y coodinate to the physical coords (we won't use the actual coords
+                        // anyways) this is necessary, since we need to work with these coords when joining clusters
                         pNewCluster->xYAxis.start( uiStart );
                         pNewCluster->xYAxis.size( uiEnd - uiStart );
 
@@ -219,7 +223,8 @@ class CompleteBipartiteSubgraphSweep
                             pEndJump->from_start_same_strand( ) + pEndJump->from_size( ), pEndJump->to_start( ) );
                         auto pCluster = xPointerVec.get( )[ uiClusterIdx ];
                         assert( pCluster != nullptr );
-                        assert( std::find( pCluster->vSupportingJumpIds.begin( ), pCluster->vSupportingJumpIds.end( ),
+                        assert( std::find( pCluster->vSupportingJumpIds.begin( ),
+                                           pCluster->vSupportingJumpIds.end( ),
                                            pEndJump->iId ) != pCluster->vSupportingJumpIds.end( ) );
                         pCluster->uiOpenEdges--;
                         // check if we want to save the cluster
@@ -252,7 +257,6 @@ class CompleteBipartiteSubgraphSweep
                 for( auto pCluster : xPointerVec.get( ) )
                     assert( pCluster == nullptr );
 #endif
-
                 return pRet;
             },
             pSection, pPack );
@@ -263,7 +267,6 @@ class CompleteBipartiteSubgraphSweep
  * @brief
  * @details
  */
-template <typename DBCon>
 class ExactCompleteBipartiteSubgraphSweep
     : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
 {

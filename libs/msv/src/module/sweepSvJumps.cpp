@@ -40,7 +40,7 @@ void exportSweepSvJump( libMS::SubmoduleOrganizer& xOrganizer )
                 .def_readonly( "time_inner_while", &CompleteBipartiteSubgraphSweep<DBCon>::dInnerWhile );
         } );
 
-    exportModule<ExactCompleteBipartiteSubgraphSweep<DBCon>>( xOrganizer, "ExactCompleteBipartiteSubgraphSweep" );
+    exportModule<ExactCompleteBipartiteSubgraphSweep>( xOrganizer, "ExactCompleteBipartiteSubgraphSweep" );
     exportModule<FilterLowSupportShortCalls>( xOrganizer, "FilterLowSupportShortCalls" );
     exportModule<FilterLowScoreCalls>( xOrganizer, "FilterLowScoreCalls" );
     exportModule<FilterDiagonalLineCalls>( xOrganizer, "FilterDiagonalLineCalls" );

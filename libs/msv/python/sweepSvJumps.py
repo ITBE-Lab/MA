@@ -43,7 +43,8 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         inserter_vec = []
         sections_pledge = promise_me(section_fac) # @note this cannot be in the loop (synchronization!)
         # graph for single reads
-        for _ in range(parameter_set_manager.get_num_threads()):
+        
+        for _ in parallel_graph(parameter_set_manager.get_num_threads()):
             section_pledge = promise_me(lock_module, sections_pledge)
 
             sweep1_pledge = promise_me(sweep1, pool_pledge, section_pledge, pack_pledge)

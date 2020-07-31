@@ -48,7 +48,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
             res = VectorPledge()
             inserter_vec = []
             # graph for single reads
-            for idx in range(jobs):
+            for _ in parallel_graph(jobs):
                 # @todo there should be a set of modules distributing reads
                 # (only a problem if threads finish at different times)...
                 nuc_seq_query_getter = GetNucSeqFromSqlQuery(parameter_set_manager, seq_id, idx, jobs, True, True)

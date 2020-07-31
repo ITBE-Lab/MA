@@ -284,60 +284,74 @@ template <typename DBImpl> class SQLDBConPool
 
         // Create an initialize all workers.
         for( size_t uiThreadId = 0; uiThreadId < uiPoolSize; ++uiThreadId )
-            vWorkers.emplace_back( [this, uiThreadId] {
-                // Get a reference to the connection manager belonging to this thread.
-                auto pConManager = vConPool[ uiThreadId ];
-                pConManager->uiThreadId = uiThreadId; // inform connector about corresponding taskid
-
-                // The loop continues until the stop flags indicates termination.
-                while( true )
-                {
-                    // Synchronization of mutual access to the task queue.
-                    // Start of scope of exclusive access for a single thread.
-                    std::unique_lock<std::mutex> xLock( this->xQueueMutex );
-
-                    // If there is no indication for termination and if there is nothing to do now,
-                    // the lock is released so that some producer can push a fresh task into the queue.
-                    // After inserting a fresh task, the producer calls notify_one() for awaking one of the
-                    // waiting (sleeping) threads. This can be this thread or another in the pool.
-                    while( !this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
-                           this->vqTasks[ uiThreadId ].empty( ) )
+            vWorkers.emplace_back(
+                [this]( size_t uiThreadId ) {
+                    try
                     {
-                        goingToSleep( uiThreadId );
-                        this->xCondition.wait( xLock );
-                        // When we continue here, we have exclusive access once again.
-                        wakingUp( uiThreadId );
-                    } // while
+                        // Get a reference to the connection manager belonging to this thread.
+                        auto pConManager = vConPool[ uiThreadId ];
+                        pConManager->uiThreadId = uiThreadId; // inform connector about corresponding taskid
 
-                    // If there is an indication for termination and if there is nothing to do any more, we
-                    // terminate the thread by returning.
-                    if( this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
-                        this->vqTasks[ uiThreadId ].empty( ) )
-                        return;
+                        // The loop continues until the stop flags indicates termination.
+                        while( true )
+                        {
+                            // Synchronization of mutual access to the task queue.
+                            // Start of scope of exclusive access for a single thread.
+                            std::unique_lock<std::mutex> xLock( this->xQueueMutex );
 
-                    // We now have exclusive access to a non-empty task queue.
-                    // Search for a matching task in the queues of tasks. Check the queue for this specific
-                    // thread first, if there is no task in this queue then check the general queue.
-                    size_t uiQueueId = uiThreadId;
-                    if( this->vqTasks[ uiThreadId ].empty( ) )
-                        uiQueueId = this->uiPoolSize;
-                    assert( !this->vqTasks[ uiQueueId ].empty( ) );
+                            // If there is no indication for termination and if there is nothing to do now,
+                            // the lock is released so that some producer can push a fresh task into the queue.
+                            // After inserting a fresh task, the producer calls notify_one() for awaking one of the
+                            // waiting (sleeping) threads. This can be this thread or another in the pool.
+                            while( !this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
+                                   this->vqTasks[ uiThreadId ].empty( ) )
+                            {
+                                goingToSleep( uiThreadId );
+                                this->xCondition.wait( xLock );
+                                // When we continue here, we have exclusive access once again.
+                                wakingUp( uiThreadId );
+                            } // while
 
-                    updateTime( );
+                            // If there is an indication for termination and if there is nothing to do any more, we
+                            // terminate the thread by returning.
+                            if( this->bStop && this->vqTasks[ this->uiPoolSize ].empty( ) &&
+                                this->vqTasks[ uiThreadId ].empty( ) )
+                                return;
 
-                    // We pick the matching task for execution and remove it from the respective queue.
-                    TaskType fTaskToBeExecuted( this->vqTasks[ uiQueueId ].front( ) );
-                    this->vqTasks[ uiQueueId ].pop( );
+                            // We now have exclusive access to a non-empty task queue.
+                            // Search for a matching task in the queues of tasks. Check the queue for this specific
+                            // thread first, if there is no task in this queue then check the general queue.
+                            size_t uiQueueId = uiThreadId;
+                            if( this->vqTasks[ uiThreadId ].empty( ) )
+                                uiQueueId = this->uiPoolSize;
+                            assert( !this->vqTasks[ uiQueueId ].empty( ) );
 
-                    // Exclusive access to the task queue is not required any longer.
-                    xLock.unlock( );
+                            updateTime( );
 
-                    // Execute the task delivering its connection manager as argument.
-                    // If the task throws an exception, this exception has to be caught via the future.
-                    // (See the notice in the description of this class.)
-                    fTaskToBeExecuted( pConManager );
-                } // while
-            } ); // emplace_back
+                            // We pick the matching task for execution and remove it from the respective queue.
+                            TaskType fTaskToBeExecuted( this->vqTasks[ uiQueueId ].front( ) );
+                            this->vqTasks[ uiQueueId ].pop( );
+
+                            // Exclusive access to the task queue is not required any longer.
+                            xLock.unlock( );
+
+                            // Execute the task delivering its connection manager as argument.
+                            // If the task throws an exception, this exception has to be caught via the future.
+                            // (See the notice in the description of this class.)
+                            fTaskToBeExecuted( pConManager );
+                        } // while
+                    } // try
+                    catch( const std::exception& xE )
+                    {
+                        std::cout << "SQLDBConPool worker thread terminates due to exception: " << std::endl
+                                  << xE.what( ) << std::endl;
+                    } // catch
+                    catch( ... )
+                    {
+                        std::cout << "SQLDBConPool worker thread terminates due to unknown exception" << std::endl;
+                    } // catch
+                },
+                uiThreadId ); // emplace_back
     } // constructor
 
     /** @brief Terminates the operation of the connection pool.
