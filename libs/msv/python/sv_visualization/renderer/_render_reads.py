@@ -31,6 +31,12 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
 
 def render_reads(self, render_all=False):
     seeder = BinarySeeding(self.params)
+    self.params.by_name("Fixed SoC Width").set(50)
+    self.params.by_name("Max Size Reseed").set(2000)
+    extract_seeds = ExtractSeeds(self.params)
+    k_mer_filter = KMerCountFilterModule(self.params, 300)
+    soc_module = StripOfConsiderationSeeds(self.params)
+    soc_filter = GetAllFeasibleSoCs(self.params, 50)
     with self.measure("SvJumpsFromSeeds"):
         jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
     read_dict = {
@@ -95,9 +101,18 @@ def render_reads(self, render_all=False):
                         append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
                     with self.measure("seeder.execute"):
                         segments = seeder.execute(self.fm_index, read)
+                    with self.measure("ExtractSeeds"):
+                        seeds_pledge = extract_seeds.execute(segments, self.fm_index, read, self.pack)
+                    with self.measure("KMerFilter"):
+                        filtered_seeds_pledge = k_mer_filter.execute(read, seeds_pledge, self.k_mer_counter)
+                    with self.measure("SoC"):
+                        socs = soc_module.execute(filtered_seeds_pledge, read, self.pack, self.fm_index)
+                    with self.measure("SoCFilter"):
+                        filtered_seeds_pledge_2 = soc_filter.execute(socs)
                     # execute_helper is not threadsave 
                     with self.measure("jumps_from_seeds.cpp_module.execute_helper"):
-                        helper_ret = jumps_from_seeds.cpp_module.execute_helper(segments, self.pack, self.fm_index, read)
+                        helper_ret = jumps_from_seeds.cpp_module.execute_helper(filtered_seeds_pledge_2, self.pack,
+                                                                                read)
                     seeds = helper_ret.seeds
                     layer_of_seeds = helper_ret.layer_of_seeds
                     rectangles = helper_ret.rectangles

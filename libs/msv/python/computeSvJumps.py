@@ -16,10 +16,10 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
         lock_module = Lock(parameter_set_manager)
         seeding_module = BinarySeeding(parameter_set_manager)
         extract_seeds = ExtractSeeds(parameter_set_manager)
-        jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         k_mer_filter = KMerCountFilterModule(parameter_set_manager, 300)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
-        soc_filter = GetAllFeasibleSoCs(parameter_set_manager)
+        soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 150)
+        jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, single_con, "MS-SV",
                                             "python built comp graph")

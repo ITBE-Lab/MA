@@ -21,11 +21,7 @@ class MainPlot:
         # the diagonal line & genome outline rectangle
         self.diagonal_line = ColumnDataSource({"xs":[], "ys":[]})
         self.plot.line(x="xs", y="ys", line_color="black", line_width=3, source=self.diagonal_line)
-
-        self.genome_outline = ColumnDataSource({"x":[], "y":[], "w":[], "h":[]})
-        self.plot.quad(left="x", bottom="y", right="w", top="h",
-                       fill_alpha=0, line_color="black", line_width=3,
-                       source=self.genome_outline)
+        self.plot.line(x="ys", y="xs", line_color="black", line_width=3, source=self.diagonal_line)
 
         # the sv jumps
         self.jump_quads = []
@@ -84,11 +80,18 @@ class MainPlot:
                                       names=["overview_quad"],
                                       name="Hover heatmap"))
 
-        # range change callback
-        self.plot.y_range.on_change("start", lambda x,y,z: self.range_change_callback(renderer))
-
         # make jumps and calls clickable
         self.plot.on_event(Tap, lambda tap: self.jump_or_call_tap(renderer, tap.x, tap.y))
+
+        # range change callback
+        self.callback_func = lambda x,y,z: self.range_change_callback(renderer)
+        self.add_callback()
+
+    def remove_callback(self):
+        self.plot.y_range.remove_on_change("start",self.callback_func)
+
+    def add_callback(self):
+        self.plot.y_range.on_change("start",self.callback_func)
 
     def range_change_callback(self, renderer):
         x_r = self.plot.x_range

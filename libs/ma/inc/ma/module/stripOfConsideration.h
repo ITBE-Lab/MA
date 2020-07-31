@@ -174,11 +174,12 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
 class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
 {
     const size_t uiSoCHeight;
-    const size_t uiMinNt = 150;
+    const nucSeqIndex uiMinNt;
 
   public:
-    GetAllFeasibleSoCs( const ParameterSetManager& rParameters )
-        : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ) // same as width
+    GetAllFeasibleSoCs( const ParameterSetManager& rParameters, nucSeqIndex uiMinNt )
+        : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
+          uiMinNt( uiMinNt )
     {} // constructor
 
 

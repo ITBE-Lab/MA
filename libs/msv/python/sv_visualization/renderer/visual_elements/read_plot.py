@@ -4,11 +4,12 @@ from bokeh.plotting import ColumnDataSource
 from bokeh.models import BasicTickFormatter
 from bokeh.palettes import Plasma256
 from bokeh.events import Tap
+import math
 
 class ReadPlotNucs:
     def __init__(self, nuc_plot, read_plot):
         self.left_plot = figure(
-            width=80,
+            width=100,
             height=400,
             y_range=read_plot.plot.y_range,
             tools=["ypan", "ywheel_zoom"],
@@ -18,11 +19,10 @@ class ReadPlotNucs:
         self.left_plot.xaxis.visible = False
         self.left_plot.grid.visible = False
         self.left_plot.yaxis.axis_label = "Read Position"
-        self.left_plot.yaxis[0].formatter = BasicTickFormatter(use_scientific=False)
 
         self.bottom_plot = figure(
             width=900,
-            height=80,
+            height=100,
             x_range=read_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
@@ -31,7 +31,7 @@ class ReadPlotNucs:
         self.bottom_plot.yaxis.visible = False
         self.bottom_plot.grid.visible = False
         self.bottom_plot.xaxis.axis_label = "Reference Position"
-        self.bottom_plot.xaxis[0].formatter = BasicTickFormatter(use_scientific=False)
+        self.bottom_plot.xaxis.major_label_orientation = math.pi/4
 
         # the nucleotides from the read
         self.nucs_by_r_id = {} # dict of {"p": [], "c": [], "i": []}

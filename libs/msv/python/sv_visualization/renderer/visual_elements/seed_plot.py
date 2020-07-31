@@ -1,7 +1,8 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
+from bokeh.models.tickers import CompositeTicker, FixedTicker
 from bokeh.plotting import ColumnDataSource
-from bokeh.models import BasicTickFormatter
+from bokeh.models import FuncTickFormatter
 from bokeh.events import Tap
 import math
 import copy
@@ -21,7 +22,6 @@ class SeedPlot:
         self.left_plot.xaxis.major_label_orientation = math.pi/2
         self.left_plot.yaxis.axis_label = "Reference Position"
         self.left_plot.xaxis.axis_label = "Read Id"
-        self.left_plot.yaxis[0].formatter = BasicTickFormatter(use_scientific=False)
 
         self.bottom_plot = figure(
             width=900,
@@ -34,10 +34,10 @@ class SeedPlot:
         )
         self.bottom_plot.xaxis.axis_label = "Reference Position"
         self.bottom_plot.yaxis.axis_label = "Read Id"
-        self.bottom_plot.xaxis[0].formatter = BasicTickFormatter(use_scientific=False)
+        self.bottom_plot.xaxis.major_label_orientation = math.pi/4
 
         # ambigious regions (red rectangles)
-        self.ambiguous_regions = ColumnDataSource({"l":[], "b":[], "r":[], "t":[]})
+        self.ambiguous_regions = ColumnDataSource({"l":[0], "b":[0], "r":[0], "t":[0]})
         self.bottom_plot.quad(left="l", bottom="b", right="r", top="t", fill_alpha=0.5,
                             fill_color="red", line_width=0, source=self.ambiguous_regions, name="ambiguous_regions")
         self.left_plot.quad(left="b", bottom="l", right="t", top="r", fill_alpha=0.5,
@@ -55,7 +55,7 @@ class SeedPlot:
         self.bottom_plot.add_tools(hover_ambiguous_regions)
 
         # seeds
-        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "c":[], "x":[], "y":[]})
+        self.seeds = ColumnDataSource({"category":[0], "center":[0], "size":[10], "c":["white"], "x":[0], "y":[0]})
         self.left_plot.rect(x="category", y="center", width=1, height="size",
                             fill_color="c", line_width=0, source=self.seeds, name="seeds")
         self.bottom_plot.rect(y="category", x="center", height=1, width="size",
@@ -149,5 +149,5 @@ class SeedPlot:
         renderer.read_plot.auto_adjust_y_range(renderer)
 
     def reset_cds(self):
-        self.ambiguous_regions.data = {"l":[], "b":[], "r":[], "t":[]}
-        self.seeds.data = {"category":[], "center":[], "size":[], "c":[], "x":[], "y":[]}
+        self.ambiguous_regions.data = {"l":[0], "b":[0], "r":[0], "t":[0]}
+        self.seeds.data = {"category":[0], "center":[0], "size":[10], "c":["white"], "x":[0], "y":[0]}

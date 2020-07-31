@@ -1,16 +1,13 @@
 from MA import *
 from MSV import *
 from threading import Thread
+from bokeh.models.tickers import FixedTicker
 
 def render(self, render_all=False):
     print("rendering")
     self.widgets.show_spinner(self)
     self.reset_runtimes()
     self.reset_cds()
-    self.main_plot.genome_outline.data = {"x":[0], 
-                                        "y":[0],
-                                        "w":[self.pack.unpacked_size_single_strand],
-                                        "h":[self.pack.unpacked_size_single_strand]}
     if self.xs < 0:
         self.xs = 0
     if self.ys < 0:
@@ -24,8 +21,10 @@ def render(self, render_all=False):
 
     s = max(min(self.xs - self.w, self.ys - self.h), 0)
     e = min(max(self.xe + self.w, self.ye + self.h), self.pack.unpacked_size_single_strand)
+
+
     # plot diagonal; we need s and e since too large lines sometimes do not render...
-    self.main_plot.diagonal_line.data = {"xs":[s, e], "ys":[s, e]}
+    self.main_plot.diagonal_line.data = {"xs":[s, e, float("NaN")], "ys":[s, e, float("NaN")]}
 
     def blocking_task():
         if not self.widgets.run_id_dropdown.value is None:
