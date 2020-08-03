@@ -662,8 +662,14 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                 throw std::runtime_error(
                     "The JSON definition for a SQL index requires one INDEX_COLUMNS item exactly." );
             std::string sCols = jIndexDef[ INDEX_COLUMNS ];
-            std::string sStmt =
-                "CREATE INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName + "(" + sCols + ")";
+
+            std::string sIndexType = jIndexDef.count( INDEX_TYPE ) == 0 ? "" : jIndexDef[ INDEX_TYPE ];
+
+            std::string sStmt = std::string("CREATE ") +
+#ifndef POSTGRESQL // MySQL
+                                sIndexType +
+#endif
+                                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName + "(" + sCols + ")";
 
             // WHERE is not supported by MySQL
             if( jIndexDef.count( WHERE ) )
@@ -692,7 +698,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             pTable->pDB->execSQL( makeIndexCreateStmt( pTable->getTableName( ), sIdxName, "IF NOT EXISTS " ) );
 #else /* MySQL */
             // In a pooled environment the creation of indexes should be serialized.
-            pTable->pDB->doPoolSafe( [ & ] {
+            pTable->pDB->doPoolSafe( [&] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -720,21 +726,28 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
         std::string makeIndexDropStmt( const std::string& rsTblName, const std::string& rsIdxName )
         {
-            std::string sStmt = "DROP INDEX " + rsIdxName + " ON " + rsTblName;
+            std::string sStmt = std::string("DROP INDEX ") +
+#ifdef POSTGRESQL
+                                "IF NOT EXISTS " +
+#endif
+                                rsIdxName + " ON " + rsTblName;
             return sStmt;
         } // method
 
       public:
         SQLIndexDropView( const SQLTable<DBCon, ColTypes...>* pTable,
-                          const json& rjIndexDef,
-                          const bool bWithLock = true ) // index definition in JSON)
+                          const json& rjIndexDef ) // index definition in JSON)
             : jIndexDef( rjIndexDef ) // copy the index def. to attribute
         {
             // If there is no index name in the JSON, generate one.
             std::string sIdxName = jIndexDef.count( INDEX_NAME ) ? std::string( jIndexDef[ INDEX_NAME ] )
                                                                  : pTable->getTableName( ) + "_idx";
 
-            auto fLambdaCode = [&] {
+#ifdef POSTGRESQL
+            pTable->pDB->execSQL( makeIndexDropStmt( pTable->getTableName( ), sIdxName ) );
+#else /* MySQL */
+            // In a pooled environment the creation of indexes should be serialized.
+            pTable->pDB->doPoolSafe( [&] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -747,19 +760,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     std::cout << "Index does not exist, skip dropping." << std::endl;
 #endif
                 } // else
-            };
-
-            // In a pooled environment the creation of indexes should be serialized.
-            if( bWithLock )
-                pTable->pDB->doPoolSafe( fLambdaCode ); // doPoolSafe
-            else
-                fLambdaCode( );
+            } ); // doPoolSafe
+#endif
         } // constructor
     }; // inner class SQL Index
   public:
     using uiBulkInsertSize = std::integral_constant<size_t, 500>; // number of rows in the insertion buffer
 
-    using uiBulkInsertSize = std::integral_constant<size_t, 500>;
     /** @brief: Implements the concept of bulk inserts for table views.
      *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
      */
@@ -851,7 +858,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         forAllDoBind( const std::array<T, N>& a )
         {
             for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
-                STD_APPLY( [ & ]( auto&... args ) //
+                STD_APPLY( [&]( auto&... args ) //
                            { pBulkInsertStmt->bindDynamic( (int)uiOffset, args... ); },
                            a[ uiOffset ] );
         } // meta
@@ -866,7 +873,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
         forAllDoBind( const std::array<T, N>& a )
         {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
+            forAllDoBindImpl( a, std::make_index_sequence<N>{} );
         } // method
 
 
@@ -1330,7 +1337,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         template <int OFFSET, typename... Args> void doSingleBind( size_t iConId, const std::tuple<Args...>& rTpl )
         {
-            STD_APPLY( [ & ]( auto&... args ) //
+            STD_APPLY( [&]( auto&... args ) //
                        { apBulkInsertStmt[ iConId ]->template bindStatic<OFFSET>( args... ); },
                        rTpl );
         } // method
@@ -1359,7 +1366,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         forAllDoBind( int id, const std::array<T, N>& a )
         {
             for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
-                STD_APPLY( [ & ]( auto&... args ) //
+                STD_APPLY( [&]( auto&... args ) //
                            { apBulkInsertStmt[ id ]->bindDynamic( (int)uiOffset, args... ); },
                            a[ uiOffset ] );
         } // meta
@@ -1384,7 +1391,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
         forAllDoBind( size_t iConId, const std::array<T, N>& a )
         {
-            forAllDoBindImpl( iConId, a, std::make_index_sequence<N>{ } );
+            forAllDoBindImpl( iConId, a, std::make_index_sequence<N>{} );
         } // method
 
         //--template <typename T, std::size_t N>
@@ -1440,13 +1447,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                 // Run and wait until the finished (until future is available).
                 pxConPool->run(
                     aThreadIds[ uiSelConId ],
-                    [ & ]( auto pCon, size_t iConId ) { this->forAllDoBind( iConId, aBufPair[ iConId ] ); },
+                    [&]( auto pCon, size_t iConId ) { this->forAllDoBind( iConId, aBufPair[ iConId ] ); },
                     uiSelConId );
 
                 // Step 2: After binding all arguments, actually execute the insert statement.
                 aFutures[ uiSelConId ] = pxConPool->enqueue(
                     aThreadIds[ uiSelConId ],
-                    [ & ]( auto pCon, size_t iConId ) { apBulkInsertStmt[ iConId ]->execWithOutBind( ); },
+                    [&]( auto pCon, size_t iConId ) { apBulkInsertStmt[ iConId ]->execWithOutBind( ); },
                     uiSelConId );
                 aFutures[ uiSelConId ].get( );
                 // Step 3: Switch to the opposite connection.
@@ -1503,7 +1510,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
               pPriKeyCntr( pPriKeyCntr ),
               pLocalPriKeyCntr( bReserveBatchOfPriKeys ? std::make_unique<PriKeyDefaultType>( 0 ) : nullptr ),
               uiNumRemainPriKey( 0 ), // initially, the batch is empty
-              aFutures( { std::future<void>( ), std::future<void>( ) } ) // initialzied futures
+              aFutures( {std::future<void>( ), std::future<void>( )} ) // initialzied futures
 
         {
             static_assert( sizeof...( OtherTypes ) + 1 == sizeof...( ColTypes ) );
@@ -1516,7 +1523,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             for( size_t uiItr = 0; uiItr < NUM_CON; uiItr++ )
             {
                 pxConPool->run( (int)aThreadIds[ uiItr ],
-                                [ & ]( auto pCon, size_t id ) {
+                                [&]( auto pCon, size_t id ) {
                                     // Compile bulk insert stmt
                                     apBulkInsertStmt[ id ] = std::make_unique<SQLStatement<DBCon>>(
                                         pCon, rxHost.makeInsertStmt( BUF_SIZE ) );
@@ -1586,10 +1593,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
 
             // Write the remaining inserts using connection 0.
-            pxConPool->run( (int)aThreadIds[ 0 ], [ & ]( auto pCon ) {
+            pxConPool->run( (int)aThreadIds[ 0 ], [&]( auto pCon ) {
                 for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
                     // Write the current tuple in the array to the DB
-                    STD_APPLY( [ & ]( auto&... args ) { apSingleInsertStmt[ 0 ]->exec( args... ); },
+                    STD_APPLY( [&]( auto&... args ) { apSingleInsertStmt[ 0 ]->exec( args... ); },
                                pCurrBuf[ uiCount ] );
             } );
         } // method
@@ -1599,7 +1606,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             // Throwing an exception in a destructor results in undefined behavior.
             // Therefore, we swallow these exceptions and report them via std:cerr.
-            doNoExcept( [ this ] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
+            doNoExcept( [this] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
         } // destructor
     }; // class (AsyncSQLBulkInserter)
 #endif
@@ -1948,10 +1955,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // The first column is of type PGBigSerial (indicating a primary key column)
             // PG requires an injection of the keyword 'DEFAULT' for such columns.
             sStmtText.append( "DEFAULT," );
-            getValueStmtImpl_PG_<RemainCols...>( sStmtText, uiArgCount, std::index_sequence_for<RemainCols...>{ } );
+            getValueStmtImpl_PG_<RemainCols...>( sStmtText, uiArgCount, std::index_sequence_for<RemainCols...>{} );
         }
         else
-            getValueStmtImpl_PG_<ColTypes...>( sStmtText, uiArgCount, std::index_sequence_for<ColTypes...>{ } );
+            getValueStmtImpl_PG_<ColTypes...>( sStmtText, uiArgCount, std::index_sequence_for<ColTypes...>{} );
     } // method
 #else // MySQL
     /** @brief Implementation part of getValuesStmt */
@@ -1970,7 +1977,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // Values for columns of type PGBigSerial are automatically inserted by PG
         getValueStmtImpl_PG<ColTypes...>( sStmtText, uiArgCount );
 #else // MySQL
-        getValueStmtImpl_MYSQL( sStmtText, std::index_sequence_for<ColTypes...>{ } );
+        getValueStmtImpl_MYSQL( sStmtText, std::index_sequence_for<ColTypes...>{} );
 #endif
         // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated
         // explicitly, the only permitted value is DEFAULT. this assumes that the create table statement always
@@ -2416,9 +2423,9 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyType, ColTypes...>
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
                 json::object(
-                    { { COLUMN_NAME, "id" },
-                      { CONSTRAINTS, std::string( "NOT NULL " ) + ( autoIncrRequired ? " AUTO_INCREMENT " : "" ) +
-                                         " UNIQUE PRIMARY KEY" } } ) );
+                    {{COLUMN_NAME, "id"},
+                     {CONSTRAINTS, std::string( "NOT NULL " ) + ( autoIncrRequired ? " AUTO_INCREMENT " : "" ) +
+                                       " UNIQUE PRIMARY KEY"}} ) );
         return jTableDef;
     } // method
 
@@ -2757,7 +2764,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // FIXME: Remove the lock, because it is not necessary.
     std::mutex pGlobalInsertLock;
 
-    SQLDB( const json& jDBConData = json{ } )
+    SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
@@ -2780,7 +2787,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     ~SQLDB( )
     {
         // Throwing an exception in a destructor results in undefined behavior.
-        doNoExcept( [ this ] {
+        doNoExcept( [this] {
             // Unregister the schema in the global visor
             auto uiRemainCons = xSQLDBGlobalSync.unregisterSchema( sSchemaName );
 
@@ -2788,7 +2795,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             // it is my job to do it now ...
             if( ( uiRemainCons == 0 ) && this->bDropOnClosure )
             {
-                xSQLDBGlobalSync.doSynchronized( [ this ] {
+                xSQLDBGlobalSync.doSynchronized( [this] {
                     // DEBUG: std::cout << "Do schema drop synchronized in Destructor" << std::endl;
                     this->dropSchema( this->sSchemaName );
                 } ); // doSynchronized

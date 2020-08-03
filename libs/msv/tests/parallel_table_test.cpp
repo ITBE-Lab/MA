@@ -5,9 +5,8 @@
 #include <iostream>
 #include <time.h>
 
+#include <db_base.h>
 #include <db_con_pool.h>
-#include <mysql_con.h>
-#include <sql_api.h>
 
 #include "msv/container/sv_db/tables/pairedRead.h"
 #include "msv/container/sv_db/tables/read.h"
@@ -70,16 +69,16 @@ int main( void )
 
     time_point xStart;
 
-    SQLDBConPool<MySQLConDB> xDBPool( uiNumTables,
-                                      json{{SCHEMA, {{NAME, "tmp_parallel_table_test"}, {FLAGS, {DROP_ON_CLOSURE}}}}} );
+    SQLDBConPool<DBConn> xDBPool( uiNumTables,
+                                  json{{SCHEMA, {{NAME, "tmp_parallel_table_test"}, {FLAGS, {DROP_ON_CLOSURE}}}}} );
     std::vector<std::future<void>> vFutures;
 
     xStart = std::chrono::steady_clock::now( );
     for( size_t i = 0; i < uiNumTables; i++ )
-        // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
+        // type behind auto: std::shared_ptr<SQLDBConPool<DBConn>::PooledSQLDBCon>
         vFutures.push_back( xDBPool.enqueue(
             [&]( auto pDBCon, size_t iThread ) {
-                auto pTestTable = std::make_shared<TestTable<PooledSQLDBCon<MySQLConDB>>>( pDBCon, iThread );
+                auto pTestTable = std::make_shared<TestTable<PooledSQLDBCon<DBConn>>>( pDBCon, iThread );
 
                 auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
 
@@ -102,20 +101,20 @@ int main( void )
     std::cout << "inserted " << uiNumValues << " rows in " << xTotalTime.count( ) << " seconds using " << uiNumTables
               << " tables." << std::endl;
 
-
     vFutures.clear( );
 
     xStart = std::chrono::steady_clock::now( );
     for( size_t i = 0; i < uiNumTables; i++ )
-        // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
+        // type behind auto: std::shared_ptr<SQLDBConPool<DBConn>::PooledSQLDBCon>
         vFutures.push_back( xDBPool.enqueue(
             [&]( auto pDBCon, size_t iThread ) {
-                auto pTestTable = std::make_shared<TestTable<PooledSQLDBCon<MySQLConDB>>>( pDBCon, iThread );
+                auto pTestTable = std::make_shared<TestTable<PooledSQLDBCon<DBConn>>>( pDBCon, iThread );
 
                 std::cout << "triggering index construction " << iThread << std::endl;
-                pTestTable->addIndex(
-                    json{{INDEX_NAME, "rectangle"}, {INDEX_COLUMNS, "rectangle"}, {INDEX_TYPE, "SPATIAL"}}, false );
-                //pTestTable->addIndex(
+                pTestTable->addIndex( json{{INDEX_NAME, "rectangle_" + std::to_string( iThread )},
+                                           {INDEX_COLUMNS, "rectangle"},
+                                           {INDEX_TYPE, "SPATIAL"}} );
+                // pTestTable->addIndex(
                 //    json{{INDEX_NAME, "pos_index" + std::to_string( iThread )}, {INDEX_COLUMNS, "pos"}} );
                 std::cout << "finished index construction " << iThread << std::endl;
             },
@@ -129,7 +128,7 @@ int main( void )
     xTotalTime = std::chrono::steady_clock::now( ) - xStart;
     std::cout << "built " << uiNumTables << " indices in " << xTotalTime.count( ) << " seconds" << std::endl;
 
-    //int c;
-    //std::cin >> c;
+    // int c;
+    // std::cin >> c;
     return EXIT_SUCCESS;
 } /// main function

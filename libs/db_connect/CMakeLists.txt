@@ -71,7 +71,7 @@ if(BUILD_TESTING)
             target_include_directories( ${test_name} PUBLIC ${PostgreSQL_INCLUDE_DIRS} connectors )
 
             # Add libraries to link your target against. Again, PRIVATE is important for multi-target projects
-            target_link_libraries( ${test_name} PUBLIC ${PostgreSQL_LIBRARIES} contrib_CPP_header util Threads::Threads )
+            target_link_libraries( ${test_name} PUBLIC dbSQL )
             # and for each of your dependent executable/library targets:
 		    if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
 		        # std::filesystem is still experimental and for linkage we need separated library

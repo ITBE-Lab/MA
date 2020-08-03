@@ -7,13 +7,14 @@
  */
 #pragma once
 
-// #define USE_MYSQL
+//#define USE_MYSQL
 #define USE_PG
 
 #ifdef USE_PG
 #include "postgre_sql_con.h"
 using DBConn = PostgreSQLDBCon;
 #endif
+
 #ifdef USE_MYSQL
 #include <mysql_con.h>
 using DBConn = MySQLConDB;

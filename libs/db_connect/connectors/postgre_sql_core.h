@@ -78,7 +78,7 @@ const std::string FLAGS = "FLAGS";
  *                            { PASSWORD, "admin" },
  *                            { PORT, 0 } } } };
  */
-
+#if 0
 // MySQL import
 #include <mysql.h>
 // The header <my_global.h> has been gone since MySQL 8.
@@ -86,6 +86,7 @@ const std::string FLAGS = "FLAGS";
 #if !defined( MARIADB_BASE_VERSION ) && !defined( MARIADB_VERSION_ID ) && MYSQL_VERSION_ID >= 80001 &&                 \
     MYSQL_VERSION_ID != 80002
 typedef bool my_bool;
+#endif
 #endif
 
 #define DEFAULT_HOSTNAME "localhost"
@@ -921,7 +922,7 @@ class PostgreSQLDBCon
          * Remark: In the current design bind and execute must happen in one method, because the MySQL-bindings
          * happen via references to the method arguments.
          */
-        template <typename... ArgTypes> inline my_ulonglong bindAndExec( ArgTypes&&... args )
+        template <typename... ArgTypes> inline uint64_t bindAndExec( ArgTypes&&... args )
         {
             this->bind<0, ArgTypes&&...>( std::forward<ArgTypes>( args )... );
             return this->exec( sizeof...( ArgTypes ) > 0 );

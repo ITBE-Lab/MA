@@ -10,8 +10,9 @@
 // Then include the SQL common stuff that is currently below
 // #define SQL_VERBOSE
 #include <db_base.h>
+#include <sql_api.h>
 #include <db_con_pool.h>
-#include <threadPool.h>
+#include <util/threadPool.h>
 
 // #include "libpq-fe.h"
 #include <stdio.h>
