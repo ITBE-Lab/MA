@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "db_base.h"
 #include "sql_api.h"
 #include "container/nucSeq.h"
 #include "container/sv_db/pool_container.h"

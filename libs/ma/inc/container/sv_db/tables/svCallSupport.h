@@ -6,7 +6,8 @@
  */
 #pragma once
 
-#include "sql_api.h"
+#include <db_base.h>
+#include <sql_api.h>
 #include "container/svJump.h"
 
 namespace libMA

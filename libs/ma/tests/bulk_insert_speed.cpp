@@ -5,9 +5,9 @@
 #include <iostream>
 #include <time.h>
 
-#include <mysql_con.h>
-#include <sql_api.h>
+#include <db_base.h>
 #include <db_con_pool.h>
+#include <sql_api.h>
 
 #include "container/sv_db/tables/pairedRead.h"
 #include "container/sv_db/tables/read.h"
@@ -59,7 +59,9 @@ void wait_for_everyone( std::mutex& xMutex,
     uiThreadsReady++;
     if( uiThreadsReady < uiThreads + 1 )
         while( uiThreadsReady < uiThreads + 1 )
+        {
             xCondition.wait( xLock );
+        }
     else // the last thread that reaches the if will end up here
         xCondition.notify_all( );
 } // method
@@ -67,7 +69,7 @@ void wait_for_everyone( std::mutex& xMutex,
 int main( void )
 {
     size_t uiThreads = std::thread::hardware_concurrency( );
-    size_t uiNumValues = 20000;
+    size_t uiNumValues = 19800;
 
     std::vector<std::shared_ptr<NucSeq>> vNucSeq1;
     std::vector<std::shared_ptr<NucSeq>> vNucSeq2;
@@ -87,41 +89,57 @@ int main( void )
 
     time_point xStart;
     {
-        SQLDBConPool<MySQLConDB> xDBPool(
-            uiThreads, json{{SCHEMA, {{NAME, "tmp_bulk_insert_speed"}, {FLAGS, {DROP_ON_CLOSURE}}}}} );
+        SQLDBConPool<DBConn> xDBPool(
+            uiThreads, json{ { SCHEMA, { { NAME, "tmp_bulk_insert_speed" }, { FLAGS, { DROP_ON_CLOSURE } } } } } );
 
         std::vector<std::future<void>> vFutures;
         for( size_t i = 0; i < uiThreads; i++ )
-            // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
-            vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
-                auto pSequencerTable = std::make_shared<SequencerTable<PooledSQLDBCon<MySQLConDB>>>( pDBCon );
-                auto pReadTable = std::make_shared<ReadTable<PooledSQLDBCon<MySQLConDB>>>( pDBCon );
-                auto pPairedReadTable =
-                    std::make_shared<PairedReadTable<PooledSQLDBCon<MySQLConDB>>>( pDBCon, nullptr );
 
+            // type behind auto: std::shared_ptr<SQLDBConPool<DBConn>::PooledSQLDBCon>
+            vFutures.push_back( xDBPool.enqueue( [ & ]( auto pDBCon ) {
+                auto pSequencerTable = std::make_shared<SequencerTable<PooledSQLDBCon<DBConn>>>( pDBCon );
+                auto pReadTable = std::make_shared<ReadTable<PooledSQLDBCon<DBConn>>>( pDBCon );
+                auto pPairedReadTable = std::make_shared<PairedReadTable<PooledSQLDBCon<DBConn>>>( pDBCon, nullptr );
                 auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
-
-                auto xBulkInserter = pReadTable->template getBulkInserter<500>( );
+                
+                // The order of the BulkInserter is significant here.
+                // We mist first destruct the xBulkInserter and then the xBulkInserter2
                 auto xBulkInserter2 = pPairedReadTable->template getBulkInserter<1000>( );
-
+                auto xBulkInserter = pReadTable->template getBulkInserter<500>();
+                
                 // wait till all threads are ready
                 wait_for_everyone( xMutex, uiThreadsReady, xCondition, uiThreads );
-
+                
+                auto id = pSequencerTable->insert("Sequencer Run 1");
                 for( size_t uiI = 0; uiI < uiNumValues; uiI++ )
                 {
                     auto pKey1 =
-                        xBulkInserter->insert( 0, vNucSeq1[ uiI ]->sName, makeSharedCompNucSeq( *vNucSeq1[ uiI ] ) );
+                        xBulkInserter->insert( id, vNucSeq1[ uiI ]->sName, makeSharedCompNucSeq( *vNucSeq1[ uiI ] ) );
                     auto pKey2 =
-                        xBulkInserter->insert( 0, vNucSeq2[ uiI ]->sName, makeSharedCompNucSeq( *vNucSeq2[ uiI ] ) );
+                        xBulkInserter->insert( id, vNucSeq2[ uiI ]->sName, makeSharedCompNucSeq( *vNucSeq2[ uiI ] ) );
                     xBulkInserter2->insert( pKey1, pKey2 );
                 } // for
             } ) );
 
-        // wait till all threads are ready
+        // wait till all threads reach this point
         wait_for_everyone( xMutex, uiThreadsReady, xCondition, uiThreads );
+        xStart = std::chrono::steady_clock::now();
 
-        xStart = std::chrono::steady_clock::now( );
+        // Check if something went wrong
+        for( auto& rxFuture : vFutures )
+        {
+            try
+            {
+                rxFuture.get( );
+            } // try
+            catch (std::exception &rExcept)
+            {
+                std::cout << rExcept.what() << std::endl;
+            } // catch
+        } // for
     } // scope xDBPool -> wait for all threads to finish
+
+
     duration xTotalTime = std::chrono::steady_clock::now( ) - xStart;
 
     size_t uiTotalNumInserts = 3 * uiNumValues * uiThreads;

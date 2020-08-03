@@ -35,7 +35,7 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
     PooledSQLDBCon( const PooledSQLDBCon<DBImpl>& ) = delete; // no copies of pooled connections
 
     PooledSQLDBCon( std::shared_ptr<std::mutex> pPoolLock, // pass shared pointer to pool mutex
-                    const json& jDBConData = json{} ) // FIXME: Pass JSON here
+                    const json& jDBConData = json{ } ) // FIXME: Pass JSON here
         : SQLDB<DBImpl>( jDBConData ), pPoolLock( pPoolLock )
     {} // constructor
 
@@ -266,7 +266,7 @@ template <typename DBImpl> class SQLDBConPool
      * considered instantiated, and therefore its destructor will not be called.
      */
     SQLDBConPool( size_t uiPoolSize = 1, // pass pool size here
-                  const json& jDBConData = json{} ) // Connection Info as JSON; format depends on the backend
+                  const json& jDBConData = json{ } ) // Connection Info as JSON; format depends on the backend
         : vqTasks( uiPoolSize + 1 ),
           pPoolLock( std::make_shared<std::mutex>( ) ), // create the pool lock
           bStop( false ), // stop must be false in the beginning
@@ -284,11 +284,11 @@ template <typename DBImpl> class SQLDBConPool
 
         // Create an initialize all workers.
         for( size_t uiThreadId = 0; uiThreadId < uiPoolSize; ++uiThreadId )
-            vWorkers.emplace_back( [this, uiThreadId] {
+            vWorkers.emplace_back( [ this, uiThreadId ] {
                 // Treads are not allowed to throw exceptions or we face crashes.
                 // Therefore the swallowing of exceptions.
                 doNoExcept(
-                    [&] {
+                    [ & ] {
                         // Get a reference to the connection manager belonging to this thread.
                         auto pConManager = vConPool[ uiThreadId ];
                         pConManager->uiThreadId = uiThreadId; // inform connector about corresponding taskid
@@ -362,7 +362,7 @@ template <typename DBImpl> class SQLDBConPool
             bStop = true;
         } // end of scope for queue_mutex, so we unlock the mutex
 
-        //std::cout << "Pool shutdown started ..." << std::endl;
+        // std::cout << "Pool shutdown started ..." << std::endl;
         // Notify all waiting threads to continue so that they recognize the stop flag and terminate.
         xCondition.notify_all( );
 
@@ -372,13 +372,13 @@ template <typename DBImpl> class SQLDBConPool
         for( size_t uiItr = 0; uiItr < vWorkers.size( ); ++uiItr )
             vWorkers[ uiItr ].join( );
 
-        //std::cout << "Pool shutdown finished ..." << std::endl;
+        // std::cout << "Pool shutdown finished ..." << std::endl;
     } // method
 
     /** @brief The destructor blocks until all workers terminated. */
     ~SQLDBConPool( )
     {
-        //std::cout << "SQLDBConPool Destructor." << std::endl;
+        // std::cout << "SQLDBConPool Destructor." << std::endl;
         this->shutdown( );
         updateTime( );
         printTime( std::cout );
@@ -439,7 +439,7 @@ template <typename DBImpl> class SQLDBConPool
 
             // The task gets as input a shared pointer to a DBConnection for doing its job
             vqTasks[ iThreadId ].push(
-                [xTask]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
+                [ xTask ]( std::shared_ptr<PooledSQLDBCon<DBImpl>> pDBCon ) { ( *xTask )( pDBCon ); } );
         } // end of scope of lock (lock gets released)
 
         if( iThreadId == static_cast<int>( uiPoolSize ) )
@@ -460,7 +460,9 @@ template <typename DBImpl> class SQLDBConPool
         return enqueue( NO_THREAD_ID, std::forward<F>( func ), std::forward<Args>( args )... );
     } // method enqueue without thread id
 
-
+    /** @brief Enqueue a function func for execution via the DB pool and wait until the future is available.
+     *  For execution a specific (previously requested) dedicated thread/connection id is used.
+     */
     template <class F, class... Args>
     auto inline run( int iThreadId, F&& func, Args&&... args ) ->
         typename std::result_of<F( std::shared_ptr<PooledSQLDBCon<DBImpl>>, Args... )>::type

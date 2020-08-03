@@ -5,8 +5,6 @@
  */
 #pragma once
 
-#include "mysql_con.h" // NEW DATABASE INTERFACE
-#include "container/seed.h"
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <algorithm>
 #include <array>
@@ -14,6 +12,9 @@
 #include <memory>
 #include <numeric>
 /// @endcond
+
+#include "container/seed.h"
+#include <db_base.h> // import database support
 
 namespace libMA
 {
@@ -486,7 +487,7 @@ class NucSeq : public Container
         /* Complements of nucleotides
          *                               0  1  2  3
          */
-        static const char chars[ 4 ] = {3, 2, 1, 0};
+        static const char chars[ 4 ] = { 3, 2, 1, 0 };
 
         return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
@@ -517,7 +518,7 @@ class NucSeq : public Container
      */
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
-        static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
+        static const char chars[ 4 ] = { 'A', 'C', 'G', 'T' };
         if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
@@ -761,7 +762,7 @@ class NucSeq : public Container
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
-        static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
+        static const uint8_t aTranslate[ 4 ] = { 1, 2, 4, 8 };
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
@@ -1178,15 +1179,8 @@ inline std::string buf_to_hex( char* pBuf, size_t uiSize )
     return output;
 } // function
 
-/** @brief Implements the binary representation of compressed sequences */
-template <typename DBCon>
-inline std::string csvPrint( DBCon& rxDBCon, const std::shared_ptr<libMA::CompressedNucSeq>& pCompNucSep )
-{
-    return rxDBCon.blobAsQuotedSafeString( pCompNucSep->xCompSeqBuf.get( ),
-                                           pCompNucSep->uiSizeCompSeq ); // mysql_real_escape_string_quote()
-}; // method
 
-/* NEW DATABASE INTERFACE */
+#ifdef WITH_MYSQL
 /* Integration of shared pointers to CompressedNucSeq objects as data-type in the MySQL interface.
  */
 using CompNucSeqSharedPtr = std::shared_ptr<libMA::CompressedNucSeq>;
@@ -1226,11 +1220,65 @@ struct /* MySQLConDB:: */ RowCell<CompNucSeqSharedPtr> : public /* MySQLConDB::*
     inline void storeVarSizeCell( )
     {
         // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
-        if( !(this->is_null) )
+        if( !( this->is_null ) )
             ( *pCellValue )->decompress( reinterpret_cast<uint8_t*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
+#endif
 
+#ifdef POSTGRESQL
+/* Integration of shared pointers to CompressedNucSeq objects as data-type in the MySQL interface.
+ */
+using CompNucSeqSharedPtr = std::shared_ptr<libMA::CompressedNucSeq>;
+
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<CompNucSeqSharedPtr>( )
+{
+    return "bytea";
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void PostgreSQLDBCon::StmtArg::set( const CompNucSeqSharedPtr& rxCompSeq )
+{
+    unsigned long uiCompSeqSize = static_cast<unsigned long>( rxCompSeq->size( ) );
+    if( uiCompSeqSize > (size_t)std::numeric_limits<int>::max( ) )
+        throw PostgreSQLError( "PG: Length of NucSeq exceeds maximum of type integer." );
+
+    rpParamValue = (char*)( rxCompSeq->get( ) );
+    riParamLength = static_cast<int>( uiCompSeqSize );
+    riParamFormat = PG_BINARY_ARG;
+} // specialized method
+
+// Part 3: Code for supporting query output:
+//         1. Via the third argument of the call of init, set the MySQL datatype for your cell type.
+//         2. Using storeVarSizeCel, fetch the blob from the byte-buffer of the cell.
+template <> struct PGRowCell<CompNucSeqSharedPtr> : public PGRowCellBase<CompNucSeqSharedPtr>
+{
+    inline void init( CompNucSeqSharedPtr* pCellValue, size_t uiColNum )
+    {
+        *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
+        PGRowCellBase<CompNucSeqSharedPtr>::init( pCellValue, uiColNum );
+    } // method
+
+    // Decompress the nucleotide sequence directly from the buffer.
+    inline void store( const PGresult* pPGRes )
+    {
+        // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
+        if( !( this->isNull ) )
+            ( *pCellValue )
+                ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
+    } // method
+}; // specialized class
+#endif
+
+
+/** @brief Implements the binary representation of compressed sequences */
+template <typename DBCon>
+inline std::string csvPrint( DBCon& rxDBCon, const std::shared_ptr<libMA::CompressedNucSeq>& pCompNucSep )
+{
+    return rxDBCon.blobAsQuotedSafeString( pCompNucSep->xCompSeqBuf.get( ),
+                                           pCompNucSep->uiSizeCompSeq ); // mysql_real_escape_string_quote()
+}; // method
 
 namespace libMA
 {
@@ -1272,15 +1320,8 @@ class NucSeqSql // not required any longer : public SQL_BLOB
 
 } // namespace libMA
 
-#if 0
-template <> inline std::string getSQLTypeName<libMA::NucSeqSql>( )
-{
-return "BLOB";
-} // specialized function
-#endif
-
-
-/* NEW DATABASE INTERFACE */
+#ifdef WITH_MYSQL
+/* DATABASE INTEGRATION MySQL */
 
 /* Integration of NucSeqSql as data-type in the MySQL interface.
  */
@@ -1316,6 +1357,46 @@ template <> struct /* MySQLConDB:: */ RowCell<libMA::NucSeqSql> : public /* MySQ
             pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->pVarLenBuf.get( ) ), this->uiLength );
     } // method
 }; // specialized class
+#endif
+
+#ifdef POSTGRESQL
+/* DATABASE INTEGRATION PostgreSQL
+ */
+
+/* Integration of NucSeqSql as data-type in the MySQL interface.
+ */
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<libMA::NucSeqSql>( )
+{
+    return "bytea";
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void PostgreSQLDBCon::StmtArg::set( const libMA::NucSeqSql& rxBlob )
+{
+    if( rxBlob.blobSize( ) > (size_t)std::numeric_limits<int>::max( ) )
+        throw PostgreSQLError( "PG: Length of NucSeq exceeds maximum of type integer." );
+    rpParamValue = (char*)( rxBlob.toBlob( ) );
+    riParamLength = static_cast<int>( rxBlob.blobSize( ) );
+    riParamFormat = PG_BINARY_ARG;
+} // specialized method
+
+// Part 3: Code for supporting query output:
+template <> struct PGRowCell<libMA::NucSeqSql> : public PGRowCellBase<libMA::NucSeqSql>
+{
+    inline void init( libMA::NucSeqSql* pCellValue, size_t uiColNum )
+    {
+        PGRowCellBase<libMA::NucSeqSql>::init( pCellValue, uiColNum );
+    } // method
+
+    inline void store( const PGresult* pPGRes )
+    {
+        if( !( this->isNull ) )
+            pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->getValPtr( pPGRes ) ),
+                                  this->getValLength( pPGRes ) );
+    } // method
+}; // specialized class
+#endif
 
 
 #ifdef WITH_PYTHON

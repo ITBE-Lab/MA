@@ -6,7 +6,7 @@
  */
 #pragma once
 
-
+#include "db_base.h"
 #include "sql_api.h"
 
 namespace libMA

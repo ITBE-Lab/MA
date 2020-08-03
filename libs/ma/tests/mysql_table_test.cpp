@@ -1,7 +1,7 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#include "mysql_con.h" // MySQL connector
+#include "db_base.h" // MySQL connector
 #include "sql_api.h"
 #include "container/sv_db/tables/sequencer.h"
 #include "db_con_pool.h"
@@ -15,7 +15,7 @@ int main( void )
     std::vector<std::future<void>> vFutures;
     {
         doNoExcept( [&] {
-            SQLDBConPool<MySQLConDB> xDBPool( 32, json{
+            SQLDBConPool<DBConn> xDBPool( 32, json{
                                                       {SCHEMA, {{NAME, "pooled_DB"}, {FLAGS, {DROP_ON_CLOSURE}}}}
                                                   } );
 

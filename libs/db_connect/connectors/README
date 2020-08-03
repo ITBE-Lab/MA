@@ -1,0 +1,4 @@
+Major difference between MySQL and PostgreSQL:
+- Queries with placeholder '?' in MySQL requires placeholders like "$1", '$2' in PostgresSQL
+- in PostgreSQL fetchNextRow must always be called until EOF. If not, PostGreSQL reports fatal errors.
+- The function ST_AsBinary requires an explicit type cast in PostgreSQL: ST_AsBinary(rectangle::geometry)

@@ -8,6 +8,9 @@
 
 #pragma once
 
+ // Inform later imports about the SQL backend
+#define WITH_MYSQL
+
 #include "mysql_core.h"  // core code for MySQL engine support
 #include "mysql_spatial.h" // spatial datatype support for MySQL
 

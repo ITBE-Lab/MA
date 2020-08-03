@@ -1,13 +1,12 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
+#include <db_base.h>
+#include <db_con_pool.h>
+
 #include "container/nucSeq.h"
 #include <iostream>
 #include <time.h>
-
-#include <mysql_con.h>
-#include <sql_api.h>
-#include <db_con_pool.h>
 
 using namespace libMA;
 
@@ -21,6 +20,7 @@ std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen, // length sequence
     int iNCounter = 0;
     for( size_t i = 0; i < uiLen; i++ )
     {
+        pRet->sName = std::string( "randomly_generated_nucleotide_sequence_" ).append( std::to_string( i ) );
         if( uiNMod )
             if( iNCounter == 0 && std::rand( ) % uiNMod == 0 )
             {
@@ -54,9 +54,9 @@ void compressedNucSeqTest( size_t uiLenStart, // start length sequence
             auto pNucSeq = randomNucSeq( iSize, uiNMod, uiMaxSizeNseq );
             CompressedNucSeq xCompressedNucSeq;
             uiCountMeasure++;
-            dDurtationComp += metaMeasureDuration( [&] { xCompressedNucSeq.compress( *pNucSeq ); } ).count( );
+            dDurtationComp += metaMeasureDuration( [ & ] { xCompressedNucSeq.compress( *pNucSeq ); } ).count( );
             NucSeq xNucSeqOut;
-            dDurtationDeComp += metaMeasureDuration( [&] { xCompressedNucSeq.decompress( xNucSeqOut ); } ).count( );
+            dDurtationDeComp += metaMeasureDuration( [ & ] { xCompressedNucSeq.decompress( xNucSeqOut ); } ).count( );
 
             if( pNucSeq->toString( ) != xNucSeqOut.toString( ) )
             {
@@ -73,18 +73,19 @@ void compressedNucSeqTest( size_t uiLenStart, // start length sequence
 
 void databaseTest( )
 {
-    std::shared_ptr<SQLDB<MySQLConDB>> pDBCon = std::make_shared<SQLDB<MySQLConDB>>(
-        json{{SCHEMA, {{NAME, "nucseq_test"}, {FLAGS, {DROP_ON_CLOSURE}}}},
-             {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}} );
+    std::shared_ptr<SQLDB<DBConn>> pDBCon = std::make_shared<SQLDB<DBConn>>(
+        json{ { SCHEMA, { { NAME, "nucseq_test" }, { FLAGS, { DROP_ON_CLOSURE } } } },
+              { CONNECTION, { { HOSTNAME, "localhost" }, { USER, "root" }, { PASSWORD, "admin" }, { PORT, 0 } } } } );
 
     json xCompNucSeqTableDef =
-        json{{TABLE_NAME, "nucseq_table"}, {TABLE_COLUMNS, {{{COLUMN_NAME, "nucseqs"}}, {{COLUMN_NAME, "ins_id"}}}}};
+        json{ { TABLE_NAME, "nucseq_table" },
+              { TABLE_COLUMNS, { { { COLUMN_NAME, "nucseqs" } }, { { COLUMN_NAME, "ins_id" } } } } };
 
-    SQLTableWithAutoPriKey<SQLDB<MySQLConDB>, std::shared_ptr<CompressedNucSeq>, size_t> xTestTable(
+    SQLTableWithAutoPriKey<SQLDB<DBConn>, std::shared_ptr<CompressedNucSeq>, size_t> xTestTable(
         pDBCon,
         xCompNucSeqTableDef ); //
     xTestTable.deleteAllRows( ); // clear the table
-    //using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
+    // using CompNucSeqSharedPtr = std::shared_ptr<CompressedNucSeq>;
 
     std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs;
     for( size_t uiItr = 0; uiItr < 1000; uiItr++ )
@@ -97,11 +98,11 @@ void databaseTest( )
         auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
         auto xBulkInserter = xTestTable.template getBulkInserter<300>( );
         metaMeasureAndLogDuration<true>( "Time required for table insertion:", //
-                                         ( [&] {
+                                         ( [ & ] {
                                              for( size_t uiItr = 0; uiItr < vCompNucSeqs.size( ); uiItr++ )
                                              {
                                                  xBulkInserter->insert(
-                                                     nullptr, makeSharedCompNucSeq( *vCompNucSeqs[ uiItr ] ), uiItr );
+                                                     /* nullptr, */  makeSharedCompNucSeq( *vCompNucSeqs[ uiItr ] ), uiItr );
                                              } // for
                                          } ) );
         std::cout << "Finished inserting .... " << std::endl;
@@ -109,7 +110,7 @@ void databaseTest( )
 #if 1
     for( size_t uiItr = 0; uiItr < vCompNucSeqs.size( ); uiItr++ )
     {
-        SQLQuery<SQLDB<MySQLConDB>, std::shared_ptr<CompressedNucSeq>> xQuery(
+        SQLQuery<SQLDB<DBConn>, std::shared_ptr<CompressedNucSeq>> xQuery(
             pDBCon, "SELECT nucseqs FROM nucseq_table WHERE ins_id = ?" );
         std::shared_ptr<NucSeq> pNucSeq = xQuery.execAndGetNthCell<0>( uiItr )->pUncomNucSeq;
         if( pNucSeq->toString( ) != vCompNucSeqs[ uiItr ]->toString( ) )
@@ -122,27 +123,30 @@ void databaseTest( )
 #endif
 } // function
 
-void bulkInsertTest()
+void bulkInsertTest( )
 {
     double dLibIncrTotalTime = 0;
     double dAutoTotalTime = 0;
     for( int a = 0; a < 10; a++ )
-        doNoExcept( [&] {
-            json xTestTableLibIncrDef =
-                json{{TABLE_NAME, "TEST_TABLE_LIB_INCR"},
-                     {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "read"}}}},
-                     /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+        doNoExcept( [ & ] {
+            json xTestTableLibIncrDef = json{ { TABLE_NAME, "TEST_TABLE_LIB_INCR" },
+                                              { TABLE_COLUMNS,
+                                                { { { COLUMN_NAME, "int_col_1" } },
+                                                  { { COLUMN_NAME, "int_col_2" } },
+                                                  { { COLUMN_NAME, "int_col_3" } } } },
+                                              /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */ };
 
             json xTestTableForeKeyDef =
-                json{{TABLE_NAME, "TEST_TABLE_FOREIGN_KEY"},
-                     {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "int_col_2"}}}},
-                     /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+                json{ { TABLE_NAME, "TEST_TABLE_FOREIGN_KEY" },
+                      { TABLE_COLUMNS, { { { COLUMN_NAME, "int_col_1" } }, { { COLUMN_NAME, "int_col_2" } } } },
+                      /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */ };
 
-            json xTestTableAutoDef = json{{TABLE_NAME, "TEST_TABLE_AUTO"},
-                                          {TABLE_COLUMNS, {{{COLUMN_NAME, "int_col_1"}}, {{COLUMN_NAME, "read"}}}},
-                                          /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */};
+            json xTestTableAutoDef =
+                json{ { TABLE_NAME, "TEST_TABLE_AUTO" },
+                      { TABLE_COLUMNS, { { { COLUMN_NAME, "int_col_1" } }, { { COLUMN_NAME, "int_col_2" } } } },
+                      /* { CPP_EXTRA, "DROP ON DESTRUCTION" } */ };
 
-            int numValues = 1000;
+            int numValues = 1000; // 100000
 
             std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs1;
             std::vector<std::shared_ptr<NucSeq>> vCompNucSeqs2;
@@ -155,62 +159,76 @@ void bulkInsertTest()
             double dLibIncrMaxTime = 0;
             double dAutoMaxTime = 0;
             std::vector<std::future<void>> vFutures;
-            std::mutex xLock;
+            // std::mutex xLock;
             {
-                {
-                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, "test_pri_key"}} );
+                double dTotalTime = metaMeasureAndLogDuration<true>( "BulkInserter required time:", [ & ]( ) {
+                    SQLDBConPool<DBConn> xDBPool(
+                        10, json{ { SCHEMA, { { NAME, "test_pri_key" } , { FLAGS, { DROP_ON_CLOSURE } } } } } );
                     for( int i = 0; i < 10; i++ )
                         // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
-                        vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
+                        vFutures.push_back( xDBPool.enqueue( [ & ]( auto pDBCon ) {
                             doNoExcept(
-                                [&] {
-                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<MySQLConDB>,
+                                [ & ] {
+                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<DBConn>,
                                                               int,
-                                                              std::shared_ptr<CompressedNucSeq>>
+                                                              std::shared_ptr<CompressedNucSeq>,
+                                                              std::string>
                                         xPoolTable( pDBCon, xTestTableLibIncrDef );
-                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<MySQLConDB>, PriKeyDefaultType,
+                                    SQLTableWithLibIncrPriKey<PooledSQLDBCon<DBConn>,
+                                                              PriKeyDefaultType,
                                                               PriKeyDefaultType>
                                         xPoolTableForeignKey( pDBCon, xTestTableForeKeyDef );
                                     auto pTrxnGuard = pDBCon->uniqueGuardedTrxn( );
                                     std::map<int, int> xVerificationMap;
                                     double dTime =
-                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
-                                            auto xBulkInserter = xPoolTable.template getBulkInserter<500>( );
-                                            auto xBulkInserter2 = xPoolTableForeignKey.template getBulkInserter<500>( );
-                                            std::lock_guard<std::mutex> xGuard( xLock );
-                                            for( int i = 0; i < numValues; i++ )
+                                        metaMeasureAndLogDuration<true>( "BulkInserter required time:", [ & ]( ) {
                                             {
-                                                auto uiPriKey1 = xBulkInserter->insert(
-                                                    i * 2, makeSharedCompNucSeq( *vCompNucSeqs1[ i ] ) );
-                                                auto uiPriKey2 = xBulkInserter->insert(
-                                                    i * 2, makeSharedCompNucSeq( *vCompNucSeqs2[ i ] ) );
-                                                //xBulkInserter2->insert( uiPriKey1, uiPriKey2 );
-                                                // xVerificationMap[ uiPriKey ] = i * 2;
-                                            }
-                                            std::cout << "Finished inserting via BulkInserter LibIncr .... "
-                                                      << std::endl;
+                                                auto xBulkInserter = xPoolTable.template getBulkInserter<20>( );
+                                                auto xBulkInserter2 =
+                                                    xPoolTableForeignKey.template getBulkInserter<20>( );
+                                                // std::lock_guard<std::mutex> xGuard( xLock );
+                                                for( int i = 0; i < numValues; i++ )
+                                                {
+                                                    auto uiPriKey1 = xBulkInserter->insert(
+                                                        i * 2,
+                                                        makeSharedCompNucSeq( *vCompNucSeqs1[ i ] ),
+                                                        vCompNucSeqs1[ i ]->sName );
+                                                    auto uiPriKey2 = xBulkInserter->insert(
+                                                        i * 2,
+                                                        makeSharedCompNucSeq( *vCompNucSeqs2[ i ] ),
+                                                        vCompNucSeqs2[ i ]->sName );
+                                                    xBulkInserter2->insert( uiPriKey1, uiPriKey2 );
+                                                    // xVerificationMap[ uiPriKey ] = i * 2;
+                                                }
+                                                std::cout << "Finished inserting via BulkInserter LibIncr .... "
+                                                          << std::endl;
+                                            } // scope xBulkInserter
                                         } );
-                                    pDBCon->doPoolSafe( [&] { dLibIncrMaxTime = std::max( dLibIncrMaxTime, dTime ); } );
-
+                                    pDBCon->doPoolSafe(
+                                        [ & ] { dLibIncrMaxTime = std::max( dLibIncrMaxTime, dTime ); } );
+                                    
                                     // Verify the xVerificationMap
-                                    // SQLQuery<PooledSQLDBCon<MySQLConDB>, int> xQuery(
-                                    //     pDBCon, "SELECT int_col_1 FROM TEST_TABLE_LIB_INCR WHERE id = ?" );
-                                    // for( auto rKeyValue : xVerificationMap )
-                                    // {
-                                    //     if( xQuery.scalar( rKeyValue.first ) != rKeyValue.second )
-                                    //     {
-                                    //         std::cout << "PANIC: Check failed" << std::endl;
-                                    //         exit( 1 );
-                                    //     } // if
-                                    // } // for
+                                    SQLQuery<PooledSQLDBCon<DBConn>, int> xQuery(
+                                        pDBCon, "SELECT int_col_1 FROM TEST_TABLE_LIB_INCR WHERE id = ?" );
+                                    for( auto rKeyValue : xVerificationMap )
+                                    {
+                                        if( xQuery.scalar( rKeyValue.first ) != rKeyValue.second )
+                                        {
+                                            std::cout << "PANIC: Check failed" << std::endl;
+                                            exit( 1 );
+                                        } // if
+                                    } // for
+
+                                    std::cout << "Passed Check" << std::endl;
                                 },
                                 "Problem during thread execution" );
                         } ) );
-                }
-
+                } );
+                std::cout << "Total Time " << (int)( dTotalTime ) << std::endl;
+#if 0
                 {
-                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, "test_pri_key"}} );
-                    for( int i = 0; i < 0; i++ )
+                    SQLDBConPool<MySQLConDB> xDBPool( 10, json{{SCHEMA, {{NAME, "test_pri_key"}, {FLAGS, {DROP_ON_CLOSURE}}}}} );
+                    for( int i = 0; i < 10; i++ )
                         // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
                         vFutures.push_back( xDBPool.enqueue( [&]( auto pDBCon ) {
                             doNoExcept(
@@ -238,6 +256,7 @@ void bulkInsertTest()
                                 "Problem during thread execution" );
                         } ) );
                 }
+#endif
             } // close the pool
             dLibIncrTotalTime += dLibIncrMaxTime;
             dAutoTotalTime += dAutoMaxTime;
@@ -298,7 +317,7 @@ int main( void )
     // return 0;
     //
     srand( static_cast<unsigned int>( time( NULL ) ) );
-    // compressedNucSeqTest( 1, 100, 5, 5 ); // Test for short sequences with a mix of A,C,G,T,N
+    compressedNucSeqTest( 1, 100, 5, 5 ); // Test for short sequences with a mix of A,C,G,T,N
     // compressedNucSeqTest( 1, 100, 0, 0 ); // Test for short sequences with a mix of A,C,G,T only
     // compressedNucSeqTest( 1, 100, 1, 1000, 1 ); // Test for short N sequences
     // compressedNucSeqTest( 1000, 1500, 5, 50, 2 ); // Test for mid-sized sequences with a mix of A,C,G,T,N
@@ -315,7 +334,7 @@ int main( void )
     // compressedNucSeqTest( 100000000, 100000001, 1, 1000, 3 ); // Test for long N sequences
 
     // return doNoExcept( [&] { databaseTest( ); } );
-    doNoExcept( [&] { bulkInsertTest( ); } );
+    doNoExcept( [ & ] { bulkInsertTest( ); } );
 
     return EXIT_SUCCESS;
 } /// main function

@@ -505,7 +505,7 @@ template <typename DBConPtrType> class ImmediateQueryTmpl
         while( ( ppRow = mysql_fetch_row( this->pQueryRes ) ) )
         {
             std::vector<std::string> vRow;
-            for( size_t uiItr = 0; uiItr < num_fields; uiItr++ )
+            for( auto uiItr = 0; uiItr < num_fields; uiItr++ )
                 vRow.emplace_back( ppRow[ uiItr ] ? std::string( ppRow[ uiItr ] ) : "NULL" );
             xretTbl.addRow( vRow );
         } // while
@@ -575,10 +575,11 @@ class MySQLConDB
 
       private:
         // list of valid types:
-        template <typename Type> static inline std::string getSQLTypeName( identity<Type> );
-        // {
-        //     return "UNDEFINED_TYPE";
-        // } // private method
+        template <typename Type> static inline std::string getSQLTypeName( identity<Type> )
+        {
+            throw MySQLConException(std::string("MySQL - getSQLTypeName: Translation for unknown type requested.") + typeid(Type).name() );
+            return "UNDEFINED_TYPE";
+        } // private method
 
         static inline std::string getSQLTypeName( identity<std::string> )
         {
@@ -801,6 +802,12 @@ class MySQLConDB
                 vInputArgs.push_back( &vMySQLInpArgBind[ uiCount ] );
         } // constructor
 
+        /** @brief Used in the context of bulk insert stmts for indicating of how many times the args have to occur */
+        void setArgsMultiplicator(const size_t uiNumRepeatedOccurences)
+        {
+            // Because of mysql_stmt_param_count not required with MySQL
+        } // method
+
         /** @brief Execute the statement after all parameters have been bound successfully.
          *  The existence of parameters has to be initiated via the boolean argument.
          */
@@ -831,12 +838,15 @@ class MySQLConDB
             bindArgumentsForwarding<OFFSET * sizeof...( args ), ArgTypes&&...>( std::forward<ArgTypes>( args )... );
         } // method
 
-        /** @brief as bind, but using a runtime offset */
-        template <typename... ArgTypes> inline void bindRuntime( int OFFSET, ArgTypes&&... args )
+        /** @brief Same as bindStatic, but using a for loop instead of a index sequence.
+         *  @details: Using this dynamic approach, it is possible to work with offsets larger than 1000, which bring most
+         *  compilers to their limits.
+         */
+        template <typename... ArgTypes> inline void bindDynamic( int uiOffset, ArgTypes&&... args )
         {
             assert( ( sizeof...( args ) == 0 ) || ( ( iStmtParamCount % (int)( sizeof...( args ) ) == 0 ) &&
-                                                    ( OFFSET * (int)( sizeof...( args ) ) < iStmtParamCount ) ) );
-            bindArgumentsForwardingRuntime<ArgTypes&&...>( OFFSET * sizeof...( args ),
+                                                    (uiOffset * (int)( sizeof...( args ) ) < iStmtParamCount ) ) );
+            bindArgumentsForwardingRuntime<ArgTypes&&...>(uiOffset * sizeof...( args ),
                                                            std::forward<ArgTypes>( args )... );
         } // method
 
