@@ -215,7 +215,8 @@ class NucSeq : public libMS::Container
         vReleaseMemory( );
     } // destructor
 
-    /** Move constructor on the foundation of text sequences.
+    /** @brief Move constructor on the foundation of text sequences.
+     * @details
      * Reuses the space of the text-sequence! TO DO: move & to &&
      */
     NucSeq( const NucSeq& rOther )
@@ -224,14 +225,18 @@ class NucSeq : public libMS::Container
         vAppend( rOther.pxSequenceRef, rOther.uiSize );
     } // constructor
 
-    /** Move constructor on the foundation of text sequences.
-     * Reuses the space of the text-sequence! TO DO: move & to &&
+    /**  @brief creates a copy of the subsequence [uiFrom, uiTo)
      */
     NucSeq( const NucSeq& rOther, nucSeqIndex uiFrom, nucSeqIndex uiTo )
     {
         vResetProtectedAttributes( );
         vAppend( rOther.pxSequenceRef + uiFrom, uiTo - uiFrom );
     } // constructor
+
+    /** @brief creates a copy of the subsequence [uiFrom, uiTo)
+     */
+    NucSeq( std::shared_ptr<NucSeq> pOther, nucSeqIndex uiFrom, nucSeqIndex uiTo ) : NucSeq( *pOther, uiFrom, uiTo )
+    {} // constructor
 
 
     /** is implicitly deleted by geneticSequence but boost python needs to know */

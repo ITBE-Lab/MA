@@ -8,8 +8,9 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
 
-    self.params.by_name("Fixed SoC Width").set(50)
-    self.params.by_name("Max Size Reseed").set(2000)
+    parameter_set_manager.by_name("Fixed SoC Width").set(50)
+    parameter_set_manager.by_name("Max Size Reseed").set(2000)
+    parameter_set_manager.by_name("Maximal Ambiguity").set(1)
     def scope():
         single_con = DbConn(dataset_name)
 
@@ -49,7 +50,7 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
             res = VectorPledge()
             inserter_vec = []
             # graph for single reads
-            for _ in parallel_graph(jobs):
+            for idx in parallel_graph(jobs):
                 # @todo there should be a set of modules distributing reads
                 # (only a problem if threads finish at different times)...
                 nuc_seq_query_getter = GetNucSeqFromSqlQuery(parameter_set_manager, seq_id, idx, jobs, True, True)

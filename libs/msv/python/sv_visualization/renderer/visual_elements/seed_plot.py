@@ -78,7 +78,7 @@ class SeedPlot:
 
     def update_selection(self, renderer):
         def highlight_seed(condition):
-            if len(self.seeds.data["c"]) > 0:
+            if len(self.seeds.data["c"]) > 0 and "parlindrome" in self.seeds.data:
                 repl_dict = copy.copy(self.seeds.data)
                 max_seed_size = max(repl_dict["size"])
                 for idx, _ in enumerate(repl_dict["c"]):
@@ -126,7 +126,9 @@ class SeedPlot:
         else:
             highlight_seed(lambda idx: True)
 
-        renderer.read_plot.copy_seeds(renderer, lambda idx: self.seeds.data["r_id"][idx] == renderer.selected_read_id)
+        if "r_id" in self.seeds.data:
+            renderer.read_plot.copy_seeds(renderer,
+                                    lambda idx: self.seeds.data["r_id"][idx] == renderer.selected_read_id)
 
     def seed_tap(self, renderer, x, y):
         renderer.selected_call_id = set()

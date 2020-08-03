@@ -34,6 +34,7 @@ void exportNucSeq( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<>( ) ) // default constructor
         .def( py::init<const char*>( ) )
         .def( py::init<const std::string>( ) )
+        .def( py::init<std::shared_ptr<NucSeq>, nucSeqIndex, nucSeqIndex>( ) )
         .def( "at", &NucSeq::charAt )
         .def( "__getitem__", &NucSeq::charAt )
         .def( "append", &NucSeq::vAppend_boost )

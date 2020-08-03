@@ -34,6 +34,8 @@ void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readonly( "was_mirrored", &SvJump::bWasMirrored )
         .def_readonly( "from_pos", &SvJump::uiFrom )
         .def_readonly( "to_pos", &SvJump::uiTo )
+        .def_readonly( "query_from", &SvJump::uiQueryFrom )
+        .def_readonly( "query_to", &SvJump::uiQueryTo )
         .def_readonly( "id", &SvJump::iId )
         .def_readonly( "read_id", &SvJump::iReadId );
 

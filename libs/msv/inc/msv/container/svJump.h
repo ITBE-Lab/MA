@@ -444,8 +444,10 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     std::shared_ptr<NucSeq> pInsertedSequence;
     std::vector<std::shared_ptr<SvJump>> vSupportingJumps;
 
+#if 0
     SvCall( const SvCall& rOther )
-        : bFromForward( rOther.bFromForward ),
+        : geom::Rectangle<nucSeqIndex>(rOther)
+        bFromForward( rOther.bFromForward ),
           bToForward( rOther.bToForward ),
           uiNumSuppReads( rOther.uiNumSuppReads ),
           uiReferenceAmbiguity( rOther.uiReferenceAmbiguity ),
@@ -460,6 +462,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         for( auto pJump : rOther.vSupportingJumps )
             vSupportingJumps.push_back( std::make_shared<SvJump>( *pJump ) );
     }
+#endif
 
     SvCall( nucSeqIndex uiFromStart,
             nucSeqIndex uiToStart,

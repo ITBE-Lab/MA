@@ -117,12 +117,12 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
     int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
     int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
 
-    if(iRectQEnd - iRectQStart > iMaxSizeReseed/2)
+    if( iRectQEnd - iRectQStart > iMaxSizeReseed / 2 )
     {
-        if(&rLast == &xDummySeed)
-            iRectQStart = iRectQEnd - iMaxSizeReseed/2;
+        if( &rLast == &xDummySeed )
+            iRectQStart = iRectQEnd - iMaxSizeReseed / 2;
         else
-            iRectQEnd = iRectQStart + iMaxSizeReseed/2;
+            iRectQEnd = iRectQStart + iMaxSizeReseed / 2;
     } // if
 
     return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
@@ -282,9 +282,8 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     py::bind_vector<std::vector<double>>( xOrganizer._util( ), "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );
 
-    // can't expose as vector since copy of SvJumps is deleted
-    py::class_<ContainerVector<SvJump>, libMS::Container, std::shared_ptr<ContainerVector<SvJump>>>(
-        xOrganizer._util( ), "JumpVector", "docstr" );
+    py::bind_vector_ext<ContainerVector<SvJump>, libMS::Container, std::shared_ptr<ContainerVector<SvJump>>>(
+        xOrganizer._util( ), "JumpVector", "" );
 
     exportModule<SvJumpsFromSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromSeeds", []( auto&& x ) {
         x.def( "execute_helper", &SvJumpsFromSeeds::execute_helper_py );
