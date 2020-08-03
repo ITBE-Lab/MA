@@ -6,8 +6,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "container/nucSeq.h"
-#include "util/pybind11.h"
+#include "ma/container/nucSeq.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 /* The translation table for columns.
@@ -27,13 +27,14 @@ const unsigned char NucSeq::xNucleotideTranslationTable[ 256 ] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}; // predefined array
 
 #ifdef WITH_PYTHON
-void exportNucSeq( py::module& rxPyModuleId )
+void exportNucSeq( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the nucleotidesequence class
-    py::class_<NucSeq, Container, std::shared_ptr<NucSeq>>( rxPyModuleId, "NucSeq" )
+    py::class_<NucSeq, libMS::Container, std::shared_ptr<NucSeq>>( xOrganizer.container( ), "NucSeq" )
         .def( py::init<>( ) ) // default constructor
         .def( py::init<const char*>( ) )
         .def( py::init<const std::string>( ) )
+        .def( py::init<std::shared_ptr<NucSeq>, nucSeqIndex, nucSeqIndex>( ) )
         .def( "at", &NucSeq::charAt )
         .def( "__getitem__", &NucSeq::charAt )
         .def( "append", &NucSeq::vAppend_boost )
@@ -50,11 +51,11 @@ void exportNucSeq( py::module& rxPyModuleId )
         .def_readwrite( "id", &NucSeq::iId );
 
     // register return values of vectors of nucseqs
-    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( rxPyModuleId, "VecRetNuc", "docstr" )
+    py::bind_vector<std::vector<std::shared_ptr<NucSeq>>>( xOrganizer.container( ), "VecRetNuc", "docstr" )
         .def( py::init<>( ) );
 
     // export the NucSeqSql class
-    py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( rxPyModuleId, "NucSeqSql" )
+    py::class_<NucSeqSql, std::shared_ptr<NucSeqSql>>( xOrganizer._container( ), "NucSeqSql" )
         .def( py::init<>( ) ) // default constructor
         .def( "fromBlob", &NucSeqSql::fromBlob )
         .def_readwrite( "seq", &NucSeqSql::pNucSeq );

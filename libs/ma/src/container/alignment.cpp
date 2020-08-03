@@ -2,13 +2,13 @@
  * @file alignment.cpp
  * @author Markus Schmidt
  */
-#include "container/alignment.h"
-#include "util/parameter.h"
-#include "util/pybind11.h"
+#include "ma/container/alignment.h"
+#include "ms/util/parameter.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 
-void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
+void DLL_PORT( MA ) Alignment::append( MatchType type, nucSeqIndex size )
 {
 #if DEBUG_LEVEL >= 2
     // get a copy of the alignment for later comparison in case something goes wrong
@@ -49,17 +49,18 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
             size += data.back( ).second;
             uiLength -= data.back( ).second;
             if( pGlobalParams->iExtend->get( ) * data.back( ).second + pGlobalParams->iGap->get( ) <
-                pGlobalParams->uiSVPenalty->get( ) )
+                (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
                 iScore += pGlobalParams->iExtend->get( ) * data.back( ).second + pGlobalParams->iGap->get( );
             else
-                iScore += pGlobalParams->uiSVPenalty->get( );
+                iScore += (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
             data.pop_back( );
         } // if
         // add the penalty for this indel (plus the possibly removed last one...)
-        if( pGlobalParams->iExtend->get( ) * size + pGlobalParams->iGap->get( ) < pGlobalParams->uiSVPenalty->get( ) )
+        if( pGlobalParams->iExtend->get( ) * size + pGlobalParams->iGap->get( ) <
+            (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
             iScore -= pGlobalParams->iExtend->get( ) * size + pGlobalParams->iGap->get( );
         else
-            iScore -= pGlobalParams->uiSVPenalty->get( );
+            iScore -= (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
     } // else if
 
     /*
@@ -96,7 +97,7 @@ void EXPORTED Alignment::append( MatchType type, nucSeqIndex size )
            ) // DEBUG
 } // function
 
-unsigned int EXPORTED Alignment::localscore( ) const
+unsigned int DLL_PORT( MA ) Alignment::localscore( ) const
 {
     unsigned int uiMaxScore = 0;
     int64_t iScoreCurr = 0;
@@ -107,10 +108,10 @@ unsigned int EXPORTED Alignment::localscore( ) const
             case MatchType::deletion:
             case MatchType::insertion:
                 if( pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( ) <
-                    pGlobalParams->uiSVPenalty->get( ) )
+                    (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
                     iScoreCurr -= pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( );
                 else
-                    iScoreCurr -= pGlobalParams->uiSVPenalty->get( );
+                    iScoreCurr -= (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
                 break;
             case MatchType::missmatch:
                 iScoreCurr -= pGlobalParams->iMissMatch->get( ) * data[ index ].second;
@@ -128,7 +129,7 @@ unsigned int EXPORTED Alignment::localscore( ) const
     return uiMaxScore;
 } // function
 
-void EXPORTED Alignment::makeLocal( )
+void DLL_PORT( MA ) Alignment::makeLocal( )
 {
     if( uiLength == 0 )
         return;
@@ -156,10 +157,10 @@ void EXPORTED Alignment::makeLocal( )
             case MatchType::deletion:
             case MatchType::insertion:
                 if( pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( ) <
-                    pGlobalParams->uiSVPenalty->get( ) )
+                    (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
                     iScoreCurr -= pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( );
                 else
-                    iScoreCurr -= pGlobalParams->uiSVPenalty->get( );
+                    iScoreCurr -= (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
                 break;
             case MatchType::missmatch:
                 iScoreCurr -= pGlobalParams->iMissMatch->get( ) * data[ index ].second;
@@ -236,7 +237,7 @@ void EXPORTED Alignment::makeLocal( )
                                                     << std::endl; )
 } // function
 
-void EXPORTED Alignment::removeDangeling( )
+void DLL_PORT( MA ) Alignment::removeDangeling( )
 {
 #if DEBUG_LEVEL >= 1
     // get a copy of the alignment for later comparison in case something goes wrong
@@ -252,10 +253,10 @@ void EXPORTED Alignment::removeDangeling( )
         else // insertion
             uiBeginOnQuery += data.front( ).second;
         if( pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.front( ).second <
-            pGlobalParams->uiSVPenalty->get( ) )
+            (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
             iScore += pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.front( ).second;
         else
-            iScore += pGlobalParams->uiSVPenalty->get( );
+            iScore += (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
         uiLength -= data.front( ).second;
         data.erase( data.begin( ), data.begin( ) + 1 );
     } // if
@@ -266,10 +267,10 @@ void EXPORTED Alignment::removeDangeling( )
         else // insertion
             uiEndOnQuery -= data.back( ).second;
         if( pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.back( ).second <
-            pGlobalParams->uiSVPenalty->get( ) )
+            (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
             iScore += pGlobalParams->iGap->get( ) + pGlobalParams->iExtend->get( ) * data.back( ).second;
         else
-            iScore += pGlobalParams->uiSVPenalty->get( );
+            iScore += (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
         uiLength -= data.back( ).second;
         data.pop_back( );
     } // if
@@ -302,10 +303,10 @@ int64_t Alignment::reCalcScore( ) const
             case MatchType::deletion:
             case MatchType::insertion:
                 if( pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( ) <
-                    pGlobalParams->uiSVPenalty->get( ) )
+                    (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) )
                     iScore -= pGlobalParams->iExtend->get( ) * data[ index ].second + pGlobalParams->iGap->get( );
                 else
-                    iScore -= pGlobalParams->uiSVPenalty->get( );
+                    iScore -= (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
                 break;
             case MatchType::missmatch:
                 iScore -= pGlobalParams->iMissMatch->get( ) * data[ index ].second;
@@ -321,9 +322,9 @@ int64_t Alignment::reCalcScore( ) const
 
 #ifdef WITH_PYTHON
 
-void exportAlignment( py::module& rxPyModuleId )
+void exportAlignment( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<Alignment, Container, std::shared_ptr<Alignment>>( rxPyModuleId, "Alignment" )
+    py::class_<Alignment, libMS::Container, std::shared_ptr<Alignment>>( xOrganizer.container(), "Alignment" )
         .def( "at", &Alignment::at )
         .def( py::init<nucSeqIndex>( ) )
         .def( py::init<nucSeqIndex, nucSeqIndex>( ) )
@@ -348,6 +349,8 @@ void exportAlignment( py::module& rxPyModuleId )
         .def( "getContig", &Alignment::getContig )
         .def( "getSamPosition", &Alignment::getSamPosition )
         .def( "getQuerySequence", &Alignment::getQuerySequence )
+        .def( "to_seeds", &Alignment::toSeeds )
+        .def( "set_other", &Alignment::setOther )
         .def_readonly( "stats", &Alignment::xStats )
         .def_readonly( "data", &Alignment::data )
         .def_readwrite( "begin_on_query", &Alignment::uiBeginOnQuery )
@@ -361,7 +364,7 @@ void exportAlignment( py::module& rxPyModuleId )
 
 
     // export the matchType enum
-    py::enum_<MatchType>( rxPyModuleId, "MatchType" )
+    py::enum_<MatchType>( xOrganizer.util(), "MatchType" )
         .value( "match", MatchType::match )
         .value( "seed", MatchType::seed )
         .value( "missmatch", MatchType::missmatch )
@@ -369,15 +372,15 @@ void exportAlignment( py::module& rxPyModuleId )
         .value( "deletion", MatchType::deletion )
         .export_values( );
 
-    py::bind_vector<std::vector<MatchType>>( rxPyModuleId, "MatchTypeVector", "docstr" );
+    py::bind_vector<std::vector<MatchType>>( xOrganizer._util(), "MatchTypeVector", "docstr" );
 
-    py::bind_vector_ext<ContainerVector<std::shared_ptr<Alignment>>,
-                        Container,
-                        std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>>(
-        rxPyModuleId, "AlignmentVector", "docstr" );
+    py::bind_vector_ext<libMS::ContainerVector<std::shared_ptr<Alignment>>,
+                        libMS::Container,
+                        std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>>(
+        xOrganizer.container(), "AlignmentVector", "docstr" );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<ContainerVector<std::shared_ptr<Alignment>>, Container>( );
+    py::implicitly_convertible<libMS::ContainerVector<std::shared_ptr<Alignment>>, libMS::Container>( );
 
 } // function
 #endif

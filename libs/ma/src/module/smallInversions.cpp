@@ -2,17 +2,18 @@
  * @file smallInversions.cpp
  * @author Markus Schmidt
  */
-#include "module/smallInversions.h"
+#include "ma/module/smallInversions.h"
 
 
 using namespace libMA;
+using namespace libMS;
 
 
 #ifdef WITH_PYTHON
 
-void exportSmallInversions( py::module& rxPyModuleId )
+void exportSmallInversions( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SmallInversions class
-    exportModule<SmallInversions>( rxPyModuleId, "SmallInversions" );
+    exportModule<SmallInversions>( xOrganizer, "SmallInversions" );
 } // function
 #endif

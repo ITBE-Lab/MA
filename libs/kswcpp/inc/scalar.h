@@ -225,23 +225,21 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
         while( uiItr + 4 * 8 <= BYTE_SIZE )
         {
             uint64_t uiPartial = 0; // packed_byte
-#define ITER                                                                                            \
-    {                                                                                                   \
-        const uint64_t t1 = *reinterpret_cast<const uint64_t*>( pData + uiItr );                        \
-        const uint64_t t2 = ( t1 & 0x5555555555555555llu ) + ( ( t1 >> 1 ) & 0x5555555555555555llu );   \
-        const uint64_t t3 = ( t2 & 0x3333333333333333llu ) + ( ( t2 >> 2 ) & 0x3333333333333333llu );   \
-        const uint64_t t4 = ( t3 & 0x0f0f0f0f0f0f0f0fllu ) + ( ( t3 >> 4 ) & 0x0f0f0f0f0f0f0f0fllu );   \
-        uiPartial += t4;                                                                                \
-        uiItr += 8;                                                                                     \
+#define ITER                                                                                                           \
+    {                                                                                                                  \
+        const uint64_t t1 = *reinterpret_cast<const uint64_t*>( pData + uiItr );                                       \
+        const uint64_t t2 = ( t1 & 0x5555555555555555llu ) + ( ( t1 >> 1 ) & 0x5555555555555555llu );                  \
+        const uint64_t t3 = ( t2 & 0x3333333333333333llu ) + ( ( t2 >> 2 ) & 0x3333333333333333llu );                  \
+        const uint64_t t4 = ( t3 & 0x0f0f0f0f0f0f0f0fllu ) + ( ( t3 >> 4 ) & 0x0f0f0f0f0f0f0f0fllu );                  \
+        uiPartial += t4;                                                                                               \
+        uiItr += 8;                                                                                                    \
     }
             ITER ITER ITER ITER
 #undef ITER
-                const uint64_t t5 = ( uiPartial & 0x00ff00ff00ff00ffllu ) +
-                                    ( ( uiPartial >> 8 ) & 0x00ff00ff00ff00ffllu );
-            const uint64_t t6 =
-                ( t5 & 0x0000ffff0000ffffllu ) + ( ( t5 >> 16 ) & 0x0000ffff0000ffffllu );
-            const uint64_t t7 =
-                ( t6 & 0x00000000ffffffffllu ) + ( ( t6 >> 32 ) & 0x00000000ffffffffllu );
+                const uint64_t t5 =
+                    ( uiPartial & 0x00ff00ff00ff00ffllu ) + ( ( uiPartial >> 8 ) & 0x00ff00ff00ff00ffllu );
+            const uint64_t t6 = ( t5 & 0x0000ffff0000ffffllu ) + ( ( t5 >> 16 ) & 0x0000ffff0000ffffllu );
+            const uint64_t t7 = ( t6 & 0x00000000ffffffffllu ) + ( ( t6 >> 32 ) & 0x00000000ffffffffllu );
             uiResult += t7;
         } // while
 
@@ -257,8 +255,7 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < BYTE_SIZE - SHIFT; uiItr++ )
-            reinterpret_cast<char*>( aTmp.val )[ uiItr ] =
-                reinterpret_cast<const char*>( this->val )[ uiItr + SHIFT ];
+            reinterpret_cast<char*>( aTmp.val )[ uiItr ] = reinterpret_cast<const char*>( this->val )[ uiItr + SHIFT ];
         for( size_t uiItr = BYTE_SIZE - SHIFT; uiItr < BYTE_SIZE; uiItr++ )
             reinterpret_cast<char*>( aTmp.val )[ uiItr ] = 0;
 
@@ -271,8 +268,7 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < BYTE_SIZE - SHIFT; uiItr++ )
-            reinterpret_cast<char*>( aTmp.val )[ uiItr + SHIFT ] =
-                reinterpret_cast<const char*>( this->val )[ uiItr ];
+            reinterpret_cast<char*>( aTmp.val )[ uiItr + SHIFT ] = reinterpret_cast<const char*>( this->val )[ uiItr ];
         for( size_t uiItr = 0; uiItr < SHIFT; uiItr++ )
             reinterpret_cast<char*>( aTmp.val )[ uiItr ] = 0;
 
@@ -286,10 +282,9 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < BYTE_SIZE; uiItr++ )
-            reinterpret_cast<char*>( aTmp.val )[ uiItr ] =
-                ( reinterpret_cast<const char*>( mask.val )[ uiItr ] & 0x80 )
-                    ? reinterpret_cast<const char*>( vec.val )[ uiItr ]
-                    : reinterpret_cast<const char*>( this->val )[ uiItr ];
+            reinterpret_cast<char*>( aTmp.val )[ uiItr ] = ( reinterpret_cast<const char*>( mask.val )[ uiItr ] & 0x80 )
+                                                               ? reinterpret_cast<const char*>( vec.val )[ uiItr ]
+                                                               : reinterpret_cast<const char*>( this->val )[ uiItr ];
 
         return aTmp;
     } // method
@@ -316,12 +311,12 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
         return aTmp;
     } // method
 
-	/* Bitwise AND over the complete 128 bit vector */
+    /* Bitwise AND over the complete 128 bit vector */
     template <typename TP_VEC> Vc_INTRINSIC TP_SELF andnot( const TP_VEC& operand ) const
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < SIZE; uiItr++ )
-            aTmp.val[ uiItr ] = !(this->val[ uiItr ] & operand.val[ uiItr ]);
+            aTmp.val[ uiItr ] = !( this->val[ uiItr ] & operand.val[ uiItr ] );
 
         return aTmp;
     } // method
@@ -341,8 +336,7 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < SIZE; uiItr++ )
-            aTmp.val[ uiItr ] =
-                this->val[ uiItr ] > vec.val[ uiItr ] ? this->val[ uiItr ] : vec.val[ uiItr ];
+            aTmp.val[ uiItr ] = this->val[ uiItr ] > vec.val[ uiItr ] ? this->val[ uiItr ] : vec.val[ uiItr ];
         return aTmp;
     }; // method
 
@@ -352,8 +346,7 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < SIZE; uiItr++ )
-            aTmp.val[ uiItr ] =
-                this->val[ uiItr ] < vec.val[ uiItr ] ? this->val[ uiItr ] : vec.val[ uiItr ];
+            aTmp.val[ uiItr ] = this->val[ uiItr ] < vec.val[ uiItr ] ? this->val[ uiItr ] : vec.val[ uiItr ];
         return aTmp;
     }; // method
 
@@ -383,8 +376,7 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < SIZE; uiItr++ )
-            aTmp.val[ uiItr ] =
-                this->val[ uiItr ] == operand.val[ uiItr ] ? static_cast<TP_VEC_ELE>( -1 ) : 0;
+            aTmp.val[ uiItr ] = this->val[ uiItr ] == operand.val[ uiItr ] ? static_cast<TP_VEC_ELE>( -1 ) : 0;
         return aTmp;
     } // method
 
@@ -396,8 +388,7 @@ template <size_t VEC_SIZE, typename TP_VEC_ELE> struct alignas( 16 ) Vec_scalar
     {
         TP_SELF aTmp;
         for( size_t uiItr = 0; uiItr < SIZE; uiItr++ )
-            aTmp.val[ uiItr ] =
-                this->val[ uiItr ] > operand.val[ uiItr ] ? static_cast<TP_VEC_ELE>( -1 ) : 0;
+            aTmp.val[ uiItr ] = this->val[ uiItr ] > operand.val[ uiItr ] ? static_cast<TP_VEC_ELE>( -1 ) : 0;
         return aTmp;
     } // method
 

@@ -7,10 +7,10 @@ import random
 reference = ""
 for _ in range(1000):
     reference += choice(['C', 'T', 'G', 'A'])
+
 # create pack and fmd index from that string
 reference_pack = Pack()
-reference_pack.append(
-    "random pack", "sequence description", NucSeq(reference))
+reference_pack.append("random pack", "sequence description", NucSeq(reference))
 
 
 for _ in range(100):
@@ -44,13 +44,16 @@ for _ in range(100):
         out_file.write(qual2)
         out_file.write("\n")
 
-    file_reader = PairedFileReader(ParameterSetManager(),
-                                   libMA.filePathVector([libMA.path(fasta_1_file_name)]),
-                                   libMA.filePathVector([libMA.path(fasta_2_file_name)]))
-    query_vec = file_reader.execute()
-    alignment_vec = libMA.AlignmentVector()
+    file_reader = PairedFileReader(ParameterSetManager())
+    get_first = GetFirstQuery(ParameterSetManager())
+    get_second = GetSecondQuery(ParameterSetManager())
+    stream1 = FileStreamFromPath(fasta_1_file_name)
+    stream2 = FileStreamFromPath(fasta_2_file_name)
+    paired_stream = PairedFileStream(stream1, stream2)
+    query_vec = file_reader.execute(paired_stream)
+    alignment_vec = AlignmentVector()
     file_writer = PairedFileWriter(ParameterSetManager(), sam_file_name, reference_pack)
-    file_writer.execute(query_vec[0], query_vec[1], alignment_vec, reference_pack)
+    file_writer.execute(get_first.execute(query_vec), get_second.execute(query_vec), alignment_vec, reference_pack)
     del file_writer
 
     fst = True
@@ -87,13 +90,13 @@ for _ in range(100):
         out_file.write(query2)
         out_file.write("\n")
 
-    file_reader = PairedFileReader(ParameterSetManager(),
-                                   libMA.filePathVector([libMA.path(fasta_1_file_name)]),
-                                   libMA.filePathVector([libMA.path(fasta_2_file_name)]))
-    query_vec = file_reader.execute()
-    alignment_vec = libMA.AlignmentVector()
+    stream1 = FileStreamFromPath(fasta_1_file_name)
+    stream2 = FileStreamFromPath(fasta_2_file_name)
+    paired_stream = PairedFileStream(stream1, stream2)
+    query_vec = file_reader.execute(paired_stream)
+    alignment_vec = AlignmentVector()
     file_writer = PairedFileWriter(ParameterSetManager(), sam_file_name, reference_pack)
-    file_writer.execute(query_vec[0], query_vec[1], alignment_vec, reference_pack)
+    file_writer.execute(get_first.execute(query_vec), get_second.execute(query_vec), alignment_vec, reference_pack)
     del file_writer
 
     fst = True

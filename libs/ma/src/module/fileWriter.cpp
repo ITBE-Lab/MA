@@ -3,15 +3,16 @@
  * @author Markus Schmidt
  * @todo this file contains duplicate code...
  */
-#include "module/fileWriter.h"
+#include "ma/module/fileWriter.h"
 
 using namespace libMA;
+using namespace libMS;
 
-std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
-                                                std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-                                                    pAlignments,
-                                                std::shared_ptr<Pack>
-                                                    pPack )
+std::shared_ptr<libMS::Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
+                                                       std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+                                                           pAlignments,
+                                                       std::shared_ptr<Pack>
+                                                           pPack )
 {
     std::string sCombined = "";
     for( std::shared_ptr<Alignment> pAlignment : *pAlignments )
@@ -33,15 +34,23 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
         else
-            sCigar = bOutputMInsteadOfXAndEqual ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
-                                                : pAlignment->cigarString( *pPack );
+            sCigar = bOutputMInsteadOfXAndEqual
+                         ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery->length( ), bSoftClip )
+                         : pAlignment->cigarString( *pPack, pQuery->length( ), bSoftClip );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 
         std::string sContigOther = "*";
         std::string sPosOther = "0";
         std::string sName = pQuery->sName;
-        std::string sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
+        std::string sSegment;
+        if( bSoftClip )
+            if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+                sSegment = pQuery->toStringComplement( );
+            else
+                sSegment = pQuery->toString( );
+        else
+            sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
         std::string sQual = pAlignment->getQueryQuality( *pQuery );
 
         std::string sRefName = pAlignment->getContig( *pPack );
@@ -86,7 +95,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         else
             sMapQual = std::to_string( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ) );
 
-        assert(sTag.empty() || sTag[0] == '\t');
+        assert( sTag.empty( ) || sTag[ 0 ] == '\t' );
         sCombined +=
             // query name
             sName + "\t" +
@@ -122,7 +131,7 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // alignment flag
             std::to_string( SEGMENT_UNMAPPED ) + "\t*\t0\t255\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery->toString( ) + "\t" + pQuery->toQualString() + "\n";
+            pQuery->toString( ) + "\t" + pQuery->toQualString( ) + "\n";
     } // if
     if( sCombined.size( ) == 0 )
     {
@@ -130,10 +139,9 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
             // query name
             pQuery->sName + "\t" +
             // alignment flag
-            std::to_string( SEGMENT_UNMAPPED ) +
-            "\t*\t0\t0\t*\t*\t0\t0\t" +
+            std::to_string( SEGMENT_UNMAPPED ) + "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery->toString( ) + "\t" + pQuery->toQualString() + "\n";
+            pQuery->toString( ) + "\t" + pQuery->toQualString( ) + "\n";
     } // if
 
     { // scope xGuard
@@ -144,16 +152,17 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         // flushing will be done in the outstream class
         *pOut << sCombined;
     } // scope xGuard
-    return std::shared_ptr<Container>( new Container( ) );
+    return std::shared_ptr<libMS::Container>( new libMS::Container( ) );
 } // function
 
-std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
-                                                      std::shared_ptr<NucSeq>
-                                                          pQuery2,
-                                                      std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
-                                                          pAlignments,
-                                                      std::shared_ptr<Pack>
-                                                          pPack )
+std::shared_ptr<libMS::Container>
+PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
+                           std::shared_ptr<NucSeq>
+                               pQuery2,
+                           std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
+                               pAlignments,
+                           std::shared_ptr<Pack>
+                               pPack )
 {
     std::string sCombined = "";
     bool bFirstQueryHasAlignment = false;
@@ -182,8 +191,9 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
         else
-            sCigar = bOutputMInsteadOfXAndEqual ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
-                                                : pAlignment->cigarString( *pPack );
+            sCigar = bOutputMInsteadOfXAndEqual
+                         ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery1->length( ), bSoftClip )
+                         : pAlignment->cigarString( *pPack, pQuery1->length( ), bSoftClip );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 
@@ -191,7 +201,16 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         std::string sPosOther = "0";
         std::string sName = pAlignment->xStats.bFirst ? pQuery1->sName : pQuery2->sName;
         // DEBUG( std::cout << "Aligned: " << sName << std::endl; )
-        std::string sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
+
+        std::string sSegment;
+        if( bSoftClip )
+            if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+                sSegment = ( pAlignment->xStats.bFirst ? pQuery1 : pQuery2 )->toStringComplement( );
+            else
+                sSegment = ( pAlignment->xStats.bFirst ? pQuery1 : pQuery2 )->toString( );
+        else
+            sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
+
         std::string sQual = pAlignment->getQueryQuality( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2 );
         // paired
         flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
@@ -229,8 +248,8 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
 #endif
         } // if
 #if DEBUG_LEVEL > 0
-        else if( !pAlignment->bSecondary && !pAlignment->bSupplementary )
-            std::cerr << "[Info] read " << pQuery1->sName << " is unpaired." << std::endl;
+        //else if( !pAlignment->bSecondary && !pAlignment->bSupplementary )
+        //    std::cerr << "[Info] read " << pQuery1->sName << " is unpaired." << std::endl;
 #endif
 
         // sam file format has 1-based indices bam 0-based...
@@ -278,7 +297,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                 std::to_string( std::min( static_cast<int>( std::ceil( pAlignment->fMappingQuality * 254 ) ), 255 ) );
         }
 
-        assert(sTag.empty() || sTag[0] == '\t');
+        assert( sTag.empty( ) || sTag[ 0 ] == '\t' );
         sCombined +=
             // query name
             sName + "\t" +
@@ -316,7 +335,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                             NEXT_SEGMENT_UNMAPPED ) +
             "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery1->toString( ) + "\t" + pQuery1->toQualString() + "\n";
+            pQuery1->toString( ) + "\t" + pQuery1->toQualString( ) + "\n";
         sCombined +=
             // query name
             pQuery2->sName + "\t" +
@@ -325,7 +344,7 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
                             NEXT_SEGMENT_UNMAPPED ) +
             "\t*\t0\t0\t*\t*\t0\t0\t" +
             // segment sequence
-            pQuery2->toString( ) + "\t" + pQuery2->toQualString() + "\n";
+            pQuery2->toString( ) + "\t" + pQuery2->toQualString( ) + "\n";
     } // if
     // if we have not computed an alignment for only one of the queries output the other one:
     else if( !bFirstQueryHasAlignment || !bSecondQueryHasAlignment )
@@ -359,21 +378,23 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         // flushing will be done in the the outstream class
         *pOut << sCombined;
     } // if & scope xGuard
-    return std::shared_ptr<Container>( new Container( ) );
+    return std::shared_ptr<libMS::Container>( new libMS::Container( ) );
 } // function
 
 #ifdef WITH_PYTHON
-void exportFileWriter( py::module& rxPyModuleId )
+void exportFileWriter( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the FileWriter class
-    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "FileWriter" );
-    exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( rxPyModuleId, "SyncFileWriter" );
+    exportModule<FileWriter, std::string, std::shared_ptr<Pack>>(
+        xOrganizer, "FileWriter", []( auto&& x ) { x.def( "close", &FileWriter::close ); } );
+    exportModuleAlternateConstructor<FileWriter, std::shared_ptr<FileWriter>>( xOrganizer, "SyncFileWriter" );
 
     // export the PairedFileWriter class
-    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>( rxPyModuleId, "PairedFileWriter" );
-    exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<FileWriter>>( rxPyModuleId,
+    exportModule<PairedFileWriter, std::string, std::shared_ptr<Pack>>(
+        xOrganizer, "PairedFileWriter", []( auto&& x ) { x.def( "close", &PairedFileWriter::close ); } );
+    exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<FileWriter>>( xOrganizer,
                                                                                      "SyncPairedFileWriter" );
     exportModuleAlternateConstructor<PairedFileWriter, std::shared_ptr<PairedFileWriter>>(
-        rxPyModuleId, "PairedSyncPairedFileWriter" );
+        xOrganizer, "PairedSyncPairedFileWriter" );
 } // function
 #endif

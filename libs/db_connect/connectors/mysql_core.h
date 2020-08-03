@@ -124,7 +124,7 @@ typedef bool my_bool;
 template <class F, class... Ts, std::size_t... Is>
 void for_each_in_tuple( std::tuple<Ts...>& tuple, F func, std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ) ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ) ), 0 )...};
 } // meta
 
 template <class F, class... Ts> void for_each_in_tuple( std::tuple<Ts...>& tuple, F&& func )
@@ -139,7 +139,7 @@ template <class F, class... Ts, std::size_t... Is, class... Tss>
 void for_each_in_tuple_pairwise( std::tuple<Ts...>& tuple, F func, std::tuple<Tss...>& tuple1,
                                  std::index_sequence<Is...> )
 {
-    auto __attribute__( ( unused ) ) unused = { ( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )... };
+    auto __attribute__( ( unused ) ) unused = {( func( std::get<Is>( tuple ), std::get<Is>( tuple1 ), Is ), 0 )...};
 } // meta
 
 template <class F, class... Ts, class... Tss>
@@ -250,6 +250,11 @@ class ByteBuffer
         return pBuffer;
     } // method
 
+    inline size_t size( ) const
+    {
+        return uiBufSize;
+    }
+
     /** @brief Returns the size of the actually allocated buffer */
     template <typename Type> inline Type resize( Type uiReq )
     {
@@ -274,7 +279,6 @@ class ByteBuffer
             free( pBuffer );
     } // destructor
 }; // class
-
 
 /* Basic class for a single cell in row for a query outcome.
  * Full support of C++17 would allow moving all these specializations inside MySQLConDB.
@@ -505,7 +509,7 @@ template <typename DBConPtrType> class ImmediateQueryTmpl
         while( ( ppRow = mysql_fetch_row( this->pQueryRes ) ) )
         {
             std::vector<std::string> vRow;
-            for( auto uiItr = 0; uiItr < num_fields; uiItr++ )
+            for( size_t uiItr = 0; uiItr < (size_t)num_fields; uiItr++ )
                 vRow.emplace_back( ppRow[ uiItr ] ? std::string( ppRow[ uiItr ] ) : "NULL" );
             xretTbl.addRow( vRow );
         } // while
@@ -938,7 +942,7 @@ class MySQLConDB
         /** @brief Constructs a predefined query using the passed SQL statement.
          *  The behavior of the query can be additionally controlled by an optionally passed JSON object.
          */
-        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{ } )
+        PreparedQueryTmpl( DBPtrType pMySQLDB, const std::string& rsStmtText, const json& rjConfig = json{} )
             : PreparedStmtTmpl<DBPtrType>( pMySQLDB,
                                            rsStmtText ), // class superclass constructor
               tCellWrappers( ), // initialized via default constructors (couldn't find better way :-( )
@@ -949,23 +953,31 @@ class MySQLConDB
             // Get query related info
             this->pPrepareMetaResult = mysql_stmt_result_metadata( this->pStmt );
             if( !pPrepareMetaResult )
+            {
+#if 0 // not having metadata does not actually cause trouble...
                 throw std::runtime_error( "mysql_stmt_result_metadata(), returned no meta information\n" +
                                           this->stmtErrMsg( ) );
-
-            // Get number of columns of query outcome and check correctness
-            // IMPROVEMT: Additionally check the individual columns with respect to data-type.
-            auto uiColumnCount = mysql_num_fields( this->pPrepareMetaResult );
-            if( NUM_COLS != uiColumnCount )
-                throw std::runtime_error( "MySQL - The number of columns reported by MySQL does not match the number "
-                                          "of template parameters.\nNumber of template para: " +
-                                          std::to_string( NUM_COLS ) +
-                                          " MySQL column count: " + std::to_string( uiColumnCount ) );
+#else
+                // std::cerr << "mysql_stmt_result_metadata(), returned no meta information" << std::endl;
+#endif
+            } // if
+            else
+            {
+                // Get number of columns of query outcome and check correctness
+                // IMPROVEMT: Additionally check the individual columns with respect to data-type.
+                auto uiColumnCount = mysql_num_fields( this->pPrepareMetaResult );
+                if( NUM_COLS != uiColumnCount )
+                    throw std::runtime_error(
+                        "MySQL - The number of columns reported by MySQL does not match the number "
+                        "of template parameters.\nNumber of template para: " +
+                        std::to_string( NUM_COLS ) + " MySQL column count: " + std::to_string( uiColumnCount ) );
+            } // else
 
             // Connect the internal MySQL bind-structure with the tuple of row cell wrappers as well as the
             // tuple keeping the cell values itself.
             for_each_in_tuple_pairwise(
                 tCellWrappers,
-                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
                     // std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
                     rFstCell.init( &vMySQLCellBind[ uiCol ], &rSecCell, uiCol );
                 },
@@ -1015,7 +1027,7 @@ class MySQLConDB
 #ifdef REPORT_ROWS_WITH_NULL_VALUES
             // Check for possible NULL values
             // Currently, there is no solution for these cases.
-            for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+            for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                 if( rCell.is_null )
                     throw std::runtime_error( "fetchNextRow reports a cell with NULL value." );
             } ); // for each tuple
@@ -1024,7 +1036,7 @@ class MySQLConDB
             if( this->iStatus == MYSQL_DATA_TRUNCATED )
             {
                 // Find the column(s) responsible and resize the buffer appropriately.
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.error ) // error identifies the cell(s), where we have truncation
                     {
                         // Truncation can occur for variable size data only.
@@ -1053,7 +1065,7 @@ class MySQLConDB
             // Pick variable size data (Text or Blob) from cell buffers.
             if( this->iStatus == 0 )
             {
-                for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                     if( rCell.bIsVarSizeCell )
                         rCell.storeVarSizeCell( );
                 } ); // for each tuple
@@ -1161,9 +1173,16 @@ class MySQLConDB
         auto pShowVariablesStmt =
             std::make_unique<PreparedQueryTmpl<MySQLConDB*, std::string, std::string>>( this, "SHOW VARIABLES" );
         pShowVariablesStmt->execBind( );
+        mMySQLVars.clear( );
         while( pShowVariablesStmt->fetchNextRow( ) )
             mMySQLVars.emplace( std::get<0>( pShowVariablesStmt->getCellValues( ) ),
                                 std::get<1>( pShowVariablesStmt->getCellValues( ) ) );
+    } // method
+
+    void setMySQLTimeoutVars( )
+    {
+        this->execSQL( "SET wait_timeout=10368000" );
+        this->execSQL( "SET interactive_timeout=10368000" );
     } // method
 
     /** @brief Casts a MySQL (in rsMySQLVal) string to a C++ string (in rCPPVal) */
@@ -1221,14 +1240,14 @@ class MySQLConDB
     MySQLConDB& operator=( const MySQLConDB& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    MySQLConDB( const json& jDBConfig = { } ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
+    MySQLConDB( const json& jDBConfig = {} ) : pMySQLHandler( NULL ), pServerDataUploadDir( nullptr )
     {
         // Initialize the connector
         if( !( pMySQLHandler = mysql_init( NULL ) ) )
             throw MySQLConException( "Initialization of MySQL connection failed" );
 
         // Establish connection to database
-        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
+        this->open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
 
         // Compile the statement that checks for the existence of an index.
         // See: https://dba.stackexchange.com/questions/24531/mysql-create-index-if-not-exists
@@ -1241,6 +1260,28 @@ class MySQLConDB
         // Mirror all client side MySQL variables locally.
         this->mirrorMySQLVars( );
 
+        // std::string sTimeout;
+        // getMySQLVar( "wait_timeout", sTimeout );
+        // std::cout << "wait_timeout1 : " << sTimeout << std::endl;
+        // std::string sTimeout2;
+        // getMySQLVar( "interactive_timeout", sTimeout2 );
+        // std::cout << "interactive_timeout1 : " << sTimeout2 << std::endl;
+
+        // Set selcted global variables (e.g connetion timeout)
+        this->setMySQLTimeoutVars( );
+
+        // std::string sReadIoThreads;
+        // getMySQLVar( "innodb_read_io_threads", sReadIoThreads );
+        // std::cout << "innodb_read_io_threads : " << sReadIoThreads << std::endl;
+
+        // this->mirrorMySQLVars( );
+        // std::string sTimeout1;
+        // getMySQLVar( "wait_timeout", sTimeout1 );
+        // std::cout << "wait_timeout2 : " << sTimeout1 << std::endl;
+        // std::string sTimeout3;
+        // getMySQLVar( "interactive_timeout", sTimeout3 );
+        // std::cout << "interactive_timeout2 : " << sTimeout3 << std::endl;
+
         // Collect client info in numeric form.
         this->uiCLientVersion = mysql_get_client_version( );
         // std::cout << "MySQL client version: " << uiCLientVersion << std::endl;
@@ -1252,7 +1293,7 @@ class MySQLConDB
     /* Destructor */
     virtual ~MySQLConDB( )
     {
-        do_exception_safe( [ & ]( ) { this->close( ); } );
+        do_exception_safe( [&]( ) { this->close( ); } );
     } // destructor
 
     /** @brief: Immediately execute the SQL statement giver as argument.

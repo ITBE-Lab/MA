@@ -163,5 +163,5 @@ void apply_impl( F f, const std::array<T, N>& a, std::index_sequence<Idx...> )
 
 template <typename F, typename T, std::size_t N> void apply_( F f, const std::array<T, N>& a )
 {
-    apply_impl( f, a, std::make_index_sequence<N>{ } );
+    apply_impl( f, a, std::make_index_sequence<N>{} );
 } // meta

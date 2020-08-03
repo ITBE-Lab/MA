@@ -2,18 +2,18 @@
  * @file segment.cpp
  * @author Markus Schmidt
  */
-#include "container/soc.h"
-#include "util/pybind11.h"
+#include "ma/container/soc.h"
+#include "ms/util/pybind11.h"
 using namespace libMA;
 
 #ifdef WITH_PYTHON
 
-void exportSoC( py::module& rxPyModuleId )
+void exportSoC( libMS::SubmoduleOrganizer& xOrganizer )
 {
 #if DEBUG_LEVEL >= 1
-    py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( rxPyModuleId, "nucSeqPairVector", "docstr" );
+    py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( xOrganizer._util(), "nucSeqPairVector", "docstr" );
 
-    py::class_<SoCPriorityQueue::blub>( rxPyModuleId, "nucSeqNucSeqInterval" )
+    py::class_<SoCPriorityQueue::blub>( xOrganizer._util(), "nucSeqNucSeqInterval" )
         .def_readwrite( "first", &SoCPriorityQueue::blub::first )
         .def_readwrite( "second", &SoCPriorityQueue::blub::second )
         .def_readwrite( "qCoverage", &SoCPriorityQueue::blub::qCoverage )
@@ -21,11 +21,12 @@ void exportSoC( py::module& rxPyModuleId )
         .def_readwrite( "rEnd", &SoCPriorityQueue::blub::rEnd )
         .def_readwrite( "rStartSoC", &SoCPriorityQueue::blub::rStartSoC )
         .def_readwrite( "rEndSoC", &SoCPriorityQueue::blub::rEndSoC );
-    py::bind_vector<std::vector<SoCPriorityQueue::blub>>( rxPyModuleId, "nucSeqNucSeqIntervalVector", "docstr" );
+    py::bind_vector<std::vector<SoCPriorityQueue::blub>>( xOrganizer._util(), "nucSeqNucSeqIntervalVector", "docstr" );
 #endif
-    py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( rxPyModuleId, "seedVector", "docstr" );
+    py::bind_vector<std::vector<std::shared_ptr<Seeds>>>( xOrganizer.util(), "seedVector", "docstr" );
     // export the SoCPriorityQueue class
-    py::class_<SoCPriorityQueue, Container, std::shared_ptr<SoCPriorityQueue>>( rxPyModuleId, "SoCPriorityQueue" )
+    py::class_<SoCPriorityQueue, libMS::Container, std::shared_ptr<SoCPriorityQueue>>( xOrganizer.container(),
+                                                                                       "SoCPriorityQueue" )
         .def( py::init<>( ) )
         .def( "empty", &SoCPriorityQueue::empty )
         .def( "pop", &SoCPriorityQueue::pop )
@@ -40,6 +41,6 @@ void exportSoC( py::module& rxPyModuleId )
                       .def_readwrite( "vIngroup", &SoCPriorityQueue::vIngroup ) ) // DEBUG
         ;
     // tell python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<SoCPriorityQueue, Container>( );
+    py::implicitly_convertible<SoCPriorityQueue, libMS::Container>( );
 } // function
 #endif

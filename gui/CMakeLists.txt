@@ -31,7 +31,8 @@ if(wxWidgets_FOUND)
 	# Build the MA executable itself
 	add_executable ( maGUI WIN32 MACOSX_BUNDLE ${SRC_FILES} )
 
-	target_link_libraries( maGUI MA ${wxWidgets_LIBRARIES} )
+	target_link_libraries( maGUI libMA ${wxWidgets_LIBRARIES} )
+    target_compile_definitions( maGUI PUBLIC DLL_PORT_MA=dllimport )
 
 	# Local includes 
 	target_include_directories( maGUI PUBLIC inc )

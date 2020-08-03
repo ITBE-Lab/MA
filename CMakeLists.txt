@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 3.8)
 project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 
 # optional features
-option(WITH_PYTHON "Build python integration of libMA." ON)
+option(WITH_PYTHON "Build python integration of libMS." ON)
 option(WITH_ZLIB "Build gz file readers using zlib." ON)
 option(WITH_DOCS "Build doxygen documentation." ON)
 option(WITH_GUI "Build maGUI" ON)
@@ -38,9 +38,9 @@ endforeach()
 # message("// CMAKE_ARGS: ${CMAKE_ARGS}")
 message("// CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")
 # message("// CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
-# message("// CMAKE_CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
-# message("// CMAKE_CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
-# message("// CMAKE_CXX_FLAGS_RELWITHDEBINFO = ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+message("// CMAKE_CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
+message("// CMAKE_CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
+message("// CMAKE_CXX_FLAGS_RELWITHDEBINFO = ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 # message("// CMAKE_CXX_FLAGS_MINSIZEREL = ${CMAKE_CXX_FLAGS_MINSIZEREL}")
 
 if( CMAKE_BUILD_TYPE STREQUAL "" )
@@ -59,6 +59,16 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 		# Corresponding warning will be switched off.
 		message( "Add -Wno-unused-variable for gcc")
 		add_compile_options( "-Wno-unused-variable" )
+	elseif( MSVC )
+		# FOr MSVC with have to adapt the RelWithDebInfo setting in order to avoid linking problems
+		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MDd /Zi /O2 /Ob2")
+		message("CMAKE_CXX_FLAGS_RELWITHDEBINFO changed to ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+	endif()
+endif()
+
+if( CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO" )
+	if( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
+		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O0 -g -DNDEBUG")
 	elseif( MSVC )
 		# FOr MSVC with have to adapt the RelWithDebInfo setting in order to avoid linking problems
 		set( CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MDd /Zi /O2 /Ob2")
@@ -154,7 +164,7 @@ if(WITH_DOCS)
     # if so create the docs-py target
     if (${PDOC_FOUND} EQUAL 0)
         add_custom_target( docs-py
-            COMMAND pdoc --html --force -o build/docs/py libMA
+            COMMAND pdoc --html --force -o build/docs/py libMS libMA libMSV
             DEPENDS MA
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             COMMENT "Generating API documentation with pdoc"
@@ -167,4 +177,5 @@ endif()
 # Build the MA executable itself
 add_executable ( maCMD cmdMa.cpp )
 # Link cmdMA
-target_link_libraries ( maCMD PUBLIC MA Threads::Threads )
+target_link_libraries ( maCMD PUBLIC libMA Threads::Threads )
+target_compile_definitions( maCMD PUBLIC DLL_PORT_MA=dllimport )

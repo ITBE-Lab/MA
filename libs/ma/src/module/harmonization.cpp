@@ -2,16 +2,16 @@
  * @file harmonization.cpp
  * @author Markus Schmidt
  */
-#include "module/harmonization.h"
-#include "module/stripOfConsideration.h"
-#include "util/pybind11.h"
+#include "ma/module/harmonization.h"
+#include "ma/module/stripOfConsideration.h"
+#include "ms/util/pybind11.h"
 #if USE_RANSAC == 1
-#include "sample_consensus/test_ransac.h"
+#include "ma/sample_consensus/test_ransac.h"
 #endif
 using namespace libMA;
-#include "util/pybind11.h"
+using namespace libMS;
 
-std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>& pIn ) const
+std::shared_ptr<Seeds> Harmonization::applyFilters( std::shared_ptr<Seeds>& pIn ) const
 {
     auto pRet = std::make_shared<Seeds>( );
     /*
@@ -75,8 +75,8 @@ std::shared_ptr<Seeds> HarmonizationSingle::applyFilters( std::shared_ptr<Seeds>
             uiGap *= pGlobalParams->iExtend->get( );
             if( uiGap > 0 )
                 uiGap += pGlobalParams->iGap->get( );
-            if( uiGap > uiSVPenalty && uiSVPenalty != 0 )
-                uiGap = uiSVPenalty;
+            if( uiGap > (nucSeqIndex)pGlobalParams->uiSVPenalty->get( ) && pGlobalParams->uiSVPenalty->get( ) != 0 )
+                uiGap = (nucSeqIndex)pGlobalParams->uiSVPenalty->get( );
             if( // check for the maximal allowed gap area
                 // check for negative score
                 iScore < (int64_t)uiGap )
@@ -179,9 +179,9 @@ inline nucSeqIndex difference( nucSeqIndex a, nucSeqIndex b )
     return b - a;
 } // function
 
-std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> HarmonizationSingle::linesweep(
-    std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
-    const int64_t uiRStart, const double fAngle )
+std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>
+Harmonization::linesweep( std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>> pShadows,
+                          const int64_t uiRStart, const double fAngle )
 {
     // sort shadows (increasingly) by start coordinate of the match
     std::sort( pShadows->begin( ), pShadows->end( ),
@@ -248,10 +248,132 @@ std::shared_ptr<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex
     return pItervalEnds;
 } // function
 
-#if 0 // Harmonization with heuristics
+std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSeedsIn, std::shared_ptr<NucSeq> pQuery,
+                                                    std::shared_ptr<SoCPriorityQueue> pSoCIn )
+{
+    auto pSeeds = std::make_shared<Seeds>( );
+    pSeeds->xStats = pSeedsIn->xStats;
+    if( pSeedsIn->size( ) > 1 )
+    {
+#if USE_RANSAC == 1 // switch between ransac line angle + intercept estimation & 45deg median line
+        std::vector<double> vX, vY;
+        vX.reserve( pSeedsIn->size( ) );
+        vY.reserve( pSeedsIn->size( ) );
+        for( const auto& rSeed : *pSeedsIn )
+        {
+            // middlepoint of seed in plane
+            vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) / 2.0 );
+            vY.push_back( (double)rSeed.start( ) + rSeed.size( ) / 2.0 );
+            // start point of seed in plane
+            vX.push_back( (double)rSeed.start_ref( ) );
+            vY.push_back( (double)rSeed.start( ) );
+            // end point of seed in plane
+            vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) );
+            vY.push_back( (double)rSeed.start( ) + rSeed.size( ) );
+        } // for
+        /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
+        double fMAD = medianAbsoluteDeviation<double>( vY );
+        auto xSlopeIntercept = run_ransac( vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD );
 
+        /*
+         * remove outliers
+         */
+        pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ),
+                                         [&]( const Seed& rS ) {
+                                             return deltaDistance( rS, xSlopeIntercept.first,
+                                                                   (int64_t)xSlopeIntercept.second ) > fMAD;
+                                         } ),
+                         pSeedsIn->end( ) );
+
+#else
+        auto rMedianSeed = ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ];
+        auto xSlopeIntercept = std::make_pair( 0.785398, // forty five degrees
+                                               (double)rMedianSeed.start_ref( ) - (double)rMedianSeed.start( ) );
+#endif
+
+        DEBUG( pSoCIn->vSlopes.push_back( std::tan( xSlopeIntercept.first ) );
+               pSoCIn->vIntercepts.push_back( xSlopeIntercept.second ); ) // DEBUG
+
+        auto pShadows = std::make_shared<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>( );
+        pShadows->reserve( pSeedsIn->size( ) );
+
+        // get the left shadows
+        for( Seeds::iterator pSeed = pSeedsIn->begin( ); pSeed != pSeedsIn->end( ); pSeed++ )
+        {
+            pShadows->push_back( std::make_tuple( pSeed, pSeed->start( ), pSeed->end_ref( ) ) );
+            // std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," <<
+            // pSeed->size() << ")," << std::endl;
+        } // for
+
+        // perform the line sweep algorithm on the left shadows
+        auto pShadows2 = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
+        pShadows->clear( );
+        pShadows->reserve( pShadows2->size( ) );
+
+        // get the right shadows
+        for( auto& xT : *pShadows2 )
+            pShadows->push_back(
+                std::make_tuple( std::get<0>( xT ), std::get<0>( xT )->start_ref( ), std::get<0>( xT )->end( ) ) );
+
+        // perform the line sweep algorithm on the right shadows
+        pShadows = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
+
+        pSeeds->reserve( pShadows->size( ) );
+
+        for( auto& xT : *pShadows )
+            pSeeds->push_back( *std::get<0>( xT ) );
+
+        pSeeds->bConsistent = true;
+
+        DEBUG( pSoCIn->vHarmSoCs.push_back( pSeeds ); ) // DEBUG
+
+        // seeds need to be sorted for the following steps
+        std::sort( pSeeds->begin( ), pSeeds->end( ),
+                   []( const Seed& xA, const Seed& xB ) {
+                       if( xA.start_ref( ) == xB.start_ref( ) )
+                           return xA.start( ) < xB.start( );
+                       return xA.start_ref( ) < xB.start_ref( );
+                   } // lambda
+        ); // sort function call
+
+        DEBUG( if( !pSeeds->empty( ) ) pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
+               if( !pSeeds->empty( ) ) pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
+
+        /*
+         * sometimes we have one or less seeds remaining after the cupling:
+         * in these cases we simply return the center seed (judging by the delta from SoCs)
+         * This increases accuracy since the aligner is guided towards the correct
+         * position rather than a random seed or no seed...
+         *
+         * Note: returning the longest or least ambiguous seed does not make sense here;
+         * In most cases where this condition triggeres we have seeds that are roughly the
+         * same length and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
+         */
+        if( pSeeds->size( ) <= 1 )
+        {
+            pSeeds->clear( );
+            pSeeds->push_back( ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ] );
+        } // if
+        assert( !pSeeds->empty( ) );
+
+    } // if
+    else if( !pSeedsIn->empty( ) ) // pSeedsIn contains merely one seed
+    {
+        pSeeds->push_back( pSeedsIn->front( ) );
+        DEBUG( pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
+               pSoCIn->vExtractOrder.back( ).first = pSeedsIn->front( ).size( );
+               pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
+               pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( );
+               pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
+               pSoCIn->vSlopes.push_back( 0 );
+               pSoCIn->vIntercepts.push_back( 0 );
+               pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) ); ) // DEBUG
+    } // else
+    return pSeeds;
+}
 std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>
-Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery )
+Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_ptr<NucSeq> pQuery,
+                        std::shared_ptr<FMIndex> pFM_index )
 {
 #define FILTER_1 ( 0 )
 #if FILTER_1
@@ -274,172 +396,63 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
         }
         auto pSeedsIn = pSoCIn->pop( );
 
-        PRINT_BREAK_CRITERIA( if( pSoCIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl; )
+        DEBUG( pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
+               pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
+               pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( ); ) // DEBUG
 
-        auto pSeeds = std::make_shared<Seeds>( );
-        pSeeds->xStats = pSeedsIn->xStats;
-        if( pSeedsIn->size( ) > 1 )
+        assert( !pSeedsIn->empty( ) );
+        nucSeqIndex uiCurrSoCScore = 0;
+        for( const auto& rSeed : *pSeedsIn )
         {
-            DEBUG( pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
-                   pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
-                   pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( ); ) // DEBUG
+            uiCurrSoCScore += rSeed.size( );
+            DEBUG( pSoCIn->vExtractOrder.back( ).rStartSoC =
+                       std::min( pSoCIn->vExtractOrder.back( ).rStartSoC, rSeed.start_ref( ) );
+                   pSoCIn->vExtractOrder.back( ).rEndSoC = std::max( pSoCIn->vExtractOrder.back( ).rEndSoC,
+                                                                     rSeed.end_ref( ) ); ) // DEBUG
+        } // for
 
-            assert( !pSeedsIn->empty( ) );
-            nucSeqIndex uiCurrSoCScore = 0;
-            for( const auto& rSeed : *pSeedsIn )
+        // Prof. Kutzners filter:
+        // this merely checks weather we actually do have to do the harmonization at all
+        if( bDoHeuristics && uiNumTries > uiMinTries )
+        {
+            if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
             {
-                uiCurrSoCScore += rSeed.size( );
-                DEBUG( pSoCIn->vExtractOrder.back( ).rStartSoC =
-                           std::min( pSoCIn->vExtractOrder.back( ).rStartSoC, rSeed.start_ref( ) );
-                       pSoCIn->vExtractOrder.back( ).rEndSoC = std::max( pSoCIn->vExtractOrder.back( ).rEndSoC,
-                                                                         rSeed.end_ref( ) ); ) // DEBUG
-            } // for
-
-            // Prof. Kutzners filter:
-            // this merely checks weather we actually do have to do the harmonization at all
-            if( bDoHeuristics && uiNumTries > uiMinTries )
-            {
-                if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
+                if( uiLastHarmScore > uiCurrSoCScore )
                 {
-                    if( uiLastHarmScore > uiCurrSoCScore )
-                    {
-                        PRINT_BREAK_CRITERIA( std::cout << "skip because of SoC score minimum" << std::endl; )
-                        continue;
-                    } // if
-                } // if
-
-                if( uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0 )
-                {
-                    PRINT_BREAK_CRITERIA( std::cout << "Break because of fast SoC drop"; )
-                    break;
+                    PRINT_BREAK_CRITERIA( std::cout << "skip because of SoC score minimum" << std::endl; )
+                    continue;
                 } // if
             } // if
-            uiBestSoCScore = std::max( uiBestSoCScore, uiCurrSoCScore );
 
-            DEBUG( pSoCIn->vExtractOrder.back( ).first = uiCurrSoCScore;
-                   pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) ); )
-#if USE_RANSAC == 1 // switch between ransac line angle + intercept estimation & 45deg median line
-            std::vector<double> vX, vY;
-            vX.reserve( pSeedsIn->size( ) );
-            vY.reserve( pSeedsIn->size( ) );
-            for( const auto& rSeed : *pSeedsIn )
+            if( uiBestSoCScore * fScoreTolerace > uiCurrSoCScore && fScoreTolerace > 0 )
             {
-                // middlepoint of seed in plane
-                vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) / 2.0 );
-                vY.push_back( (double)rSeed.start( ) + rSeed.size( ) / 2.0 );
-                // start point of seed in plane
-                vX.push_back( (double)rSeed.start_ref( ) );
-                vY.push_back( (double)rSeed.start( ) );
-                // end point of seed in plane
-                vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) );
-                vY.push_back( (double)rSeed.start( ) + rSeed.size( ) );
-            } // for
-            /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
-            double fMAD = medianAbsoluteDeviation<double>( vY );
-            auto xSlopeIntercept = run_ransac( vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD );
-
-#if 1 // Remove ransac outliers
-            /*
-             * remove outliers
-             */
-            pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ),
-                                             [&]( const Seed& rS ) {
-                                                 return deltaDistance( rS, xSlopeIntercept.first,
-                                                                       (int64_t)xSlopeIntercept.second ) > fMAD;
-                                             } ),
-                             pSeedsIn->end( ) );
-
-#else
-            auto rMedianSeed = ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ];
-            auto xSlopeIntercept = std::make_pair( 0.785398, // forty five degrees
-                                                   (double)rMedianSeed.start_ref( ) - (double)rMedianSeed.start( ) );
-#endif
-#endif
-
-            DEBUG( pSoCIn->vSlopes.push_back( std::tan( xSlopeIntercept.first ) );
-                   pSoCIn->vIntercepts.push_back( xSlopeIntercept.second ); ) // DEBUG
-
-            auto pShadows = std::make_shared<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>( );
-            pShadows->reserve( pSeedsIn->size( ) );
-
-            // get the left shadows
-            for( Seeds::iterator pSeed = pSeedsIn->begin( ); pSeed != pSeedsIn->end( ); pSeed++ )
-            {
-                pShadows->push_back( std::make_tuple( pSeed, pSeed->start( ), pSeed->end_ref( ) ) );
-                // std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," <<
-                // pSeed->size() << ")," << std::endl;
-            } // for
-
-            // perform the line sweep algorithm on the left shadows
-            auto pShadows2 = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
-            pShadows->clear( );
-            pShadows->reserve( pShadows2->size( ) );
-
-            // get the right shadows
-            for( auto& xT : *pShadows2 )
-                pShadows->push_back(
-                    std::make_tuple( std::get<0>( xT ), std::get<0>( xT )->start_ref( ), std::get<0>( xT )->end( ) ) );
-
-            // perform the line sweep algorithm on the right shadows
-            pShadows = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
-
-            pSeeds->reserve( pShadows->size( ) );
-
-            for( auto& xT : *pShadows )
-                pSeeds->push_back( *std::get<0>( xT ) );
-
-            pSeeds->bConsistent = true;
-
-            DEBUG( pSoCIn->vHarmSoCs.push_back( pSeeds ); ) // DEBUG
-
-            // seeds need to be sorted for the following steps
-            std::sort( pSeeds->begin( ), pSeeds->end( ),
-                       []( const Seed& xA, const Seed& xB ) {
-                           if( xA.start_ref( ) == xB.start_ref( ) )
-                               return xA.start( ) < xB.start( );
-                           return xA.start_ref( ) < xB.start_ref( );
-                       } // lambda
-            ); // sort function call
-
-            DEBUG( if( !pSeeds->empty( ) ) pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
-                   if( !pSeeds->empty( ) ) pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( ); ) // DEBUG
-
-            /*
-             * sometimes we have one or less seeds remaining after the cupling:
-             * in these cases we simply return the center seed (judging by the delta from SoCs)
-             * This increases accuracy since the aligner is guided towards the correct
-             * position rather than a random seed or no seed...
-             *
-             * Note: returning the longest or least ambiguous seed does not make sense here;
-             * In most cases where this condition triggeres we have seeds that are roughly the
-             * same length and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
-             */
-            if( pSeeds->size( ) <= 1 )
-            {
-                pSeeds->clear( );
-                pSeeds->push_back( ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ] );
+                PRINT_BREAK_CRITERIA( std::cout << "Break because of fast SoC drop"; )
+                break;
             } // if
-            assert( !pSeeds->empty( ) );
-
         } // if
-        else // pSeedsIn contains merely one seed
+        uiBestSoCScore = std::max( uiBestSoCScore, uiCurrSoCScore );
+        DEBUG( pSoCIn->vExtractOrder.back( ).first = uiCurrSoCScore;
+               pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) ); )
+
+        auto pUnharmSeedsRev = pSeedsIn->extractStrand( false );
+        for( auto& rSeed : *pUnharmSeedsRev )
         {
-            pSeeds->push_back( pSeedsIn->front( ) );
-            DEBUG( pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
-                   pSoCIn->vExtractOrder.back( ).first = pSeedsIn->front( ).size( );
-                   pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
-                   pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( );
-                   pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
-                   pSoCIn->vSlopes.push_back( 0 );
-                   pSoCIn->vIntercepts.push_back( 0 );
-                   pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) ); ) // DEBUG
-        } // else
+            assert( rSeed.end( ) <= pQuery->length( ) );
+            rSeed.uiPosOnReference = pFM_index->getRefSeqLength( ) - rSeed.uiPosOnReference - 1;
+        }
+
+        auto pSeedsForw = harmonizeOne( pSeedsIn, pQuery, pSoCIn );
+        auto pSeedsRev = harmonizeOne( pUnharmSeedsRev, pQuery, pSoCIn );
+
+        PRINT_BREAK_CRITERIA( if( pSoCIn->empty( ) ) std::cout << "exhausted all SoCs" << std::endl; )
 
         /*
          * end of FILTER
          */
         nucSeqIndex uiCurrHarmScore = 0;
-        for( const auto& rSeed : *pSeeds )
+        for( const auto& rSeed : *pSeedsForw )
+            uiCurrHarmScore += rSeed.size( );
+        for( const auto& rSeed : *pSeedsRev )
             uiCurrHarmScore += rSeed.size( );
         if( bDoHeuristics && uiNumTries > uiMinTries )
             if( uiCurrHarmScore < uiCurrHarmScoreMin )
@@ -458,10 +471,17 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
 #if DEBUG_LEVEL >= 1
         std::vector<bool> vQCoverage( pQuery->length( ), false );
         pSoCIn->vExtractOrder.back( ).qCoverage = 0;
-        for( const auto& rSeed : *pSeeds )
+        for( const auto& rSeed : *pSeedsForw )
         {
             for( auto uiX = rSeed.start( ); uiX < rSeed.end( ); uiX++ )
-                vQCoverage[ uiX ] = true;
+                if( uiX >= 0 && uiX < pQuery->length( ) )
+                    vQCoverage[ uiX ] = true;
+        } // for
+        for( const auto& rSeed : *pSeedsRev )
+        {
+            for( auto uiX = rSeed.start( ); uiX < rSeed.end( ); uiX++ )
+                if( uiX >= 0 && uiX < pQuery->length( ) )
+                    vQCoverage[ uiX ] = true;
         } // for
         pSoCIn->vExtractOrder.back( ).second = uiCurrHarmScore;
 
@@ -469,44 +489,48 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
             if( b )
                 pSoCIn->vExtractOrder.back( ).qCoverage++;
 #endif
-        if( bDoHeuristics && uiNumTries > uiMinTries )
+        if( bDoHeuristics && uiNumTries > uiMinTries && pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
         {
-            //@todo uiSwitchQLen != 0 should be replaced with switch
-            if( pQuery->length( ) > uiSwitchQLen && uiSwitchQLen != 0 )
+            // Prof. Kutzners filter:
+            if( uiLastHarmScore > uiCurrHarmScore )
             {
-                // Prof. Kutzners filter:
-                if( uiLastHarmScore > uiCurrHarmScore )
-                {
-                    PRINT_BREAK_CRITERIA( std::cout << "skip because of harmonization score dropoff" << std::endl; )
-                    continue;
-                } // if
+                PRINT_BREAK_CRITERIA( std::cout << "skip because of harmonization score dropoff" << std::endl; )
+                continue;
             } // if
-            else
+        } // if
+        while( !pSeedsForw->empty( ) )
+        {
+            uiSoCRepeatCounter++;
+            pSoCs->push_back( this->applyFilters( pSeedsForw ) );
+        }
+        while( !pSeedsRev->empty( ) )
+        {
+            uiSoCRepeatCounter++;
+            pSoCs->push_back( this->applyFilters( pSeedsRev ) );
+        }
+
+        if( bDoHeuristics && uiNumTries > uiMinTries && pQuery->length( ) < uiSwitchQLen && uiSwitchQLen != 0 )
+        {
+            if( !( uiCurrHarmScore + ( pQuery->length( ) * fScoreDiffTolerance ) >= uiLastHarmScore &&
+                   uiCurrHarmScore - ( pQuery->length( ) * fScoreDiffTolerance ) <= uiLastHarmScore ) )
+                uiSoCRepeatCounter = 0;
+            if( uiSoCRepeatCounter >= uiMaxEqualScoreLookahead && uiMaxEqualScoreLookahead != 0 )
             {
-                if( !( uiCurrHarmScore + ( pQuery->length( ) * fScoreDiffTolerance ) >= uiLastHarmScore &&
-                       uiCurrHarmScore - ( pQuery->length( ) * fScoreDiffTolerance ) <= uiLastHarmScore ) )
-                    uiSoCRepeatCounter = 0;
-                else if( ++uiSoCRepeatCounter >= uiMaxEqualScoreLookahead && uiMaxEqualScoreLookahead != 0 )
-                {
-                    // cause we haven't actually pushed the current soc yet...
-                    uiSoCRepeatCounter -= 1;
-                    PRINT_BREAK_CRITERIA( std::cout << "Break because of repeated harmonization"
-                                                    << " score for short queries " << uiMaxEqualScoreLookahead
-                                                    << std::endl; )
-                    break;
-                } // else
+                PRINT_BREAK_CRITERIA( std::cout << "Break because of repeated harmonization"
+                                                << " score for short queries " << uiMaxEqualScoreLookahead
+                                                << std::endl; )
+                break;
             } // else
         } // if
+        else
+            uiSoCRepeatCounter = 0;
         uiLastHarmScore = uiCurrHarmScore;
 
-        while( !pSeeds->empty( ) )
-            pSoCs->push_back( this->applyFilters( pSeeds ) );
-
-            // FILTER
+        // FILTER
 #if FILTER_1
         if( bDoHeuristics && uiNumTries > uiMinTries )
         {
-            nucSeqIndex uiAccLen = pSeeds->getScore( );
+            nucSeqIndex uiAccLen = pSeedsForw->getScore( ) + pSeedsRev->getScore( );
             if( uiAccumulativeSeedLength > uiAccLen )
             {
                 PRINT_BREAK_CRITERIA( std::cout << "skip because of accumulative seed length" << std::endl; )
@@ -530,250 +554,42 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
     return pSoCs;
 } // function
 
-#else
-
-std::pair<double, double> HarmonizationSingle::ransac( std::shared_ptr<libMA::Seeds> pSeedsIn )
-{
-    std::vector<double> vX, vY;
-    vX.reserve( pSeedsIn->size( ) );
-    vY.reserve( pSeedsIn->size( ) );
-    for( const auto& rSeed : *pSeedsIn )
-    {
-        // middlepoint of seed in plane
-        vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) / 2.0 );
-        vY.push_back( (double)rSeed.start( ) + rSeed.size( ) / 2.0 );
-        // start point of seed in plane
-        vX.push_back( (double)rSeed.start_ref( ) );
-        vY.push_back( (double)rSeed.start( ) );
-        // end point of seed in plane
-        vX.push_back( (double)rSeed.start_ref( ) + rSeed.size( ) );
-        vY.push_back( (double)rSeed.start( ) + rSeed.size( ) );
-    } // for
-    /* The Mean Absolute Deviation (MAD) is later required for the threshold t */
-    double fMAD = medianAbsoluteDeviation<double>( vY );
-    return run_ransac( vX, vY, /*pSoCIn->vIngroup.back(),*/ fMAD );
-} // method
-
-std::shared_ptr<libMA::Seeds> HarmonizationSingle::applyLinesweeps( std::shared_ptr<libMA::Seeds> pSeedsIn
-#if DEBUG_LEVEL > 0
-                                                                    ,
-                                                                    bool bRecord = true
-#endif
-)
-{
-    DEBUG( std::shared_ptr<SoCPriorityQueue> pSoCIn = pSeedsIn->pSoCIn;
-           if( pSoCIn == nullptr ) bRecord = false; ) // DEBUG
-    auto pSeeds = std::make_shared<Seeds>( );
-    pSeeds->xStats = pSeedsIn->xStats;
-    if( pSeedsIn->size( ) == 0 )
-        return pSeeds;
-
-
-    if( pSeedsIn->size( ) == 1 )
-    {
-        pSeeds->push_back( pSeedsIn->front( ) );
-        DEBUG( if( bRecord ) {
-            pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
-            pSoCIn->vExtractOrder.back( ).first = pSeedsIn->front( ).size( );
-            pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
-            pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( );
-            pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
-            pSoCIn->vSlopes.push_back( 0 );
-            pSoCIn->vIntercepts.push_back( 0 );
-            pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) );
-            pSoCIn->vExtractOrder.back( ).qCoverage = pSeedsIn->front( ).size( );
-        } ) // DEBUG
-        pSeedsIn->clear( );
-        return pSeeds;
-    } // if
-
-    auto xSlopeIntercept = ransac( pSeedsIn );
-
-    auto pShadows = std::make_shared<std::vector<std::tuple<Seeds::iterator, nucSeqIndex, nucSeqIndex>>>( );
-    pShadows->reserve( pSeedsIn->size( ) );
-
-    // get the left shadows
-    for( Seeds::iterator pSeed = pSeedsIn->begin( ); pSeed != pSeedsIn->end( ); pSeed++ )
-        pShadows->push_back( std::make_tuple( pSeed, pSeed->start( ), pSeed->end_ref( ) ) );
-
-    // perform the line sweep algorithm on the left shadows
-    auto pShadows2 = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
-    pShadows->clear( );
-    pShadows->reserve( pShadows2->size( ) );
-
-    // get the right shadows
-    for( auto& xT : *pShadows2 )
-        pShadows->push_back(
-            std::make_tuple( std::get<0>( xT ), std::get<0>( xT )->start_ref( ), std::get<0>( xT )->end( ) ) );
-
-    // perform the line sweep algorithm on the right shadows
-    pShadows = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
-
-    pSeeds->reserve( pShadows->size( ) );
-
-    /*
-     * sometimes we have one or less seeds remaining after the cupling:
-     * in these cases we simply return the center seed (judging by the delta from SoCs)
-     * This increases accuracy since the aligner is guided towards the correct
-     * position rather than a random seed or no seed...
-     *
-     * Note: returning the longest or least ambiguous seed does not make sense here;
-     * In most cases where this condition triggeres we have seeds that are roughly the
-     * same length and ambiguity... (e.g. 3 seeds of length 17 and two of length 16)
-     */
-    if( pShadows->size( ) == 1 )
-    {
-        pSeeds->push_back( ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ] );
-        ( *pSeedsIn )[ pSeedsIn->size( ) / 2 ].size( 0 ); // mark for deletion
-    } // if
-    else
-    {
-        // save all the seeds
-        for( auto& xT : *pShadows )
-        {
-            pSeeds->push_back( *std::get<0>( xT ) ); // this creates a COPY (intentionally)
-            std::get<0>( xT )->size( 0 ); // mark seed in original set for deletion after copying
-        } // for
-    } // else
-    pSeeds->bConsistent = true;
-
-#if 0 // DEBUG_LEVEL > 0 // broken due to changes around this...
-    if( bRecord )
-    {
-        pSoCIn->vSoCs.push_back( std::make_shared<Seeds>( pSeedsIn ) );
-        pSoCIn->vExtractOrder.push_back( SoCPriorityQueue::blub( ) );
-        pSoCIn->vExtractOrder.back( ).rStartSoC = pSeedsIn->front( ).start_ref( );
-        pSoCIn->vExtractOrder.back( ).rEndSoC = pSeedsIn->front( ).end_ref( );
-
-        assert( !pSeedsIn->empty( ) );
-        for( const auto& rSeed : *pSeedsIn )
-        {
-            pSoCIn->vExtractOrder.back( ).rStartSoC =
-                std::min( pSoCIn->vExtractOrder.back( ).rStartSoC, rSeed.start_ref( ) );
-            pSoCIn->vExtractOrder.back( ).rEndSoC = std::max( pSoCIn->vExtractOrder.back( ).rEndSoC, rSeed.end_ref( ) );
-        } // for
-
-        pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
-
-        pSoCIn->vSlopes.push_back( std::tan( xSlopeIntercept.first ) );
-        pSoCIn->vIntercepts.push_back( xSlopeIntercept.second );
-
-        pSoCIn->vHarmSoCs.push_back( pSeeds );
-
-        pSoCIn->vExtractOrder.back( ).rStart = pSeeds->front( ).start_ref( );
-        pSoCIn->vExtractOrder.back( ).rEnd = pSeeds->back( ).end_ref( );
-
-        std::vector<bool> vQCoverage( pSoCIn->uiQLen, false );
-        pSoCIn->vExtractOrder.back( ).qCoverage = 0;
-        for( const auto& rSeed : *pSeeds )
-            for( auto uiX = rSeed.start( ); uiX < rSeed.end( ); uiX++ )
-                vQCoverage[ uiX ] = true;
-
-        for( bool b : vQCoverage )
-            if( b )
-                pSoCIn->vExtractOrder.back( ).qCoverage++;
-    } // if
-#endif
-
-    // remove all seeds marked for deletion
-    pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ), []( Seed& rS ) { return rS.size( ) == 0; } ),
-                     pSeedsIn->end( ) );
-
-    // seeds need to be sorted for the following steps
-    // @todo this sort should be move to the beginning of the next moduel
-    std::sort( pSeeds->begin( ), pSeeds->end( ),
-               []( const Seed& xA, const Seed& xB ) {
-                   if( xA.start_ref( ) == xB.start_ref( ) )
-                       return xA.start( ) < xB.start( );
-                   return xA.start_ref( ) < xB.start_ref( );
-               } // lambda
-    ); // sort function call
-    return pSeeds;
-} // method
-
-
-std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>> HarmonizationSingle::cluster( std::shared_ptr<Seeds> pSeedsIn,
-                                                                                       nucSeqIndex uiQLen ) const
-{
-    // set the delta values correctly
-    for( Seed& rS : *pSeedsIn )
-        rS.uiDelta = StripOfConsideration::getPositionForBucketing( uiQLen, rS );
-    // sort the seeds
-    std::sort( pSeedsIn->begin( ), pSeedsIn->end( ),
-               []( const Seed& rA, const Seed& rB ) { return rA.uiDelta < rB.uiDelta; } );
-    // walk over the sorted seeds and extract clusters
-    auto pRet = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
-
-    // clustering
-    for( Seed& rS : *pSeedsIn )
-        if( pRet->empty( ) || pRet->back( )->back( ).uiDelta + uiMaxDeltaDistanceInCLuster < rS.uiDelta )
-            pRet->emplace_back( new Seeds{rS} );
-        else
-            pRet->back( )->push_back( rS );
-
-    return pRet;
-} // method
-
-std::shared_ptr<Seeds> HarmonizationSingle::execute( std::shared_ptr<Seeds> pPrimaryStrand,
-                                                     std::shared_ptr<NucSeq> pQuery, std::shared_ptr<FMIndex> pFMIndex )
-{
-#if 0 // of -> seeds must be on same strand
-    auto pSoCs = std::make_shared<ContainerVector<std::shared_ptr<Seeds>>>( );
-
-    bool bPrimaryStrandIsForw = pPrimaryStrand->mainStrandIsForward( );
-    auto pSecondaryStrand = pPrimaryStrand->extractStrand( !bPrimaryStrandIsForw );
-
-    auto pClustered = cluster( pSecondaryStrand, pQuery->length( ) );
-    for( auto pSeeds : *pClustered )
-    {
-        auto pSecondarySeeds = applyLinesweeps( pSeeds /*,*/ DEBUG_PARAM( false ) );
-        pSecondarySeeds->flipOnQuery( pQuery->length( ) );
-        pPrimaryStrand->append( pSecondarySeeds );
-        std::cout << "secondary sweep: " << pSecondarySeeds->size( ) << std::endl;
-    } // while
-#endif
-
-    auto pPrimarySeeds = applyLinesweeps( pPrimaryStrand );
-    return this->applyFilters( pPrimarySeeds );
-    // while( !pPrimarySeeds->empty( ) ) DEPRECATED
-    //    pSoCs->push_back( this->applyFilters( pPrimarySeeds ) );
-    // return pSoCs;
-} // function
-#endif
-
 #ifdef WITH_PYTHON
 
-void exportHarmonization( py::module& rxPyModuleId )
+void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    exportModule<HarmonizationSingle>( rxPyModuleId, "HarmonizationSingle" );
 
-    exportModule<SeedLumping>( rxPyModuleId, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
-    exportModule<SeedExtender>( rxPyModuleId, "SeedExtender",
+    exportModule<SeedLumping>( xOrganizer, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
+    exportModule<SeedExtender>( xOrganizer, "SeedExtender",
                                 []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
-    exportModule<MaxExtendedToSMEM>( rxPyModuleId, "MaxExtendedToSMEM",
+    exportModule<MaxExtendedToSMEM>( xOrganizer, "MaxExtendedToSMEM",
                                      []( auto&& x ) { x.def( "filter", &MaxExtendedToSMEM::filter ); } );
-    exportModule<MaxExtendedToMaxSpanning>( rxPyModuleId, "MaxExtendedToMaxSpanning",
+    exportModule<MaxExtendedToMaxSpanning>( xOrganizer, "MaxExtendedToMaxSpanning",
                                             []( auto&& x ) { x.def( "filter", &MaxExtendedToMaxSpanning::filter ); } );
-    exportModule<MinLength, size_t>( rxPyModuleId, "MinLength",
+    exportModule<MinLength, size_t>( xOrganizer, "MinLength",
                                      []( auto&& x ) { x.def( "filter", &MinLength::filter ); } );
+    exportModule<FilterOverlappingSeeds>( xOrganizer, "FilterOverlappingSeeds",
+                                     []( auto&& x ) { x.def( "filter", &FilterOverlappingSeeds::filter ); } );
+    exportModule<SortRemoveDuplicates>( xOrganizer, "SortRemoveDuplicates",
+                                        []( auto&& x ) { x.def( "filter", &SortRemoveDuplicates::filter ); } );
 
-    exportModule<FilterToUnique>( rxPyModuleId, "FilterToUnique", []( auto&& x ) {
+    exportModule<FilterToUnique>( xOrganizer, "FilterToUnique", []( auto&& x ) {
         x.def_readwrite( "num_mm", &FilterToUnique::uiNumMissmatchesAllowed );
     } );
 
-    exportModule<ParlindromeFilter>( rxPyModuleId, "ParlindromeFilter", []( auto&& x ) {
+    exportModule<ParlindromeFilter>( xOrganizer, "ParlindromeFilter", []( auto&& x ) {
         x.def_readwrite( "parlindromes", &ParlindromeFilter::pParlindromes )
             .def( "keep_parlindromes", &ParlindromeFilter::keepParlindromes );
     } );
 
-    exportModule<Harmonization>( rxPyModuleId, "Harmonization" );
+    exportModule<Harmonization>( xOrganizer, "Harmonization" );
 
-    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, Container,
-                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( rxPyModuleId, "ContainerVectorSeeds",
-                                                                                   "docstr" )
+    py::bind_vector_ext<ContainerVector<std::shared_ptr<Seeds>>, libMS::Container,
+                        std::shared_ptr<ContainerVector<std::shared_ptr<Seeds>>>>( xOrganizer.container( ),
+                                                                                   "ContainerVectorSeeds", "docstr" )
         .def( py::init<>( ) );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<ContainerVector<std::shared_ptr<Seeds>>, Container>( );
+    py::implicitly_convertible<ContainerVector<std::shared_ptr<Seeds>>, libMS::Container>( );
 } // function
 #endif

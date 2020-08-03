@@ -1,13 +1,13 @@
-#include "sample_consensus/test_ransac.h"
-#include "module/module.h"
-#include "sample_consensus/lin_regres.h"
-#include "sample_consensus/ransac.h"
-#include "sample_consensus/sac_model_line.h"
+#include "ma/sample_consensus/test_ransac.h"
+#include "ma/sample_consensus/lin_regres.h"
+#include "ma/sample_consensus/ransac.h"
+#include "ma/sample_consensus/sac_model_line.h"
+#include "ms/module/module.h"
 
 using namespace libMA;
 
-std::pair<double, double> run_ransac( const std::vector<double> &rvxValues,
-                                      const std::vector<double> &rvyValues,
+std::pair<double, double> run_ransac( const std::vector<double>& rvxValues,
+                                      const std::vector<double>& rvyValues,
                                       /*std::shared_ptr<Seeds> pvIngroup,*/
                                       double fDMA )
 {
@@ -16,8 +16,7 @@ std::pair<double, double> run_ransac( const std::vector<double> &rvxValues,
     sensor_msgs::PointCloud xCloud;
     for( size_t uiItr = 0; uiItr < rvxValues.size( ); uiItr++ )
     {
-        xCloud.points.push_back(
-            geometry_msgs::Point32{rvxValues[ uiItr ], rvyValues[ uiItr ], 0} );
+        xCloud.points.push_back( geometry_msgs::Point32{rvxValues[ uiItr ], rvyValues[ uiItr ], 0} );
     } // for
     // std::cout << "Process " << xCloud.points.size() << " points" << std::endl;
 
@@ -46,7 +45,7 @@ std::pair<double, double> run_ransac( const std::vector<double> &rvxValues,
 
     if( !bSuccessfulModel )
     {
-        DEBUG( if(rvxValues.size( ) > 20) std::cerr << "ransac failed to find ingroup" << std::endl; ) // DEBUG
+        DEBUG( if( rvxValues.size( ) > 20 ) std::cerr << "ransac failed to find ingroup" << std::endl; ) // DEBUG
         // return that no slope could be determined
         return std::make_pair( std::nan( "" ), std::nan( "" ) );
     } // if

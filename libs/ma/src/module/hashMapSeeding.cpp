@@ -2,14 +2,14 @@
  * @file hashMapSeeding.cpp
  * @author Markus Schmidt
  */
-#include "module/hashMapSeeding.h"
+#include "ma/module/hashMapSeeding.h"
 #include <limits>
 
 using namespace libMA;
+using namespace libMS;
 
 
-std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2,
-                                                                       nucSeqIndex uiSeedSize )
+std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& rQ2, nucSeqIndex uiSeedSize )
 {
     std::unordered_multimap<std::string, size_t> xIndex;
 
@@ -20,8 +20,8 @@ std::unordered_multimap<std::string, size_t> HashMapSeeding::getIndex( NucSeq& r
 } // method
 
 
-std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex,
-                                                 NucSeq& rQ1, nucSeqIndex uiSeedSize )
+std::shared_ptr<Seeds> HashMapSeeding::getSeeds( std::unordered_multimap<std::string, size_t> xIndex, NucSeq& rQ1,
+                                                 nucSeqIndex uiSeedSize )
 {
     auto pSeeds = std::make_shared<Seeds>( );
     for( size_t uiI = 0; uiI + uiSeedSize <= rQ1.length( ); uiI += 1 )
@@ -128,16 +128,16 @@ std::shared_ptr<Seeds> ReSeeding::execute( std::shared_ptr<Seeds> pSeeds, std::s
     pCollection->append( pSeeds );
 
     // lump everything
-    return xLumper.execute( pCollection );
+    return xLumper.execute( pCollection, pQuery, pPack );
 } // function
 #endif
 
 #ifdef WITH_PYTHON
-void exportHashMapSeeding( py::module& rxPyModuleId )
+void exportHashMapSeeding( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<std::unordered_multimap<std::string, size_t>>( rxPyModuleId, "K-MerIndex" );
+    py::class_<std::unordered_multimap<std::string, size_t>>( xOrganizer.util(), "K_MerIndex" );
     // export the HashMapSeeding class
-    exportModule<HashMapSeeding>( rxPyModuleId, "HashMapSeeding", []( auto&& x ) {
+    exportModule<HashMapSeeding>( xOrganizer, "HashMapSeeding", []( auto&& x ) {
         x.def( "getIndex", &HashMapSeeding::getIndex ) //
             .def( "getSeeds", &HashMapSeeding::getSeeds ) //
             .def( "getAllSeeds", &HashMapSeeding::getAllSeeds )
@@ -145,11 +145,11 @@ void exportHashMapSeeding( py::module& rxPyModuleId )
     } );
 #if 0
     // export the ReSeeding class
-    exportModule<ReSeeding>( rxPyModuleId, "ReSeeding" );
+    exportModule<ReSeeding>( xOrganizer, "ReSeeding" );
     // export the FillSeedSet class
-    exportModule<FillSeedSet>( rxPyModuleId, "FillSeedSet" );
+    exportModule<FillSeedSet>( xOrganizer, "FillSeedSet" );
     // export the ExtractFilledSeedSets class
-    exportModule<ExtractFilledSeedSets>( rxPyModuleId, "ExtractFilledSeedSets" );
+    exportModule<ExtractFilledSeedSets>( xOrganizer, "ExtractFilledSeedSets" );
 #endif
 } // function
 #endif

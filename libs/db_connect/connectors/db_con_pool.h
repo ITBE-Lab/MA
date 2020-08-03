@@ -341,11 +341,18 @@ template <typename DBImpl> class SQLDBConPool
                             // (See the notice in the description of this class.)
                             fTaskToBeExecuted( pConManager );
                         } // while
-                    }, // lambda ( doNoExcept )
-                    // doNoExcept error message:
-                    "SQLDBConPool:: The worker with Id " + std::to_string( uiThreadId ) +
-                        "failed due to an internal error and terminated." );
-            } ); // emplace_back
+                    } // try
+                    catch( const std::exception& xE )
+                    {
+                        std::cout << "SQLDBConPool worker thread terminates due to exception: " << std::endl
+                                  << xE.what( ) << std::endl;
+                    } // catch
+                    catch( ... )
+                    {
+                        std::cout << "SQLDBConPool worker thread terminates due to unknown exception" << std::endl;
+                    } // catch
+                },
+                uiThreadId ); // emplace_back
     } // constructor
 
     /** @brief Terminates the operation of the connection pool.

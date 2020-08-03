@@ -33,8 +33,8 @@
  * \todo Change the internal representation of the line model from 2 points to 1 point + direction.
  */
 
-#include <sample_consensus/sac_model.h>
-#include <sample_consensus/sac_model_line.h>
+#include <ma/sample_consensus/sac_model.h>
+#include <ma/sample_consensus/sac_model_line.h>
 //#include <point_cloud_mapping/geometry/point.h>
 //#include <point_cloud_mapping/geometry/nearest.h>
 
@@ -46,7 +46,7 @@ namespace sample_consensus
  * \param samples the resultant model samples
  * \note assumes unique points!
  */
-void SACModelLine::getSamples( int &iterations, std::vector<int> &samples )
+void SACModelLine::getSamples( int& iterations, std::vector<int>& samples )
 {
     samples.resize( 2 );
     double trand = indices_.size( ) / ( RAND_MAX + 1.0 );
@@ -83,8 +83,8 @@ void SACModelLine::getSamples( int &iterations, std::vector<int> &samples )
  * outliers \param inliers the resultant model inliers \note: To get the refined inliers of a model,
  * use: ANNpoint refined_coeff = refitModel (...); selectWithinDistance (refined_coeff, threshold);
  */
-void SACModelLine::selectWithinDistance( const std::vector<double> &model_coefficients,
-                                         double threshold, std::vector<int> &inliers )
+void SACModelLine::selectWithinDistance( const std::vector<double>& model_coefficients, double threshold,
+                                         std::vector<int>& inliers )
 {
     double sqr_threshold = threshold * threshold;
 
@@ -116,8 +116,7 @@ void SACModelLine::selectWithinDistance( const std::vector<double> &model_coeffi
         // a = sqrt [(y3*z4 - z3*y4)^2 + (x3*z4 - x4*z3)^2 + (x3*y4 - x4*y3)^2]
         // double distance = SQR_NORM (cANN::cross (p4, p3)) / SQR_NORM (p3);
         geometry_msgs::Point32 c = cloud_geometry::cross( p4, p3 );
-        double sqr_distance =
-            ( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
+        double sqr_distance = ( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
 
         if( sqr_distance < sqr_threshold )
         {
@@ -136,8 +135,7 @@ void SACModelLine::selectWithinDistance( const std::vector<double> &model_coeffi
  * \param model_coefficients the coefficients of a line model that we need to compute distances to
  * \param distances the resultant estimated distances
  */
-void SACModelLine::getDistancesToModel( const std::vector<double> &model_coefficients,
-                                        std::vector<double> &distances )
+void SACModelLine::getDistancesToModel( const std::vector<double>& model_coefficients, std::vector<double>& distances )
 {
     distances.resize( indices_.size( ) );
 
@@ -157,8 +155,7 @@ void SACModelLine::getDistancesToModel( const std::vector<double> &model_coeffic
         p4.z = model_coefficients.at( 5 ) - cloud_->points.at( indices_.at( i ) ).z;
 
         geometry_msgs::Point32 c = cloud_geometry::cross( p4, p3 );
-        distances[ i ] =
-            sqrt( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
+        distances[ i ] = sqrt( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
     }
     return;
 }
@@ -169,13 +166,13 @@ void SACModelLine::getDistancesToModel( const std::vector<double> &model_coeffic
  * \param model_coefficients the coefficients of a line model
  * \param projected_points the resultant projected points
  */
-void SACModelLine::projectPoints( const std::vector<int> &inliers,
-                                  const std::vector<double> &model_coefficients,
-                                  sensor_msgs::PointCloud &projected_points )
+void SACModelLine::projectPoints( const std::vector<int>& inliers,
+                                  const std::vector<double>& model_coefficients,
+                                  sensor_msgs::PointCloud& projected_points )
 {
     // Allocate enough space
     projected_points.points.resize( inliers.size( ) );
-    projected_points.set_channels_size( (unsigned int) cloud_->get_channels_size( ) );
+    projected_points.set_channels_size( (unsigned int)cloud_->get_channels_size( ) );
 
     // Create the channels
     for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
@@ -194,8 +191,7 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
     for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // double k = (DOT_PROD_3D (points[i], p21) - dotA_B) / dotB_B;
-        double k = ( cloud_->points.at( inliers.at( i ) ).x * p21.x +
-                     cloud_->points.at( inliers.at( i ) ).y * p21.y +
+        double k = ( cloud_->points.at( inliers.at( i ) ).x * p21.x + cloud_->points.at( inliers.at( i ) ).y * p21.y +
                      cloud_->points.at( inliers.at( i ) ).z * p21.z -
                      ( model_coefficients_[ 0 ] * p21.x + model_coefficients_[ 1 ] * p21.y +
                        model_coefficients_[ 2 ] * p21.z ) ) /
@@ -206,8 +202,7 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
         projected_points.points[ i ].z = model_coefficients_.at( 2 ) + k * p21.z;
         // Copy the other attributes
         for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
-            projected_points.channels[ d ].values[ i ] =
-                cloud_->channels[ d ].values[ inliers.at( i ) ];
+            projected_points.channels[ d ].values[ i ] = cloud_->channels[ d ].values[ inliers.at( i ) ];
     }
 }
 
@@ -216,8 +211,8 @@ void SACModelLine::projectPoints( const std::vector<int> &inliers,
  * \param inliers the data inliers that we want to project on the line model
  * \param model_coefficients the coefficients of a line model
  */
-void SACModelLine::projectPointsInPlace( const std::vector<int> &inliers,
-                                         const std::vector<double> &model_coefficients )
+void SACModelLine::projectPointsInPlace( const std::vector<int>& inliers,
+                                         const std::vector<double>& model_coefficients )
 {
     // Compute the line direction (P2 - P1)
     geometry_msgs::Point32 p21;
@@ -229,8 +224,7 @@ void SACModelLine::projectPointsInPlace( const std::vector<int> &inliers,
     for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // double k = (DOT_PROD_3D (points[i], p21) - dotA_B) / dotB_B;
-        double k = ( cloud_->points.at( inliers.at( i ) ).x * p21.x +
-                     cloud_->points.at( inliers.at( i ) ).y * p21.y +
+        double k = ( cloud_->points.at( inliers.at( i ) ).x * p21.x + cloud_->points.at( inliers.at( i ) ).y * p21.y +
                      cloud_->points.at( inliers.at( i ) ).z * p21.z -
                      ( model_coefficients_[ 0 ] * p21.x + model_coefficients_[ 1 ] * p21.y +
                        model_coefficients_[ 2 ] * p21.z ) ) /
@@ -248,7 +242,7 @@ void SACModelLine::projectPointsInPlace( const std::vector<int> &inliers,
  * coefficients are represented by the points themselves. \param samples the point indices found as
  * possible good candidates for creating a valid model
  */
-bool SACModelLine::computeModelCoefficients( const std::vector<int> &samples )
+bool SACModelLine::computeModelCoefficients( const std::vector<int>& samples )
 {
     model_coefficients_.resize( 6 );
     model_coefficients_[ 0 ] = cloud_->points.at( samples.at( 0 ) ).x;
@@ -308,7 +302,7 @@ bool SACModelLine::computeModelCoefficients( const std::vector<int> &samples )
  * \param threshold a maximum admissible distance threshold for determining the inliers from the
  * outliers
  */
-bool SACModelLine::doSamplesVerifyModel( const std::set<int> &indices, double threshold )
+bool SACModelLine::doSamplesVerifyModel( const std::set<int>& indices, double threshold )
 {
     double sqr_threshold = threshold * threshold;
     for( std::set<int>::iterator it = indices.begin( ); it != indices.end( ); ++it )
@@ -323,8 +317,7 @@ bool SACModelLine::doSamplesVerifyModel( const std::set<int> &indices, double th
         p4.z = model_coefficients_.at( 5 ) - cloud_->points.at( *it ).z;
 
         geometry_msgs::Point32 c = cloud_geometry::cross( p4, p3 );
-        double sqr_distance =
-            ( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
+        double sqr_distance = ( c.x * c.x + c.y * c.y + c.z * c.z ) / ( p3.x * p3.x + p3.y * p3.y + p3.z * p3.z );
 
         if( sqr_distance < sqr_threshold )
             return ( false );

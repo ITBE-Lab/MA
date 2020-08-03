@@ -3,9 +3,9 @@
  * @author Arne Kutzner
  * @note @todo we should think about using the GZ stream here as well...
  */
-#include "container/pack.h"
-#include "container/nucSeq.h"
-#include "util/pybind11.h"
+#include "ma/container/pack.h"
+#include "ma/container/nucSeq.h"
+#include "ms/util/pybind11.h"
 
 using namespace libMA;
 
@@ -543,9 +543,9 @@ void Pack::vAppendFastaFile( const char* pcFileName )
 
 
 #ifdef WITH_PYTHON
-void exportPack( py::module& rxPyModuleId )
+void exportPack( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<Pack, Container, std::shared_ptr<Pack>>( rxPyModuleId, "Pack" )
+    py::class_<Pack, libMS::Container, std::shared_ptr<Pack>>( xOrganizer.container(), "Pack" )
         .def( py::init<>( ) )
         .def( "unpacked_size", &Pack::uiUnpackedSizeForwardPlusReverse )
         .def( "append", &Pack::vAppendSequence_boost )
@@ -581,12 +581,12 @@ void exportPack( py::module& rxPyModuleId )
         .def( "contigStarts", &Pack::contigStarts );
 
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<Pack, Container>( );
+    py::implicitly_convertible<Pack, libMS::Container>( );
 
     // required by contigNames
-    py::bind_vector<std::vector<std::string>>( rxPyModuleId, "StringVector", "docstr" );
+    py::bind_vector<std::vector<std::string>>( xOrganizer.util(), "StringVector", "docstr" );
 
     // required by contigLengths
-    py::bind_vector<std::vector<nucSeqIndex>>( rxPyModuleId, "nucSeqIndexVector", "docstr" );
+    py::bind_vector<std::vector<nucSeqIndex>>( xOrganizer._util(), "nucSeqIndexVector", "docstr" );
 } // function
 #endif

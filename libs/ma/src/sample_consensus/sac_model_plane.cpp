@@ -30,7 +30,7 @@
 
 /** \author Radu Bogdan Rusu */
 
-#include <sample_consensus/sac_model_plane.h>
+#include <ma/sample_consensus/sac_model_plane.h>
 // #include <point_cloud_mapping/geometry/nearest.h>
 
 namespace sample_consensus
@@ -41,7 +41,7 @@ namespace sample_consensus
  * \param samples the resultant model samples
  * \note assumes unique points!
  */
-void SACModelPlane::getSamples( int &iterations, std::vector<int> &samples )
+void SACModelPlane::getSamples( int& iterations, std::vector<int>& samples )
 {
     samples.resize( 3 );
     double trand = indices_.size( ) / ( RAND_MAX + 1.0 );
@@ -111,8 +111,8 @@ void SACModelPlane::getSamples( int &iterations, std::vector<int> &samples )
  * a model, use: ANNpoint refined_coeff = refitModel (...); selectWithinDistance (refined_coeff,
  * threshold);
  */
-void SACModelPlane::selectWithinDistance( const std::vector<double> &model_coefficients,
-                                          double threshold, std::vector<int> &inliers )
+void SACModelPlane::selectWithinDistance( const std::vector<double>& model_coefficients, double threshold,
+                                          std::vector<int>& inliers )
 {
     int nr_p = 0;
     inliers.resize( indices_.size( ) );
@@ -124,8 +124,8 @@ void SACModelPlane::selectWithinDistance( const std::vector<double> &model_coeff
         // D = (P-A).N/|N|
         if( fabs( model_coefficients.at( 0 ) * cloud_->points.at( indices_.at( i ) ).x +
                   model_coefficients.at( 1 ) * cloud_->points.at( indices_.at( i ) ).y +
-                  model_coefficients.at( 2 ) * cloud_->points.at( indices_.at( i ) ).z +
-                  model_coefficients.at( 3 ) ) < threshold )
+                  model_coefficients.at( 2 ) * cloud_->points.at( indices_.at( i ) ).z + model_coefficients.at( 3 ) ) <
+            threshold )
         {
             // Returns the indices of the points whose distances are smaller than the threshold
             inliers[ nr_p ] = indices_[ i ];
@@ -141,8 +141,7 @@ void SACModelPlane::selectWithinDistance( const std::vector<double> &model_coeff
  * \param model_coefficients the coefficients of a plane model that we need to compute distances to
  * \param distances the resultant estimated distances
  */
-void SACModelPlane::getDistancesToModel( const std::vector<double> &model_coefficients,
-                                         std::vector<double> &distances )
+void SACModelPlane::getDistancesToModel( const std::vector<double>& model_coefficients, std::vector<double>& distances )
 {
     distances.resize( indices_.size( ) );
 
@@ -150,10 +149,10 @@ void SACModelPlane::getDistancesToModel( const std::vector<double> &model_coeffi
     for( unsigned int i = 0; i < indices_.size( ); i++ )
         // Calculate the distance from the point to the plane normal as the dot product
         // D = (P-A).N/|N|
-        distances[ i ] = fabs( model_coefficients.at( 0 ) * cloud_->points.at( indices_[ i ] ).x +
-                               model_coefficients.at( 1 ) * cloud_->points.at( indices_[ i ] ).y +
-                               model_coefficients.at( 2 ) * cloud_->points.at( indices_[ i ] ).z +
-                               model_coefficients.at( 3 ) );
+        distances[ i ] =
+            fabs( model_coefficients.at( 0 ) * cloud_->points.at( indices_[ i ] ).x +
+                  model_coefficients.at( 1 ) * cloud_->points.at( indices_[ i ] ).y +
+                  model_coefficients.at( 2 ) * cloud_->points.at( indices_[ i ] ).z + model_coefficients.at( 3 ) );
     return;
 }
 
@@ -163,13 +162,13 @@ void SACModelPlane::getDistancesToModel( const std::vector<double> &model_coeffi
  * \param model_coefficients the *normalized* coefficients of a plane model
  * \param projected_points the resultant projected points
  */
-void SACModelPlane::projectPoints( const std::vector<int> &inliers,
-                                   const std::vector<double> &model_coefficients,
-                                   sensor_msgs::PointCloud &projected_points )
+void SACModelPlane::projectPoints( const std::vector<int>& inliers,
+                                   const std::vector<double>& model_coefficients,
+                                   sensor_msgs::PointCloud& projected_points )
 {
     // Allocate enough space
     projected_points.points.resize( inliers.size( ) );
-    projected_points.set_channels_size( (unsigned int) cloud_->get_channels_size( ) );
+    projected_points.set_channels_size( (unsigned int)cloud_->get_channels_size( ) );
 
     // Create the channels
     for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
@@ -192,11 +191,10 @@ void SACModelPlane::projectPoints( const std::vector<int> &inliers,
     for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // Calculate the distance from the point to the plane
-        double distance_to_plane =
-            model_coefficients.at( 0 ) * cloud_->points.at( inliers.at( i ) ).x +
-            model_coefficients.at( 1 ) * cloud_->points.at( inliers.at( i ) ).y +
-            model_coefficients.at( 2 ) * cloud_->points.at( inliers.at( i ) ).z +
-            model_coefficients.at( 3 ) * 1;
+        double distance_to_plane = model_coefficients.at( 0 ) * cloud_->points.at( inliers.at( i ) ).x +
+                                   model_coefficients.at( 1 ) * cloud_->points.at( inliers.at( i ) ).y +
+                                   model_coefficients.at( 2 ) * cloud_->points.at( inliers.at( i ) ).z +
+                                   model_coefficients.at( 3 ) * 1;
         // Calculate the projection of the point on the plane
         projected_points.points[ i ].x =
             cloud_->points.at( inliers.at( i ) ).x - distance_to_plane * model_coefficients.at( 0 );
@@ -206,8 +204,7 @@ void SACModelPlane::projectPoints( const std::vector<int> &inliers,
             cloud_->points.at( inliers.at( i ) ).z - distance_to_plane * model_coefficients.at( 2 );
         // Copy the other attributes
         for( unsigned int d = 0; d < projected_points.get_channels_size( ); d++ )
-            projected_points.channels[ d ].values[ i ] =
-                cloud_->channels[ d ].values[ inliers.at( i ) ];
+            projected_points.channels[ d ].values[ i ] = cloud_->channels[ d ].values[ inliers.at( i ) ];
     }
 }
 
@@ -216,8 +213,8 @@ void SACModelPlane::projectPoints( const std::vector<int> &inliers,
  * \param inliers the data inliers that we want to project on the plane model
  * \param model_coefficients the *normalized* coefficients of a plane model
  */
-void SACModelPlane::projectPointsInPlace( const std::vector<int> &inliers,
-                                          const std::vector<double> &model_coefficients )
+void SACModelPlane::projectPointsInPlace( const std::vector<int>& inliers,
+                                          const std::vector<double>& model_coefficients )
 {
     // Get the plane normal
     // Calculate the 2-norm: norm (x) = sqrt (sum (abs (v)^2))
@@ -233,11 +230,10 @@ void SACModelPlane::projectPointsInPlace( const std::vector<int> &inliers,
     for( unsigned int i = 0; i < inliers.size( ); i++ )
     {
         // Calculate the distance from the point to the plane
-        double distance_to_plane =
-            model_coefficients.at( 0 ) * cloud_->points.at( inliers.at( i ) ).x +
-            model_coefficients.at( 1 ) * cloud_->points.at( inliers.at( i ) ).y +
-            model_coefficients.at( 2 ) * cloud_->points.at( inliers.at( i ) ).z +
-            model_coefficients.at( 3 ) * 1;
+        double distance_to_plane = model_coefficients.at( 0 ) * cloud_->points.at( inliers.at( i ) ).x +
+                                   model_coefficients.at( 1 ) * cloud_->points.at( inliers.at( i ) ).y +
+                                   model_coefficients.at( 2 ) * cloud_->points.at( inliers.at( i ) ).z +
+                                   model_coefficients.at( 3 ) * 1;
         // Calculate the projection of the point on the plane
         cloud_->points.at( inliers.at( i ) ).x =
             cloud_->points.at( inliers.at( i ) ).x - distance_to_plane * model_coefficients.at( 0 );
@@ -254,7 +250,7 @@ void SACModelPlane::projectPointsInPlace( const std::vector<int> &inliers,
  * coefficients are: a, b, c, d (ax+by+cz+d=0) \param samples the point indices found as possible
  * good candidates for creating a valid model
  */
-bool SACModelPlane::computeModelCoefficients( const std::vector<int> &samples )
+bool SACModelPlane::computeModelCoefficients( const std::vector<int>& samples )
 {
     model_coefficients_.resize( 4 );
     double Dx1, Dy1, Dz1, Dx2, Dy2, Dz2, Dy1Dy2;
@@ -274,23 +270,20 @@ bool SACModelPlane::computeModelCoefficients( const std::vector<int> &samples )
 
     // Compute the plane coefficients from the 3 given points in a straightforward manner
     // calculate the plane normal n = (p2-p1) x (p3-p1) = cross (p2-p1, p3-p1)
-    model_coefficients_[ 0 ] =
-        ( cloud_->points.at( samples.at( 1 ) ).y - cloud_->points.at( samples.at( 0 ) ).y ) *
-            ( cloud_->points.at( samples.at( 2 ) ).z - cloud_->points.at( samples.at( 0 ) ).z ) -
-        ( cloud_->points.at( samples.at( 1 ) ).z - cloud_->points.at( samples.at( 0 ) ).z ) *
-            ( cloud_->points.at( samples.at( 2 ) ).y - cloud_->points.at( samples.at( 0 ) ).y );
+    model_coefficients_[ 0 ] = ( cloud_->points.at( samples.at( 1 ) ).y - cloud_->points.at( samples.at( 0 ) ).y ) *
+                                   ( cloud_->points.at( samples.at( 2 ) ).z - cloud_->points.at( samples.at( 0 ) ).z ) -
+                               ( cloud_->points.at( samples.at( 1 ) ).z - cloud_->points.at( samples.at( 0 ) ).z ) *
+                                   ( cloud_->points.at( samples.at( 2 ) ).y - cloud_->points.at( samples.at( 0 ) ).y );
 
-    model_coefficients_[ 1 ] =
-        ( cloud_->points.at( samples.at( 1 ) ).z - cloud_->points.at( samples.at( 0 ) ).z ) *
-            ( cloud_->points.at( samples.at( 2 ) ).x - cloud_->points.at( samples.at( 0 ) ).x ) -
-        ( cloud_->points.at( samples.at( 1 ) ).x - cloud_->points.at( samples.at( 0 ) ).x ) *
-            ( cloud_->points.at( samples.at( 2 ) ).z - cloud_->points.at( samples.at( 0 ) ).z );
+    model_coefficients_[ 1 ] = ( cloud_->points.at( samples.at( 1 ) ).z - cloud_->points.at( samples.at( 0 ) ).z ) *
+                                   ( cloud_->points.at( samples.at( 2 ) ).x - cloud_->points.at( samples.at( 0 ) ).x ) -
+                               ( cloud_->points.at( samples.at( 1 ) ).x - cloud_->points.at( samples.at( 0 ) ).x ) *
+                                   ( cloud_->points.at( samples.at( 2 ) ).z - cloud_->points.at( samples.at( 0 ) ).z );
 
-    model_coefficients_[ 2 ] =
-        ( cloud_->points.at( samples.at( 1 ) ).x - cloud_->points.at( samples.at( 0 ) ).x ) *
-            ( cloud_->points.at( samples.at( 2 ) ).y - cloud_->points.at( samples.at( 0 ) ).y ) -
-        ( cloud_->points.at( samples.at( 1 ) ).y - cloud_->points.at( samples.at( 0 ) ).y ) *
-            ( cloud_->points.at( samples.at( 2 ) ).x - cloud_->points.at( samples.at( 0 ) ).x );
+    model_coefficients_[ 2 ] = ( cloud_->points.at( samples.at( 1 ) ).x - cloud_->points.at( samples.at( 0 ) ).x ) *
+                                   ( cloud_->points.at( samples.at( 2 ) ).y - cloud_->points.at( samples.at( 0 ) ).y ) -
+                               ( cloud_->points.at( samples.at( 1 ) ).y - cloud_->points.at( samples.at( 0 ) ).y ) *
+                                   ( cloud_->points.at( samples.at( 2 ) ).x - cloud_->points.at( samples.at( 0 ) ).x );
     // calculate the 2-norm: norm (x) = sqrt (sum (abs (v)^2))
     // nx ny nz (aka: ax + by + cz ...
     double n_norm = sqrt( model_coefficients_[ 0 ] * model_coefficients_[ 0 ] +
@@ -301,10 +294,9 @@ bool SACModelPlane::computeModelCoefficients( const std::vector<int> &samples )
     model_coefficients_[ 2 ] /= n_norm;
 
     // ... + d = 0
-    model_coefficients_[ 3 ] =
-        -1 * ( model_coefficients_[ 0 ] * cloud_->points.at( samples.at( 0 ) ).x +
-               model_coefficients_[ 1 ] * cloud_->points.at( samples.at( 0 ) ).y +
-               model_coefficients_[ 2 ] * cloud_->points.at( samples.at( 0 ) ).z );
+    model_coefficients_[ 3 ] = -1 * ( model_coefficients_[ 0 ] * cloud_->points.at( samples.at( 0 ) ).x +
+                                      model_coefficients_[ 1 ] * cloud_->points.at( samples.at( 0 ) ).y +
+                                      model_coefficients_[ 2 ] * cloud_->points.at( samples.at( 0 ) ).z );
 
     return ( true );
 }
@@ -342,13 +334,12 @@ bool SACModelPlane::computeModelCoefficients( const std::vector<int> &samples )
  * \param threshold a maximum admissible distance threshold for determining the inliers from the
  * outliers
  */
-bool SACModelPlane::doSamplesVerifyModel( const std::set<int> &indices, double threshold )
+bool SACModelPlane::doSamplesVerifyModel( const std::set<int>& indices, double threshold )
 {
     for( std::set<int>::iterator it = indices.begin( ); it != indices.end( ); ++it )
         if( fabs( model_coefficients_.at( 0 ) * cloud_->points.at( *it ).x +
                   model_coefficients_.at( 1 ) * cloud_->points.at( *it ).y +
-                  model_coefficients_.at( 2 ) * cloud_->points.at( *it ).z +
-                  model_coefficients_.at( 3 ) ) > threshold )
+                  model_coefficients_.at( 2 ) * cloud_->points.at( *it ).z + model_coefficients_.at( 3 ) ) > threshold )
             return ( false );
 
     return ( true );

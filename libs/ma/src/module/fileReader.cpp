@@ -2,11 +2,13 @@
  * @file fileReader.cpp
  * @author Markus Schmidt
  */
-#include "module/fileReader.h"
-#include "util/pybind11.h"
+#include "ma/module/fileReader.h"
+#include "ma/container/alignment.h"
+#include "ms/util/pybind11.h"
 #include <cctype>
 
 using namespace libMA;
+using namespace libMS;
 
 bool validNuc( char c )
 {
@@ -34,7 +36,7 @@ size_t lenq( std::string& sLine )
 
 std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream )
 {
-    std::unique_lock<std::mutex> xLock( pStream->xMutex );
+    std::lock_guard<std::mutex> xLock( pStream->xMutex );
     pStream->peek( );
     if( pStream->eof( ) ) // eof case
         return nullptr;
@@ -63,8 +65,9 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
                 if( character == 'N' || character == 'n' )
                 {
                     if( pStream->uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << pStream->uiNumLinesRead
-                                  << " (this is only printed once)" << std::endl;
+                        std::cerr << "WARNING: " << sLine.substr( 0, 100 )
+                                  << " contains Ns! line: " << pStream->uiNumLinesRead << " (this is only printed once)"
+                                  << std::endl;
                     pStream->uiNumLinesWithNs++;
                     continue;
                 }
@@ -87,6 +90,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
         DEBUG( pRet->check( ); )
         if( pRet->length( ) == 0 )
             throw std::runtime_error( "found empty read: " + pRet->sName );
+        advanceTillNext( pStream );
         return pRet;
     } // if
 #if WITH_QUALITY == 1
@@ -129,6 +133,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
         }
         if( pRet->length( ) == 0 )
             throw std::runtime_error( "found empty read: " + pRet->sName );
+        advanceTillNext( pStream );
         return pRet;
     } // if
 #else
@@ -155,8 +160,9 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
                 if( character == 'N' || character == 'n' )
                 {
                     if( pStream->uiNumLinesWithNs == 0 )
-                        std::cerr << "WARNING: " << sLine << " contains Ns! line: " << pStream->uiNumLinesRead
-                                  << " (this is only printed once)" << std::endl;
+                        std::cerr << "WARNING: " << sLine.substr( 0, 100 )
+                                  << " contains Ns! line: " << pStream->uiNumLinesRead << " (this is only printed once)"
+                                  << std::endl;
                     pStream->uiNumLinesWithNs++;
                     continue;
                 }
@@ -186,42 +192,48 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
         } // while
         if( pRet->length( ) == 0 )
             throw std::runtime_error( "found empty read: " + pRet->sName );
+        advanceTillNext( pStream );
         return pRet;
     } // if
 #endif
     // if we reach this point we do not know how to interpret the next line in the file.
     throw std::runtime_error(
         "Error while reading file.\nIs your input really in FASTA/Q format?\nError occurred in file: " +
-        pStream->fileName( ) );
+        pStream->fileName( ) + "\npeek was:" + pStream->peek( ) );
 } // function
 
 #ifdef WITH_PYTHON
 
-void exportFileReader( py::module& rxPyModuleId )
+void exportFileReader( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<fs::path>( rxPyModuleId, "path" ).def( py::init<std::string>( ) );
-    py::bind_vector<std::vector<fs::path>>( rxPyModuleId, "filePathVector", "docstr" );
-    py::class_<FileStream, Container, std::shared_ptr<FileStream>>( rxPyModuleId, "FileStream" );
-    py::class_<FileStreamFromPath, FileStream, std::shared_ptr<FileStreamFromPath>>( rxPyModuleId,
+    py::class_<fs::path>( xOrganizer.util( ), "path" ).def( py::init<std::string>( ) );
+    py::bind_vector<std::vector<fs::path>>( xOrganizer.util( ), "filePathVector", "docstr" );
+    py::class_<FileStream, libMS::Container, std::shared_ptr<FileStream>>( xOrganizer.container( ), "FileStream" )
+        .def( "eof", &FileStream::eof );
+    py::class_<PairedFileStream, libMS::Container, std::shared_ptr<PairedFileStream>>( xOrganizer.container( ),
+                                                                                       "PairedFileStream" )
+        .def( py::init<std::shared_ptr<FileStream>, std::shared_ptr<FileStream>>( ) );
+    py::class_<FileStreamFromPath, FileStream, std::shared_ptr<FileStreamFromPath>>( xOrganizer.container( ),
                                                                                      "FileStreamFromPath" )
         .def( py::init<fs::path>( ) )
         .def( py::init<std::string>( ) );
-    py::class_<StringStream, FileStream, std::shared_ptr<StringStream>>( rxPyModuleId, "StringStream" )
+    py::class_<StringStream, FileStream, std::shared_ptr<StringStream>>( xOrganizer.container( ), "StringStream" )
         .def( py::init<std::string>( ) );
 
     py::bind_vector_ext<PairedReadsContainer, Container, std::shared_ptr<PairedReadsContainer>>(
-        rxPyModuleId, "ContainerVectorNucSeq", "docstr" );
+        xOrganizer.container( ), "ContainerVectorNucSeq", "docstr" );
+    py::implicitly_convertible<PairedReadsContainer, Container>( );
 
-    exportCyclicQueue<FileStream, NucSeq>( rxPyModuleId, "File", {"NucSeq"} );
-    exportCyclicQueue<PairedFileStream, PairedReadsContainer>( rxPyModuleId, "PairedFile", {"NucSeq"} );
+    exportCyclicQueue<FileStream, NucSeq, Alignment>( xOrganizer, "File", {"NucSeq", "Alignment"} );
+    exportCyclicQueue<PairedFileStream, PairedReadsContainer>( xOrganizer, "PairedFile", {"NucSeq"} );
 
     // export the FileReader class
-    exportModule<FileReader>( rxPyModuleId, "FileReader" );
+    exportModule<FileReader>( xOrganizer, "FileReader" );
     // export the PairedFileReader class
-    exportModule<PairedFileReader>( rxPyModuleId, "PairedFileReader" );
-    exportModule<ProgressPrinter<FileStreamQueue>>( rxPyModuleId, "ProgressPrinterFileStreamQueue" );
-    exportModule<ProgressPrinter<PairedFileStreamQueue>>( rxPyModuleId, "ProgressPrinterPairedFileStreamQueue" );
+    exportModule<PairedFileReader>( xOrganizer, "PairedFileReader" );
+    exportModule<ProgressPrinter<FileStreamQueue>>( xOrganizer, "ProgressPrinterFileStreamQueue" );
+    exportModule<ProgressPrinter<PairedFileStreamQueue>>( xOrganizer, "ProgressPrinterPairedFileStreamQueue" );
 
-    rxPyModuleId.def( "combine_file_streams", &combineFileStreams );
+    xOrganizer.util( ).def( "combine_file_streams", &combineFileStreams );
 } // function
 #endif

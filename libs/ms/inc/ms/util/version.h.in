@@ -1,0 +1,12 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#include <string>
+#include "util/support.h"
+
+#define MA_VERSION "@MA_VERSION@"
+
+extern DLL_PORT(MS) const std::string sLibMaVersion;
+extern DLL_PORT(MS) const bool bLibMaWithPython;
+
+#endif

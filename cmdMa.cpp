@@ -26,15 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "container/fMIndex.h"
-#include "container/nucSeq.h"
-#include "container/pack.h"
-#include "module/fileReader.h"
-#include "module/fileWriter.h"
-#include "debug.h"
-#include "util/execution-context.h"
-#include "util/export.h"
-#include "version.h"
+#include "ma/container/fMIndex.h"
+#include "ma/container/nucSeq.h"
+#include "ma/container/pack.h"
+#include "ma/module/fileReader.h"
+#include "ma/module/fileWriter.h"
+#include "ma/util/export.h"
+#include "ma/util/execution-context.h"
+#include "ms/util/version.h"
+#include "util/debug.h"
 
 /// @cond DOXYGEN_SHOW_SYSTEM_INCLUDES
 #include <iostream>
@@ -43,15 +43,35 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /// @endcond
 
 using namespace libMA;
+using namespace libMS;
 
 const std::string sHeader =
     "========================================= The Modular Aligner =========================================";
 const std::string sIndentOptions = "    ";
+
+void fromatedPrint( const std::string sStr, const std::string& sIndentDesc )
+{
+    std::istringstream xStream( sStr );
+    size_t uiCharCount = 0;
+    const size_t uiMaxCharCnt = sHeader.size( ) - sIndentDesc.size( );
+    for( std::string sWord; xStream >> sWord; )
+    {
+        if( uiCharCount + sWord.size( ) >= uiMaxCharCnt )
+        {
+            uiCharCount = 0;
+            std::cout << std::endl << sIndentDesc;
+        } // if
+        std::cout << sWord << " ";
+        uiCharCount += sWord.size( ) + 1;
+    } // for
+    std::cout << std::endl;
+} // function
 void printOption( std::string sName,
                   const char cShort,
                   const std::string& sTypeName,
                   const std::string& sDefaultVal,
                   const std::string& sDescription,
+                  const std::string& sSetDescription,
                   const std::string& sIndentDesc )
 {
     std::string sOptionHead = sIndentOptions;
@@ -78,20 +98,10 @@ void printOption( std::string sName,
     else
         std::cout << sOptionHead << std::endl << sIndentDesc;
 
-    std::istringstream xStream( sDescription );
-    size_t uiCharCount = 0;
-    const size_t uiMaxCharCnt = sHeader.size( ) - sIndentDesc.size( );
-    for( std::string sWord; xStream >> sWord; )
-    {
-        if( uiCharCount + sWord.size( ) >= uiMaxCharCnt )
-        {
-            uiCharCount = 0;
-            std::cout << std::endl << sIndentDesc;
-        } // if
-        std::cout << sWord << " ";
-        uiCharCount += sWord.size( ) + 1;
-    } // for
-    std::cout << std::endl << std::endl;
+    fromatedPrint( sDescription, sIndentDesc );
+    std::cout << sIndentDesc;
+    fromatedPrint( "{ " + sSetDescription + " }", sIndentDesc );
+    std::cout << std::endl;
 } // function
 
 void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
@@ -120,15 +130,17 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
         "name",
         rManager.xParametersSets.begin( )->first,
         "Optimize aligner parameters for a selected sequencing technique. Available presettings are: " + sOptions + ".",
+        "This parameter sets the presetting.",
         sIndentDesc );
     // general options
-    std::cout << "General options: (these options are not affected by presettings)" << std::endl;
+    std::cout << "General options:" << std::endl;
     printOption( "Index",
                  'x',
                  "file_name",
                  "",
                  "Filename of FMD-index. (A FMD-index can be generated via the --Create_Index option.) This option "
                  "must be set.",
+                 "Independent of presettings.",
                  sIndentDesc );
     printOption( "In",
                  'i',
@@ -136,6 +148,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "",
                  "Filenames of Fasta/Fastq files containing reads. gz-compressed files are automatically decompressed. "
                  "Multiple files can be specified by a comma separated list. One file name must be provided at least.",
+                 "Independent of presettings.",
                  sIndentDesc );
     printOption( "Mate_In",
                  'm',
@@ -144,6 +157,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "Filenames of the mates in the case of paired reads. If this option is set, the aligner switches to "
                  "paired mode automatically. The number of reads given as mates must match the accumulated "
                  "number of reads provided via the 'in'-option.",
+                 "Independent of presettings.",
                  sIndentDesc );
     printOption( "Create_Index",
                  'X',
@@ -153,6 +167,7 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                  "holding the genome used for index creation. 'output_folder' is the folder-path of the location used "
                  "for index storage. 'index_name' is the name used for identifying the new FMD-Index. In the context "
                  "of alignments, the genome-name is used for FMD-index selection.",
+                 "Independent of presettings.",
                  sIndentDesc );
     for( auto xPair : rManager.pGeneralParameterSet->xpParametersByCategory )
     {
@@ -162,25 +177,39 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
                          pParameter->type_name( ),
                          pParameter->asText( ),
                          pParameter->sDescription,
+                         pParameter->sSetDesc,
                          sIndentDesc );
     } // for
 
     if( bFull )
     {
-        // other options
+        std::map<std::pair<size_t, std::string>, std::vector<std::shared_ptr<AlignerParameterBase>>> xCompleteMap;
         for( auto xPair : rManager.getSelected( )->xpParametersByCategory )
+            xCompleteMap[ xPair.first ].insert(
+                xCompleteMap[ xPair.first ].end( ), xPair.second.begin( ), xPair.second.end( ) );
+        for( auto xPair : pGlobalParams->xpParametersByCategory )
+            xCompleteMap[ xPair.first ].insert(
+                xCompleteMap[ xPair.first ].end( ), xPair.second.begin( ), xPair.second.end( ) );
+        // other options
+        for( auto xPair : xCompleteMap )
         {
             std::cout << xPair.first.second << " options:" << std::endl;
+            // give out options sorted by name
+            std::sort( xPair.second.begin( ),
+                       xPair.second.end( ),
+                       []( std::shared_ptr<AlignerParameterBase> pA, std::shared_ptr<AlignerParameterBase> pB ) {
+                           return pA->sName < pB->sName;
+                       } );
             for( auto pParameter : xPair.second )
                 printOption( pParameter->sName,
                              pParameter->cShort,
                              pParameter->type_name( ),
                              pParameter->asText( ),
                              pParameter->sDescription,
+                             pParameter->sSetDesc,
                              sIndentDesc );
         } // for
     } // if
-    // @todo print global options here
 
     std::cout << "Version " << MA_VERSION << "\nBy Markus Schmidt & Arne Kutzner" << std::endl;
     std::cout << "Compiled with following switches:";
@@ -214,7 +243,7 @@ int main( int argc, char* argv[] )
 {
     if( MA_VERSION != sLibMaVersion )
     {
-        std::cerr << "Fatal error: cmbMA verion \"" << MA_VERSION << "\" does not match libMA version \""
+        std::cerr << "Fatal error: cmbMA verion \"" << MA_VERSION << "\" does not match libMS version \""
                   << sLibMaVersion << "\". Something went wrong during building/linking." << std::endl;
         return 1;
     } // if
@@ -240,7 +269,7 @@ int main( int argc, char* argv[] )
     {
         std::string sOptionName = argv[ iI - 1 ];
         std::string sOptionValue = argv[ iI ];
-        if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName(sOptionName) == "--presetting" )
+        if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName( sOptionName ) == "--presetting" )
             xExecutionContext.xParameterSetManager.setSelected( sOptionValue );
     } // for
 
@@ -257,13 +286,13 @@ int main( int argc, char* argv[] )
             std::string sOptionName = argv[ iI ];
 
             // we did this already
-            if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName(sOptionName) == "--presetting" )
+            if( sOptionName == "-p" || ParameterSetBase::uniqueParameterName( sOptionName ) == "--presetting" )
             {
                 iI++; // also ignore the following argument
                 continue;
             } // if
 
-            if( sOptionName == "-x" || ParameterSetBase::uniqueParameterName(sOptionName) == "--index" )
+            if( sOptionName == "-x" || ParameterSetBase::uniqueParameterName( sOptionName ) == "--index" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 const std::string s = xExecutionContext.xGenomeManager.loadGenome( sOptionValue );
@@ -273,7 +302,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-i" || ParameterSetBase::uniqueParameterName(sOptionName) == "--in" )
+            if( sOptionName == "-i" || ParameterSetBase::uniqueParameterName( sOptionName ) == "--in" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsPrimaryQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -281,7 +310,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-m" || ParameterSetBase::uniqueParameterName(sOptionName) == "--matein" )
+            if( sOptionName == "-m" || ParameterSetBase::uniqueParameterName( sOptionName ) == "--matein" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 xExecutionContext.xReadsManager.vsMateQueryFullFileName = fsSplit( sOptionValue, "," );
@@ -290,7 +319,7 @@ int main( int argc, char* argv[] )
                 continue;
             } // if
 
-            if( sOptionName == "-X" || ParameterSetBase::uniqueParameterName(sOptionName) == "--createindex" )
+            if( sOptionName == "-X" || ParameterSetBase::uniqueParameterName( sOptionName ) == "--createindex" )
             {
                 std::string sOptionValue = argv[ iI + 1 ];
                 auto vsStrings = split( sOptionValue, "," );

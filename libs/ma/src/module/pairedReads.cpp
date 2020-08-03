@@ -6,10 +6,11 @@
 #define NOMINMAX
 #endif
 
-#include "module/pairedReads.h"
+#include "ma/module/pairedReads.h"
 #include <limits>
 
 using namespace libMA;
+using namespace libMS;
 
 std::shared_ptr<ContainerVector<std::shared_ptr<Alignment>>>
 PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
@@ -65,7 +66,7 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
                 // bonus score if alignments are paired
                 if( ( (double)d ) >= ( (double)mean ) - std * 3 && ( (double)d ) <= ( (double)mean ) + std * 3 )
                 {
-                    iScore = ( int64_t )( iScore * pGlobalParams->dUnpaired->get( ) );
+                    iScore = ( int64_t )( iScore * u );
                     bIsPaired = true;
                 } // if
             }
@@ -171,9 +172,9 @@ PairedReads::execute( std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2,
 
 #ifdef WITH_PYTHON
 
-void exportPairedReads( py::module& rxPyModuleId )
+void exportPairedReads( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the PairedReads class
-    exportModule<PairedReads>( rxPyModuleId, "PairedReads" );
+    exportModule<PairedReads>( xOrganizer, "PairedReads" );
 } // function
 #endif

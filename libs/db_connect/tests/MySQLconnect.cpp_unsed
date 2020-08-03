@@ -11,7 +11,7 @@
 
 #include <db_con_pool.h>
 #include <sql_api.h>
-#include <threadPool.h>
+#include <util/threadPool.h>
 
 using SQLStatement_ = SQLStatement<MySQLConDB>;
 template <typename... Types> using SQLQuery_ = SQLQuery<MySQLConDB, Types...>;
@@ -227,7 +227,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         //     std::get<4>( aArr[ i ] ) = "This is a bit longer text that has to be written with every row";
 
         // LOAD DATA INFILE "C:\ProgramData\MySQL\MySQL Server 5.7\Uploads\0.csv" INTO TABLE test_table0;
-        int numValues = 1000;
+        //int numValues = 1000;
         {
             auto pTrxnGuard = pMySQLDB->uniqueGuardedTrxn( );
             std::cout << "Make xBulkInserter" << std::endl;
@@ -614,10 +614,10 @@ int mySQLExplainTest( )
     // doNoExcept( [ & ] {
     std::cout << "Do mySQLExplainTest ..." << std::endl;
     std::shared_ptr<SQLDB<MySQLConDB>> pDBCon(
-        std::make_shared<SQLDB<MySQLConDB>>( json{ { SCHEMA, { { NAME, "storage_result_test" } } } } ) );
+        std::make_shared<SQLDB<MySQLConDB>>( json{{SCHEMA, {{NAME, "storage_result_test"}}}} ) );
 
     json xTestTableWithStringsDef =
-        json{ { TABLE_NAME, "TEST_TABLE_WITH_STRINGS" }, { TABLE_COLUMNS, { { { COLUMN_NAME, "string_col" } } } } };
+        json{{TABLE_NAME, "TEST_TABLE_WITH_STRINGS"}, {TABLE_COLUMNS, {{{COLUMN_NAME, "string_col"}}}}};
 
     SQLTableWithLibIncrPriKey<SQLDB<MySQLConDB>, std::string> xTestTableWithStrings( pDBCon, xTestTableWithStringsDef );
 
@@ -655,8 +655,8 @@ int main( int argc, char** argv )
                 // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
                 vFutures.push_back( xDBPool.enqueue( []( auto pDBCon ) {
                     doNoExcept(
-                        [ & ] {
-                            typedef decltype( *pDBCon ) Type;
+                        [&] {
+                            //typedef decltype( *pDBCon ) Type;
                             // typedef typename SubType :: element_type Type;
                             // using Type = typename decltype( pDBCon )::element_type;
                             std::cout << "Job executed in task: " << pDBCon->getTaskId( ) << std::endl;

@@ -1,8 +1,9 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-#include "util/execution-context.h"
-#include "util/export.h"
+#include "ma/util/execution-context.h"
+#include "ma/util/export.h"
+#include "ms/module/splitter.h"
 #include <cstdlib>
 #include <iostream>
 
@@ -26,10 +27,10 @@ int main( void )
     auto pQueryVec = std::make_shared<ContainerVector<std::shared_ptr<ContainerVector<std::shared_ptr<NucSeq>>>>>( );
     for( size_t i = 0; i < 1000; i++ )
     {
-        auto pApp = std::make_shared<ContainerVector<std::shared_ptr<NucSeq>>>();
-        pApp->push_back(randomNucSeq( 1000 ));
-        pApp->push_back(randomNucSeq( 1000 ));
-        pQueryVec->push_back(pApp);
+        auto pApp = std::make_shared<ContainerVector<std::shared_ptr<NucSeq>>>( );
+        pApp->push_back( randomNucSeq( 1000 ) );
+        pApp->push_back( randomNucSeq( 1000 ) );
+        pQueryVec->push_back( pApp );
     } // for
 
     ParameterSetManager xParameters;

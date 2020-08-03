@@ -2,9 +2,10 @@
  * @file binarySeeding.cpp
  * @author Markus Schmidt
  */
-#include "module/binarySeeding.h"
+#include "ma/module/binarySeeding.h"
 
 using namespace libMA;
+using namespace libMS;
 
 
 #include <atomic>
@@ -82,24 +83,28 @@ void BinarySeeding::procesInterval( geom::Interval<nucSeqIndex> xAreaToCover,
     } // while
 } // function
 
-std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArrayInterface> pFM_index,
-                                                       std::shared_ptr<NucSeq> pQuerySeq )
+std::shared_ptr<SegmentVector>
+BinarySeeding::execute( std::shared_ptr<SuffixArrayInterface> pFM_index, std::shared_ptr<NucSeq> pQuerySeq )
 {
     std::shared_ptr<SegmentVector> pSegmentVector( new SegmentVector( ) );
 
     if( pQuerySeq == nullptr )
         return pSegmentVector;
-    if( pQuerySeq->length() == 0 )
+    if( pQuerySeq->length( ) == 0 )
         return pSegmentVector;
 
     DEBUG_2( std::cout << pQuerySeq->fastaq( ) << std::endl; )
 
-    procesInterval( geom::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq, 0 );
+    if( bMEMExtension )
+        pSegmentVector = memExtension( pFM_index, pQuerySeq );
+    else
+        procesInterval( geom::Interval<nucSeqIndex>( 0, pQuerySeq->length( ) ), pSegmentVector, pFM_index, pQuerySeq,
+                        0 );
 
-    /*
-     * If we have extremeley few seeds we may not be able to compute more than one alignment.
-     * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
-     */
+        /*
+         * If we have extremeley few seeds we may not be able to compute more than one alignment.
+         * In that case we cannot do a mapping quality estimation. Therefore we will do a reseeding in this case.
+         */
 #if 0
     if(pSegmentVector->size() <= 10)
     {
@@ -174,10 +179,10 @@ std::shared_ptr<SegmentVector> BinarySeeding::execute( std::shared_ptr<SuffixArr
 
 #ifdef WITH_PYTHON
 
-void exportBinarySeeding( py::module& rxPyModuleId )
+void exportBinarySeeding( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the BinarySeeding class
-    exportModule<BinarySeeding>( rxPyModuleId, "BinarySeeding",
+    exportModule<BinarySeeding>( xOrganizer, "BinarySeeding",
                                  []( auto&& x ) { x.def( "seed", &BinarySeeding::seed ); } );
 } // function
 #endif

@@ -3,9 +3,10 @@
  * @brief implements two futher seeding techniques for texting purpose.
  * @author Markus Schmidt
  */
-#include "module/otherSeeding.h"
+#include "ma/module/otherSeeding.h"
 
 using namespace libMA;
+using namespace libMS;
 
 #define INCLUDE_SELF_TESTS ( 1 )
 
@@ -105,9 +106,9 @@ std::shared_ptr<SegmentVector> OtherSeeding::execute( std::shared_ptr<FMIndex> p
 
 #ifdef WITH_PYTHON
 
-void exportOtherSeeding( py::module& rxPyModuleId )
+void exportOtherSeeding( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the OtherSeeding class
-    exportModule<OtherSeeding, bool>( rxPyModuleId, "OtherSeeding" );
+    exportModule<OtherSeeding, bool>( xOrganizer, "OtherSeeding" );
 } // function
 #endif
