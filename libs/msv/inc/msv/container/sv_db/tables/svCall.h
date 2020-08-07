@@ -188,17 +188,18 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId = this->insert( iSvCallerRunId, //
-                                        (uint32_t)rCall.xXAxis.start( ), //
-                                        (uint32_t)rCall.xYAxis.start( ), //
-                                        (uint32_t)rCall.xXAxis.size( ), //
-                                        (uint32_t)rCall.xYAxis.size( ), //
-                                        rCall.bFromForward, //
-                                        rCall.bToForward,
-                                        // can deal with nullpointers
-                                        makeSharedCompNucSeq( rCall.pInsertedSequence ), //
-                                        rCall.pInsertedSequence->length( ), (uint32_t)rCall.uiNumSuppReads,
-                                        (uint32_t)rCall.uiReferenceAmbiguity, -1, xRectangle );
+        int64_t iCallId =
+            this->insert( iSvCallerRunId, //
+                          (uint32_t)rCall.xXAxis.start( ), //
+                          (uint32_t)rCall.xYAxis.start( ), //
+                          (uint32_t)rCall.xXAxis.size( ), //
+                          (uint32_t)rCall.xYAxis.size( ), //
+                          rCall.bFromForward, //
+                          rCall.bToForward,
+                          // can deal with nullpointers
+                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
+                          rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
+                          (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, -1, xRectangle );
         rCall.iId = iCallId;
 
         return iCallId;
@@ -211,7 +212,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                           (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bFromForward,
                           rCall.bToForward,
                           // can deal with nullpointers
-                          makeSharedCompNucSeq( rCall.pInsertedSequence ), rCall.pInsertedSequence->length( ),
+                          makeSharedCompNucSeq( rCall.pInsertedSequence ),
+                          rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
                           (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, xRectangle, rCall.iId );
         return rCall.iId;
     } // method
@@ -295,12 +297,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xRet;
     } // method
 
-    inline std::pair<std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>
+    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
     callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
                   nucSeqIndex uiMinEntrySize )
     {
-        auto pRet = std::make_shared<Seeds>( );
-        std::vector<std::shared_ptr<NucSeq>> vInsertions;
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
         SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool> xReconstructionTable(
             this->pConnection,
@@ -322,14 +322,18 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                      "SELECT id, from_pos, to_pos, from_forward, False "
                                      "FROM sv_call_table "
                                      "WHERE sv_caller_run_id = ? "
-                                     "AND MAX(ABS(to_pos - from_pos), inserted_sequence_size) >= ? " );
+                                     "AND ( GREATEST(ABS(CAST(to_pos AS SIGNED) - CAST(from_pos AS SIGNED)), "
+                                     "             inserted_sequence_size) >= ? "
+                                     "OR from_forward != to_forward ) " );
         SQLStatement<DBCon> xInsert2( this->pConnection,
                                       "INSERT INTO reconstruction_table (call_id, from_pos, "
                                       "                           to_pos, from_forward, do_reverse) "
                                       "SELECT id, to_pos, from_pos, NOT to_forward, True "
                                       "FROM sv_call_table "
                                       "WHERE sv_caller_run_id = ? "
-                                      "AND MAX(ABS(to_pos - from_pos), inserted_sequence_size) >= ? " );
+                                      "AND ( GREATEST(ABS(CAST(to_pos AS SIGNED) - CAST(from_pos AS SIGNED)), "
+                                      "             inserted_sequence_size) >= ? "
+                                      "OR from_forward != to_forward ) " );
         SQLStatement<DBCon> xDelete( this->pConnection, "DELETE FROM reconstruction_table "
                                                         "WHERE call_id = ? " );
 
@@ -337,6 +341,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             xInsert.exec( iCallerRun, uiMinEntrySize );
             xInsert2.exec( iCallerRun, uiMinEntrySize );
         } );
+
+
+        auto uiNumCalls =
+            SQLQuery<DBCon, int64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
+        std::cout << "num calls: " << uiNumCalls << std::endl;
 
         metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
             xReconstructionTable.addIndex(
@@ -352,8 +361,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "WHERE reconstruction_table.from_pos >= ? "
             "AND reconstruction_table.from_forward "
             "ORDER BY "
-            "       reconstruction_table.call_id ASC, "
-            "       reconstruction_table.from_pos ASC "
+            "       reconstruction_table.from_pos ASC, "
+            "       reconstruction_table.call_id ASC "
             "LIMIT 1 " );
         NextCallType xNextCallBackwardContext(
             this->pConnection,
@@ -364,195 +373,163 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "WHERE reconstruction_table.from_pos <= ? "
             "AND NOT reconstruction_table.from_forward "
             "ORDER BY "
-            "       reconstruction_table.call_id ASC, "
-            "       reconstruction_table.from_pos DESC "
+            "       reconstruction_table.from_pos DESC, "
+            "       reconstruction_table.call_id ASC "
             "LIMIT 1 " );
 
 
 #if DEBUG_LEVEL > 0
         std::set<int64_t> xVisitedCalls;
 #endif
+        auto vContigStarts = pRef->contigStarts( );
+        auto vContigNames = pRef->contigNames( );
+        size_t uiNumCallsExcecuted = 0;
 
-        uint32_t uiCurrPos = 0;
-        nucSeqIndex uiLastEdgeInsertionSize = 0;
-        bool bForwContext = true;
-        while( true )
+        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>> vRet;
+
+        for( size_t uiI = 0; uiI < vContigStarts.size( ); uiI++ )
         {
-            // get the next call
-            std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t> tNextCall;
-            uint32_t uiIntermediatePos = uiCurrPos;
-            // search for the next call that we have not visited yet...
-            metaMeasureAndLogDuration<false>( "SQL", [&]( ) {
-                tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext, xNextCallForwardContext,
-                                               xNextCallBackwardContext );
-            } );
-#if DEBUG_LEVEL > 0
-            if( std::get<0>( tNextCall ) != -1 && // there is no next call
-                                                  // we have not visited the next call
-                xVisitedCalls.find( std::get<0>( tNextCall ) ) != xVisitedCalls.end( ) )
+            uint32_t uiCurrPos = vContigStarts[ uiI ];
+            nucSeqIndex uiLastEdgeInsertionSize = 0;
+            bool bForwContext = true;
+            auto pRet = std::make_shared<Seeds>( );
+            std::vector<std::shared_ptr<NucSeq>> vInsertions;
+            while( true )
             {
+                // get the next call
+                std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t> tNextCall;
+                uint32_t uiIntermediatePos = uiCurrPos;
+                // search for the next call that we have not visited yet...
+                metaMeasureAndLogDuration<false>( "SQL", [&]( ) {
+                    tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext, xNextCallForwardContext,
+                                                   xNextCallBackwardContext );
+                } );
+#if DEBUG_LEVEL > 0
+                if( std::get<0>( tNextCall ) != -1 && // there is no next call
+                                                      // we have not visited the next call
+                    xVisitedCalls.find( std::get<0>( tNextCall ) ) != xVisitedCalls.end( ) )
+                {
 
-                // we have visited the next call and need to search again
-                std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl;
-                assert( false );
-            } // if
+                    // we have visited the next call and need to search again
+                    std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl;
+                    assert( false );
+                } // if
 #endif
 #if 0
-            std::cout << "id: " << std::get<0>( tNextCall ) << " from: " << std::get<1>( tNextCall )
-                      << " to: " << std::get<4>( tNextCall ) << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" )
-                      << " inserted_seq: "
-                      << ( std::get<3>( tNextCall ) == nullptr
-                               ? "nullptr"
-                               : ( std::get<3>( tNextCall )->uiSize == 0 ? "empty"
-                                                                         : std::get<3>( tNextCall )->toString( ) ) )
-                      << std::endl;
+                std::cout << "contig: " << uiI << " id: " << std::get<0>( tNextCall ) << " currpos: " << uiCurrPos
+                          << " from: " << std::get<1>( tNextCall ) << " to: " << std::get<4>( tNextCall )
+                          << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << " inserted_seq: "
+                          << ( std::get<3>( tNextCall ) == nullptr
+                                   ? "nullptr"
+                                   : ( std::get<3>( tNextCall )->uiSize == 0 ? "empty"
+                                                                             : std::get<3>( tNextCall )->toString( ) ) )
+                          << std::endl;
 #endif
-            if( std::get<0>( tNextCall ) == -1 ) // if there are no more calls
-            {
-                metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
-                    // for jumps to the end of the genome we do not want to extract the last contig...
-                    // this check becomes necessary since the with the current index system,
-                    // we would either extract the last nucleotide of the genome twice or extract the
-                    // reverse complement of the last contig...
-                    if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
-                        return;
+                // if there are no more calls or the next call starts in the next chromosome
+                if( std::get<0>( tNextCall ) == -1 || pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                {
+                    metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
+                        // for jumps to the end of the genome we do not want to extract the last contig...
+                        // this check becomes necessary since with the current index system,
+                        // we would either extract the last nucleotide of the genome twice or extract the
+                        // reverse complement of the last contig...
+                        if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
+                            // causes a break after metaMeasureAndLogDuration; does not exit the callsToSeeds function
+                            return;
 
-                    // extract the remainder of the contig we are currently in:
-                    nucSeqIndex uiSize;
-                    if( bForwContext )
-                        uiSize = pRef->endOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) ) -
-                                 uiCurrPos;
-                    else
-                        uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
-                                                 pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ), uiSize,
-                                        uiCurrPos, bForwContext );
-                    if( bWithInsertions )
-                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
-                    uiLastEdgeInsertionSize = 0;
-
-                    /* extract all following contigs:
-                     * for this we make use of the id system of contigs.
-                     * the n forwards contigs have the ids: x*2 | 0 <= x <= n
-                     * the n reverse complement contigs have the ids: x*2+1 | 0 <= x <= n
-                     */
-                    for( int64_t uiI = pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) + ( bForwContext ? 2 : -1 );
-                         uiI < (int64_t)pRef->uiNumContigs( ) * 2 && uiI >= 0;
-                         uiI += ( bForwContext ? 2 : -2 ) )
-                    {
-                        pRet->emplace_back( pRet->empty( ) ? 0 : pRet->back( ).end( ),
-                                            pRef->lengthOfSequenceWithIdOrReverse( uiI ),
-                                            pRef->startOfSequenceWithIdOrReverse( uiI ),
-                                            bForwContext );
+                        // extract the remainder of the contig we are currently in:
+                        nucSeqIndex uiSize;
+                        if( bForwContext )
+                            uiSize =
+                                pRef->endOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) ) -
+                                uiCurrPos;
+                        else
+                            uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
+                                                     pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
+                        pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                            uiSize, uiCurrPos, bForwContext );
                         if( bWithInsertions )
                             vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
                         uiLastEdgeInsertionSize = 0;
-                    } // for
-                } );
-                // stop the loop there are no more calls.
-                break;
-            } // if
+                    } ); // metaMeasureAndLogDuration seq copy final
+                    // stop the loop there are no more calls.
+                    break;
+                } // if
 
-            // we reach this point only if there are more calls, so tNextCall is set properly here
-            metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
-                // if the next call is in a different chromosome
-                while( pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
-                {
-                    // extract the remaining chromosome into xCurrChrom
-                    nucSeqIndex uiSize;
+                // we reach this point only if there are more calls, so tNextCall is set properly here
+                metaMeasureAndLogDuration<false>( "seq copy", [&]( ) {
+                    // the call is in the current chromosome
                     if( bForwContext )
-                        uiSize = pRef->endOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) ) -
-                                 uiCurrPos;
+                        pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                            std::get<1>( tNextCall ) - uiCurrPos + 1, uiCurrPos, true );
                     else
-                        uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
-                                                 pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ), uiSize,
-                                        uiCurrPos, bForwContext );
+                        pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                            uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos + 1, false );
+                    // append the skipped over sequence
                     if( bWithInsertions )
-                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
-                    uiLastEdgeInsertionSize = 0;
-
-                    uiCurrPos = bForwContext ? (uint32_t)pRef->endOfSequenceWithIdOrReverse(
-                                                   pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) )
-                                             : (uint32_t)pRef->startOfSequenceWithIdOrReverse(
-                                                   pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    // if the next call is several chromosomes over this loops keeps going
-                } // while
-                // the call is in the current chromosome / we have already appended all skipped chromosomes
-                if( bForwContext )
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
-                                        std::get<1>( tNextCall ) - uiCurrPos + 1, uiCurrPos, true );
-                else
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
-                                        uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos + 1, false );
-                // append the skipped over sequence
-                if( bWithInsertions )
-                {
+                    {
+                        if( std::get<3>( tNextCall ) != nullptr )
+                            vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
+                        else
+                            vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                    }
                     if( std::get<3>( tNextCall ) != nullptr )
-                        vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
+                        uiLastEdgeInsertionSize = std::get<3>( tNextCall )->length( );
                     else
-                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
-                }
-                if( std::get<3>( tNextCall ) != nullptr )
-                    uiLastEdgeInsertionSize = std::get<3>( tNextCall )->length( );
-                else
-                    uiLastEdgeInsertionSize = 0;
+                        uiLastEdgeInsertionSize = 0;
 
-                metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
-                    // remember that we used this call
-                    xDelete.exec( std::get<0>( tNextCall ) );
+                    metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
+                        // remember that we used this call
+                        xDelete.exec( std::get<0>( tNextCall ) );
 #if DEBUG_LEVEL > 0
-                    xVisitedCalls.insert( std::get<0>( tNextCall ) );
+                        xVisitedCalls.insert( std::get<0>( tNextCall ) );
 #endif
-                    bForwContext = std::get<2>( tNextCall );
-                    uiCurrPos = std::get<4>( tNextCall );
-                } );
-            } );
-        } // while
-        return std::make_pair( pRet, vInsertions );
+                        bForwContext = std::get<2>( tNextCall );
+                        uiCurrPos = std::get<4>( tNextCall );
+                        uiNumCallsExcecuted++;
+                        if( uiNumCallsExcecuted % 500 == 0 )
+                            std::cout << 100 * uiNumCallsExcecuted / (float)uiNumCalls << "%" << std::endl;
+                    } ); // metaMeasureAndLogDuration xInsertRow
+                } ); // metaMeasureAndLogDuration seq copy
+            } // while
+            vRet.push_back( std::make_tuple( vContigNames[ uiI ], pRet, vInsertions ) );
+        } // for
+        return vRet;
     } // method
 
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds( std::shared_ptr<Seeds> pSeeds,
-                                                                      std::vector<std::shared_ptr<NucSeq>> vInsertions,
-                                                                      std::shared_ptr<Pack> pRef )
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
+        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+            vReconstructedSeeds,
+        std::shared_ptr<Pack>
+            pRef )
     {
         auto pRet = std::make_shared<Pack>( );
-        NucSeq xCurrChrom;
-        uint32_t uiContigCnt = 1;
-        for( size_t uiI = 0; uiI < pSeeds->size( ); uiI++ )
+        for( auto& xTup : vReconstructedSeeds )
         {
-            auto xSeed = ( *pSeeds )[ uiI ];
-
-            // if the seed starts at a contig beginning make the reconstructed genome have a new contig as well
-            if( xCurrChrom.length( ) > 0 &&
-                xSeed.start_ref( ) ==
-                    pRef->startOfSequenceWithId( pRef->uiSequenceIdForPosition( xSeed.start_ref( ) ) ) )
+            NucSeq xCurrChrom;
+            for( size_t uiI = 0; uiI < std::get<1>( xTup )->size( ); uiI++ )
             {
-                pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                                       xCurrChrom );
-                xCurrChrom.vClear( );
-            } // if
+                auto xSeed = ( *std::get<1>( xTup ) )[ uiI ];
 
-            auto pNucSeq = vInsertions[ uiI ];
-            if( xSeed.bOnForwStrand )
-                pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
-            else
-                pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ) + 1,
-                                           pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ) + 1,
-                                           xCurrChrom,
-                                           true );
-            if( pNucSeq->length( ) > 0 )
-                xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
+                if( xSeed.bOnForwStrand )
+                    pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
+                else
+                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ) + 1,
+                                               pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ) +
+                                                   1,
+                                               xCurrChrom,
+                                               true );
+
+                if( !std::get<2>( xTup ).empty( ) )
+                {
+                    auto pNucSeq = std::get<2>( xTup )[ uiI ];
+                    if( pNucSeq != nullptr && pNucSeq->length( ) > 0 )
+                        xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
+                } // if
+            } // for
+
+            pRet->vAppendSequence( "reconstructed_" + std::get<0>( xTup ), "no_description", xCurrChrom );
         } // for
-
-        // add leftover insertions
-        for( size_t uiI = pSeeds->size( ); uiI < vInsertions.size( ); uiI++ )
-            xCurrChrom.vAppend( vInsertions[ uiI ]->pxSequenceRef, vInsertions[ uiI ]->length( ) );
-
-        // append the last contig
-        pRet->vAppendSequence( "unnamed_contig_" + std::to_string( uiContigCnt++ ), "no_description_given",
-                               xCurrChrom );
-        xCurrChrom.vClear( );
         return pRet;
     } // method
 
@@ -566,7 +543,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun )
     {
         auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun, true, 0 );
-        return reconstructSequencedGenomeFromSeeds( xGenomeSeeds.first, xGenomeSeeds.second, pRef );
+        return reconstructSequencedGenomeFromSeeds( xGenomeSeeds, pRef );
     } // method
 }; // namespace libMSV
 

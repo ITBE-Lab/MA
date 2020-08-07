@@ -546,7 +546,7 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
 class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 {
     nucSeqIndex uiFuzz = 5;
-    nucSeqIndex uiMinFree = 5;
+    nucSeqIndex uiMinFree = 10;
 
   public:
     FilterOverlappingSeeds( const ParameterSetManager& rParameters )
