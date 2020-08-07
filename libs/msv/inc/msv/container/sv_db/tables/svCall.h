@@ -31,6 +31,7 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                   bool, // from_forward
                                                   bool, // to_forward
                                                   std::shared_ptr<CompressedNucSeq>, // inserted_sequence
+                                                  uint32_t, // inserted_sequence_size
                                                   uint32_t, // supporting_reads
                                                   uint32_t, // reference_ambiguity
                                                   int64_t, // regex_id
@@ -67,6 +68,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "from_forward"}},
               {{COLUMN_NAME, "to_forward"}},
               {{COLUMN_NAME, "inserted_sequence"}},
+              {{COLUMN_NAME, "inserted_sequence_size"}},
               {{COLUMN_NAME, "supporting_reads"}},
               {{COLUMN_NAME, "reference_ambiguity"}},
               {{COLUMN_NAME, "regex_id"}},
@@ -126,6 +128,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    from_forward = ?, "
                        "    to_forward = ?, "
                        "    inserted_sequence = ?, "
+                       "    inserted_sequence_size = ?, "
                        "    supporting_reads = ?, "
                        "    reference_ambiguity = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
@@ -185,17 +188,17 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId =
-            this->insert( iSvCallerRunId, //
-                          (uint32_t)rCall.xXAxis.start( ), //
-                          (uint32_t)rCall.xYAxis.start( ), //
-                          (uint32_t)rCall.xXAxis.size( ), //
-                          (uint32_t)rCall.xYAxis.size( ), //
-                          rCall.bFromForward, //
-                          rCall.bToForward,
-                          // can deal with nullpointers
-                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
-                          (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, -1, xRectangle );
+        int64_t iCallId = this->insert( iSvCallerRunId, //
+                                        (uint32_t)rCall.xXAxis.start( ), //
+                                        (uint32_t)rCall.xYAxis.start( ), //
+                                        (uint32_t)rCall.xXAxis.size( ), //
+                                        (uint32_t)rCall.xYAxis.size( ), //
+                                        rCall.bFromForward, //
+                                        rCall.bToForward,
+                                        // can deal with nullpointers
+                                        makeSharedCompNucSeq( rCall.pInsertedSequence ), //
+                                        rCall.pInsertedSequence->length( ), (uint32_t)rCall.uiNumSuppReads,
+                                        (uint32_t)rCall.uiReferenceAmbiguity, -1, xRectangle );
         rCall.iId = iCallId;
 
         return iCallId;
@@ -208,8 +211,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                           (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bFromForward,
                           rCall.bToForward,
                           // can deal with nullpointers
-                          makeSharedCompNucSeq( rCall.pInsertedSequence ), (uint32_t)rCall.uiNumSuppReads,
-                          (uint32_t)rCall.uiReferenceAmbiguity, xRectangle, rCall.iId );
+                          makeSharedCompNucSeq( rCall.pInsertedSequence ), rCall.pInsertedSequence->length( ),
+                          (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, xRectangle, rCall.iId );
         return rCall.iId;
     } // method
 
@@ -293,7 +296,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     } // method
 
     inline std::pair<std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>
-    callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun )
+    callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
+                  nucSeqIndex uiMinEntrySize )
     {
         auto pRet = std::make_shared<Seeds>( );
         std::vector<std::shared_ptr<NucSeq>> vInsertions;
@@ -312,22 +316,26 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                       //
                   }}} );
 
-        SQLStatement<DBCon> xInsert( this->pConnection, "INSERT INTO reconstruction_table (call_id, from_pos, "
-                                                        "                           to_pos, from_forward, do_reverse) "
-                                                        "SELECT id, from_pos, to_pos, from_forward, False "
-                                                        "FROM sv_call_table "
-                                                        "WHERE sv_caller_run_id = ? " );
-        SQLStatement<DBCon> xInsert2( this->pConnection, "INSERT INTO reconstruction_table (call_id, from_pos, "
-                                                         "                           to_pos, from_forward, do_reverse) "
-                                                         "SELECT id, to_pos, from_pos, NOT to_forward, True "
-                                                         "FROM sv_call_table "
-                                                         "WHERE sv_caller_run_id = ? " );
+        SQLStatement<DBCon> xInsert( this->pConnection,
+                                     "INSERT INTO reconstruction_table (call_id, from_pos, "
+                                     "                           to_pos, from_forward, do_reverse) "
+                                     "SELECT id, from_pos, to_pos, from_forward, False "
+                                     "FROM sv_call_table "
+                                     "WHERE sv_caller_run_id = ? "
+                                     "AND MAX(ABS(to_pos - from_pos), inserted_sequence_size) >= ? " );
+        SQLStatement<DBCon> xInsert2( this->pConnection,
+                                      "INSERT INTO reconstruction_table (call_id, from_pos, "
+                                      "                           to_pos, from_forward, do_reverse) "
+                                      "SELECT id, to_pos, from_pos, NOT to_forward, True "
+                                      "FROM sv_call_table "
+                                      "WHERE sv_caller_run_id = ? "
+                                      "AND MAX(ABS(to_pos - from_pos), inserted_sequence_size) >= ? " );
         SQLStatement<DBCon> xDelete( this->pConnection, "DELETE FROM reconstruction_table "
                                                         "WHERE call_id = ? " );
 
         metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) {
-            xInsert.exec( iCallerRun );
-            xInsert2.exec( iCallerRun );
+            xInsert.exec( iCallerRun, uiMinEntrySize );
+            xInsert2.exec( iCallerRun, uiMinEntrySize );
         } );
 
         metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
@@ -366,6 +374,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #endif
 
         uint32_t uiCurrPos = 0;
+        nucSeqIndex uiLastEdgeInsertionSize = 0;
         bool bForwContext = true;
         while( true )
         {
@@ -416,9 +425,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     else
                         uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
                                                  pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
-                                        uiSize, uiCurrPos, bForwContext );
-                    vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ), uiSize,
+                                        uiCurrPos, bForwContext );
+                    if( bWithInsertions )
+                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                    uiLastEdgeInsertionSize = 0;
 
                     /* extract all following contigs:
                      * for this we make use of the id system of contigs.
@@ -433,7 +444,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                             pRef->lengthOfSequenceWithIdOrReverse( uiI ),
                                             pRef->startOfSequenceWithIdOrReverse( uiI ),
                                             bForwContext );
-                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                        if( bWithInsertions )
+                            vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                        uiLastEdgeInsertionSize = 0;
                     } // for
                 } );
                 // stop the loop there are no more calls.
@@ -453,9 +466,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     else
                         uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
                                                  pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
-                                        uiSize, uiCurrPos, bForwContext );
-                    vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ), uiSize,
+                                        uiCurrPos, bForwContext );
+                    if( bWithInsertions )
+                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                    uiLastEdgeInsertionSize = 0;
 
                     uiCurrPos = bForwContext ? (uint32_t)pRef->endOfSequenceWithIdOrReverse(
                                                    pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) )
@@ -465,16 +480,23 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 } // while
                 // the call is in the current chromosome / we have already appended all skipped chromosomes
                 if( bForwContext )
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         std::get<1>( tNextCall ) - uiCurrPos + 1, uiCurrPos, true );
                 else
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + vInsertions.back( )->length( ) ),
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos + 1, false );
                 // append the skipped over sequence
+                if( bWithInsertions )
+                {
+                    if( std::get<3>( tNextCall ) != nullptr )
+                        vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
+                    else
+                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                }
                 if( std::get<3>( tNextCall ) != nullptr )
-                    vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
+                    uiLastEdgeInsertionSize = std::get<3>( tNextCall )->length( );
                 else
-                    vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                    uiLastEdgeInsertionSize = 0;
 
                 metaMeasureAndLogDuration<false>( "xInsertRow", [&]( ) {
                     // remember that we used this call
@@ -490,8 +512,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return std::make_pair( pRet, vInsertions );
     } // method
 
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
-        std::shared_ptr<Seeds> pSeeds, std::vector<std::shared_ptr<NucSeq>> vInsertions, std::shared_ptr<Pack> pRef )
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds( std::shared_ptr<Seeds> pSeeds,
+                                                                      std::vector<std::shared_ptr<NucSeq>> vInsertions,
+                                                                      std::shared_ptr<Pack> pRef )
     {
         auto pRet = std::make_shared<Pack>( );
         NucSeq xCurrChrom;
@@ -542,7 +565,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
      */
     inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun )
     {
-        auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun );
+        auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun, true, 0 );
         return reconstructSequencedGenomeFromSeeds( xGenomeSeeds.first, xGenomeSeeds.second, pRef );
     } // method
 }; // namespace libMSV

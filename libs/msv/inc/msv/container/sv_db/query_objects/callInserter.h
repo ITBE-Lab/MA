@@ -71,6 +71,7 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
                                                          rCall.bToForward, //
                                                          // can deal with nullpointers
                                                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
+                                                         rCall.pInsertedSequence->length( ), //
                                                          (uint32_t)rCall.uiNumSuppReads, //
                                                          (uint32_t)rCall.uiReferenceAmbiguity, //
                                                          -1, // regex_id
