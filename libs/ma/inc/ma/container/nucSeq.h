@@ -1045,7 +1045,7 @@ class CompressedNucSeq
             {
                 // Encode a single symbol
                 // DEBUG: std::cout << "*";
-                assert( *pUncompItr < 32 );
+                assert( *pUncompItr < 32 ); // @fixme this assertion triggered - cause?
                 *( pCompItr++ ) = *( pUncompItr++ );
             } // else (single symbol)
         } // for

@@ -298,84 +298,16 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     } // method
 
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
-                  nucSeqIndex uiMinEntrySize, std::vector<std::pair<std::string, bool>> vStarts )
+    callsToSeedsHelper( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
+                        std::vector<std::pair<std::string, bool>> vStarts, NextCallType& xNextCallForwardContext,
+                        NextCallType& xNextCallBackwardContext )
     {
-        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool> xReconstructionTable(
-            this->pConnection,
-            json{{TABLE_NAME, "reconstruction_table"},
-                 {CPP_EXTRA, "DROP ON DESTRUCTION"},
-                 {TABLE_COLUMNS,
-                  {
-                      {{COLUMN_NAME, "call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}},
-                      {{COLUMN_NAME, "from_pos"}},
-                      {{COLUMN_NAME, "to_pos"}},
-                      {{COLUMN_NAME, "from_forward"}},
-                      {{COLUMN_NAME, "do_reverse"}}
-                      //
-                  }}} );
-
-        SQLStatement<DBCon> xInsert( this->pConnection,
-                                     "INSERT INTO reconstruction_table (call_id, from_pos, "
-                                     "                           to_pos, from_forward, do_reverse) "
-                                     "SELECT id, from_pos, to_pos, from_forward, False "
-                                     "FROM sv_call_table "
-                                     "WHERE sv_caller_run_id = ? "
-                                     "AND ( GREATEST(ABS(CAST(to_pos AS SIGNED) - CAST(from_pos AS SIGNED)), "
-                                     "             inserted_sequence_size) >= ? "
-                                     "OR from_forward != to_forward ) " );
-        SQLStatement<DBCon> xInsert2( this->pConnection,
-                                      "INSERT INTO reconstruction_table (call_id, from_pos, "
-                                      "                           to_pos, from_forward, do_reverse) "
-                                      "SELECT id, to_pos, from_pos, NOT to_forward, True "
-                                      "FROM sv_call_table "
-                                      "WHERE sv_caller_run_id = ? "
-                                      "AND ( GREATEST(ABS(CAST(to_pos AS SIGNED) - CAST(from_pos AS SIGNED)), "
-                                      "             inserted_sequence_size) >= ? "
-                                      "OR from_forward != to_forward ) " );
         SQLStatement<DBCon> xDelete( this->pConnection, "DELETE FROM reconstruction_table "
                                                         "WHERE call_id = ? " );
-
-        metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) {
-            xInsert.exec( iCallerRun, uiMinEntrySize );
-            xInsert2.exec( iCallerRun, uiMinEntrySize );
-        } );
-
 
         auto uiNumCalls =
             SQLQuery<DBCon, int64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
         std::cout << "num calls: " << uiNumCalls << std::endl;
-
-        metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
-            xReconstructionTable.addIndex(
-                json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "from_forward, from_pos, call_id"}} );
-        } );
-
-        NextCallType xNextCallForwardContext(
-            this->pConnection,
-            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
-            "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-            "WHERE reconstruction_table.from_pos >= ? "
-            "AND reconstruction_table.from_forward "
-            "ORDER BY "
-            "       reconstruction_table.from_pos ASC, "
-            "       reconstruction_table.call_id ASC "
-            "LIMIT 1 " );
-        NextCallType xNextCallBackwardContext(
-            this->pConnection,
-            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
-            "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-            "WHERE reconstruction_table.from_pos <= ? "
-            "AND NOT reconstruction_table.from_forward "
-            "ORDER BY "
-            "       reconstruction_table.from_pos DESC, "
-            "       reconstruction_table.call_id ASC "
-            "LIMIT 1 " );
 
 
 #if DEBUG_LEVEL > 0
@@ -490,9 +422,124 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     } ); // metaMeasureAndLogDuration xInsertRow
                 } ); // metaMeasureAndLogDuration seq copy
             } // while
-            vRet.push_back( std::make_tuple( xStart.first + (xStart.second ? "_f" : "_r"), pRet, vInsertions ) );
+            vRet.push_back( std::make_tuple( xStart.first + ( xStart.second ? "_f" : "_r" ), pRet, vInsertions ) );
         } // for
         return vRet;
+    }
+
+    inline std::shared_ptr<SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool>>
+    createReconstructionTable( PriKeyDefaultType iCallerRun, nucSeqIndex uiMinEntrySize )
+    {
+        auto pReconstructionTable =
+            std::make_shared<SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool>>(
+                this->pConnection,
+                json{{TABLE_NAME, "reconstruction_table"},
+                     {CPP_EXTRA, "DROP ON DESTRUCTION"},
+                     {TABLE_COLUMNS,
+                      {
+                          {{COLUMN_NAME, "call_id"}, {REFERENCES, "sv_call_table(id)"}, {CONSTRAINTS, "NOT NULL"}},
+                          {{COLUMN_NAME, "from_pos"}},
+                          {{COLUMN_NAME, "to_pos"}},
+                          {{COLUMN_NAME, "from_forward"}},
+                          {{COLUMN_NAME, "do_reverse"}}
+                          //
+                      }}} );
+
+        SQLStatement<DBCon> xInsert( this->pConnection,
+                                     "INSERT INTO reconstruction_table (call_id, from_pos, "
+                                     "                           to_pos, from_forward, do_reverse) "
+                                     "SELECT id, from_pos, to_pos, from_forward, False "
+                                     "FROM sv_call_table "
+                                     "WHERE sv_caller_run_id = ? "
+                                     "AND ( GREATEST(ABS(CAST(to_pos AS SIGNED) - CAST(from_pos AS SIGNED)), "
+                                     "             inserted_sequence_size) >= ? "
+                                     "OR from_forward != to_forward ) " );
+        SQLStatement<DBCon> xInsert2( this->pConnection,
+                                      "INSERT INTO reconstruction_table (call_id, from_pos, "
+                                      "                           to_pos, from_forward, do_reverse) "
+                                      "SELECT id, to_pos, from_pos, NOT to_forward, True "
+                                      "FROM sv_call_table "
+                                      "WHERE sv_caller_run_id = ? "
+                                      "AND ( GREATEST(ABS(CAST(to_pos AS SIGNED) - CAST(from_pos AS SIGNED)), "
+                                      "             inserted_sequence_size) >= ? "
+                                      "OR from_forward != to_forward ) " );
+
+        metaMeasureAndLogDuration<false>( "fill reconstruction table", [&]( ) {
+            xInsert.exec( iCallerRun, uiMinEntrySize );
+            xInsert2.exec( iCallerRun, uiMinEntrySize );
+        } );
+
+
+        metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [&]( ) {
+            pReconstructionTable->addIndex(
+                json{{INDEX_NAME, "tmp_rct_from"}, {INDEX_COLUMNS, "from_forward, from_pos"}} );
+        } );
+
+        return pReconstructionTable;
+    }
+
+    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+    callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
+                  nucSeqIndex uiMinEntrySize, std::vector<std::pair<std::string, bool>> vStarts )
+    {
+        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
+        auto pReconstructionTable = createReconstructionTable( iCallerRun, uiMinEntrySize );
+
+        NextCallType xNextCallForwardContext(
+            this->pConnection,
+            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "WHERE reconstruction_table.from_pos >= ? "
+            "AND reconstruction_table.from_forward "
+            "ORDER BY reconstruction_table.from_pos ASC "
+            "LIMIT 1 " );
+        NextCallType xNextCallBackwardContext(
+            this->pConnection,
+            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "WHERE reconstruction_table.from_pos <= ? "
+            "AND NOT reconstruction_table.from_forward "
+            "ORDER BY reconstruction_table.from_pos DESC "
+            "LIMIT 1 " );
+
+        return callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, vStarts, xNextCallForwardContext,
+                                   xNextCallBackwardContext );
+    } // method
+
+    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+    callsToSeedsById( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
+                      nucSeqIndex uiMinEntrySize, std::vector<std::pair<std::string, bool>> vStarts )
+    {
+        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
+        auto pReconstructionTable = createReconstructionTable( iCallerRun, uiMinEntrySize );
+
+        NextCallType xNextCallForwardContext(
+            this->pConnection,
+            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "WHERE reconstruction_table.from_pos >= ? "
+            "AND reconstruction_table.from_forward "
+            "ORDER BY reconstruction_table.call_id ASC "
+            "LIMIT 1 " );
+        NextCallType xNextCallBackwardContext(
+            this->pConnection,
+            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "WHERE reconstruction_table.from_pos <= ? "
+            "AND NOT reconstruction_table.from_forward "
+            "ORDER BY reconstruction_table.call_id ASC "
+            "LIMIT 1 " );
+
+        return callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, vStarts, xNextCallForwardContext,
+                                   xNextCallBackwardContext );
     } // method
 
     inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
