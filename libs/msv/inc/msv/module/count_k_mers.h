@@ -361,6 +361,7 @@ template <nucSeqIndex NUM_CHUNKS_BITS, nucSeqIndex K, typename hash_t> class __H
 
     hash_t chunkKey( uint64_t uiHash )
     {
+        assert( ( uiHash >> NUM_CHUNKS_BITS ) < ( 2ull << K ) );
         // cut off the lower NUM_CHUNKS_BITS bits of uiHash
         return ( hash_t )( uiHash >> NUM_CHUNKS_BITS );
     }
