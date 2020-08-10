@@ -59,11 +59,8 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
           uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) )
     {} // default constructor
 
-    virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT( MA ) execute( std::shared_ptr<Seeds> pSeeds,
-                                                                      std::shared_ptr<NucSeq>
-                                                                          pQuerySeq,
-                                                                      std::shared_ptr<Pack>
-                                                                          pRefSeq );
+    virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT( MA )
+        execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq );
 }; // class
 
 
@@ -85,6 +82,22 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
     const bool bSkipLongBWTIntervals;
 
   public:
+    static void setDeltaOfSeed( Seed& rSeed, const nucSeqIndex uiQLen, Pack& rxRefSequence )
+    {
+        /*
+         * @note this bridging check is not required since we check weather a SoC
+         * is brigding in general.
+         * If any of the seeds within a SoC are bridging then the SoC is bridging.
+         * Could turn this into a debug assertion...
+         */
+        rSeed.uiDelta = StripOfConsiderationSeeds::getPositionForBucketing( uiQLen, rSeed );
+
+        size_t uiContig = rxRefSequence.uiSequenceIdForPosition( rSeed.start_ref( ) );
+        // move the delta position to the right by the contig index
+        // this way we ensure seeds are ordered by contigs first
+        // and then their delta positions within the contig.
+        rSeed.uiDelta += ( uiQLen + 10 ) * uiContig;
+    } // method
     /**
      * @brief extracts all seeds from a SegmentVector
      * @details
@@ -95,21 +108,8 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
     {
         rSegmentVector.emplaceAllEachSeeds(
             rxFM_index, uiQLen, uiMaxAmbiguity, uiMinSeedSize, rvSeedVector,
-            [&rxRefSequence, &rxFM_index, &rvSeedVector, &uiQLen]( ) {
-                /*
-                 * @note this bridging check is not required since we check weather a SoC
-                 * is brigding in general.
-                 * If any of the seeds within a SoC are bridging then the SoC is bridging.
-                 * Could turn this into a debug assertion...
-                 */
-                rvSeedVector.back( ).uiDelta =
-                    StripOfConsiderationSeeds::getPositionForBucketing( uiQLen, rvSeedVector.back( ) );
-
-                size_t uiContig = rxRefSequence.uiSequenceIdForPosition( rvSeedVector.back( ).start_ref( ) );
-                // move the delta position to the right by the contig index
-                // this way we ensure seeds are ordered by contigs first
-                // and then their delta positions within the contig.
-                rvSeedVector.back( ).uiDelta += ( uiQLen + 10 ) * uiContig;
+            [&rxRefSequence, &rvSeedVector, &uiQLen]( ) {
+                setDeltaOfSeed(rvSeedVector.back( ), uiQLen, rxRefSequence);
                 // returning true since we want to continue extracting seeds
                 return true;
             } // lambda

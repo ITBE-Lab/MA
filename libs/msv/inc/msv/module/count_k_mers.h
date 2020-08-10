@@ -434,14 +434,15 @@ class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, 
         auto pRet = pMMIndex->seed_one(
             sSeq, iSize, pPack,
             // lambda function filters query minimizers before they are turned to seeds via hash table lookup
-            [/*cannot capture since lambda needs to be passed to c as function pointer*/]( mm128_v* mv, void* pArg ) {
+            [/*cannot capture since lambda needs to be passed to c as function pointer*/]( mm128_t* a, size_t& n,
+                                                                                           void* pArg ) {
                 // unpack arguments from c function
                 auto pPair = static_cast<std::pair<std::shared_ptr<HashCounter>, nucSeqIndex>*>( pArg );
                 size_t uiI = 0;
-                while( uiI < mv->n )
+                while( uiI < n )
                 {
-                    if( !pPair->first->isUnique( minimizer::Index::_getHash( mv->a[ uiI ] ), pPair->second ) )
-                        mv->a[ uiI ] = mv->a[ --mv->n ];
+                    if( !pPair->first->isUnique( minimizer::Index::_getHash( a[ uiI ] ), pPair->second ) )
+                        a[ uiI ] = a[ --n ];
                     else
                         uiI++;
                 } // while

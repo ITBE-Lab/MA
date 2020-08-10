@@ -74,7 +74,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::share
                 int64_t uiExpectedContigIdEnd = pRefSeq->uiSequenceIdForPosition( xStripEnd->start_ref( ) );
                 if( (int64_t)uiContigIdEnd > uiExpectedContigIdEnd )
                 {
-                    std::cerr << "got wierd contig id: " << uiContigIdEnd << " " << uiExpectedContigIdEnd << std::endl;
+                    std::cerr << "got wired contig id: " << uiContigIdEnd << " " << uiExpectedContigIdEnd << std::endl;
                     assert( false );
                 } // if
 #endif

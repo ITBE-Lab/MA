@@ -270,8 +270,8 @@ int32_t mm_idx_cal_max_occ( const mm_idx_t* mi, float f );
  * @param n_a        length of a array (out)
  */
 mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const char** seqs, mm_tbuf_t* b,
-                        const mm_mapopt_t* opt, const char* qname, int64_t* n_a, void ( *mm_filter )( mm128_v*, void* ),
-                        void* pFilterArg );
+                        const mm_mapopt_t* opt, const char* qname, int64_t* n_a,
+                        void ( *mm_filter )( mm128_t*, size_t&, void* ), void* pFilterArg );
 
 #ifdef __cplusplus
 }

@@ -2,6 +2,7 @@
 #include "ma/container/nucSeq.h"
 #include "ma/container/pack.h"
 #include "ma/container/segment.h"
+#include "ma/module/stripOfConsideration.h"
 #include "ms/util/parameter.h"
 #ifndef __cplusplus
 #define __cplusplus TRUE
@@ -16,7 +17,7 @@ namespace minimizer
 {
 #ifdef WITH_ZLIB
 
-inline void mm_filter_none( mm128_v*, void* )
+inline void mm_filter_none( mm128_t*, size_t&, void* )
 {} // method
 
 /**
@@ -203,7 +204,7 @@ class Index : public libMS::Container
 
 
     std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, std::shared_ptr<libMA::Pack> pPack,
-                                            void ( *mm_filter )( mm128_v*, void* ), void* pFilterArg )
+                                            void ( *mm_filter )( mm128_t*, size_t&, void* ), void* pFilterArg )
     {
         auto pRet = std::make_shared<libMA::Seeds>( );
         int64_t n_a = 0;
@@ -235,6 +236,8 @@ class Index : public libMS::Container
                         ( (int32_t)a[ uiI ].x ) + 1 - uiQSpan + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
                         true // minimap code : "+-"[a[i].x>>63]
                     );
+                    assert( !pPack->bPositionIsOnReversStrand( pRet->back( ).start_ref( ) ) );
+                    assert( !pPack->bPositionIsOnReversStrand( pRet->back( ).end_ref( ) - 1 ) );
                 } // if
                 else
                 {
@@ -248,6 +251,8 @@ class Index : public libMS::Container
                         (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
                         false // minimap code : "+-"[a[i].x>>63]
                     );
+                    assert( !pPack->bPositionIsOnReversStrand( pRet->back( ).start_ref( ) - 1 ) );
+                    assert( !pPack->bPositionIsOnReversStrand( pRet->back( ).start_ref( ) - pRet->back( ).size( ) ) );
                 } // else
             } // for
             kfree( tbuf->km, a );
@@ -255,6 +260,12 @@ class Index : public libMS::Container
         else if( n_a > 0 )
             throw std::runtime_error( "minimizer vector is empty" );
         mm_tbuf_destroy( tbuf );
+
+        // delta values need to be set in case we want to compute a SoC...
+        // @todo this should be done by the SoC module but is done as well in the binary seeding module so i added it
+        // here for now
+        for( auto& rSeed : *pRet )
+            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, iSize, *pPack );
 
         return pRet;
     } // method
@@ -462,8 +473,8 @@ class Index : public libMS::Container
         return _getHash( sSeq, iSize, xOptions.w, xOptions.k );
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>>
-    seed( std::vector<std::string> vQueries, std::shared_ptr<libMA::Pack> pPack )
+    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
+                                                     std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
 

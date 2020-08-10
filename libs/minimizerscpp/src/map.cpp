@@ -48,7 +48,7 @@ static int mm_dust_minier( void* km, int n, mm128_t* a, int l_seq, const char* s
  * @param _n_m       number of returned mathces
  */
 static void collect_minimizers( void* km, const mm_mapopt_t* opt, const mm_idx_t* mi, int n_segs, const int* qlens,
-                                const char** seqs, mm128_v* mv, void ( *mm_filter )( mm128_v*, void* ),
+                                const char** seqs, mm128_v* mv, void ( *mm_filter )( mm128_t*, size_t&, void* ),
                                 void* pFilterArg )
 {
     int i, n, sum = 0;
@@ -57,7 +57,12 @@ static void collect_minimizers( void* km, const mm_mapopt_t* opt, const mm_idx_t
     {
         size_t j;
         mm_sketch( km, seqs[ i ], qlens[ i ], mi->w, mi->k, i, mi->flag & MM_I_HPC, mv );
-        ( *mm_filter )( mv, pFilterArg );
+
+        // let mm_filter filter the last mv->n - n minimizers in the array mv->a
+        mv->n -= n;
+        ( *mm_filter )( &mv->a[ n ], mv->n, pFilterArg );
+        mv->n += n;
+
         for( j = n; j < mv->n; ++j )
             mv->a[ j ].y += sum << 1;
         if( opt->sdust_thres > 0 ) // mask low-complexity minimizers
@@ -461,8 +466,8 @@ static mm128_t* collect_seed_hits( void* km, const mm_mapopt_t* opt, int max_occ
  * by markus
  */
 mm128_t* collect_seeds( const mm_idx_t* mi, int n_segs, const int* qlens, const char** seqs, mm_tbuf_t* b,
-                        const mm_mapopt_t* opt, const char* qname, int64_t* n_a, void ( *mm_filter )( mm128_v*, void* ),
-                        void* pFilterArg )
+                        const mm_mapopt_t* opt, const char* qname, int64_t* n_a,
+                        void ( *mm_filter )( mm128_t*, size_t&, void* ), void* pFilterArg )
 {
     int i, rep_len, qlen_sum, n_mini_pos;
     uint64_t* mini_pos;
