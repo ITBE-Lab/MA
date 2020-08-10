@@ -821,13 +821,23 @@ class Pack : public libMS::Container
         return xVectorOfSequenceDescriptors[ iSequenceId ].uiStartOffsetUnpacked;
     } // method
 
-    /* Start of in sequence with id on forward strand.
+    /* Start of in sequence with name on forward strand.
      */
     uint64_t startOfSequenceWithName( std::string name ) const
     {
         for( const SequenceInPack& seq : xVectorOfSequenceDescriptors )
             if( seq.sName.compare( name ) == 0 )
                 return seq.uiStartOffsetUnpacked;
+        return 0;
+    } // method
+
+    /* End of in sequence with name on forward strand.
+     */
+    uint64_t endOfSequenceWithName( std::string name ) const
+    {
+        for( const SequenceInPack& seq : xVectorOfSequenceDescriptors )
+            if( seq.sName.compare( name ) == 0 )
+                return seq.uiStartOffsetUnpacked + seq.uiLengthUnpacked;
         return 0;
     } // method
 
@@ -1081,6 +1091,13 @@ class Pack : public libMS::Container
         return bPositionIsOnReversStrand( uiA ) != bPositionIsOnReversStrand( uiB ) ||
                // section crosses different sequences
                uiSequenceIdForPositionOrRev( uiA ) != uiSequenceIdForPositionOrRev( uiB );
+    } // method
+
+    bool onContigBorder( const uint64_t uiA ) const
+    {
+        if( uiA == 0 )
+            return true;
+        return bridgingPositions( uiA - 1, uiA );
     } // method
 
     /*

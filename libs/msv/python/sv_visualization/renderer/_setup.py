@@ -26,7 +26,10 @@ def setup(self):
 
         # chromosome lines
         xs = [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand]
-        self.main_plot.remove_callback()
+        self.main_plot.plot.x_range.end = self.pack.unpacked_size_single_strand
+        self.main_plot.plot.y_range.end = self.pack.unpacked_size_single_strand
+        self.main_plot.plot.x_range.start = 0
+        self.main_plot.plot.y_range.start = 0
         self.main_plot.plot.grid.ticker = FixedTicker(ticks=xs)
         self.seed_plot.bottom_plot.grid.ticker = FixedTicker(ticks=xs)
         self.seed_plot.left_plot.grid.ticker = FixedTicker(ticks=xs)
@@ -40,8 +43,8 @@ def setup(self):
         contig_ends = [x+s for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
         self.seed_plot.left_plot.yaxis[0].formatter = FuncTickFormatter(
                         args={"contig_starts": [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand],
-                              "genome_end":self.pack.unpacked_size_single_strand,
-                              "contig_names": [*self.pack.contigNames()]},
+                            "genome_end":self.pack.unpacked_size_single_strand,
+                            "contig_names": [*self.pack.contigNames()]},
                         code="""
                                 if(tick < 0 || tick >= genome_end)
                                     return "n/a";
@@ -63,8 +66,6 @@ def setup(self):
         self.read_plot.nuc_plot.bottom_plot.xaxis[0].formatter = self.seed_plot.left_plot.yaxis[0].formatter
         self.read_plot.nuc_plot.bottom_plot.xaxis[0].ticker = self.seed_plot.left_plot.yaxis[0].ticker
 
-        # range change callback
-        self.main_plot.add_callback()
 
         self.xs = 0
         self.xe = self.pack.unpacked_size_single_strand

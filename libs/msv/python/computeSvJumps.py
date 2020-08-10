@@ -3,7 +3,7 @@ from MS import *
 from MA import *
 import datetime
 
-def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_ids=0, runtime_file=None):
+def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_ids=0, runtime_file=None):
     #parameter_set_manager.by_name("Number of Threads").set(1)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
@@ -16,8 +16,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
 
         nuc_seq_fetcher = NucSeqFetcher(parameter_set_manager)
         lock_module = Lock(parameter_set_manager)
-        seeding_module = BinarySeeding(parameter_set_manager)
-        extract_seeds = ExtractSeeds(parameter_set_manager)
+        seeding_module = MinimizerSeeding(parameter_set_manager)
+        seed_lumper = SeedLumping(parameter_set_manager)
         k_mer_filter = KMerCountFilterModule(parameter_set_manager, 300)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
         soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 50)
@@ -27,8 +27,8 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
                                             "python built comp graph")
         jump_inserter_module = JumpInserterModule(parameter_set_manager)
 
-        fm_pledge = Pledge()
-        fm_pledge.set(fm_index)
+        mm_pledge = Pledge()
+        mm_pledge.set(mm_index)
         pack_pledge = Pledge()
         pack_pledge.set(pack)
         pool_pledge = Pledge()
@@ -60,16 +60,16 @@ def compute_sv_jumps(parameter_set_manager, fm_index, pack, dataset_name, seq_id
                 analyze.register("NucSeqFetcher", queries_pledge, True)
                 query_pledge = promise_me(lock_module, queries_pledge)
                 analyze.register("Lock", query_pledge, True)
-                segments_pledge = promise_me(seeding_module, fm_pledge, query_pledge)
-                analyze.register("BinarySeeding", segments_pledge, True)
-                seeds_pledge = promise_me(extract_seeds, segments_pledge, fm_pledge, query_pledge, pack_pledge)
-                analyze.register("ExtractSeeds", segments_pledge, True)
-                filtered_seeds_pledge = promise_me(k_mer_filter, query_pledge, seeds_pledge, k_mer_counter)
-                analyze.register("KMerFilter", segments_pledge, True)
-                socs = promise_me(soc_module, filtered_seeds_pledge, query_pledge, pack_pledge, fm_pledge)
-                analyze.register("SoC", segments_pledge, True)
+                seeds_pledge = promise_me(seeding_module, mm_pledge, query_pledge, pack_pledge)
+                analyze.register("MinimizerSeeding", seeds_pledge, True)
+                lumped_seeds = promise_me(seed_lumper, seeds_pledge, query_pledge, pack_pledge)
+                analyze.register("SeedLumping", lumped_seeds, True)
+                filtered_seeds_pledge = promise_me(k_mer_filter, query_pledge, lumped_seeds, k_mer_counter)
+                analyze.register("KMerFilter", filtered_seeds_pledge, True)
+                socs = promise_me(soc_module, filtered_seeds_pledge, query_pledge, pack_pledge)
+                analyze.register("SoC", socs, True)
                 filtered_seeds_pledge_2 = promise_me(soc_filter, socs)
-                analyze.register("SoCFilter", segments_pledge, True)
+                analyze.register("SoCFilter", filtered_seeds_pledge_2, True)
                 jumps_pledge = promise_me(jumps_from_seeds, filtered_seeds_pledge_2, pack_pledge, query_pledge)
                 analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
                 filtered_jumps_pledge = promise_me(filter_by_ambiguity, jumps_pledge, pack_pledge)

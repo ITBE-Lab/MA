@@ -6,6 +6,7 @@ from MA import *
 from MSV import *
 import math
 from .util import *
+import sys, traceback
 
 def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict, end_column,
                   category_counter, use_dp):
@@ -106,7 +107,7 @@ def render_reads(self, render_all=False):
                     with self.measure("KMerFilter"):
                         filtered_seeds_pledge = k_mer_filter.execute(read, seeds_pledge, self.k_mer_counter)
                     with self.measure("SoC"):
-                        socs = soc_module.execute(filtered_seeds_pledge, read, self.pack, self.fm_index)
+                        socs = soc_module.execute(filtered_seeds_pledge, read, self.pack)
                     with self.measure("SoCFilter"):
                         filtered_seeds_pledge_2 = soc_filter.execute(socs)
                     # execute_helper is not threadsave 
@@ -147,7 +148,7 @@ def render_reads(self, render_all=False):
                             self.add_rectangle(seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict,
                                             end_column, category_counter, use_dp)
 
-                        if len(self.read_ids) <= self.do_compressed_seeds:
+                        if len(self.read_ids) <= self.do_compressed_seeds and not end_column is None:
                             category_counter += len(end_column) + 2
                             read_id_n_cols[curr_col_id] = read_id
 
@@ -162,6 +163,7 @@ def render_reads(self, render_all=False):
                         category_counter += len(end_column)
             except Exception as e:
                 print(e)
+                traceback.print_exc(file=sys.stdout)
 
     def callback():
         if len(read_dict["c"]) < self.get_max_num_ele() or render_all:

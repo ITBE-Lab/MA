@@ -49,7 +49,7 @@ class Renderer():
         self.cached_overview_min_score = None
         self.cached_overview_max_render = None
         self.global_overview_threshold = 0.2
-        self._do_overview_cache = True
+        self._do_overview_cache = False
         self.curdoc = curdoc()
 
     def get_run_id(self):

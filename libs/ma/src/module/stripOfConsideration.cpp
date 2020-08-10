@@ -13,9 +13,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::share
                                                                       std::shared_ptr<NucSeq>
                                                                           pQuerySeq,
                                                                       std::shared_ptr<Pack>
-                                                                          pRefSeq,
-                                                                      std::shared_ptr<FMIndex>
-                                                                          pFM_index )
+                                                                          pRefSeq )
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )
@@ -124,7 +122,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsideration::execute( std::shared_ptr
 {
     auto pSeeds = xExtractHelper.execute( pSegments, pFM_index, pQuerySeq, pRefSeq );
 
-    return xHelper.execute( pSeeds, pQuerySeq, pRefSeq, pFM_index );
+    return xHelper.execute( pSeeds, pQuerySeq, pRefSeq );
 } // function
 
 #ifdef WITH_PYTHON

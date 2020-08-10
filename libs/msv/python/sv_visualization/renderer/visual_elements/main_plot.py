@@ -14,6 +14,8 @@ class MainPlot:
                 "wheel_zoom", "save",
                 "reset"
             ],
+            x_range=(0,1),
+            y_range=(0,1),
             active_scroll="wheel_zoom"
         )
         self.plot.axis.visible = False
@@ -84,14 +86,8 @@ class MainPlot:
         self.plot.on_event(Tap, lambda tap: self.jump_or_call_tap(renderer, tap.x, tap.y))
 
         # range change callback
-        self.callback_func = lambda x,y,z: self.range_change_callback(renderer)
-        self.add_callback()
+        self.plot.y_range.on_change("start",lambda x,y,z: self.range_change_callback(renderer))
 
-    def remove_callback(self):
-        self.plot.y_range.remove_on_change("start",self.callback_func)
-
-    def add_callback(self):
-        self.plot.y_range.on_change("start",self.callback_func)
 
     def range_change_callback(self, renderer):
         x_r = self.plot.x_range

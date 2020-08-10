@@ -18,7 +18,7 @@ namespace libMA
  * @brief Used to quickly find areas with high density of @ref Seed "seeds".
  * @ingroup module
  */
-class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, Seeds, NucSeq, Pack, FMIndex>
+class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, Seeds, NucSeq, Pack>
 {
   public:
     /**
@@ -63,9 +63,7 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
                                                                       std::shared_ptr<NucSeq>
                                                                           pQuerySeq,
                                                                       std::shared_ptr<Pack>
-                                                                          pRefSeq,
-                                                                      std::shared_ptr<FMIndex>
-                                                                          pFM_index );
+                                                                          pRefSeq );
 }; // class
 
 

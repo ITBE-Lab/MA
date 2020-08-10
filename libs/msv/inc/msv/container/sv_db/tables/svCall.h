@@ -299,7 +299,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
     callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
-                  nucSeqIndex uiMinEntrySize )
+                  nucSeqIndex uiMinEntrySize, std::vector<std::pair<std::string, bool>> vStarts )
     {
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
         SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool> xReconstructionTable(
@@ -381,17 +381,16 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #if DEBUG_LEVEL > 0
         std::set<int64_t> xVisitedCalls;
 #endif
-        auto vContigStarts = pRef->contigStarts( );
-        auto vContigNames = pRef->contigNames( );
         size_t uiNumCallsExcecuted = 0;
 
         std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>> vRet;
 
-        for( size_t uiI = 0; uiI < vContigStarts.size( ); uiI++ )
+        for( auto xStart : vStarts )
         {
-            uint32_t uiCurrPos = vContigStarts[ uiI ];
+            bool bForwContext = xStart.second;
+            uint32_t uiCurrPos = bForwContext ? pRef->startOfSequenceWithName( xStart.first ) + 1
+                                              : pRef->endOfSequenceWithName( xStart.first ) - 1;
             nucSeqIndex uiLastEdgeInsertionSize = 0;
-            bool bForwContext = true;
             auto pRet = std::make_shared<Seeds>( );
             std::vector<std::shared_ptr<NucSeq>> vInsertions;
             while( true )
@@ -425,18 +424,17 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                                                              : std::get<3>( tNextCall )->toString( ) ) )
                           << std::endl;
 #endif
+                // for jumps to the end of a contig we do not want to continue...
+                // this check becomes necessary since with the current index system,
+                // we would either extract the last nucleotide of the contig twice or extract the
+                // reverse complement of the contig...
+                if( pRef->onContigBorder( uiCurrPos ) )
+                    break;
+
                 // if there are no more calls or the next call starts in the next chromosome
                 if( std::get<0>( tNextCall ) == -1 || pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                 {
                     metaMeasureAndLogDuration<false>( "seq copy final", [&]( ) {
-                        // for jumps to the end of the genome we do not want to extract the last contig...
-                        // this check becomes necessary since with the current index system,
-                        // we would either extract the last nucleotide of the genome twice or extract the
-                        // reverse complement of the last contig...
-                        if( pRef->uiUnpackedSizeForwardStrand == uiCurrPos )
-                            // causes a break after metaMeasureAndLogDuration; does not exit the callsToSeeds function
-                            return;
-
                         // extract the remainder of the contig we are currently in:
                         nucSeqIndex uiSize;
                         if( bForwContext )
@@ -492,7 +490,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     } ); // metaMeasureAndLogDuration xInsertRow
                 } ); // metaMeasureAndLogDuration seq copy
             } // while
-            vRet.push_back( std::make_tuple( vContigNames[ uiI ], pRet, vInsertions ) );
+            vRet.push_back( std::make_tuple( xStart.first + (xStart.second ? "_f" : "_r"), pRet, vInsertions ) );
         } // for
         return vRet;
     } // method
@@ -540,9 +538,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
      *  Creates a reconstruction_table that is filled with all unused calls from iCallerRun and then deletes the calls
      *  one by one until the sequenced genome is reconstructed
      */
-    inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun )
+    inline std::shared_ptr<Pack> reconstructSequencedGenome( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun,
+                                                             std::vector<std::pair<std::string, bool>> vStarts )
     {
-        auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun, true, 0 );
+        auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun, true, 0, vStarts );
         return reconstructSequencedGenomeFromSeeds( xGenomeSeeds, pRef );
     } // method
 }; // namespace libMSV
