@@ -103,11 +103,10 @@ def render_calls(self, render_all=False):
             accepted_plus_data["desc"].append(desc_table.get_desc(call.id))
     with self.measure("SvCallFromDb(gt_id)"):
         calls_from_db_gt = SvCallsFromDb(self.params, self.db_conn, self.get_gt_id(),
-                                    int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
-                                    self.get_min_score())
+                                    int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3, 0)
     with self.measure("SvCallFromDb(gt_id) extract"):
         while calls_from_db_gt.hasNext():
-            call = calls_from_db_gt.next()
+            call = calls_from_db_gt.next(False)
             if call.x.size == 0 and call.y.size == 0:
                 ground_plus_data["x"].append(call.x.start + 0.5)
                 ground_plus_data["y"].append(call.y.start + 0.5)

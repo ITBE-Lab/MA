@@ -15,6 +15,10 @@
 namespace minimizer
 {
 #ifdef WITH_ZLIB
+
+inline void mm_filter_none( mm128_v*, void* )
+{} // method
+
 /**
  * @brief cpp wrapper for the minimap index
  * @details
@@ -197,16 +201,16 @@ class Index : public libMS::Container
             throw std::runtime_error( "failed to open file" + sIndexName );
     } // method
 
-    std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, std::shared_ptr<libMA::Pack> pPack )
+
+    std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, std::shared_ptr<libMA::Pack> pPack,
+                                            void ( *mm_filter )( mm128_v*, void* ), void* pFilterArg )
     {
         auto pRet = std::make_shared<libMA::Seeds>( );
         int64_t n_a = 0;
 
         mm_tbuf_t* tbuf = mm_tbuf_init( );
-        const char* sSeq = sQuery.c_str( );
-        const int iSize = (int)sQuery.size( );
         // const char* seqs = (const char*)&pQuery->pxSequenceRef;
-        mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a );
+        mm128_t* a = collect_seeds( pData, 1, &iSize, &sSeq, tbuf, &xMapOpt, 0, &n_a, mm_filter, pFilterArg );
         if( a != NULL )
         {
             for( int64_t uiI = 0; uiI < n_a; uiI++ )
@@ -238,7 +242,7 @@ class Index : public libMS::Container
                     pRet->emplace_back(
                         /* minimap uses 1-based index i use 0-based indices...
                            a[ uiI ].y = last base of minimizer */
-                        sQuery.length( ) - 1 - ( (int32_t)a[ uiI ].y ),
+                        iSize - 1 - ( (int32_t)a[ uiI ].y ),
                         uiQSpan,
                         /* reference position is encoded in the lower 32 bits of x */
                         (int32_t)a[ uiI ].x + pPack->startOfSequenceWithId( a[ uiI ].x << 1 >> 33 ),
@@ -255,6 +259,209 @@ class Index : public libMS::Container
         return pRet;
     } // method
 
+    std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, std::shared_ptr<libMA::Pack> pPack )
+    {
+        const char* sSeq = sQuery.c_str( );
+        const int iSize = (int)sQuery.size( );
+        return seed_one( sSeq, iSize, pPack, &mm_filter_none, nullptr );
+    } // method
+
+    std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, std::shared_ptr<libMA::Pack> pPack )
+    {
+        return seed_one( sSeq, iSize, pPack, &mm_filter_none, nullptr );
+    } // method
+
+#define VOID_MM UINT64_MAX
+    static unsigned char seq_nt4_table[ 256 ];
+
+    static inline uint64_t hash64( uint64_t key, uint64_t mask )
+    {
+        key = ( ~key + ( key << 21 ) ) & mask; // key = (key << 21) - key - 1;
+        key = key ^ key >> 24;
+        key = ( ( key + ( key << 3 ) ) + ( key << 8 ) ) & mask; // key * 265
+        key = key ^ key >> 14;
+        key = ( ( key + ( key << 2 ) ) + ( key << 4 ) ) & mask; // key * 21
+        key = key ^ key >> 28;
+        key = ( key + ( key << 31 ) ) & mask;
+        return key;
+    }
+    /**
+     * Adapted from the Minimap code
+     * Find symmetric (w,k)-minimizers on a DNA sequence
+     * Implements the algorithm proposed in:
+     * "Minimap and miniasm: fast mapping and de novo assembly for noisy long sequences"
+     *
+     * @param km     thread-local memory pool; using NULL falls back to malloc()
+     * @param str    DNA sequence
+     * @param len    length of $str
+     * @param w      find a minimizer for every $w consecutive k-mers (windows size)
+     * @param k      k-mer size
+     * @param rid    reference ID; will be copied to the output $p array
+     * @param is_hpc homopolymer-compressed or not
+     * @param p      minimizers
+     *               p->a[i].x = kMer<<8 | kmerSpan
+     *               p->a[i].y = rid<<32 | lastPos<<1 | strand
+     *               where lastPos is the position of the last base of the i-th minimizer,
+     *               and strand indicates whether the minimizer comes from the top or the bottom strand.
+     *               Callers may want to set "p->n = 0"; otherwise results are appended to p
+     */
+    static std::vector<mm128_t> mm_sketch( const char* str, int len, int w, int k, uint32_t rid )
+    {
+        std::vector<mm128_t> p;
+        uint64_t shift1 = 2 * ( k - 1 ), mask = ( 1ULL << 2 * k ) - 1, kmer[ 2 ] = {0, 0};
+        int i, j, l, buf_pos, min_pos, kmer_span = 0;
+        mm128_t buf[ 256 ]; // Circular Buffer of size w. stores kmer[ 0 ] and kmer[ 1 ] of each interation
+        mm128_t min = {VOID_MM, VOID_MM}; // minimizer
+        /* tiny_queue_t tq; */
+        // std::cout << toBinString( mask ) << std::endl;
+        assert( len > 0 && ( w > 0 && w < 256 ) &&
+                ( k > 0 && k <= 28 ) ); // 56 bits for k-mer; could use long k-mers, but 28 enough in practice
+        memset( buf, 0xff, w * 16 );
+        /* memset( &tq, 0, sizeof( tiny_queue_t ) ); */
+        // kv_resize( mm128_t, km, *p, p->n + len / w );
+        p.reserve( p.size( ) + len / w );
+
+        for( i = l = buf_pos = min_pos = 0; i < len; ++i )
+        {
+            int c = seq_nt4_table[ (uint8_t)str[ i ] ];
+            mm128_t info = {VOID_MM, VOID_MM};
+            if( c < 4 )
+            { // not an ambiguous base
+                int z;
+
+                // if (is_hpc)
+                // {
+                //     int skip_len = 1;
+                //     if (i + 1 < len && seq_nt4_table[(uint8_t)str[i + 1]] == c)
+                //     {
+                //         for (skip_len = 2; i + skip_len < len; ++skip_len)
+                //             if (seq_nt4_table[(uint8_t)str[i + skip_len]] != c)
+                //                 break;
+                //         i += skip_len - 1; // put $i at the end of the current homopolymer run
+                //     }
+                //     tq_push(&tq, skip_len);
+                //     kmer_span += skip_len;
+                //     if (tq.count > k)
+                //         kmer_span -= tq_shift(&tq);
+                // }
+                // else
+                kmer_span = l + 1 < k ? l + 1 : k;
+                // std::cout << "X" << kmer_span << " ";
+                // I think her is a difference to the paper, where first comes hashing and than minimum
+                kmer[ 0 ] = ( kmer[ 0 ] << 2 | c ) & mask; // forward k-mer
+                kmer[ 1 ] = ( kmer[ 1 ] >> 2 ) | ( 3ULL ^ c ) << shift1; // reverse k-mer
+                // std::cout << "0:" << toBinString<uint64_t, K_MER_SIZE * 2>( kmer[ 0 ] ) << std::endl;
+                // std::cout << "1:" << toBinString<uint64_t, K_MER_SIZE * 2>( kmer[ 1 ] ) << std::endl;
+
+                // Same k-mer on forward strand and reverse strand?
+                if( kmer[ 0 ] == kmer[ 1 ] )
+                    continue; // skip "symmetric k-mers" as we don't know it strand
+                z = kmer[ 0 ] < kmer[ 1 ] ? 0 : 1; // strand
+                // std::cout << "STRAND:" << z << std::endl;
+                ++l;
+                if( l >= k && kmer_span < 256 )
+                {
+                    // Hashing is for performance improvements merely
+                    // See paper
+                    info.x = hash64( kmer[ z ], mask ) << 8 | kmer_span;
+                    info.y = (uint64_t)rid << 32 | (uint32_t)i << 1 | z;
+                } // if
+            } // if
+            else
+                l = 0, /* tq.count = tq.front = 0, */ kmer_span = 0;
+            buf[ buf_pos ] = info; // need to do this here as appropriate buf_pos and buf[buf_pos] are needed below
+
+            if( l == w + k - 1 && min.x != VOID_MM ) // special case of the first window
+            {
+                // identical k-mers are not stored yet
+                // std::cout << "FIRST WINDOW - l:" << l << std::endl;
+
+                // Inspect the circular buffer except for buf_pos itself
+                for( j = buf_pos + 1; j < w; ++j )
+                    if( min.x == buf[ j ].x && buf[ j ].y != min.y )
+                        // kv_push( mm128_t, km, *p, buf[ j ] );
+                        p.push_back( buf[ j ] ); // store minimizer
+                for( j = 0; j < buf_pos; ++j )
+                    if( min.x == buf[ j ].x && buf[ j ].y != min.y )
+                        // kv_push( mm128_t, km, *p, buf[ j ] );
+                        p.push_back( buf[ j ] );
+            } // if
+
+            if( info.x <= min.x ) // a new minimum
+            {
+                // std::cout << "Case 2 - l:" << l << std::endl;
+
+                if( l >= w + k && min.x != VOID_MM ) // record the old min
+                    p.push_back( min ); // store minimizer
+                min = info; // store new MM itself
+                min_pos = buf_pos; // store position of new MM in buffer
+            } // if
+
+            else if( buf_pos == min_pos )
+            { // old min has moved outside the window
+                // std::cout << "Case 3 - l:" << l << std::endl;
+                if( l >= w + k - 1 && min.x != VOID_MM )
+                    // kv_push( mm128_t, km, *p, min );
+                    p.push_back( min ); // store minimizer
+
+                // the two loops are necessary when there are identical k-mers
+                min.x = VOID_MM;
+                // Search for minimal position in buffer
+                for( j = buf_pos + 1; j < w; ++j )
+                    if( min.x >= buf[ j ].x )
+                        min = buf[ j ], min_pos = j; // >= is important s.t. min is always the closest k-mer
+
+                for( j = 0; j <= buf_pos; ++j )
+                    if( min.x >= buf[ j ].x )
+                        min = buf[ j ], min_pos = j;
+
+                if( l >= w + k - 1 && min.x != VOID_MM )
+                { // write identical k-mers
+                    for( j = buf_pos + 1; j < w; ++j ) // these two loops make sure the output is sorted
+                        if( min.x == buf[ j ].x && min.y != buf[ j ].y )
+                            // kv_push( mm128_t, km, *p, buf[ j ] );
+                            p.push_back( buf[ j ] ); // store minimizer
+                    for( j = 0; j <= buf_pos; ++j )
+                        if( min.x == buf[ j ].x && min.y != buf[ j ].y )
+                            // kv_push( mm128_t, km, *p, buf[ j ] );
+                            p.push_back( buf[ j ] ); // store minimizer
+                }
+            }
+
+            if( ++buf_pos == w )
+                buf_pos = 0;
+        }
+        if( min.x != VOID_MM )
+            // kv_push( mm128_t, km, *p, min );
+            p.push_back( min ); // store minimizer
+        return p;
+    } // method
+
+    static uint64_t _getHash( mm128_t kMerRepresentation )
+    {
+        return kMerRepresentation.x >> 8;
+    } // method
+
+    static std::vector<uint64_t> _getHash( std::vector<mm128_t> vKmers )
+    {
+        std::vector<uint64_t> vRet;
+        vRet.reserve( vKmers.size( ) );
+        for( auto kMer : vKmers )
+            vRet.push_back( _getHash( kMer ) );
+        return vRet;
+    } // method
+
+
+    static std::vector<uint64_t> _getHash( const char* sSeq, const int iSize, int uiK, int uiW )
+    {
+        return _getHash( mm_sketch( sSeq, iSize, uiW, uiK, 0 ) );
+    } // method
+
+    std::vector<uint64_t> getHash( const char* sSeq, const int iSize, int uiK, int uiW )
+    {
+        return _getHash( sSeq, iSize, xOptions.w, xOptions.k );
+    } // method
+
     std::vector<std::shared_ptr<libMA::Seeds>>
     seed( std::vector<std::string> vQueries, std::shared_ptr<libMA::Pack> pPack )
     {
@@ -266,7 +473,7 @@ class Index : public libMS::Container
         return vRet;
     } // method
 
-    void setMaxOcc(size_t uiNewMaxOcc)
+    void setMaxOcc( size_t uiNewMaxOcc )
     {
         xMapOpt.mid_occ = uiNewMaxOcc;
     }

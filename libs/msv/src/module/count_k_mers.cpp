@@ -13,13 +13,15 @@ using namespace libMS;
 
 void exportCountKMers( libMS::SubmoduleOrganizer& xOrganizer )
 {
-
     py::class_<KMerCounter, Container, std::shared_ptr<KMerCounter>>( xOrganizer.container( ), "KMerCounter" )
         .def( py::init<nucSeqIndex>( ) );
-    // export the ConnectorPatternFilter class
     exportModule<GetKMerCounter, nucSeqIndex, nucSeqIndex>( xOrganizer, "GetKMerCounter" );
     exportModule<KMerCounterModule>( xOrganizer, "KMerCounterModule" );
     exportModule<KMerCountFilterModule, nucSeqIndex>( xOrganizer, "KMerCountFilterModule" );
 
+    py::class_<HashCounter, Container, std::shared_ptr<HashCounter>>( xOrganizer.container( ), "HashCounter" )
+        .def( py::init<>( ) );
+    exportModule<MMCounterModule>( xOrganizer, "MMCounterModule" );
+    exportModule<MMFilteredSeeding, nucSeqIndex>( xOrganizer, "MMFilteredSeeding" );
 } // function
 #endif

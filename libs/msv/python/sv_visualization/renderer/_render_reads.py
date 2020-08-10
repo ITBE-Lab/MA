@@ -26,18 +26,20 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
         read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
         read_ambiguous_reg_dict["b"].append(category_counter - 0.5)
         read_ambiguous_reg_dict["r"].append(rectangle.x_axis.start + rectangle.x_axis.size)
-        read_ambiguous_reg_dict["t"].append(category_counter + len(end_column) - 0.5)
+        read_ambiguous_reg_dict["t"].append(category_counter + (0 if end_column is None else len(end_column)) - 0.5)
         read_ambiguous_reg_dict["f"].append("lightgrey")
         read_ambiguous_reg_dict["s"].append(seed_sample_size)
 
 def render_reads(self, render_all=False):
-    seeder = BinarySeeding(self.params)
+
     self.params.by_name("Fixed SoC Width").set(50)
     self.params.by_name("Max Size Reseed").set(2000)
-    extract_seeds = ExtractSeeds(self.params)
+    
+    seeding_module = MinimizerSeeding(self.params)
+    seed_lumper = SeedLumping(self.params)
     k_mer_filter = KMerCountFilterModule(self.params, 300)
     soc_module = StripOfConsiderationSeeds(self.params)
-    soc_filter = GetAllFeasibleSoCs(self.params, 50)
+    soc_filter = GetAllFeasibleSoCs(self.params, 100)
     with self.measure("SvJumpsFromSeeds"):
         jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
     read_dict = {
@@ -101,11 +103,11 @@ def render_reads(self, render_all=False):
                     for y, nuc in enumerate(str(read)):
                         append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
                     with self.measure("seeder.execute"):
-                        segments = seeder.execute(self.fm_index, read)
-                    with self.measure("ExtractSeeds"):
-                        seeds_pledge = extract_seeds.execute(segments, self.fm_index, read, self.pack)
+                        seeds = seeding_module.execute(self.mm_index, read, self.pack)
+                    with self.measure("LumpSeeds"):
+                        lumped_seeds = seed_lumper.execute(seeds, read, self.pack)
                     with self.measure("KMerFilter"):
-                        filtered_seeds_pledge = k_mer_filter.execute(read, seeds_pledge, self.k_mer_counter)
+                        filtered_seeds_pledge = k_mer_filter.execute(read, lumped_seeds, self.k_mer_counter)
                     with self.measure("SoC"):
                         socs = soc_module.execute(filtered_seeds_pledge, read, self.pack)
                     with self.measure("SoCFilter"):
@@ -166,7 +168,7 @@ def render_reads(self, render_all=False):
                 traceback.print_exc(file=sys.stdout)
 
     def callback():
-        if len(read_dict["c"]) < self.get_max_num_ele() or render_all:
+        if len(read_dict["c"]) < self.get_max_num_ele() or render_all or True:
             with self.measure("rendering seeds"):
                 # render ambiguous regions on top and left
                 self.seed_plot.ambiguous_regions.data = read_ambiguous_reg_dict

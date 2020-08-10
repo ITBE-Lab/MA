@@ -33,10 +33,10 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
         read_inserter_module = ReadInserterModule(parameter_set)
         printer = ProgressPrinterFileStreamQueue(parameter_set)
 
-    k_mer_counter_container = KMerCounter(1)
-    k_mer_counter = Pledge()
-    k_mer_counter.set(k_mer_counter_container)
-    k_mer_counter_module = KMerCounterModule(parameter_set)
+    hash_counter_container = HashCounter()
+    hash_counter = Pledge()
+    hash_counter.set(hash_counter_container)
+    mm_counter_module = MMCounterModule(parameter_set)
 
     queue_pledge = Pledge()
     queue_pledge.set(combined_queue)
@@ -69,21 +69,21 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
             query_primary = promise_me(module_get_first, query)
             analyze.register("get_first", query_primary, True)
 
-            counted_primary = promise_me(k_mer_counter_module, query_primary, k_mer_counter)
-            analyze.register("k_mer_counter", counted_primary , True)
+            counted_primary = promise_me(mm_counter_module, query_primary, hash_counter)
+            analyze.register("mm_counter", counted_primary , True)
 
             query_mate = promise_me(module_get_second, query)
             analyze.register("get_second", query_mate, True)
 
-            counted_mate = promise_me(k_mer_counter_module, query_mate, k_mer_counter)
-            analyze.register("k_mer_counter", counted_mate , True)
+            counted_mate = promise_me(mm_counter_module, query_mate, hash_counter)
+            analyze.register("mm_counter", counted_mate , True)
 
             empty = promise_me(read_inserter_module, read_inserter, pool_pledge, counted_primary, counted_mate)
             analyze.register("read_inserter", empty, True)
 
         else:
-            counted_query = promise_me(k_mer_counter_module, query, k_mer_counter)
-            analyze.register("k_mer_counter", counted_query, True)
+            counted_query = promise_me(mm_counter_module, query, hash_counter)
+            analyze.register("mm_counter", counted_query, True)
 
             empty = promise_me(read_inserter_module, read_inserter, pool_pledge, counted_query)
             analyze.register("read_inserter", empty, True)
@@ -100,7 +100,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     for inserter in inserter_vec:
         inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
-    KMerFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, k_mer_counter_container, 300)
+    HashFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, hash_counter_container, 300)
 
     analyze.analyze(runtime_file)
 

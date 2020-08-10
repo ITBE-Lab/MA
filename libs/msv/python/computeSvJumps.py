@@ -16,11 +16,10 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
 
         nuc_seq_fetcher = NucSeqFetcher(parameter_set_manager)
         lock_module = Lock(parameter_set_manager)
-        seeding_module = MinimizerSeeding(parameter_set_manager)
+        seeding_module = MMFilteredSeeding(parameter_set_manager, 300)
         seed_lumper = SeedLumping(parameter_set_manager)
-        k_mer_filter = KMerCountFilterModule(parameter_set_manager, 300)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
-        soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 50)
+        soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 100)
         jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, single_con, "MS-SV",
@@ -42,9 +41,9 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
 
         jobs = parameter_set_manager.get_num_threads()
         for seq_id in _seq_ids:
-            k_mer_counter_container = KMerFilterTable(single_con).get_counter(seq_id, 1)
-            k_mer_counter = Pledge()
-            k_mer_counter.set(k_mer_counter_container)
+            mm_counter_container = HashFilterTable(single_con).get_counter(seq_id)
+            mm_counter = Pledge()
+            mm_counter.set(mm_counter_container)
 
             analyze = AnalyzeRuntimes()
             res = VectorPledge()
@@ -60,13 +59,11 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
                 analyze.register("NucSeqFetcher", queries_pledge, True)
                 query_pledge = promise_me(lock_module, queries_pledge)
                 analyze.register("Lock", query_pledge, True)
-                seeds_pledge = promise_me(seeding_module, mm_pledge, query_pledge, pack_pledge)
+                seeds_pledge = promise_me(seeding_module, mm_pledge, query_pledge, pack_pledge, mm_counter)
                 analyze.register("MinimizerSeeding", seeds_pledge, True)
                 lumped_seeds = promise_me(seed_lumper, seeds_pledge, query_pledge, pack_pledge)
                 analyze.register("SeedLumping", lumped_seeds, True)
-                filtered_seeds_pledge = promise_me(k_mer_filter, query_pledge, lumped_seeds, k_mer_counter)
-                analyze.register("KMerFilter", filtered_seeds_pledge, True)
-                socs = promise_me(soc_module, filtered_seeds_pledge, query_pledge, pack_pledge)
+                socs = promise_me(soc_module, lumped_seeds, query_pledge, pack_pledge)
                 analyze.register("SoC", socs, True)
                 filtered_seeds_pledge_2 = promise_me(soc_filter, socs)
                 analyze.register("SoCFilter", filtered_seeds_pledge_2, True)

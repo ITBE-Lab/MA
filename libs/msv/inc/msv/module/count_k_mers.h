@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "ma/container/minimizer_index.h"
 #include "ma/container/nucSeq.h"
 #include "ma/container/seed.h"
 #include "ms/module/module.h"
@@ -54,7 +55,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
         std::mutex xLock;
 #endif
       public:
-        Chunk( ) : xCountMap()
+        Chunk( ) : xCountMap( )
         {} // constructor
 
         Chunk( const Chunk& rOther ) = delete;
@@ -142,8 +143,7 @@ template <nucSeqIndex NUM_CHUNKS, nucSeqIndex K> class __KMerCounter : public Co
     const nucSeqIndex uiW;
 
     __KMerCounter( nucSeqIndex uiW ) : uiW( uiW )
-    {
-    } // constructor
+    {} // constructor
 
     __KMerCounter( const __KMerCounter& rOther ) = delete;
 
@@ -278,6 +278,176 @@ class KMerCountFilterModule : public Module<Seeds, false, NucSeq, Seeds, KMerCou
         for( auto& xSeed : *pSeeds )
             if( pCounter->isUnique( pSeq, xSeed.start( ), xSeed.end( ), uiMaxOcc ) )
                 pRet->push_back( xSeed );
+        return pRet;
+    } // method
+}; // class
+
+
+/**
+ * @brief k-mer counting datastructure
+ * @details
+ * Performs thread-SAVE counting of k-mers.
+ * Minimizes locking by using chunks and spin locks.
+ */
+template <nucSeqIndex NUM_CHUNKS_BITS, nucSeqIndex K, typename hash_t> class __HashCounter : public Container
+{
+    static_assert( ( K - NUM_CHUNKS_BITS ) <= sizeof( hash_t ) * 8 );
+    // make sure NUM_CHUNKS nt actually fit in the uint64_t index that is used
+    static_assert( NUM_CHUNKS_BITS <= sizeof( uint64_t ) * 8 );
+    class Chunk
+    {
+        std::unordered_map<hash_t, size_t> xCountMap;
+#define SPIN_LOCK 1
+#if SPIN_LOCK
+        std::atomic_flag xLock = ATOMIC_FLAG_INIT;
+#else
+        std::mutex xLock;
+#endif
+      public:
+        Chunk( ) : xCountMap( )
+        {} // constructor
+
+        Chunk( const Chunk& rOther ) = delete;
+
+        void inc( hash_t uiHash, size_t uiCnt )
+        {
+#if SPIN_LOCK
+            while( xLock.test_and_set( std::memory_order_acquire ) )
+                ; // spin to acquire lock
+#else
+            std::lock_guard<std::mutex> xGuard( xLock );
+#endif
+
+
+            xCountMap[ uiHash ] += uiCnt;
+
+
+#if SPIN_LOCK
+            xLock.clear( std::memory_order_release ); // release lock
+#endif
+        } // method
+
+        size_t get( hash_t uiHash )
+        {
+            auto xIt = xCountMap.find( uiHash );
+            if( xIt != xCountMap.end( ) )
+                return xIt->second;
+            return 0;
+        } // method
+
+        template <typename F> void iterate( F&& fDo, uint64_t uiChunkBits )
+        {
+            for( auto& xPair : xCountMap )
+                fDo( ( ( (uint64_t)xPair.first ) << NUM_CHUNKS_BITS ) | uiChunkBits, xPair.second );
+        } // method
+    }; // class
+  public:
+    // array size should be 2 ^ NUM_CHUNKS_BITS
+    std::array<Chunk, 2 << NUM_CHUNKS_BITS> vChunks{};
+
+    __HashCounter( )
+    {} // constructor
+
+    __HashCounter( const __HashCounter& rOther ) = delete;
+
+    __HashCounter operator=( const __HashCounter& rOther ) = delete;
+
+    size_t chunkId( uint64_t uiHash )
+    {
+        // clear all but the lower NUM_CHUNKS_BITS bits of uiHash
+        return ( size_t )( ( uiHash << ( 8 * sizeof( uint64_t ) - NUM_CHUNKS_BITS ) ) >>
+                           ( 8 * sizeof( uint64_t ) - NUM_CHUNKS_BITS ) );
+    }
+
+    hash_t chunkKey( uint64_t uiHash )
+    {
+        // cut off the lower NUM_CHUNKS_BITS bits of uiHash
+        return ( hash_t )( uiHash >> NUM_CHUNKS_BITS );
+    }
+
+    void addHash( uint64_t uiHash, size_t uiCnt )
+    {
+        vChunks[ chunkId( uiHash ) ].inc( chunkKey( uiHash ), uiCnt );
+    } // method
+    void addHash( uint64_t uiHash )
+    {
+        addHash( uiHash, 1 );
+    } // method
+
+    bool isUnique( uint64_t uiHash, nucSeqIndex uiMaxOcc )
+    {
+        return vChunks[ chunkId( uiHash ) ].get( chunkKey( uiHash ) ) <= uiMaxOcc;
+    } // method
+
+    bool isUnique( uint64_t uiHash )
+    {
+        return isUnique( uiHash, 0 );
+    } // method
+
+    template <typename F> void iterate( F&& fDo )
+    {
+        for( uint64_t uiI = 0; uiI < vChunks.size( ); uiI++ )
+            vChunks[ (size_t)uiI ].iterate( fDo, uiI );
+    } // method
+}; // class
+
+using HashCounter = __HashCounter<16, 56, uint64_t>;
+
+
+class MMCounterModule : public Module<NucSeq, false, NucSeq, HashCounter>
+{
+  public:
+    nucSeqIndex k, w;
+    MMCounterModule( const ParameterSetManager& rParameters )
+        : k( rParameters.getSelected( )->xMinimizerK->get( ) ), w( rParameters.getSelected( )->xMinimizerW->get( ) )
+    {} // constructor
+
+    std::shared_ptr<NucSeq> execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<HashCounter> pCounter )
+    {
+        pQuery->vTranslateToCharacterForm( );
+        const char* sSeq = (const char*)pQuery->pxSequenceRef;
+        const int iSize = (int)pQuery->length( );
+        for( auto uiHash : minimizer::Index::_getHash( sSeq, iSize, k, w ) )
+            pCounter->addHash( uiHash );
+        pQuery->vTranslateToNumericForm( );
+        return pQuery;
+    } // method
+}; // class
+
+class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, Pack, HashCounter>
+{
+  public:
+    const nucSeqIndex uiMaxOcc;
+
+    MMFilteredSeeding( const ParameterSetManager& rParameters, nucSeqIndex uiMaxOcc ) : uiMaxOcc( uiMaxOcc )
+    {} // constructor
+
+    std::shared_ptr<Seeds> execute( std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pQuery,
+                                    std::shared_ptr<Pack> pPack, std::shared_ptr<HashCounter> pCounter )
+    {
+        pQuery->vTranslateToCharacterForm( );
+        const char* sSeq = (const char*)pQuery->pxSequenceRef;
+        const int iSize = (int)pQuery->length( );
+        // pack arguments for c function
+        auto xPtr = std::make_pair( pCounter, uiMaxOcc );
+        auto pRet = pMMIndex->seed_one(
+            sSeq, iSize, pPack,
+            // lambda function filters query minimizers before they are turned to seeds via hash table lookup
+            [/*cannot capture since lambda needs to be passed to c as function pointer*/]( mm128_v* mv, void* pArg ) {
+                // unpack arguments from c function
+                auto pPair = static_cast<std::pair<std::shared_ptr<HashCounter>, nucSeqIndex>*>( pArg );
+                size_t uiI = 0;
+                while( uiI < mv->n )
+                {
+                    if( !pPair->first->isUnique( minimizer::Index::_getHash( mv->a[ uiI ] ), pPair->second ) )
+                        mv->a[ uiI ] = mv->a[ --mv->n ];
+                    else
+                        uiI++;
+                } // while
+            },
+            // c function can only take void* as arguments
+            static_cast<void*>( &xPtr ) );
+        pQuery->vTranslateToNumericForm( );
         return pRet;
     } // method
 }; // class

@@ -20,6 +20,7 @@ def setup(self):
         self.pack.load(ref_genome)
         self.fm_index = FMIndex()
         self.fm_index.load(ref_genome)
+        self.mm_index = MinimizerIndex(ParameterSetManager(), self.pack.contigSeqs(), self.pack.contigNames())
         self.db_conn = DbConn(dataset_name)
         print("NUM THREADS", self.params.get_num_threads())
         self.db_pool = PoolContainer(self.params.get_num_threads() + 1, dataset_name)

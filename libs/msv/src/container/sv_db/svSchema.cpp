@@ -79,6 +79,12 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "get_counter", &KMerFilterTable<DBConSingle>::getCounter )
         .def( "insert_counter_set", &KMerFilterTable<DBConSingle>::insert_counter_set );
+
+    py::class_<HashFilterTable<DBConSingle>, std::shared_ptr<HashFilterTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                             "HashFilterTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "get_counter", &HashFilterTable<DBConSingle>::getCounter )
+        .def( "insert_counter_set", &HashFilterTable<DBConSingle>::insert_counter_set );
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );

@@ -32,11 +32,15 @@ class MinimizerSeeding : public libMS::Module<Seeds, false, minimizer::Index, Nu
     MinimizerSeeding( const ParameterSetManager& rParameters )
     {} // constructor
 
-    std::shared_ptr<Seeds> execute( std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pQuerySeq,
+    std::shared_ptr<Seeds> execute( std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pQuery,
                                     std::shared_ptr<Pack> pPack )
     {
-        auto sStr = pQuerySeq->toString( );
-        return pMMIndex->seed_one( sStr, pPack );
+        pQuery->vTranslateToCharacterForm( );
+        const char* sSeq = (const char*)pQuery->pxSequenceRef;
+        const int iSize = (int)pQuery->length( );
+        auto pRet = pMMIndex->seed_one( sSeq, iSize, pPack );
+        pQuery->vTranslateToNumericForm( );
+        return pRet;
     } // method
 }; // class
 
