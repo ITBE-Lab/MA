@@ -62,21 +62,31 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
     inline size_t insertCall( SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId = ParentType::pInserter->insert( ParentType::iId, //
-                                                         (uint32_t)rCall.xXAxis.start( ), //
-                                                         (uint32_t)rCall.xYAxis.start( ), //
-                                                         (uint32_t)rCall.xXAxis.size( ), //
-                                                         (uint32_t)rCall.xYAxis.size( ), //
-                                                         rCall.bFromForward, //
-                                                         rCall.bToForward, //
-                                                         // can deal with nullpointers
-                                                         makeSharedCompNucSeq( rCall.pInsertedSequence ), //
-                                                         rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ), //
-                                                         (uint32_t)rCall.uiNumSuppReads, //
-                                                         (uint32_t)rCall.uiReferenceAmbiguity, //
-                                                         -1, // regex_id
-                                                         -1, // filter_id
-                                                         xRectangle );
+#if DEBUG_LEVEL > 0
+        if( rCall.pInsertedSequence != nullptr )
+        {
+            auto pComp = makeSharedCompNucSeq( rCall.pInsertedSequence );
+            NucSeq xTest;
+            pComp->decompress( xTest );
+            assert( rCall.pInsertedSequence->equal( xTest ) );
+        } // if
+#endif
+        int64_t iCallId = ParentType::pInserter->insert(
+            ParentType::iId, //
+            (uint32_t)rCall.xXAxis.start( ), //
+            (uint32_t)rCall.xYAxis.start( ), //
+            (uint32_t)rCall.xXAxis.size( ), //
+            (uint32_t)rCall.xYAxis.size( ), //
+            rCall.bFromForward, //
+            rCall.bToForward, //
+            // can deal with nullpointers
+            makeSharedCompNucSeq( rCall.pInsertedSequence ), //
+            rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ), //
+            (uint32_t)rCall.uiNumSuppReads, //
+            (uint32_t)rCall.uiReferenceAmbiguity, //
+            rCall.iOrderID, // order_id
+            rCall.bMirrored, // mirrored
+            xRectangle );
         rCall.iId = iCallId;
         for( int64_t iId : rCall.vSupportingJumpIds )
             pSupportInserter->insert( iCallId, iId );

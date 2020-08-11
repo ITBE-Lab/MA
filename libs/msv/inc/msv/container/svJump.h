@@ -433,6 +433,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     nucSeqIndex uiReferenceAmbiguity;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
+    int64_t iOrderID = -1;
+    bool bMirrored = false;
 #if 0
     Regex xRegex;
 #endif

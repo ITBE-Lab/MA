@@ -1297,7 +1297,7 @@ class Pack : public libMS::Container
                         itHolesDesc++;
                     // append an N if we are currently within a hole
                     if( itHolesDesc != itEnd && itHolesDesc->offset <= (uint64_t)iPosition )
-                        rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
+                        rxSequence[ uiSequenceIterator++ ] = 4; // itHolesDesc->xHoleCharacter; // 4 == N @fixme
                     else // otherwise get the correct nucleotide
                         rxSequence[ uiSequenceIterator++ ] = getNucleotideOnPos( iPosition );
                 } // for
@@ -1318,7 +1318,7 @@ class Pack : public libMS::Container
                         itHolesDesc++;
                     // append an N if we are currently within a hole
                     if( itHolesDesc != itEnd && itHolesDesc->offset + itHolesDesc->length > (uint64_t)iPosition )
-                        rxSequence[ uiSequenceIterator++ ] = itHolesDesc->xHoleCharacter; // 4 == N
+                        rxSequence[ uiSequenceIterator++ ] = 4; // itHolesDesc->xHoleCharacter; // 4 == N @fixme
                     else // otherwise get the correct nucleotide
                         rxSequence[ uiSequenceIterator++ ] = 3 - getNucleotideOnPos( iPosition );
                 } // for
