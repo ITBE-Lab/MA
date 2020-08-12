@@ -7,6 +7,7 @@ import math
 from .util import *
 
 def render_jumps(self, jump_list=[], render_all=False):
+    print("rendering jumps")
     self.read_ids = set()
     out_dicts = []
     patch = {

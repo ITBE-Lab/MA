@@ -61,7 +61,7 @@ class Widgets:
         self.score_slider.end = 0
         if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
             self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
-        renderer.k_mer_counter = KMerFilterTable(renderer.db_conn).get_counter(int(self.run_id_dropdown.value), 1)
+        renderer.mm_counter = HashFilterTable(renderer.db_conn).get_counter(int(self.run_id_dropdown.value))
         renderer.render()
 
     def ground_id_change(self, renderer):

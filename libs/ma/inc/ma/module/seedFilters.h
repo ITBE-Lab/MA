@@ -5,6 +5,9 @@
  */
 #pragma once
 
+
+#include "IntervalTree.h"
+
 namespace libMA
 {
 
@@ -17,17 +20,17 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
 {
     template <typename Func1_t, typename Func2_t>
     static void extendSeedHelper( Seed& rSeed, Func1_t&& fGetNucQuery, Func2_t&& fGetNucRef, size_t uiQSize,
-                                  size_t uiRSize )
+                                  size_t uiRStart, size_t uiREnd )
     {
         size_t uiForw = 1;
         if( rSeed.bOnForwStrand )
             while( uiForw <= rSeed.start( ) && //
-                   uiForw <= rSeed.start_ref( ) && //
+                   uiForw + uiRStart <= rSeed.start_ref( ) && //
                    fGetNucQuery( rSeed.start( ) - uiForw ) == fGetNucRef( rSeed.start_ref( ) - uiForw ) )
                 uiForw++;
         else
             while( uiForw <= rSeed.start( ) && //
-                   uiForw + rSeed.start_ref( ) < uiRSize && //
+                   uiForw + rSeed.start_ref( ) < uiREnd && //
                    fGetNucQuery( rSeed.start( ) - uiForw ) == 3 - fGetNucRef( rSeed.start_ref( ) + uiForw ) )
                 uiForw++;
         uiForw--; // uiForward is one too high after loop
@@ -41,12 +44,12 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
         size_t uiBackw = 0;
         if( rSeed.bOnForwStrand )
             while( uiBackw + rSeed.end( ) < uiQSize && //
-                   uiBackw + rSeed.end_ref( ) < uiRSize && //
+                   uiBackw + rSeed.end_ref( ) < uiREnd && //
                    fGetNucQuery( rSeed.end( ) + uiBackw ) == fGetNucRef( rSeed.end_ref( ) + uiBackw ) )
                 uiBackw++;
         else
             while( uiBackw + rSeed.end( ) < uiQSize && //
-                   rSeed.start_ref( ) >= uiBackw + rSeed.size( ) && //
+                   rSeed.start_ref( ) >= uiRStart + uiBackw + rSeed.size( ) && //
                    fGetNucQuery( rSeed.end( ) + uiBackw ) ==
                        3 - fGetNucRef( rSeed.start_ref( ) - rSeed.size( ) - uiBackw ) )
                 uiBackw++;
@@ -59,24 +62,25 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
 
     static void extendSeed( Seed& rSeed, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef )
     {
+        auto uiContigID = pRef->uiSequenceIdForPosition( rSeed.start_ref( ) );
         extendSeedHelper(
             rSeed, [&]( size_t uiI ) { return pQuery->pxSequenceRef[ uiI ]; },
             [&]( size_t uiI ) { return pRef->vExtract( uiI ); }, pQuery->length( ),
-            pRef->uiUnpackedSizeForwardPlusReverse( ) );
+            pRef->startOfSequenceWithId( uiContigID ), pRef->endOfSequenceWithId( uiContigID ) );
     }
 
     static void extendSeed( Seed& rSeed, std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
     {
         extendSeedHelper(
             rSeed, [&]( size_t uiI ) { return pQ1->pxSequenceRef[ uiI ]; },
-            [&]( size_t uiI ) { return pQ2->pxSequenceRef[ uiI ]; }, pQ1->length( ), pQ2->length( ) );
+            [&]( size_t uiI ) { return pQ2->pxSequenceRef[ uiI ]; }, pQ1->length( ), 0, pQ2->length( ) );
     }
 
     static void extendSeed( Seed& rSeed, NucSeq& rQ1, NucSeq& rQ2 )
     {
         extendSeedHelper(
             rSeed, [&]( size_t uiI ) { return rQ1.pxSequenceRef[ uiI ]; },
-            [&]( size_t uiI ) { return rQ2.pxSequenceRef[ uiI ]; }, rQ1.length( ), rQ2.length( ) );
+            [&]( size_t uiI ) { return rQ2.pxSequenceRef[ uiI ]; }, rQ1.length( ), 0, rQ2.length( ) );
     }
 
     // overload
@@ -208,13 +212,18 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
         return execute_helper(
             pIn, [&]( Seed& rSeed ) { SeedExtender::extendSeed( rSeed, pQuery, pRef ); },
             [&]( Seed& rLast, Seed& rSeed ) {
+                auto uiContigID = pRef->uiSequenceIdForPosition( rLast.start_ref( ) );
+
                 size_t uiBackw = 0;
                 if( rLast.bOnForwStrand )
-                    while( rLast.end( ) + uiBackw < rSeed.start( ) && pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
-                                                                          pRef->vExtract( rLast.end_ref( ) + uiBackw ) )
+                    while( rLast.end( ) + uiBackw < rSeed.start( ) &&
+                           rLast.end( ) >= uiBackw + pRef->startOfSequenceWithId( uiContigID ) &&
+                           pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
+                               pRef->vExtract( rLast.end_ref( ) + uiBackw ) )
                         uiBackw++;
                 else
                     while( rLast.end( ) + uiBackw < rSeed.start( ) &&
+                           rLast.end( ) + uiBackw < pRef->endOfSequenceWithId( uiContigID ) &&
                            pQuery->pxSequenceRef[ rLast.end( ) + uiBackw ] ==
                                3 - pRef->vExtract( rLast.start_ref( ) - rLast.size( ) - uiBackw ) )
                         uiBackw++;
@@ -578,7 +587,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
             uiMax = std::max( uiMax, rS.end( ) );
         } // for
 
-        auto pRet = std::make_shared<Seeds>();
+        auto pRet = std::make_shared<Seeds>( );
         pRet->reserve( pSeeds->size( ) ); // allocate all space at once
 
         size_t uiIdx = 0;

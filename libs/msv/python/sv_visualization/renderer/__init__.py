@@ -17,7 +17,7 @@ class Renderer():
         self.widgets = Widgets(self)
         self.pack = None
         self.fm_index = None
-        self.k_mer_counter = None
+        self.mm_counter = None
         self.db_conn = None
         self.db_pool = None
         self.w = None

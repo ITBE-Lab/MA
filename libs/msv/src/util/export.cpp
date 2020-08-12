@@ -8,6 +8,7 @@
 #include "msv/module/connectorPatternFilter.h"
 #include "msv/container/sv_db/svSchema.h"
 #include "msv/module/count_k_mers.h"
+#include "msv/util/rendererSpeedup.h"
 
 using namespace libMA;
 
@@ -25,6 +26,7 @@ PYBIND11_MODULE( libMSV, libMsvModule )
     exportConnectorPatternFilter( xOrganizer );
     exportSoCDbWriter( xOrganizer );
     exportCountKMers( xOrganizer );
+    exportRendererSpeedUp(xOrganizer);
 } // function
 
 #endif

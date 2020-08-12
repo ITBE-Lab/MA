@@ -31,17 +31,17 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
         read_ambiguous_reg_dict["s"].append(seed_sample_size)
 
 def render_reads(self, render_all=False):
-
+    print("rendering reads")
     self.params.by_name("Fixed SoC Width").set(50)
     self.params.by_name("Max Size Reseed").set(2000)
-    
-    seeding_module = MinimizerSeeding(self.params)
+    """
+    seeding_module = MMFilteredSeeding(self.params, 300)
     seed_lumper = SeedLumping(self.params)
-    k_mer_filter = KMerCountFilterModule(self.params, 300)
     soc_module = StripOfConsiderationSeeds(self.params)
     soc_filter = GetAllFeasibleSoCs(self.params, 100)
     with self.measure("SvJumpsFromSeeds"):
         jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
+    """
     read_dict = {
         "center": [],
         "r_id": [],
@@ -93,9 +93,33 @@ def render_reads(self, render_all=False):
 
     with self.measure("computing seeds"):
         if self.do_render_seeds:
+                seed_info_list = seedDisplaysForReadIds(self.params, self.db_pool, list(self.read_ids), self.pack,
+                                                        self.mm_index, self.mm_counter, True)
+                #                                       len(self.read_ids) > self.do_compressed_seeds)
+
+                for seed_info in seed_info_list:
+                    read_dict["r_id"].append(seed_info.iReadId)
+                    read_dict["r_name"].append(seed_info.sReadName)
+                    read_dict["size"].append(seed_info.uiSize)
+                    read_dict["l"].append(seed_info.uiL)
+                    read_dict["q"].append(seed_info.uiQ)
+                    read_dict["idx"].append(seed_info.uiSeedOrderOnQuery)
+                    read_dict["layer"].append(seed_info.uiLayer)
+                    read_dict["parlindrome"].append(seed_info.bParlindrome)
+                    read_dict["f"].append(seed_info.bOnForward)
+                    read_dict["category"].append(seed_info.uiCategory)
+                    
+                    read_dict["center"].append(seed_info.fCenter)
+                    read_dict["r"].append(seed_info.uiR)
+                    read_dict["x"].append( seed_info.xX)
+                    read_dict["y"].append(seed_info.xY)
+                    read_dict["c"].append("lightgrey")
+
+                """
             try:
                 read_table = ReadTable(self.db_conn)
                 all_seeds = []
+                print("x")
                 for read_id in sorted(self.read_ids, reverse=True):
                     self.read_plot.nuc_plot.nucs_by_r_id[read_id] = {"p": [], "c": [], "i": []}
                     self.read_plot_rects[read_id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[], "dp": []}
@@ -103,18 +127,16 @@ def render_reads(self, render_all=False):
                     for y, nuc in enumerate(str(read)):
                         append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read_id], nuc, y, "p")
                     with self.measure("seeder.execute"):
-                        seeds = seeding_module.execute(self.mm_index, read, self.pack)
+                        seeds = seeding_module.execute(self.mm_index, read, self.pack, self.mm_counter)
                     with self.measure("LumpSeeds"):
                         lumped_seeds = seed_lumper.execute(seeds, read, self.pack)
-                    with self.measure("KMerFilter"):
-                        filtered_seeds_pledge = k_mer_filter.execute(read, lumped_seeds, self.k_mer_counter)
                     with self.measure("SoC"):
-                        socs = soc_module.execute(filtered_seeds_pledge, read, self.pack)
+                        socs = soc_module.execute(lumped_seeds, read, self.pack)
                     with self.measure("SoCFilter"):
-                        filtered_seeds_pledge_2 = soc_filter.execute(socs)
+                        filtered_seeds_pledge = soc_filter.execute(socs)
                     # execute_helper is not threadsave 
                     with self.measure("jumps_from_seeds.cpp_module.execute_helper"):
-                        helper_ret = jumps_from_seeds.cpp_module.execute_helper(filtered_seeds_pledge_2, self.pack,
+                        helper_ret = jumps_from_seeds.cpp_module.execute_helper(filtered_seeds_pledge, self.pack,
                                                                                 read)
                     seeds = helper_ret.seeds
                     layer_of_seeds = helper_ret.layer_of_seeds
@@ -166,6 +188,7 @@ def render_reads(self, render_all=False):
             except Exception as e:
                 print(e)
                 traceback.print_exc(file=sys.stdout)
+                """
 
     def callback():
         if len(read_dict["c"]) < self.get_max_num_ele() or render_all or True:
@@ -208,4 +231,5 @@ def render_reads(self, render_all=False):
 
                 self.seed_plot.update_selection(self)
 
+    print("done rendering reads")
     self.curdoc.add_next_tick_callback(callback)
