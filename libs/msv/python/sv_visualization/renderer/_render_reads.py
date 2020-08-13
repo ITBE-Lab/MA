@@ -9,7 +9,7 @@ from .util import *
 import sys, traceback
 
 def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict, end_column_len,
-                  category_counter, use_dp):
+                  category_counter, k_mer_size, use_dp):
     
     if rectangle.x_axis.size != 0:
         seed_sample_size /= rectangle.x_axis.size
@@ -21,6 +21,7 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
     self.read_plot_rects[read_id]["f"].append(fill)
     self.read_plot_rects[read_id]["c"].append("lightgrey")
     self.read_plot_rects[read_id]["s"].append(seed_sample_size)
+    self.read_plot_rects[read_id]["k"].append(k_mer_size)
     self.read_plot_rects[read_id]["dp"].append(use_dp)
     if use_dp and len(self.read_ids) <= self.do_compressed_seeds:
         read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
@@ -34,14 +35,7 @@ def render_reads(self, render_all=False):
     print("rendering reads")
     self.params.by_name("Fixed SoC Width").set(50)
     self.params.by_name("Max Size Reseed").set(2000)
-    """
-    seeding_module = MMFilteredSeeding(self.params, 300)
-    seed_lumper = SeedLumping(self.params)
-    soc_module = StripOfConsiderationSeeds(self.params)
-    soc_filter = GetAllFeasibleSoCs(self.params, 100)
-    with self.measure("SvJumpsFromSeeds"):
-        jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
-    """
+
     read_dict = {
         "center": [],
         "r_id": [],
@@ -55,6 +49,7 @@ def render_reads(self, render_all=False):
         "f": [],
         "layer": [],
         "parlindrome": [],
+        "overlapping": [],
         "x": [],
         "y": [],
         "category": []
@@ -113,6 +108,7 @@ def render_reads(self, render_all=False):
                 read_dict["idx"].append(seed_info.uiSeedOrderOnQuery)
                 read_dict["layer"].append(seed_info.uiLayer)
                 read_dict["parlindrome"].append(seed_info.bParlindrome)
+                read_dict["overlapping"].append(seed_info.bOverlapping)
                 read_dict["f"].append(seed_info.bOnForward)
                 read_dict["category"].append(seed_info.uiCategory)
                 read_dict["center"].append(seed_info.fCenter)
@@ -123,16 +119,20 @@ def render_reads(self, render_all=False):
 
             for read in info_ret.vReads:
                 self.read_plot.nuc_plot.nucs_by_r_id[read.id] = {"p": [], "c": [], "i": []}
-                self.read_plot_rects[read.id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[], "dp": []}
+                self.read_plot_rects[read.id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "k":[],
+                                                 "c":[], "dp": []}
                 for y, nuc in enumerate(str(read)):
                     append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read.id], nuc, y, "p")
             for x, y in info_ret.vReadsNCols:
                 read_id_n_cols[x] = y
             for r_i in info_ret.vRectangles:
-                for rectangle, fill, seed_sample_size, use_dp in zip(r_i.vRectangles, r_i.vRectangleFillPercentage,
-                                                            r_i.vRectangleReferenceAmbiguity, r_i.vRectangleUsedDp):
+                for rectangle, fill, seed_sample_size, k_mer_size, use_dp in zip(r_i.vRectangles,
+                                                            r_i.vRectangleFillPercentage,
+                                                            r_i.vRectangleReferenceAmbiguity,
+                                                            r_i.vRectangleKMerSize,
+                                                            r_i.vRectangleUsedDp):
                     self.add_rectangle(seed_sample_size, r_i.iReadId, rectangle, fill, read_ambiguous_reg_dict,
-                                    r_i.uiEndColumnSize, r_i.uiCategory, use_dp)
+                                    r_i.uiEndColumnSize, r_i.uiCategory, k_mer_size, use_dp)
 
     def callback():
         if len(read_dict["c"]) < self.get_max_num_ele() or render_all or True:

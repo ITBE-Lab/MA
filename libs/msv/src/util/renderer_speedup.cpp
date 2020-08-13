@@ -32,6 +32,7 @@ struct SeedInfo
     bool bOnForward;
     int64_t uiLayer;
     bool bParlindrome;
+    bool bOverlapping;
     std::pair<nucSeqIndex, nucSeqIndex> xX;
     std::pair<nucSeqIndex, nucSeqIndex> xY;
     size_t uiCategory;
@@ -42,6 +43,7 @@ struct RectangleInfo
     std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
     std::vector<double> vRectangleFillPercentage;
     std::vector<size_t> vRectangleReferenceAmbiguity;
+    std::vector<size_t> vRectangleKMerSize;
     std::vector<bool> vRectangleUsedDp;
     size_t uiCategory;
     size_t uiEndColumnSize;
@@ -56,6 +58,7 @@ void addSeed( Seed& rSeed,
                   vAllColIds,
               size_t uiCategoryCounter,
               bool bParlindrome,
+              bool bOverlapping,
               int64_t iLayer,
               int64_t iReadId,
               size_t uiSeedOrderOnQuery,
@@ -86,7 +89,7 @@ void addSeed( Seed& rSeed,
     std::get<1>( vEndColumn[ uiCurrColumn ] ) = iReadId;
 
     vRet.emplace_back( SeedInfo{fCenter, iReadId, sReadName, rSeed.size( ), rSeed.start( ), uiR, rSeed.size( ),
-                                uiSeedOrderOnQuery, rSeed.bOnForwStrand, iLayer, bParlindrome, xX,
+                                uiSeedOrderOnQuery, rSeed.bOnForwStrand, iLayer, bParlindrome, bOverlapping, xX,
                                 std::make_pair( rSeed.start( ), rSeed.end( ) ), uiCurrColumn + uiCategoryCounter} );
 } // function
 
@@ -100,6 +103,7 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
     xInfo.vRectangles.swap( xHelper.vRectangles );
     xInfo.vRectangleFillPercentage.swap( xHelper.vRectangleFillPercentage );
     xInfo.vRectangleReferenceAmbiguity.swap( xHelper.vRectangleReferenceAmbiguity );
+    xInfo.vRectangleKMerSize.swap( xHelper.vRectangleKMerSize );
     xInfo.vRectangleUsedDp.swap( xHelper.vRectangleUsedDp );
     xInfo.uiCategory = uiCategoryCounter;
     xInfo.uiEndColumnSize = uiEndColumnSize;
@@ -150,8 +154,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     GetAllFeasibleSoCs xSocFilter( rParameters, 100 );
 
     std::vector<std::future<void>> vFutures;
-    // seed_order_on_query, seed, layer, parlindrome, read_id, read_name
-    std::vector<std::tuple<size_t, Seed, size_t, bool, int64_t, std::string>> vAllSeeds;
+                    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name
+    std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string>> vAllSeeds;
     // x-end position of last seeds and the seeds read id for each column
     std::vector<int64_t> vAllColIds;
     size_t uiCategoryCounter = 0;
@@ -172,13 +176,14 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
 
                     auto xHelperRet = xJumpsFromSeeds.execute_helper_py2( pFilteredSeeds, pPack, pRead );
 
-                    // seed_order_on_query, seed, layer, parlindrome, read_id, read_name
-                    std::vector<std::tuple<size_t, Seed, size_t, bool, int64_t, std::string>> vSeedsNIndex;
+                    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name
+                    std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string>> vSeedsNIndex;
                     for( size_t uiK = 0; uiK < xHelperRet.pSeeds->size( ); uiK++ )
                         vSeedsNIndex.emplace_back( 0,
                                                    ( *xHelperRet.pSeeds )[ uiK ],
                                                    xHelperRet.vLayerOfSeeds[ uiK ],
                                                    xHelperRet.vParlindromeSeed[ uiK ],
+                                                   xHelperRet.vOverlappingSeed[ uiK ],
                                                    iReadId,
                                                    pRead->sName );
                     std::sort( vSeedsNIndex.begin( ), vSeedsNIndex.end( ), []( auto& xA, auto& xB ) {
@@ -213,10 +218,11 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                                      vAllColIds,
                                      uiCategoryCounter,
                                      std::get<3>( xTup ),
-                                     std::get<2>( xTup ),
                                      std::get<4>( xTup ),
+                                     std::get<2>( xTup ),
+                                     std::get<5>( xTup ),
                                      std::get<0>( xTup ),
-                                     std::get<5>( xTup ) );
+                                     std::get<6>( xTup ) );
                         vAllColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
 
                         addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ) );
@@ -270,10 +276,11 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                      vAllColIds,
                      uiCategoryCounter,
                      std::get<3>( xTup ),
-                     std::get<2>( xTup ),
                      std::get<4>( xTup ),
+                     std::get<2>( xTup ),
+                     std::get<5>( xTup ),
                      std::get<0>( xTup ),
-                     std::get<5>( xTup ) );
+                     std::get<6>( xTup ) );
         uiCategoryCounter += vEndColumn.size( );
     } // if
 
@@ -297,6 +304,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "bOnForward", &SeedInfo::bOnForward )
         .def_readwrite( "uiLayer", &SeedInfo::uiLayer )
         .def_readwrite( "bParlindrome", &SeedInfo::bParlindrome )
+        .def_readwrite( "bOverlapping", &SeedInfo::bOverlapping )
         .def_readwrite( "xX", &SeedInfo::xX )
         .def_readwrite( "xY", &SeedInfo::xY )
         .def_readwrite( "uiCategory", &SeedInfo::uiCategory );
@@ -304,6 +312,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "vRectangles", &RectangleInfo::vRectangles )
         .def_readwrite( "vRectangleFillPercentage", &RectangleInfo::vRectangleFillPercentage )
         .def_readwrite( "vRectangleReferenceAmbiguity", &RectangleInfo::vRectangleReferenceAmbiguity )
+        .def_readwrite( "vRectangleKMerSize", &RectangleInfo::vRectangleKMerSize )
         .def_readwrite( "vRectangleUsedDp", &RectangleInfo::vRectangleUsedDp )
         .def_readwrite( "uiCategory", &RectangleInfo::uiCategory )
         .def_readwrite( "iReadId", &RectangleInfo::iReadId )

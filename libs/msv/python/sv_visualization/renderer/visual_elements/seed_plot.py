@@ -48,6 +48,7 @@ class SeedPlot:
                                                       ("right", "@r"),
                                                       ("top", "@t"),
                                                       ("fill percentage", "@f"),
+                                                      ("k", "@k"),
                                                       ("additional seed size", "@s")],
                                             names=['ambiguous_regions'],
                                             name="Hover ambiguous regions")
@@ -66,7 +67,7 @@ class SeedPlot:
                                           ("q, r, l", "@q, @r, @l"),
                                           ("index", "@idx"),
                                           ("reseeding-layer", "@layer"),
-                                          ("parlindrome-filtered", "@parlindrome")],
+                                          ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping")],
                                 names=['seeds'],
                                 name="Hover reads")
         self.left_plot.add_tools(hover_seeds)
@@ -83,7 +84,7 @@ class SeedPlot:
                 max_seed_size = max(repl_dict["size"])
                 for idx, _ in enumerate(repl_dict["c"]):
                     if condition(idx):
-                        if repl_dict["parlindrome"][idx]:
+                        if repl_dict["parlindrome"][idx] or repl_dict["overlapping"][idx]:
                             repl_dict["c"][idx] = "red"
                         elif repl_dict["f"][idx]: # on forward strand
                             repl_dict["c"][idx] = "green"
