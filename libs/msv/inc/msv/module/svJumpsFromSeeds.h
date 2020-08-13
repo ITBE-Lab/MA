@@ -236,6 +236,18 @@ class SvJumpsFromSeeds
             pSeeds->end( ) );
     } // method
 
+
+struct SeedCmp {
+    bool operator()( const Seed& rA, const Seed& rB ) const {
+                if( rA.start( ) != rB.start( ) )
+                    return rA.start( ) < rB.start( );
+                if( rA.start_ref( ) != rB.start_ref( ) )
+                    return rA.start_ref( ) < rB.start_ref( );
+                if( rA.bOnForwStrand != rB.bOnForwStrand )
+                    return rA.bOnForwStrand;
+                return rA.size( ) < rB.size( );
+            }
+};
     std::shared_ptr<Seeds> reseed( std::shared_ptr<Seeds> pSeeds,
                                    std::shared_ptr<NucSeq>
                                        pQuery,
@@ -248,13 +260,20 @@ class SvJumpsFromSeeds
         auto pRet = std::make_shared<Seeds>( );
         pRet->append( pSeeds );
         // push original seeds
+        std::shared_ptr<std::set<Seed, SeedCmp>> pOutExtraDup;
         if( pOutExtra != nullptr )
+        {
+            pOutExtraDup = std::make_shared<std::set<Seed, SeedCmp>>( );
             for( auto& rSeed : *pSeeds )
             {
+                if( pOutExtraDup->count( rSeed ) > 0 )
+                    continue;
+                pOutExtraDup->insert( rSeed );
                 pOutExtra->pSeeds->push_back( rSeed );
                 pOutExtra->vLayerOfSeeds.push_back( 0 );
                 pOutExtra->vParlindromeSeed.push_back( false );
             } // for
+        } // if
 
         size_t uiLayer = 1;
         while( uiLayer <= 100 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
@@ -321,12 +340,18 @@ class SvJumpsFromSeeds
                 {
                     for( auto& rSeed : *pParlindromeFiltered )
                     {
+                        if( pOutExtraDup->count( rSeed ) > 0 )
+                            continue;
+                        pOutExtraDup->insert( rSeed );
                         pOutExtra->pSeeds->push_back( rSeed );
                         pOutExtra->vLayerOfSeeds.push_back( uiLayer );
                         pOutExtra->vParlindromeSeed.push_back( false );
                     } // for
                     for( auto& rSeed : *xParlindromeFilter.pParlindromes )
                     {
+                        if( pOutExtraDup->count( rSeed ) > 0 )
+                            continue;
+                        pOutExtraDup->insert( rSeed );
                         pOutExtra->pSeeds->push_back( rSeed );
                         pOutExtra->vLayerOfSeeds.push_back( uiLayer );
                         pOutExtra->vParlindromeSeed.push_back( true );
@@ -451,8 +476,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -717,8 +742,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>>
-    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
+                                                             std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

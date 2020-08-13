@@ -35,7 +35,18 @@ struct SeedInfo
     std::pair<nucSeqIndex, nucSeqIndex> xX;
     std::pair<nucSeqIndex, nucSeqIndex> xY;
     size_t uiCategory;
-}; // class
+}; // struct
+
+struct RectangleInfo
+{
+    std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
+    std::vector<double> vRectangleFillPercentage;
+    std::vector<size_t> vRectangleReferenceAmbiguity;
+    std::vector<bool> vRectangleUsedDp;
+    size_t uiCategory;
+    size_t uiEndColumnSize;
+    int64_t iReadId;
+}; // struct
 
 
 void addSeed( Seed& rSeed,
@@ -79,25 +90,51 @@ void addSeed( Seed& rSeed,
                                 std::make_pair( rSeed.start( ), rSeed.size( ) ), uiCurrColumn + uiCategoryCounter} );
 } // function
 
+void addRectangle( std::vector<RectangleInfo>& vRectangles,
+                   SvJumpsFromSeeds::HelperRetVal& xHelper,
+                   size_t uiCategoryCounter,
+                   int64_t iReadId,
+                   size_t uiEndColumnSize )
+{
+    RectangleInfo xInfo;
+    xInfo.vRectangles.swap( xHelper.vRectangles );
+    xInfo.vRectangleFillPercentage.swap( xHelper.vRectangleFillPercentage );
+    xInfo.vRectangleReferenceAmbiguity.swap( xHelper.vRectangleReferenceAmbiguity );
+    xInfo.vRectangleUsedDp.swap( xHelper.vRectangleUsedDp );
+    xInfo.uiCategory = uiCategoryCounter;
+    xInfo.uiEndColumnSize = uiEndColumnSize;
+    xInfo.iReadId = iReadId;
+    vRectangles.push_back( xInfo );
+} // function
+
+
+using TP_RET = std::tuple<std::vector<SeedInfo>,
+                          std::vector<RectangleInfo>,
+                          std::vector<std::pair<size_t, int64_t>>,
+                          std::vector<std::shared_ptr<NucSeq>>>;
 template <typename DBCon>
-std::vector<SeedInfo> seedDisplaysForReadIds( const ParameterSetManager& rParameters,
-                                              std::shared_ptr<libMS::PoolContainer<DBCon>>
-                                                  pConPool,
-                                              std::vector<int64_t>
-                                                  vReadIds,
-                                              std::shared_ptr<Pack>
-                                                  pPack,
-                                              std::shared_ptr<minimizer::Index>
-                                                  pMMIndex,
-                                              std::shared_ptr<HashCounter>
-                                                  pHashCounter,
-                                              bool bDoCompress )
+TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
+                               std::shared_ptr<libMS::PoolContainer<DBCon>>
+                                   pConPool,
+                               std::vector<int64_t>
+                                   vReadIds,
+                               std::shared_ptr<Pack>
+                                   pPack,
+                               std::shared_ptr<minimizer::Index>
+                                   pMMIndex,
+                               std::shared_ptr<HashCounter>
+                                   pHashCounter,
+                               bool bDoCompress,
+                               size_t iMaxTime )
 {
 
     std::sort( vReadIds.begin( ), vReadIds.end( ), []( int64_t iA, int64_t iB ) { return iB < iA; } );
 
     std::mutex xLock;
     std::vector<SeedInfo> vRet;
+    std::vector<RectangleInfo> vRectangles;
+    std::vector<std::pair<size_t, int64_t>> vReadsNCols;
+    std::vector<std::shared_ptr<NucSeq>> vReads;
     vRet.reserve( vReadIds.size( ) * 500 );
 
     MMFilteredSeeding xSeeding( rParameters, 300 );
@@ -109,9 +146,9 @@ std::vector<SeedInfo> seedDisplaysForReadIds( const ParameterSetManager& rParame
     // seed_order_on_query, seed, layer, parlindrome, read_id, read_name
     std::vector<std::tuple<size_t, Seed, size_t, bool, int64_t, std::string>> vAllSeeds;
     // x-end position of last seeds and the seeds read id for each column
-    std::vector<std::pair<nucSeqIndex, int64_t>> vEndColumn;
     std::vector<int64_t> vAllColIds;
     size_t uiCategoryCounter = 0;
+    bool bStop = false;
     for( size_t uiI = 0; uiI < rParameters.getNumThreads( ); uiI++ )
         vFutures.push_back( pConPool->xPool.enqueue(
             [&]( std::shared_ptr<DBCon> pConn, size_t uiI ) { //
@@ -143,23 +180,78 @@ std::vector<SeedInfo> seedDisplaysForReadIds( const ParameterSetManager& rParame
                     for( size_t uiK = 0; uiK < vSeedsNIndex.size( ); uiK++ )
                         std::get<0>( vSeedsNIndex[ uiK ] ) = uiK;
 
+
                     if( bDoCompress )
                     {
                         std::lock_guard<std::mutex> xGuard( xLock );
+                        if( bStop )
+                            return;
                         vAllSeeds.insert( vAllSeeds.end( ), vSeedsNIndex.begin( ), vSeedsNIndex.end( ) );
+                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, 0 );
+                        vReads.push_back( pRead );
                     } // if
                     else
                     {
-                        // @todo
+                        std::sort( vSeedsNIndex.begin( ), vSeedsNIndex.end( ), []( auto& xA, auto& xB ) {
+                            return std::get<1>( xA ).start_ref( ) < std::get<1>( xB ).start_ref( );
+                        } );
+                        std::vector<std::pair<nucSeqIndex, int64_t>> vEndColumn;
+                        std::lock_guard<std::mutex> xGuard( xLock );
+                        if( bStop )
+                            return;
+                        for( auto& xTup : vAllSeeds )
+                            addSeed( std::get<1>( xTup ),
+                                     vRet,
+                                     vEndColumn,
+                                     vAllColIds,
+                                     uiCategoryCounter,
+                                     std::get<3>( xTup ),
+                                     std::get<2>( xTup ),
+                                     std::get<4>( xTup ),
+                                     std::get<0>( xTup ),
+                                     std::get<5>( xTup ) );
+                        vAllColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
+
+                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ) );
+
+                        uiCategoryCounter += vEndColumn.size( );
+                        vReadsNCols.emplace_back( vAllColIds.back( ), iReadId );
+                        vReads.push_back( pRead );
                     } // else
                 } // for
             },
             uiI ) );
+
+    // wait for threads to finish at most iMaxTime seconds, then stop all work and give up
+    std::chrono::system_clock::time_point xEndTime =
+        std::chrono::system_clock::now( ) + std::chrono::seconds( iMaxTime );
     for( auto& xFuture : vFutures )
-        xFuture.get( );
+    {
+        // get status until it is either timeout or ready
+        std::future_status xStatus = std::future_status::deferred;
+        while( xStatus == std::future_status::deferred )
+            xStatus = xFuture.wait_until( xEndTime );
+
+        if( xStatus == std::future_status::timeout )
+        {
+            std::lock_guard<std::mutex> xGuard( xLock );
+            bStop = true;
+        } // if
+        else if( xStatus == std::future_status::ready )
+            xFuture.get( );
+    } // for
+
+    if( bStop )
+    {
+        vRet.clear( );
+        vRectangles.clear( );
+        vReadsNCols.clear( );
+        vReads.clear( );
+    } // if
 
     if( bDoCompress && !vAllSeeds.empty( ) )
     {
+        std::vector<std::pair<nucSeqIndex, int64_t>> vEndColumn;
         std::sort( vAllSeeds.begin( ), vAllSeeds.end( ), []( auto& xA, auto& xB ) {
             if( std::get<1>( xA ).start_ref( ) != std::get<1>( xB ).start_ref( ) )
                 return std::get<1>( xA ).start_ref( ) < std::get<1>( xB ).start_ref( );
@@ -179,7 +271,7 @@ std::vector<SeedInfo> seedDisplaysForReadIds( const ParameterSetManager& rParame
         uiCategoryCounter += vEndColumn.size( );
     } // if
 
-    return vRet;
+    return std::make_tuple( vRet, vRectangles, vReadsNCols, vReads );
 } // method
 
 
@@ -202,6 +294,15 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "xX", &SeedInfo::xX )
         .def_readwrite( "xY", &SeedInfo::xY )
         .def_readwrite( "uiCategory", &SeedInfo::uiCategory );
+
+    py::class_<RectangleInfo>( xOrganizer.util( ), "RectangleInfo" )
+        .def_readwrite( "vRectangles", &RectangleInfo::vRectangles )
+        .def_readwrite( "vRectangleFillPercentage", &RectangleInfo::vRectangleFillPercentage )
+        .def_readwrite( "vRectangleReferenceAmbiguity", &RectangleInfo::vRectangleReferenceAmbiguity )
+        .def_readwrite( "vRectangleUsedDp", &RectangleInfo::vRectangleUsedDp )
+        .def_readwrite( "uiCategory", &RectangleInfo::uiCategory )
+        .def_readwrite( "iReadId", &RectangleInfo::iReadId )
+        .def_readwrite( "uiEndColumnSize", &RectangleInfo::uiEndColumnSize );
 
     xOrganizer.util( ).def( "seedDisplaysForReadIds", &seedDisplaysForReadIds<DBCon> );
 } // function
