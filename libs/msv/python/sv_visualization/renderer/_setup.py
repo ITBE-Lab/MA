@@ -42,19 +42,19 @@ def setup(self):
         self.seed_plot.left_plot.grid.bounds = (0, self.pack.unpacked_size_single_strand)
         self.read_plot.plot.xgrid.bounds = (0, self.pack.unpacked_size_single_strand)
 
-        contig_ends = [x+s for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
-        self.seed_plot.left_plot.yaxis[0].formatter = FuncTickFormatter(
-                        args={"contig_starts": [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand],
-                            "genome_end":self.pack.unpacked_size_single_strand,
-                            "contig_names": [*self.pack.contigNames()]},
-                        code="""
-                                if(tick < 0 || tick >= genome_end)
-                                    return "n/a";
-                                idx = 0;
-                                while(contig_starts[idx + 1] < tick)
-                                    idx += 1;
-                                return contig_names[idx] + ": " + (tick - contig_starts[idx]);
-                            """)
+        #contig_ends = [x+s for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
+        #self.seed_plot.left_plot.yaxis[0].formatter = FuncTickFormatter(
+        #                args={"contig_starts": [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand],
+        #                    "genome_end":self.pack.unpacked_size_single_strand,
+        #                    "contig_names": [*self.pack.contigNames()]},
+        #                code="""
+        #                        if(tick < 0 || tick >= genome_end)
+        #                            return "n/a";
+        #                        idx = 0;
+        #                        while(contig_starts[idx + 1] < tick)
+        #                            idx += 1;
+        #                        return contig_names[idx] + ": " + (tick - contig_starts[idx]);
+        #                    """)
         #reference_ticks_center = [x+s/2 for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
         #self.seed_plot.left_plot.yaxis.ticker.max_interval = min(*self.pack.contigLengths())
         #self.seed_plot.left_plot.yaxis.ticker.min_interval = 1

@@ -50,6 +50,8 @@ def render_reads(self, render_all=False):
         "layer": [],
         "parlindrome": [],
         "overlapping": [],
+        "max_filter": [],
+        "min_filter": [],
         "x": [],
         "y": [],
         "category": []
@@ -95,6 +97,7 @@ def render_reads(self, render_all=False):
                                                     self.db_pool, self.read_ids, self.pack,
                                                     self.mm_index, self.mm_counter,
                                                     len(self.read_ids) > self.do_compressed_seeds or True, 
+                                                    self.mm_counter,
                                                     self.get_max_num_ele()//1000)
 
     with self.measure("render seeds"):
@@ -109,6 +112,8 @@ def render_reads(self, render_all=False):
                 read_dict["layer"].append(seed_info.uiLayer)
                 read_dict["parlindrome"].append(seed_info.bParlindrome)
                 read_dict["overlapping"].append(seed_info.bOverlapping)
+                read_dict["max_filter"].append(seed_info.uiMaxFilterCount)
+                read_dict["min_filter"].append(seed_info.uiMinFilterCount)
                 read_dict["f"].append(seed_info.bOnForward)
                 read_dict["category"].append(seed_info.uiCategory)
                 read_dict["center"].append(seed_info.fCenter)

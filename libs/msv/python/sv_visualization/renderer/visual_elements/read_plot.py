@@ -98,7 +98,9 @@ class ReadPlot:
                                                 ("q, r, l", "@q, @r, @l"),
                                                 ("index", "@idx"),
                                                 ("reseeding-layer", "@layer"),
-                                                ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping")],
+                                                ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
+                                                ("read MM count", "min: @min_filter, max: @max_filter")
+                                                ],
                                       names=['seeds'],
                                       name="Hover seeds"))
 

@@ -33,11 +33,13 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
   public:
     SQLQuery<DBCon, int32_t> xGetReadId;
     SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetRead;
+    SQLQuery<DBCon, int32_t> xGetSeqId;
 
     ReadTable( std::shared_ptr<DBCon> pDB )
         : ReadTableType<DBCon>( pDB, jReadTableDef ),
           xGetReadId( pDB, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ? " ),
-          xGetRead( pDB, "SELECT sequence, name FROM read_table WHERE id = ? " )
+          xGetRead( pDB, "SELECT sequence, name FROM read_table WHERE id = ? " ),
+          xGetSeqId( pDB, "SELECT sequencer_id FROM read_table WHERE id = ? " )
     {} // default constructor
 
 
@@ -56,6 +58,10 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
         std::get<0>( xTuple )->pUncomNucSeq->sName = std::get<1>( xTuple );
         assert( !xGetRead.next( ) );
         return std::get<0>( xTuple )->pUncomNucSeq;
+    } // method
+    inline int64_t getSeqId( int64_t iReadId )
+    {
+        return xGetSeqId.scalar( iReadId );
     } // method
 
     inline std::vector<std::shared_ptr<NucSeq>> getUsedReads( std::shared_ptr<DBCon> pDB )
