@@ -151,7 +151,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     MMFilteredSeeding xSeeding( rParameters, 300 );
     SeedLumping xLumping( rParameters );
     StripOfConsiderationSeeds xSoc( rParameters );
-    GetAllFeasibleSoCs xSocFilter( rParameters, 100 );
+    GetAllFeasibleSoCs xSocFilter( rParameters, 50 );
 
     std::vector<std::future<void>> vFutures;
                     // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name

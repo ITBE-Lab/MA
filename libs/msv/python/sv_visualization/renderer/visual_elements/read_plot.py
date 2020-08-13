@@ -22,7 +22,7 @@ class ReadPlotNucs:
 
         self.bottom_plot = figure(
             width=900,
-            height=100,
+            height=200,
             x_range=read_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
@@ -83,7 +83,8 @@ class ReadPlot:
                                                 ("top", "@t"),
                                                 ("fill percentage", "@f"),
                                                 ("additional seed size", "@s"),
-                                                ("triggered ambiguity filter", "@dp")
+                                                ("k", "@k"),
+                                                ("by DP", "@dp")
                                                 ],
                                      names=['ambiguity_rect'],
                                      name="Hover ambiguity rects"))

@@ -94,11 +94,11 @@ def render_reads(self, render_all=False):
             info_ret = seedDisplaysForReadIds(self.params, 
                                                     self.db_pool, self.read_ids, self.pack,
                                                     self.mm_index, self.mm_counter,
-                                                    len(self.read_ids) > self.do_compressed_seeds, 
+                                                    len(self.read_ids) > self.do_compressed_seeds or True, 
                                                     self.get_max_num_ele()//1000)
 
     with self.measure("render seeds"):
-        if self.do_render_seeds:
+        if self.do_render_seeds and len(info_ret.vRet) < self.get_max_num_ele() * 10:
             for seed_info in info_ret.vRet:
                 read_dict["r_id"].append(seed_info.iReadId)
                 read_dict["r_name"].append(seed_info.sReadName)

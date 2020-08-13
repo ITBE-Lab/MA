@@ -39,7 +39,7 @@ class Renderer():
         self.do_render_call_jumps_only = False
         self.render_area_factor = 1 # @todo make this adjustable 
         # number of reads needs to be smaller than max_num_elements / read_penalty_factor to be rendered
-        self.read_penalty_factor = 10
+        self.read_penalty_factor = 100
         self.selected_read_id = None
         self.selected_seed_id = None
         self.selected_call_id = set()

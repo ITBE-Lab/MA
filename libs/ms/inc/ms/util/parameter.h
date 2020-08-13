@@ -751,7 +751,7 @@ class Presetting : public ParameterSetBase
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
-          xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 0, checkPositiveValue ),
+          xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
@@ -952,10 +952,10 @@ class GlobalParameter : public ParameterSetBase
 
     /* Constructor */
     GlobalParameter( )
-        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 25 ),
-          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 10 ),
+        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 500 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 200 ),
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 10 ),
+          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 1000 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           // DP:
           iMatch( this, "Match Score",
