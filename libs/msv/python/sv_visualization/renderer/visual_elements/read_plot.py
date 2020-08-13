@@ -50,7 +50,7 @@ class ReadPlotNucs:
         self.bottom_plot.add_tools(hover_nucleotides)
 
     def copy_nts(self, renderer):
-        if not renderer.selected_read_id is None:
+        if not renderer.selected_read_id is None and renderer.selected_read_id in self.nucs_by_r_id:
             self.left_nucs.data = self.nucs_by_r_id[renderer.selected_read_id]
 
     def reset_nts(self):

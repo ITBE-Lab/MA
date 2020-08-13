@@ -237,17 +237,19 @@ class SvJumpsFromSeeds
     } // method
 
 
-struct SeedCmp {
-    bool operator()( const Seed& rA, const Seed& rB ) const {
-                if( rA.start( ) != rB.start( ) )
-                    return rA.start( ) < rB.start( );
-                if( rA.start_ref( ) != rB.start_ref( ) )
-                    return rA.start_ref( ) < rB.start_ref( );
-                if( rA.bOnForwStrand != rB.bOnForwStrand )
-                    return rA.bOnForwStrand;
-                return rA.size( ) < rB.size( );
-            }
-};
+    struct SeedCmp
+    {
+        bool operator( )( const Seed& rA, const Seed& rB ) const
+        {
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.start_ref( ) != rB.start_ref( ) )
+                return rA.start_ref( ) < rB.start_ref( );
+            if( rA.bOnForwStrand != rB.bOnForwStrand )
+                return rA.bOnForwStrand;
+            return rA.size( ) < rB.size( );
+        }
+    }; // struct
     std::shared_ptr<Seeds> reseed( std::shared_ptr<Seeds> pSeeds,
                                    std::shared_ptr<NucSeq>
                                        pQuery,
@@ -260,15 +262,14 @@ struct SeedCmp {
         auto pRet = std::make_shared<Seeds>( );
         pRet->append( pSeeds );
         // push original seeds
-        std::shared_ptr<std::set<Seed, SeedCmp>> pOutExtraDup;
+        std::set<Seed, SeedCmp> xOutExtraDup;
         if( pOutExtra != nullptr )
         {
-            pOutExtraDup = std::make_shared<std::set<Seed, SeedCmp>>( );
             for( auto& rSeed : *pSeeds )
             {
-                if( pOutExtraDup->count( rSeed ) > 0 )
+                if( xOutExtraDup.count( rSeed ) > 0 )
                     continue;
-                pOutExtraDup->insert( rSeed );
+                xOutExtraDup.insert( rSeed );
                 pOutExtra->pSeeds->push_back( rSeed );
                 pOutExtra->vLayerOfSeeds.push_back( 0 );
                 pOutExtra->vParlindromeSeed.push_back( false );
@@ -340,18 +341,18 @@ struct SeedCmp {
                 {
                     for( auto& rSeed : *pParlindromeFiltered )
                     {
-                        if( pOutExtraDup->count( rSeed ) > 0 )
+                        if( xOutExtraDup.count( rSeed ) > 0 )
                             continue;
-                        pOutExtraDup->insert( rSeed );
+                        xOutExtraDup.insert( rSeed );
                         pOutExtra->pSeeds->push_back( rSeed );
                         pOutExtra->vLayerOfSeeds.push_back( uiLayer );
                         pOutExtra->vParlindromeSeed.push_back( false );
                     } // for
                     for( auto& rSeed : *xParlindromeFilter.pParlindromes )
                     {
-                        if( pOutExtraDup->count( rSeed ) > 0 )
+                        if( xOutExtraDup.count( rSeed ) > 0 )
                             continue;
-                        pOutExtraDup->insert( rSeed );
+                        xOutExtraDup.insert( rSeed );
                         pOutExtra->pSeeds->push_back( rSeed );
                         pOutExtra->vLayerOfSeeds.push_back( uiLayer );
                         pOutExtra->vParlindromeSeed.push_back( true );

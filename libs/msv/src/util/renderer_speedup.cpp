@@ -87,7 +87,7 @@ void addSeed( Seed& rSeed,
 
     vRet.emplace_back( SeedInfo{fCenter, iReadId, sReadName, rSeed.size( ), rSeed.start( ), uiR, rSeed.size( ),
                                 uiSeedOrderOnQuery, rSeed.bOnForwStrand, iLayer, bParlindrome, xX,
-                                std::make_pair( rSeed.start( ), rSeed.size( ) ), uiCurrColumn + uiCategoryCounter} );
+                                std::make_pair( rSeed.start( ), rSeed.end( ) ), uiCurrColumn + uiCategoryCounter} );
 } // function
 
 void addRectangle( std::vector<RectangleInfo>& vRectangles,
@@ -96,7 +96,7 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
                    int64_t iReadId,
                    size_t uiEndColumnSize )
 {
-    RectangleInfo xInfo;
+    RectangleInfo xInfo{};
     xInfo.vRectangles.swap( xHelper.vRectangles );
     xInfo.vRectangleFillPercentage.swap( xHelper.vRectangleFillPercentage );
     xInfo.vRectangleReferenceAmbiguity.swap( xHelper.vRectangleReferenceAmbiguity );
@@ -108,26 +108,33 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
 } // function
 
 
-using TP_RET = std::tuple<std::vector<SeedInfo>,
-                          std::vector<RectangleInfo>,
-                          std::vector<std::pair<size_t, int64_t>>,
-                          std::vector<std::shared_ptr<NucSeq>>>;
-template <typename DBCon>
-TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
-                               std::shared_ptr<libMS::PoolContainer<DBCon>>
-                                   pConPool,
-                               std::vector<int64_t>
-                                   vReadIds,
-                               std::shared_ptr<Pack>
-                                   pPack,
-                               std::shared_ptr<minimizer::Index>
-                                   pMMIndex,
-                               std::shared_ptr<HashCounter>
-                                   pHashCounter,
-                               bool bDoCompress,
-                               size_t iMaxTime )
+struct ReadInfo
 {
+    std::vector<SeedInfo> vRet;
+    std::vector<RectangleInfo> vRectangles;
+    std::vector<std::pair<size_t, int64_t>> vReadsNCols;
+    std::vector<std::shared_ptr<NucSeq>> vReads;
+}; // struct
+template <typename DBCon>
+std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rParameters,
+                                                  std::shared_ptr<libMS::PoolContainer<DBCon>>
+                                                      pConPool,
+                                                  std::set<int64_t>
+                                                      xReadIds,
+                                                  std::shared_ptr<Pack>
+                                                      pPack,
+                                                  std::shared_ptr<minimizer::Index>
+                                                      pMMIndex,
+                                                  std::shared_ptr<HashCounter>
+                                                      pHashCounter,
+                                                  bool bDoCompress,
+                                                  size_t iMaxTime )
+{
+    std::chrono::system_clock::time_point xEndTime =
+        std::chrono::system_clock::now( ) + std::chrono::seconds( iMaxTime );
 
+    std::vector<int64_t> vReadIds;
+    vReadIds.insert( vReadIds.begin( ), xReadIds.begin( ), xReadIds.end( ) );
     std::sort( vReadIds.begin( ), vReadIds.end( ), []( int64_t iA, int64_t iB ) { return iB < iA; } );
 
     std::mutex xLock;
@@ -223,8 +230,6 @@ TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
             uiI ) );
 
     // wait for threads to finish at most iMaxTime seconds, then stop all work and give up
-    std::chrono::system_clock::time_point xEndTime =
-        std::chrono::system_clock::now( ) + std::chrono::seconds( iMaxTime );
     for( auto& xFuture : vFutures )
     {
         // get status until it is either timeout or ready
@@ -239,6 +244,8 @@ TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
         } // if
         else if( xStatus == std::future_status::ready )
             xFuture.get( );
+        else
+            throw std::runtime_error( "should be unreachable" );
     } // for
 
     if( bStop )
@@ -248,8 +255,7 @@ TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
         vReadsNCols.clear( );
         vReads.clear( );
     } // if
-
-    if( bDoCompress && !vAllSeeds.empty( ) )
+    else if( bDoCompress && !vAllSeeds.empty( ) )
     {
         std::vector<std::pair<nucSeqIndex, int64_t>> vEndColumn;
         std::sort( vAllSeeds.begin( ), vAllSeeds.end( ), []( auto& xA, auto& xB ) {
@@ -271,7 +277,7 @@ TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
         uiCategoryCounter += vEndColumn.size( );
     } // if
 
-    return std::make_tuple( vRet, vRectangles, vReadsNCols, vReads );
+    return std::make_shared<ReadInfo>( ReadInfo{vRet, vRectangles, vReadsNCols, vReads} );
 } // method
 
 
@@ -279,7 +285,7 @@ TP_RET seedDisplaysForReadIds( const ParameterSetManager& rParameters,
 #include <pybind11/stl.h>
 void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<SeedInfo>( xOrganizer.util( ), "SeedInfo" )
+    py::class_<SeedInfo>( xOrganizer._util( ), "SeedInfo" )
         .def_readwrite( "fCenter", &SeedInfo::fCenter )
         .def_readwrite( "iReadId", &SeedInfo::iReadId )
         .def_readwrite( "sReadName", &SeedInfo::sReadName )
@@ -294,8 +300,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "xX", &SeedInfo::xX )
         .def_readwrite( "xY", &SeedInfo::xY )
         .def_readwrite( "uiCategory", &SeedInfo::uiCategory );
-
-    py::class_<RectangleInfo>( xOrganizer.util( ), "RectangleInfo" )
+    py::class_<RectangleInfo>( xOrganizer._util( ), "RectangleInfo" )
         .def_readwrite( "vRectangles", &RectangleInfo::vRectangles )
         .def_readwrite( "vRectangleFillPercentage", &RectangleInfo::vRectangleFillPercentage )
         .def_readwrite( "vRectangleReferenceAmbiguity", &RectangleInfo::vRectangleReferenceAmbiguity )
@@ -303,6 +308,11 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "uiCategory", &RectangleInfo::uiCategory )
         .def_readwrite( "iReadId", &RectangleInfo::iReadId )
         .def_readwrite( "uiEndColumnSize", &RectangleInfo::uiEndColumnSize );
+    py::class_<ReadInfo, std::shared_ptr<ReadInfo>>( xOrganizer._util( ), "ReadInfo" )
+        .def_readwrite( "vRet", &ReadInfo::vRet )
+        .def_readwrite( "vRectangles", &ReadInfo::vRectangles )
+        .def_readwrite( "vReadsNCols", &ReadInfo::vReadsNCols )
+        .def_readwrite( "vReads", &ReadInfo::vReads );
 
     xOrganizer.util( ).def( "seedDisplaysForReadIds", &seedDisplaysForReadIds<DBCon> );
 } // function
