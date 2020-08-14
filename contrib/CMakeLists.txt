@@ -16,7 +16,7 @@ if(WITH_PYTHON)
     if( PythonLibs_FOUND )
         message( "Include pybind11 ..." )
         add_subdirectory (pybind11)
-        target_include_directories(contrib_CPP_header INTERFACE ./pybind11_json/include)
+        target_include_directories(contrib_CPP_header SYSTEM INTERFACE ./pybind11_json/include)
     endif()
 endif()
 

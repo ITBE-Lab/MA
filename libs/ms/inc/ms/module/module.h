@@ -293,7 +293,7 @@ class BasePledge
             for( std::shared_ptr<BasePledge> pPledge : vPledges )
             {
                 xPool.enqueue(
-                    [ &callback, &bContinue, &xExceptionMutex, &sExceptionMessageFromWorker /* , &xPool */ ](
+                    [&callback, &bContinue, &xExceptionMutex, &sExceptionMessageFromWorker /* , &xPool */](
                         size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
                         assert( pPledge != nullptr );
 
@@ -383,7 +383,7 @@ class BasePledge
     }
 
     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~BasePledge()
+    virtual ~BasePledge( )
     {} // destructor
 }; // class
 
@@ -467,7 +467,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     {
         // moves the element(s) in question to the end of the vector
         auto itNewEnd =
-            std::remove_if( vSuccessors.begin( ), vSuccessors.end( ), [ & ]( BasePledge* pY ) { return pX == pY; } );
+            std::remove_if( vSuccessors.begin( ), vSuccessors.end( ), [&]( BasePledge* pY ) { return pX == pY; } );
         // removes the element(s) in question
         vSuccessors.resize( itNewEnd - vSuccessors.begin( ) );
     } // method
@@ -665,7 +665,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
                                       "; With container type: " + type_name( pContent ) );
         // locks a mutex if this pledge can be reached from multiple leaves in the graph
         // does not lock otherwise...
-        return lockIfNecessary( [ & ]( ) {
+        return lockIfNecessary( [&]( ) {
             // in this case there is no need to execute again
             if( !IS_VOLATILE && pContent != nullptr )
                 return pContent;
@@ -887,6 +887,17 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
             // convert the content in the vector to the element types of the tuple
             auto pCasted = std::dynamic_pointer_cast<
                 typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>( vIn[ IDX ] );
+#if defined( __clang__ )
+            // dynamic casting fails over module borders in clang.
+            // here we force the cast if the bare typenames are matching - just like gcc does
+            // @fixme this can cause awful bugs if two different classes share name and namespace...
+            // https://stackoverflow.com/questions/47322895/dynamic-cast-doesnt-work-across-module-boundaries-on-clang
+            if( pCasted == nullptr &&
+                type_name( std::get<IDX>( tTup ), true ).compare( type_name( vIn[ IDX ], true ) ) == 0 )
+                pCasted = std::static_pointer_cast<
+                    typename std::tuple_element<IDX, typename TP_MODULE::TP_TUPLE_ARGS>::type::element_type>(
+                    vIn[ IDX ] );
+#endif
             // if the cast is not possible we get a nullptr here
             if( pCasted == nullptr )
                 throw std::runtime_error( "Wrong type for module (" + type_name<TP_MODULE>( ) +

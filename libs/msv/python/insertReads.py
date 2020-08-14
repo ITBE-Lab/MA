@@ -100,7 +100,7 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     for inserter in inserter_vec:
         inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
-    HashFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, hash_counter_container, 300)
+    HashFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, hash_counter_container, 10)
 
     analyze.analyze(runtime_file)
 

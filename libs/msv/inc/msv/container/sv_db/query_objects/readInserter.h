@@ -32,7 +32,7 @@ class ReadInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
     ReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
                            std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler )
-    {} // constructur
+    {} // constructor
 #else
     using ParentType::BulkInserterContainer;
 #endif
