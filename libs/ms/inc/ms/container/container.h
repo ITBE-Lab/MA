@@ -44,10 +44,14 @@ class Container
 #if DEBUG_LEVEL >= 1
     size_t uiTombStone = TOMBSTONE_VAL_ALIVE;
 
-    ~Container( )
+    virtual ~Container( )
     {
         uiTombStone = TOMBSTONE_VAL_DEAD;
     } // deconstructor
+#else
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~Container( )
+    {} // deconstructor
 #endif
 
     virtual void dummy( )

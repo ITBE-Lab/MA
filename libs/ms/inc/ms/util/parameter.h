@@ -4,7 +4,7 @@
 #include "util/support.h"
 #include <stdexcept>
 
-#if defined( __GNUC__ ) && ( __GNUC__ < 8 )
+#if( defined( __GNUC__ ) && ( __GNUC__ < 8 ) )
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -97,6 +97,10 @@ class AlignerParameterBase
     {
         throw std::runtime_error( "Cannot set value of AlignerParameterBase" );
     } // method
+
+     /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~AlignerParameterBase()
+    {} // destructor
 }; // class
 
 
@@ -274,6 +278,10 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     {
         return this->get( );
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~AlignerParameter()
+    {} // destructor
 }; // class
 
 
@@ -349,6 +357,10 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
     {
         return this->get( ).string( );
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~AlignerParameter()
+    {} // destructor
 }; // class
 
 class ParameterSetBase; // forward declaration required for AlignerParameterPointer
@@ -442,7 +454,7 @@ class ParameterSetBase
         } // while
         for( auto& rPair : xpParametersByCategory )
             rPair.second.erase( std::remove_if( rPair.second.begin( ), rPair.second.end( ),
-                                                [&pParameter]( const std::shared_ptr<AlignerParameterBase> pX ) {
+                                                [ &pParameter ]( const std::shared_ptr<AlignerParameterBase> pX ) {
                                                     return ( pX == pParameter );
                                                 } ),
                                 rPair.second.end( ) );
@@ -478,7 +490,7 @@ class ParameterSetBase
         } // try
         catch( std::out_of_range& )
         {
-            throw std::runtime_error( "Could not find parameter: " + cX );
+            throw std::runtime_error( std::string("Could not find parameter: ") += cX );
         } // catch
     } // method
 
@@ -488,6 +500,10 @@ class ParameterSetBase
         for( auto& rxTup : xpAllParameters )
             rxTup.second->mirror( rxOtherSet.xpAllParameters.at( rxTup.first ) );
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~ParameterSetBase()
+    {} // destructor
 }; // class
 
 
@@ -657,7 +673,7 @@ class Presetting : public ParameterSetBase
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
                              AlignerParameterBase::ChoicesType{
-                                 {"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}, {"MEMs", "MEMs"}} ),
+                                 { "maxSpan", "Maximally Spanning" }, { "SMEMs", "SMEMs" }, { "MEMs", "MEMs" } } ),
           xMinSeedLength( this, "Minimal Seed Length", 'l',
                           "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
                           16, checkPositiveValue ),
@@ -824,10 +840,10 @@ class Presetting : public ParameterSetBase
           xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
           xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
     {
-        xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
+        xMeanPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xStdPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xPairedBonus->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xZDropInversion->fEnabled = [ this ]( void ) { return this->xSearchInversions->get( ) == true; };
     } // constructor
 
     Presetting( ) : Presetting( "Unnamed" )
@@ -849,6 +865,10 @@ class Presetting : public ParameterSetBase
     {
         return xUsePairedReads->value;
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~Presetting()
+    {} // destructor
 }; // class
 
 template <typename VALUE_TYPE> void AlignerParameterPointer<VALUE_TYPE>::do_register( ParameterSetBase* pPresetting )
@@ -881,9 +901,9 @@ class GeneralParameter : public ParameterSetBase
     /* Constructor */
     GeneralParameter( )
         : xSAMOutputTypeChoice( this, "SAM File output", "Select output type for sam file.", GENERAL_PARAMETER,
-                                AlignerParameterBase::ChoicesType{{"Read_Folder", "In Read Folder"},
-                                                                  {"Specified_Folder", "In Specified Folder"},
-                                                                  {"Specified_File", "As Specified File"}} ),
+                                AlignerParameterBase::ChoicesType{ { "Read_Folder", "In Read Folder" },
+                                                                   { "Specified_Folder", "In Specified Folder" },
+                                                                   { "Specified_File", "As Specified File" } } ),
           xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
@@ -900,9 +920,9 @@ class GeneralParameter : public ParameterSetBase
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
-        xSAMOutputPath->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
-        xSAMOutputFileName->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
-        piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
+        xSAMOutputPath->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
+        xSAMOutputFileName->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
+        piNumberOfThreads->fEnabled = [ this ]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
     /* Named copy Constructor */
@@ -925,6 +945,10 @@ class GeneralParameter : public ParameterSetBase
         } // if
         return uiConcurency;
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~GeneralParameter( )
+    {} // destructor
 }; // class
 
 
@@ -982,6 +1006,10 @@ class GlobalParameter : public ParameterSetBase
     {
         return "Independent of presettings.";
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~GlobalParameter()
+    {} // destructor
 }; // class
 
 
@@ -1105,7 +1133,7 @@ class ParameterSetManager
             return pGeneralParameterSet->byShort( cX );
         if( this->getSelected( )->hasShort( cX ) )
             return this->getSelected( )->byShort( cX );
-        throw std::runtime_error( "Could not find parameter: " + cX );
+        throw std::runtime_error( std::string("Could not find parameter: ") += cX );
     } // method
 
     size_t getNumThreads( ) const

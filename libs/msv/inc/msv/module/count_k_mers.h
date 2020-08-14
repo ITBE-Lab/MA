@@ -236,11 +236,10 @@ using KMerCounter = __KMerCounter<6, 18>;
 
 class GetKMerCounter : public Module<KMerCounter, false>
 {
-    const nucSeqIndex uiK;
     const nucSeqIndex uiW;
 
   public:
-    GetKMerCounter( const ParameterSetManager& rParameters, nucSeqIndex uiK, nucSeqIndex uiW ) : uiK( uiK ), uiW( uiW )
+    GetKMerCounter( const ParameterSetManager& rParameters, nucSeqIndex uiW ) : uiW( uiW )
     {} // constructor
 
     std::shared_ptr<KMerCounter> execute( )

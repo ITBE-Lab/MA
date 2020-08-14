@@ -115,6 +115,10 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
     {
         return false;
     } // method
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~Module( )
+    {} // destructor
 }; // class
 
 /**
@@ -289,7 +293,7 @@ class BasePledge
             for( std::shared_ptr<BasePledge> pPledge : vPledges )
             {
                 xPool.enqueue(
-                    [&callback, &bContinue, &xExceptionMutex, &sExceptionMessageFromWorker, &xPool](
+                    [ &callback, &bContinue, &xExceptionMutex, &sExceptionMessageFromWorker /* , &xPool */ ](
                         size_t uiTid, std::shared_ptr<BasePledge> pPledge ) {
                         assert( pPledge != nullptr );
 
@@ -377,6 +381,10 @@ class BasePledge
         // reset current thread to default
         uiThreadCurrentlyBuildingGraph = uiDefaultGraphThread;
     }
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~BasePledge()
+    {} // destructor
 }; // class
 
 
@@ -459,7 +467,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
     {
         // moves the element(s) in question to the end of the vector
         auto itNewEnd =
-            std::remove_if( vSuccessors.begin( ), vSuccessors.end( ), [&]( BasePledge* pY ) { return pX == pY; } );
+            std::remove_if( vSuccessors.begin( ), vSuccessors.end( ), [ & ]( BasePledge* pY ) { return pX == pY; } );
         // removes the element(s) in question
         vSuccessors.resize( itNewEnd - vSuccessors.begin( ) );
     } // method
@@ -585,7 +593,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
      */
     Pledge( const Pledge& ) = delete; // copy constructor
 
-    ~Pledge( )
+    virtual ~Pledge( )
     {
         // create a variable so that we can take a reference of it.
         Pledge* pThis = this;
@@ -657,7 +665,7 @@ template <class TP_TYPE, bool IS_VOLATILE = false, typename... TP_DEPENDENCIES> 
                                       "; With container type: " + type_name( pContent ) );
         // locks a mutex if this pledge can be reached from multiple leaves in the graph
         // does not lock otherwise...
-        return lockIfNecessary( [&]( ) {
+        return lockIfNecessary( [ & ]( ) {
             // in this case there is no need to execute again
             if( !IS_VOLATILE && pContent != nullptr )
                 return pContent;
@@ -801,7 +809,7 @@ class PyPledgeVector : public Pledge<PyContainerVector>
   public:
     using Pledge<PyContainerVector>::Pledge;
 
-    ~PyPledgeVector( )
+    virtual ~PyPledgeVector( )
     {
         for( std::shared_ptr<BasePledge> pPledge : vPledges )
             pPledge->removeSuccessor( this );
@@ -914,6 +922,10 @@ class ModuleWrapperCppToPy : public PyModule<TP_MODULE::IS_VOLATILE>
     {
         return xModule.requiresLock( );
     } // method
+
+    /* Clang requires virtual destructor for classes comprising virtual methods, */
+    virtual ~ModuleWrapperCppToPy( )
+    {} // destructor
 }; // class
 
 

@@ -33,7 +33,7 @@
 #endif
 
 // For getting the code working with gcc 6.x.x compiler
-#if( __GNUC__ && ( __GNUC__ < 7 ) )
+#if defined( __GNUC__ ) && ( __GNUC__ < 7 ) && !defined( __clang__ )
 #include <experimental/tuple>
 #define STD_APPLY std::experimental::apply
 #else
@@ -41,7 +41,7 @@
 #define STD_APPLY std::apply
 #endif
 
-#if defined( __GNUC__ ) && ( __GNUC__ < 8 )
+#if( defined( __GNUC__ ) && ( __GNUC__ < 8 ) )
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -665,7 +665,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
             std::string sIndexType = jIndexDef.count( INDEX_TYPE ) == 0 ? "" : jIndexDef[ INDEX_TYPE ];
 
-            std::string sStmt = std::string("CREATE ") +
+            std::string sStmt = std::string( "CREATE " ) +
 #ifndef POSTGRESQL // MySQL
                                 sIndexType +
 #endif
@@ -675,7 +675,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             if( jIndexDef.count( WHERE ) )
             {
                 if( DBCon::supportsWhereClauseForIndex( ) )
-                    sStmt.append( " WHERE " ).append( jIndexDef[ WHERE ] );
+                    sStmt.append( " WHERE " ).append( std::string( jIndexDef[ WHERE ] ) );
                 else
                     std::cout << "WARNING: WHERE clause ignored." << std::endl;
             } // if
@@ -726,7 +726,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 
         std::string makeIndexDropStmt( const std::string& rsTblName, const std::string& rsIdxName )
         {
-            std::string sStmt = std::string("DROP INDEX ") +
+            std::string sStmt = std::string( "DROP INDEX " ) +
 #ifdef POSTGRESQL
                                 "IF NOT EXISTS " +
 #endif
@@ -1847,12 +1847,12 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             auto& rjCol = this->rjTableCols[ iItr ]; // current column in jTableDef
             sStmt
-                .append( rjCol[ COLUMN_NAME ] ) // column name
+                .append( std::string( rjCol[ COLUMN_NAME ] ) ) // column name
                 .append( " " )
                 .append( vSQLColumnTypes[ iItr ] ); // column type
             if( rjCol.count( CONSTRAINTS ) )
                 // CONSTRAINTS must be plain text describing all constraints
-                sStmt.append( " " ).append( rjCol[ CONSTRAINTS ] );
+                sStmt.append( " " ).append( std::string( rjCol[ CONSTRAINTS ] ) );
             // insert separating comma
             if( ++iItr < this->rjTableCols.size( ) )
                 sStmt.append( ", " );
@@ -1872,12 +1872,12 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                             .append( getTableName( ) ) );
                 if( rjCol.count( TYPE ) == 0 )
                     throw std::runtime_error( std::string( "TYPE is missing for the generated column: " )
-                                                  .append( rjCol[ COLUMN_NAME ] )
+                                                  .append( std::string( rjCol[ COLUMN_NAME ] ) )
                                                   .append( " in the table " )
                                                   .append( getTableName( ) ) );
                 if( rjCol.count( AS ) == 0 )
                     throw std::runtime_error( std::string( "AS is missing for the generated column: " )
-                                                  .append( rjCol[ COLUMN_NAME ] )
+                                                  .append( std::string( rjCol[ COLUMN_NAME ] ) )
                                                   .append( " in the table " )
                                                   .append( getTableName( ) ) );
                 // append to the SQL statement
@@ -1885,9 +1885,9 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     // Insert separating comma. since the last regular column does not have a comma we can
                     // always safely insert a separating comma
                     .append( ", " )
-                    .append( rjCol[ COLUMN_NAME ] ) // column name
+                    .append( std::string( rjCol[ COLUMN_NAME ] ) ) // column name
                     .append( " " )
-                    .append( rjCol[ TYPE ] ) // column type
+                    .append( std::string( rjCol[ TYPE ] ) ) // column type
 
                     // Generated columns are columns that are computed from other columns
                     // InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
@@ -1897,18 +1897,18 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     // https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
                     // https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
                     .append( " AS ( " )
-                    .append( rjCol[ AS ] )
+                    .append( std::string( rjCol[ AS ] ) )
                     .append( " ) " )
                     .append( rjCol.count( STORED ) == 0 || !rjCol[ STORED ] ? "VIRTUAL" : "STORED" );
                 // generated columns can have constraints as well
                 if( rjCol.count( CONSTRAINTS ) )
                     // CONSTRAINTS must be plain text describing all constraints
-                    sStmt.append( " " ).append( rjCol[ CONSTRAINTS ] );
+                    sStmt.append( " " ).append( std::string( rjCol[ CONSTRAINTS ] ) );
             } // for
 
         // Primary Key (for composite form of primary key)
         if( jTableDef.count( PRIMARY_KEY ) )
-            sStmt.append( ", PRIMARY KEY (" ).append( jTableDef[ PRIMARY_KEY ] ).append( ")" );
+            sStmt.append( ", PRIMARY KEY (" ).append( std::string( jTableDef[ PRIMARY_KEY ] ) ).append( ")" );
 
         // Foreign Key definitions
         for( auto& rjItem : jTableDef.items( ) )
@@ -1921,10 +1921,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                                               "\nFOREIGN_KEY definition does not comprise exactly "
                                               "one COLUMN_NAME item as well as REFERENCE item." );
                 sStmt.append( ", FOREIGN KEY (" )
-                    .append( rjVal[ COLUMN_NAME ] )
+                    .append( std::string( rjVal[ COLUMN_NAME ] ) )
                     .append( ")" )
                     .append( " REFERENCES " )
-                    .append( rjVal[ REFERENCES ] );
+                    .append( std::string( rjVal[ REFERENCES ] ) );
             } // if
         // Close statement
         sStmt.append( ")" );
@@ -2238,13 +2238,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     }; // constructor
 
     /* Destructor */
-    ~SQLTable( )
+    virtual ~SQLTable( )
     {
         do_exception_safe( [&]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
-    } // destructor
+    } // virtual destructor (required by clang)
 
 }; // class (SQLTable)
 

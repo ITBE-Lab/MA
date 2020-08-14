@@ -26,7 +26,16 @@ class ReadInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
 {
   public:
     using ParentType = BulkInserterContainer<DBCon, libMS::AbstractInserterContainer, ReadTable, NucSeq>;
+
+// Expose constructor of base class
+#if defined( __clang__ )
+    ReadInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
+                           std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
+        : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler )
+    {} // constructur
+#else
     using ParentType::BulkInserterContainer;
+#endif
 
   protected:
     virtual size_t insert_override( std::shared_ptr<NucSeq> pRead )

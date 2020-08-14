@@ -98,6 +98,11 @@ function( ms_add_module_helper target_name )
             )
     endif()
 
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # Clang up to major 6 requires -lc++experimental for std::filesystem support
+        target_link_libraries ( "lib${target_name}" PRIVATE "-lc++experimental" "-lc++fs" )
+    endif()
+
     # Integration of test-code, if requested
     if(BUILD_TESTING)
         # add tests for all cpp files in the tests folder

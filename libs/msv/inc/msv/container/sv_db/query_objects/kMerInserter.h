@@ -23,7 +23,16 @@ class KMerInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
 {
   public:
     using ParentType = BulkInserterContainer<DBCon, libMS::AbstractInserterContainer, KMerFilterTable, NucSeq>;
+
+// Expose constructor of base class
+#if defined( __clang__ )
+    KMerInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
+                           std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
+        : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler )
+    {} // constructur
+#else
     using ParentType::BulkInserterContainer;
+#endif
 
   protected:
     virtual size_t insert_override( std::shared_ptr<NucSeq> pRead )
@@ -32,7 +41,7 @@ class KMerInserterContainer : public BulkInserterContainer<DBCon, AbstractInsert
         KMerCounter::toKMers( pRead, 0, pRead->length( ), 1, [&]( const NucSeq& xNucSeq ) {
             uiCnt++;
             auto pInsert = std::make_shared<NucSeq>( xNucSeq );
-            ParentType::pInserter->insert( ParentType::iId, NucSeqSql(pInsert), (uint32_t)1 );
+            ParentType::pInserter->insert( ParentType::iId, NucSeqSql( pInsert ), (uint32_t)1 );
             return true;
         } );
         return uiCnt;

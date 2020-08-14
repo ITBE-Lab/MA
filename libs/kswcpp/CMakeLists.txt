@@ -25,6 +25,10 @@ elseif( MSVC )
 	# using Visual Studio C++
 	add_definitions(-DFOO) # Workaround (see https://github.com/Microsoft/VSLinux/issues/288)
 	set_property( SOURCE src/kswcpp_avx2.cpp APPEND_STRING PROPERTY COMPILE_FLAGS "/arch:AVX2" )
+elseif( CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	# using Clang
+	set_property( SOURCE "src/kswcpp_sse_xx.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS "-msse4.1" )
+	set_property( SOURCE "src/kswcpp_avx2.cpp" APPEND_STRING PROPERTY COMPILE_FLAGS "-mavx2" )
 else()
 	message( FATAL_ERROR "kswcpp does not support your compiler now" )
 endif()

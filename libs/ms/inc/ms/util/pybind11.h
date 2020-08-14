@@ -53,11 +53,12 @@ class_<Vector, holder_type> bind_vector_ext( handle scope, std::string const& na
     // Accessor and iterator; return by value if copyable, otherwise we return by ref + keep-alive
     detail::vector_accessor<Vector, Class_>( cl );
 
-    cl.def( "__bool__", []( const Vector& v ) -> bool { return !v.empty( ); }, "Check whether the list is nonempty" );
+    cl.def(
+        "__bool__", []( const Vector& v ) -> bool { return !v.empty( ); }, "Check whether the list is nonempty" );
 
     cl.def( "__len__", &Vector::size );
 
-    return cl;
+    return std::move( cl );
 }
 
 NAMESPACE_END( PYBIND11_NAMESPACE )

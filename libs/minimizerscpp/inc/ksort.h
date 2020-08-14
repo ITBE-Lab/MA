@@ -40,7 +40,7 @@ typedef struct
 
 #define KSORT_SWAP( type_t, a, b )                                                                                     \
     {                                                                                                                  \
-        register type_t t = ( a );                                                                                     \
+        /* register */ type_t t = ( a );                                                                                     \
         ( a ) = ( b );                                                                                                 \
         ( b ) = t;                                                                                                     \
     }

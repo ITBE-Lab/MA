@@ -24,6 +24,10 @@ class OutStream
     {
         return *this;
     };
+
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~OutStream()
+    {} // destructor
 }; // class
 
 /**

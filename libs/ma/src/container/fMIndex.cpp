@@ -153,11 +153,11 @@ void FMIndex::bwt_pac2bwt_step1( const NucSeq& fn_pac )
 {
     /* Size of the reference sequence
      */
-    uiRefSeqLength = fn_pac.length( ); // bwt->seq_len = bwa_seq_len( fn_pac );
+    this->uiRefSeqLength = fn_pac.length( ); // bwt->seq_len = bwa_seq_len( fn_pac );
 
     /* The sequence length is doubled if we have the reverse sequence in th BWT.
      */
-    uiRefSeqLength = uiRefSeqLength;
+    // uiRefSeqLength = uiRefSeqLength; // FIXED: unnecessary self assignment
 
     /* Buffer for BWT construction. The BWT will be finally inside the buffer.
      */

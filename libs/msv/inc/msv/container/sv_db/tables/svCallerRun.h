@@ -69,7 +69,7 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
 
     inline int64_t getId( std::string& rS )
     {
-        int64_t xId = xGetId.scalar( rS );
+        // int64_t xId = xGetId.scalar( rS ); // FIXED: unused
         return xGetId.scalar( rS );
     } // method
 

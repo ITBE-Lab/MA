@@ -93,8 +93,12 @@ if( NOT MSVC )
     if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
         #add_compile_options( "-Werror" )
     endif()
+    message("${CMAKE_CXX_COMPILER_ID}" )
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        # Clang prefers libc++ over libstdc++
         add_compile_options( "-stdlib=libc++" )
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
     endif()
 elseif( (CMAKE_BUILD_TYPE MATCHES "Debug") )
     # For fixing the fatal error C1128 if using MSVC and debug builds

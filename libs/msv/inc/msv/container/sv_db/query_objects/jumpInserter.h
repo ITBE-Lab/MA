@@ -26,7 +26,17 @@ class JumpInserterContainer
   public:
     using ParentType =
         BulkInserterContainer<DBCon, libMS::AbstractInserterContainer, SvJumpTable, ContainerVector<SvJump>, NucSeq>;
+
+
+// Expose constructor of base class
+#if defined( __clang__ )
+    JumpInserterContainer( std::shared_ptr<PoolContainer<DBCon>> pPool, int64_t iId,
+                           std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
+        : ParentType::BulkInserterContainer( pPool, iId, pSharedProfiler )
+    {} // constructur
+#else
     using ParentType::BulkInserterContainer;
+#endif
 
   protected:
     virtual size_t insert_override( std::shared_ptr<ContainerVector<SvJump>> pJumps, std::shared_ptr<NucSeq> pRead )

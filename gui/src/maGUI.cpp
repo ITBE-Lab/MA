@@ -107,8 +107,6 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
 /* Dialog for entering the paired read parameter */
 class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
 {
-    int iValue = 0;
-
   public:
     /* Constructor */
     mwxPairedSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
@@ -1104,7 +1102,7 @@ class MA_MainFrame : public wxFrame
                         "Aligner Settings",
                         wxVERTICAL,
                         wxSizerFlags( 0 ).Expand( ).Border( wxRIGHT, 5 ).Align( wxCENTER ),
-                        [this]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
+                        [&]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
                         {
                             // Parameter selection combo
                             pxBoxSizer.Add(
@@ -1136,7 +1134,7 @@ class MA_MainFrame : public wxFrame
                         "Output",
                         wxVERTICAL,
                         wxSizerFlags( 0 ).Expand( ).Border( wxRIGHT, 5 ),
-                        [this]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
+                        [&]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
                         {
                             pxBoxSizer.Add( new mwxMapDrivenComboBox( //
                                                 pxBoxSizer.xConnector.pxWindow,
@@ -1157,7 +1155,7 @@ class MA_MainFrame : public wxFrame
                     pxBoxSizer.addStaticBoxSizer(
                         "Quickstart", wxHORIZONTAL,
                         wxSizerFlags( 2 ).Expand( ), //.Border( wxALL, 5 ),
-                        [this]( mwxStaticBoxSizer& xStaticBoxSizer ) // BoxSizer content
+                        []( mwxStaticBoxSizer& xStaticBoxSizer ) // BoxSizer content
                         {
                             // In order to get the scrollbar working, we first create the wxTextCtrl with empty text
                             // and set the actual value later

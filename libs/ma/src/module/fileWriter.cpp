@@ -225,7 +225,8 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
             nucSeqIndex uiP2 = pPack->uiPositionToReverseStrand( pAlignment->xStats.pOther.lock( )->beginOnRef( ) );
             // get the distance of the alignments on the reference
             nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
-            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( std::llabs( d ) );
+            // FIXED: std::llabs deleted
+            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( /* std::llabs( d ) */ d );
 
             // assert( pQuery2 != nullptr );
             if( pPack->bPositionIsOnReversStrand( pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )

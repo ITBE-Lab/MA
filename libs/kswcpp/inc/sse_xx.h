@@ -436,13 +436,14 @@ template <int INSTR> struct alignas( 16 ) Vec_m128i_4_int32_t : public Vec_m128i
                   << _mm_extract_epi32( this->val, 2 ) << ", " << _mm_extract_epi32( this->val, 3 ) << std::endl;
     } // method
 
-
+#if 0 // unused
     /* Getter, delivers value */
-    Vc_INTRINSIC TP_ELEMENT operator[]( const size_t iIdx )
+    // Vc_INTRINSIC TP_ELEMENT operator[]( const size_t iIdx )
+    Vc_INTRINSIC TP_ELEMENT at( const size_t iIdx )
     {
         return _mm_extract_epi32( this->val, iIdx );
     } // method
-
+#endif
 
     /* Initializes all 4 vector elements to iVal */
     Vc_INTRINSIC Vec_m128i_4_int32_t& set1( const int32_t iVal )

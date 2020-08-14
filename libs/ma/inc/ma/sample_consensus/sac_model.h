@@ -192,7 +192,7 @@ class SACModel
     /** \brief Constructor for base SACModel. */
     SACModel( ) : cloud_( NULL )
     {}
-    SACModel( sensor_msgs::PointCloud cloud ) : cloud_( &cloud )
+    SACModel( sensor_msgs::PointCloud* cloud ) : cloud_( cloud )
     {}
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

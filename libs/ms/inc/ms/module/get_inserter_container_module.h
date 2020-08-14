@@ -250,7 +250,7 @@ class InserterContainer : public InserterContainerType<DBCon, TableType<DBCon>, 
                        std::shared_ptr<SharedInserterProfiler> pSharedProfiler )
         : InserterContainerType<DBCon, TableType<DBCon>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
-                                [this]( auto pConnection ) //
+                                [&]( auto pConnection ) //
                                 {
                                     return std::make_tuple( pConnection->sharedGuardedTrxn( ),
                                                             (int)pConnection->getTaskId( ),
@@ -289,7 +289,7 @@ class BulkInserterContainer : public InserterContainerType<DBCon, BulkInserterTy
         // This construction makes sure that the table exists in the database.
         : InserterContainerType<DBCon, BulkInserterType<TableType<DBCon>>, InsertTypes...>(
               pPool->xPool.run( pPool->xPool.getDedicatedConId( ),
-                                [this, iId]( auto pConnection ) //
+                                [/* this, iId */]( auto pConnection ) //
                                 {
                                     return std::make_tuple(
                                         pConnection->sharedGuardedTrxn( ),

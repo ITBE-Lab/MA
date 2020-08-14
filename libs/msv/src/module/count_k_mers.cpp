@@ -15,7 +15,7 @@ void exportCountKMers( libMS::SubmoduleOrganizer& xOrganizer )
 {
     py::class_<KMerCounter, Container, std::shared_ptr<KMerCounter>>( xOrganizer.container( ), "KMerCounter" )
         .def( py::init<nucSeqIndex>( ) );
-    exportModule<GetKMerCounter, nucSeqIndex, nucSeqIndex>( xOrganizer, "GetKMerCounter" );
+    exportModule<GetKMerCounter, nucSeqIndex>( xOrganizer, "GetKMerCounter" );
     exportModule<KMerCounterModule>( xOrganizer, "KMerCounterModule" );
     exportModule<KMerCountFilterModule, nucSeqIndex>( xOrganizer, "KMerCountFilterModule" );
 
