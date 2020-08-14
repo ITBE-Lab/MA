@@ -309,7 +309,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
 #include <pybind11/stl.h>
 void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
 {
-    py::class_<HashCounters>( xOrganizer.util( ), "HashCounters" ).def( py::init<>( ) );
+    py::class_<HashCounters, std::shared_ptr<HashCounters>>( xOrganizer.util( ), "HashCounters" ).def( py::init<>( ) );
+
     py::class_<SeedInfo>( xOrganizer._util( ), "SeedInfo" )
         .def_readwrite( "fCenter", &SeedInfo::fCenter )
         .def_readwrite( "iReadId", &SeedInfo::iReadId )
@@ -328,6 +329,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "uiMinFilterCount", &SeedInfo::uiMinFilterCount )
         .def_readwrite( "uiMaxFilterCount", &SeedInfo::uiMaxFilterCount )
         .def_readwrite( "uiCategory", &SeedInfo::uiCategory );
+
     py::class_<RectangleInfo>( xOrganizer._util( ), "RectangleInfo" )
         .def_readwrite( "vRectangles", &RectangleInfo::vRectangles )
         .def_readwrite( "vRectangleFillPercentage", &RectangleInfo::vRectangleFillPercentage )
@@ -337,6 +339,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "uiCategory", &RectangleInfo::uiCategory )
         .def_readwrite( "iReadId", &RectangleInfo::iReadId )
         .def_readwrite( "uiEndColumnSize", &RectangleInfo::uiEndColumnSize );
+
     py::class_<ReadInfo, std::shared_ptr<ReadInfo>>( xOrganizer._util( ), "ReadInfo" )
         .def_readwrite( "vRet", &ReadInfo::vRet )
         .def_readwrite( "vRectangles", &ReadInfo::vRectangles )
