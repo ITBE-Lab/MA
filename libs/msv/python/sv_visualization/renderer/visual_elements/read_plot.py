@@ -22,7 +22,7 @@ class ReadPlotNucs:
 
         self.bottom_plot = figure(
             width=900,
-            height=100,
+            height=200,
             x_range=read_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
@@ -50,7 +50,7 @@ class ReadPlotNucs:
         self.bottom_plot.add_tools(hover_nucleotides)
 
     def copy_nts(self, renderer):
-        if not renderer.selected_read_id is None:
+        if not renderer.selected_read_id is None and renderer.selected_read_id in self.nucs_by_r_id:
             self.left_nucs.data = self.nucs_by_r_id[renderer.selected_read_id]
 
     def reset_nts(self):
@@ -83,7 +83,8 @@ class ReadPlot:
                                                 ("top", "@t"),
                                                 ("fill percentage", "@f"),
                                                 ("additional seed size", "@s"),
-                                                ("triggered ambiguity filter", "@dp")
+                                                ("k", "@k"),
+                                                ("by DP", "@dp")
                                                 ],
                                      names=['ambiguity_rect'],
                                      name="Hover ambiguity rects"))
@@ -97,7 +98,9 @@ class ReadPlot:
                                                 ("q, r, l", "@q, @r, @l"),
                                                 ("index", "@idx"),
                                                 ("reseeding-layer", "@layer"),
-                                                ("parlindrome-filtered", "@parlindrome")],
+                                                ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
+                                                ("read MM count", "min: @min_filter, max: @max_filter")
+                                                ],
                                       names=['seeds'],
                                       name="Hover seeds"))
 

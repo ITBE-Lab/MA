@@ -555,7 +555,7 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
 class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 {
     nucSeqIndex uiFuzz = 5;
-    nucSeqIndex uiMinFree = 10;
+    double fMaxOverlap = .25; // seed can maximally overlap for 25% of it's length
 
   public:
     FilterOverlappingSeeds( const ParameterSetManager& rParameters )
@@ -609,7 +609,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
                 uiJ++;
             } // while
 
-            if( rS.size( ) >= uiNumOverlap + uiMinFree )
+            if( uiNumOverlap / rS.size( ) <= fMaxOverlap )
                 pRet->push_back( rS );
         } // for
 

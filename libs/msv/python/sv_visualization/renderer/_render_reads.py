@@ -9,7 +9,7 @@ from .util import *
 import sys, traceback
 
 def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict, end_column_len,
-                  category_counter, use_dp):
+                  category_counter, k_mer_size, use_dp):
     
     if rectangle.x_axis.size != 0:
         seed_sample_size /= rectangle.x_axis.size
@@ -21,6 +21,7 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
     self.read_plot_rects[read_id]["f"].append(fill)
     self.read_plot_rects[read_id]["c"].append("lightgrey")
     self.read_plot_rects[read_id]["s"].append(seed_sample_size)
+    self.read_plot_rects[read_id]["k"].append(k_mer_size)
     self.read_plot_rects[read_id]["dp"].append(use_dp)
     if use_dp and len(self.read_ids) <= self.do_compressed_seeds:
         read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
@@ -34,14 +35,7 @@ def render_reads(self, render_all=False):
     print("rendering reads")
     self.params.by_name("Fixed SoC Width").set(50)
     self.params.by_name("Max Size Reseed").set(2000)
-    """
-    seeding_module = MMFilteredSeeding(self.params, 300)
-    seed_lumper = SeedLumping(self.params)
-    soc_module = StripOfConsiderationSeeds(self.params)
-    soc_filter = GetAllFeasibleSoCs(self.params, 100)
-    with self.measure("SvJumpsFromSeeds"):
-        jumps_from_seeds = SvJumpsFromSeeds(self.params, self.pack)
-    """
+
     read_dict = {
         "center": [],
         "r_id": [],
@@ -55,6 +49,9 @@ def render_reads(self, render_all=False):
         "f": [],
         "layer": [],
         "parlindrome": [],
+        "overlapping": [],
+        "max_filter": [],
+        "min_filter": [],
         "x": [],
         "y": [],
         "category": []
@@ -91,44 +88,55 @@ def render_reads(self, render_all=False):
     category_counter = 0
     end_column = None
 
+    if not self.selected_read_id is None:
+        self.read_ids.add(self.selected_read_id)
+
     with self.measure("computing seeds"):
         if self.do_render_seeds:
-                seed_info_list, rectangles_info_list, reads_n_cols, reads = seedDisplaysForReadIds(self.params, 
-                                                        self.db_pool, list(self.read_ids), self.pack,
-                                                        self.mm_index, self.mm_counter,
-                                                        len(self.read_ids) > self.do_compressed_seeds, 3)
+            info_ret = seedDisplaysForReadIds(self.params, 
+                                                    self.db_pool, self.read_ids, self.pack,
+                                                    self.mm_index, self.mm_counter,
+                                                    len(self.read_ids) > self.do_compressed_seeds or True, 
+                                                    self.get_max_num_ele()//1000)
 
     with self.measure("render seeds"):
-                for seed_info in seed_info_list:
-                    read_dict["r_id"].append(seed_info.iReadId)
-                    read_dict["r_name"].append(seed_info.sReadName)
-                    read_dict["size"].append(seed_info.uiSize)
-                    read_dict["l"].append(seed_info.uiL)
-                    read_dict["q"].append(seed_info.uiQ)
-                    read_dict["idx"].append(seed_info.uiSeedOrderOnQuery)
-                    read_dict["layer"].append(seed_info.uiLayer)
-                    read_dict["parlindrome"].append(seed_info.bParlindrome)
-                    read_dict["f"].append(seed_info.bOnForward)
-                    read_dict["category"].append(seed_info.uiCategory)
-                    
-                    read_dict["center"].append(seed_info.fCenter)
-                    read_dict["r"].append(seed_info.uiR)
-                    read_dict["x"].append([*seed_info.xX])
-                    read_dict["y"].append([*seed_info.xY])
-                    read_dict["c"].append("lightgrey")
+        if self.do_render_seeds and len(info_ret.vRet) < self.get_max_num_ele() * 10:
+            for seed_info in info_ret.vRet:
+                read_dict["r_id"].append(seed_info.iReadId)
+                read_dict["r_name"].append(seed_info.sReadName)
+                read_dict["size"].append(seed_info.uiSize)
+                read_dict["l"].append(seed_info.uiL)
+                read_dict["q"].append(seed_info.uiQ)
+                read_dict["idx"].append(seed_info.uiSeedOrderOnQuery)
+                read_dict["layer"].append(seed_info.uiLayer)
+                read_dict["parlindrome"].append(seed_info.bParlindrome)
+                read_dict["overlapping"].append(seed_info.bOverlapping)
+                read_dict["max_filter"].append(seed_info.uiMaxFilterCount)
+                read_dict["min_filter"].append(seed_info.uiMinFilterCount)
+                read_dict["f"].append(seed_info.bOnForward)
+                read_dict["category"].append(seed_info.uiCategory)
+                read_dict["center"].append(seed_info.fCenter)
+                read_dict["r"].append(seed_info.uiR)
+                read_dict["x"].append([*seed_info.xX])
+                read_dict["y"].append([*seed_info.xY])
+                read_dict["c"].append("lightgrey")
 
-                for read in reads:
-                    self.read_plot.nuc_plot.nucs_by_r_id[read.id] = {"p": [], "c": [], "i": []}
-                    self.read_plot_rects[read.id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "c":[], "dp": []}
-                    for y, nuc in enumerate(str(read)):
-                        append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read.id], nuc, y, "p")
-                for x, y in reads_n_cols:
-                    read_id_n_cols[x] = y
-                for r_i in rectangles_info_list:
-                    for rectangle, fill, seed_sample_size, use_dp in zip(r_i.vRectangles, r_i.vRectangleFillPercentage,
-                                                                r_i.vRectangleReferenceAmbiguity, r_i.vRectangleUsedDp):
-                        self.add_rectangle(seed_sample_size, r_i.iReadId, rectangle, fill, read_ambiguous_reg_dict,
-                                        r_i.uiEndColumnSize, r_i.uiCategory, use_dp)
+            for read in info_ret.vReads:
+                self.read_plot.nuc_plot.nucs_by_r_id[read.id] = {"p": [], "c": [], "i": []}
+                self.read_plot_rects[read.id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "k":[],
+                                                 "c":[], "dp": []}
+                for y, nuc in enumerate(str(read)):
+                    append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read.id], nuc, y, "p")
+            for x, y in info_ret.vReadsNCols:
+                read_id_n_cols[x] = y
+            for r_i in info_ret.vRectangles:
+                for rectangle, fill, seed_sample_size, k_mer_size, use_dp in zip(r_i.vRectangles,
+                                                            r_i.vRectangleFillPercentage,
+                                                            r_i.vRectangleReferenceAmbiguity,
+                                                            r_i.vRectangleKMerSize,
+                                                            r_i.vRectangleUsedDp):
+                    self.add_rectangle(seed_sample_size, r_i.iReadId, rectangle, fill, read_ambiguous_reg_dict,
+                                    r_i.uiEndColumnSize, r_i.uiCategory, k_mer_size, use_dp)
 
     def callback():
         if len(read_dict["c"]) < self.get_max_num_ele() or render_all or True:

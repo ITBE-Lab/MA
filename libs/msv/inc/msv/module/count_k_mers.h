@@ -374,9 +374,14 @@ template <nucSeqIndex NUM_CHUNKS_BITS, nucSeqIndex K, typename hash_t> class __H
         addHash( uiHash, 1 );
     } // method
 
+    size_t get( uint64_t uiHash )
+    {
+        return vChunks[ chunkId( uiHash ) ].get( chunkKey( uiHash ) );
+    } // method
+
     bool isUnique( uint64_t uiHash, nucSeqIndex uiMaxOcc )
     {
-        return vChunks[ chunkId( uiHash ) ].get( chunkKey( uiHash ) ) <= uiMaxOcc;
+        return get( uiHash ) <= uiMaxOcc;
     } // method
 
     bool isUnique( uint64_t uiHash )
@@ -450,6 +455,58 @@ class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, 
             static_cast<void*>( &xPtr ) );
         pQuery->vTranslateToNumericForm( );
         return pRet;
+    } // method
+
+    static std::vector<size_t> for_( const Seed& rS, std::shared_ptr<minimizer::Index> pMMIndex,
+                                     std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pPack,
+                                     std::shared_ptr<HashCounter> pCounter )
+    {
+        assert( rS.end( ) <= pQuery->length( ) );
+        pQuery->vTranslateToCharacterForm( );
+        const char* sSeq = (const char*)( pQuery->pxSequenceRef + rS.start( ) );
+        const int iSize = (int)rS.size( );
+        std::vector<size_t> vRet;
+        // pack arguments for c function
+        auto xPtr = std::make_pair( pCounter, &vRet );
+        auto pRet = pMMIndex->seed_one(
+            sSeq, iSize, pPack,
+            // lambda function filters query minimizers before they are turned to seeds via hash table lookup
+            [/*cannot capture since lambda needs to be passed to c as function pointer*/]( mm128_t* a, size_t& n,
+                                                                                           void* pArg ) {
+                // unpack arguments from c function
+                auto pPair = static_cast<std::pair<std::shared_ptr<HashCounter>, std::vector<size_t>*>*>( pArg );
+                for( size_t uiI = 0; uiI < n; uiI++ )
+                    pPair->second->push_back( pPair->first->get( minimizer::Index::_getHash( a[ uiI ] ) ) );
+            },
+            // c function can only take void* as arguments
+            static_cast<void*>( &xPtr ) );
+        pQuery->vTranslateToNumericForm( );
+        return vRet;
+    } // method
+
+    static size_t getMinCount( const Seed& rS, std::shared_ptr<minimizer::Index> pMMIndex,
+                               std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pPack,
+                               std::shared_ptr<HashCounter> pCounter )
+    {
+        auto vRet = for_( rS, pMMIndex, pQuery, pPack, pCounter );
+        if( vRet.size( ) == 0 )
+            return 0;
+        size_t uiRet = vRet[ 0 ];
+        for( auto x : vRet )
+            uiRet = std::min( uiRet, x );
+        return uiRet;
+    } // method
+    static size_t getMaxCount( const Seed& rS, std::shared_ptr<minimizer::Index> pMMIndex,
+                               std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pPack,
+                               std::shared_ptr<HashCounter> pCounter )
+    {
+        auto vRet = for_( rS, pMMIndex, pQuery, pPack, pCounter );
+        if( vRet.size( ) == 0 )
+            return 0;
+        size_t uiRet = vRet[ 0 ];
+        for( auto x : vRet )
+            uiRet = std::max( uiRet, x );
+        return uiRet;
     } // method
 }; // class
 

@@ -150,9 +150,11 @@ class SvJumpsFromSeeds
         std::shared_ptr<Seeds> pSeeds;
         std::vector<size_t> vLayerOfSeeds;
         std::vector<bool> vParlindromeSeed;
+        std::vector<bool> vOverlappingSeed;
         std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
         std::vector<double> vRectangleFillPercentage;
         std::vector<size_t> vRectangleReferenceAmbiguity;
+        std::vector<size_t> vRectangleKMerSize;
         std::vector<bool> vRectangleUsedDp;
         std::vector<std::pair<Seed, Seed>> vJumpSeeds;
 
@@ -237,17 +239,19 @@ class SvJumpsFromSeeds
     } // method
 
 
-struct SeedCmp {
-    bool operator()( const Seed& rA, const Seed& rB ) const {
-                if( rA.start( ) != rB.start( ) )
-                    return rA.start( ) < rB.start( );
-                if( rA.start_ref( ) != rB.start_ref( ) )
-                    return rA.start_ref( ) < rB.start_ref( );
-                if( rA.bOnForwStrand != rB.bOnForwStrand )
-                    return rA.bOnForwStrand;
-                return rA.size( ) < rB.size( );
-            }
-};
+    struct SeedCmp
+    {
+        bool operator( )( const Seed& rA, const Seed& rB ) const
+        {
+            if( rA.start( ) != rB.start( ) )
+                return rA.start( ) < rB.start( );
+            if( rA.start_ref( ) != rB.start_ref( ) )
+                return rA.start_ref( ) < rB.start_ref( );
+            if( rA.bOnForwStrand != rB.bOnForwStrand )
+                return rA.bOnForwStrand;
+            return rA.size( ) < rB.size( );
+        }
+    }; // struct
     std::shared_ptr<Seeds> reseed( std::shared_ptr<Seeds> pSeeds,
                                    std::shared_ptr<NucSeq>
                                        pQuery,
@@ -260,15 +264,14 @@ struct SeedCmp {
         auto pRet = std::make_shared<Seeds>( );
         pRet->append( pSeeds );
         // push original seeds
-        std::shared_ptr<std::set<Seed, SeedCmp>> pOutExtraDup;
+        std::set<Seed, SeedCmp> xOutExtraDup;
         if( pOutExtra != nullptr )
         {
-            pOutExtraDup = std::make_shared<std::set<Seed, SeedCmp>>( );
             for( auto& rSeed : *pSeeds )
             {
-                if( pOutExtraDup->count( rSeed ) > 0 )
+                if( xOutExtraDup.count( rSeed ) > 0 )
                     continue;
-                pOutExtraDup->insert( rSeed );
+                xOutExtraDup.insert( rSeed );
                 pOutExtra->pSeeds->push_back( rSeed );
                 pOutExtra->vLayerOfSeeds.push_back( 0 );
                 pOutExtra->vParlindromeSeed.push_back( false );
@@ -280,15 +283,8 @@ struct SeedCmp {
         {
             // sort seeds and remove duplicates (from reseeding)
             eraseMarked( pRet );
-            std::sort( pRet->begin( ), pRet->end( ), []( const Seed& rA, const Seed& rB ) {
-                if( rA.start( ) != rB.start( ) )
-                    return rA.start( ) < rB.start( );
-                if( rA.start_ref( ) != rB.start_ref( ) )
-                    return rA.start_ref( ) < rB.start_ref( );
-                if( rA.bOnForwStrand != rB.bOnForwStrand )
-                    return rA.bOnForwStrand;
-                return rA.size( ) < rB.size( );
-            } );
+            SeedCmp xSort;
+            std::sort( pRet->begin( ), pRet->end( ), xSort );
             markDuplicates( pRet );
 #if SV_JUMP_FROM_SEED_DEBUG_PRINT
             for( auto& xSeed : *pRet )
@@ -340,18 +336,18 @@ struct SeedCmp {
                 {
                     for( auto& rSeed : *pParlindromeFiltered )
                     {
-                        if( pOutExtraDup->count( rSeed ) > 0 )
+                        if( xOutExtraDup.count( rSeed ) > 0 )
                             continue;
-                        pOutExtraDup->insert( rSeed );
+                        xOutExtraDup.insert( rSeed );
                         pOutExtra->pSeeds->push_back( rSeed );
                         pOutExtra->vLayerOfSeeds.push_back( uiLayer );
                         pOutExtra->vParlindromeSeed.push_back( false );
                     } // for
                     for( auto& rSeed : *xParlindromeFilter.pParlindromes )
                     {
-                        if( pOutExtraDup->count( rSeed ) > 0 )
+                        if( xOutExtraDup.count( rSeed ) > 0 )
                             continue;
-                        pOutExtraDup->insert( rSeed );
+                        xOutExtraDup.insert( rSeed );
                         pOutExtra->pSeeds->push_back( rSeed );
                         pOutExtra->vLayerOfSeeds.push_back( uiLayer );
                         pOutExtra->vParlindromeSeed.push_back( true );
@@ -365,7 +361,17 @@ struct SeedCmp {
         } // while
 
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
-        return xFilterOverlapping.execute( xToSMEM.execute( pRet ) );
+        auto pFilteredRet = xFilterOverlapping.execute( xToSMEM.execute( pRet ) );
+
+        if( pOutExtra != nullptr )
+        {
+            SeedCmp xSort;
+            std::sort( pFilteredRet->begin( ), pFilteredRet->end( ), xSort );
+            for( auto& rSeed : *pOutExtra->pSeeds )
+                pOutExtra->vOverlappingSeed.push_back(
+                    !std::binary_search( pFilteredRet->begin( ), pFilteredRet->end( ), rSeed, xSort ) );
+        }
+        return pFilteredRet;
     } // mehtod
 
     std::shared_ptr<libMS::ContainerVector<SvJump>> computeJumps( std::shared_ptr<Seeds> pSeeds,
@@ -476,8 +482,8 @@ struct SeedCmp {
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -742,8 +748,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

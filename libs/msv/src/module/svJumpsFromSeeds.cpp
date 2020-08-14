@@ -139,9 +139,11 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
     if( xArea.xXAxis.size( ) == 0 || xArea.xYAxis.size( ) == 0 )
     {
         if( pOutExtra != nullptr )
+        {
             pOutExtra->vRectangleReferenceAmbiguity.push_back( 0 );
-        if( pOutExtra != nullptr )
             pOutExtra->vRectangleUsedDp.push_back( false );
+            pOutExtra->vRectangleKMerSize.push_back( 0 );
+        } // if
         return;
     } // if
     auto pRef = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
@@ -157,10 +159,13 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
         pOutExtra->vRectangleReferenceAmbiguity.push_back( uiSampledAmbiguity );
     if( uiSampledAmbiguity <= xArea.xXAxis.size( ) * ( 1 + dMaxSequenceSimilarity ) )
     {
-        if( pOutExtra != nullptr )
-            pOutExtra->vRectangleUsedDp.push_back( false );
         HashMapSeeding xHashMapSeeder;
         xHashMapSeeder.uiSeedSize = getKMerSizeForRectangle( xArea, this->dProbabilityForRandomMatch );
+        if( pOutExtra != nullptr )
+        {
+            pOutExtra->vRectangleUsedDp.push_back( false );
+            pOutExtra->vRectangleKMerSize.push_back( xHashMapSeeder.uiSeedSize );
+        } // if
         if( xHashMapSeeder.uiSeedSize > xArea.xXAxis.size( ) || xHashMapSeeder.uiSeedSize > xArea.xYAxis.size( ) )
             return;
 
@@ -199,7 +204,10 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
     else
     {
         if( pOutExtra != nullptr )
+        {
             pOutExtra->vRectangleUsedDp.push_back( true );
+            pOutExtra->vRectangleKMerSize.push_back( 0 );
+        } // if
         auto pFAlignment = std::make_shared<Alignment>( xArea.xXAxis.start( ), xArea.xYAxis.start( ) );
         AlignedMemoryManager xMemoryManager; // @todo this causes frequent (de-)&allocations; move this outwards
         xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pFAlignment,
@@ -274,8 +282,10 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::pSeeds )
         .def_readwrite( "rectangles", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangles )
         .def_readwrite( "parlindrome", &libMSV::SvJumpsFromSeeds::HelperRetVal::vParlindromeSeed )
+        .def_readwrite( "overlapping", &libMSV::SvJumpsFromSeeds::HelperRetVal::vOverlappingSeed )
         .def_readwrite( "rectangles_fill", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
         .def_readwrite( "rectangle_ambiguity", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
+        .def_readwrite( "rectangle_k_mer_size", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleKMerSize )
         .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp )
         .def_readwrite( "jump_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vJumpSeeds );
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util( ), "RectangleVector", "" );
