@@ -4,7 +4,7 @@
 #include "util/support.h"
 #include <stdexcept>
 
-#if( defined( __GNUC__ ) && ( __GNUC__ < 8 ) )
+#if (defined( __GNUC__ ) && ( __GNUC__ < 8 )) && !(defined(__clang__) && (__clang_major__ >= 10))
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else

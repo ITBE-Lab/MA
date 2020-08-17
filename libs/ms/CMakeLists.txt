@@ -99,8 +99,13 @@ function( ms_add_module_helper target_name )
     endif()
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        # Clang up to major 6 requires -lc++experimental for std::filesystem support
-        target_link_libraries ( "lib${target_name}" PRIVATE "-lc++experimental" "-lc++fs" )
+        message( "CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}" )
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9)
+            target_link_libraries ( "lib${target_name}" )
+        else()
+            # Clang requires -lc++experimental for std::filesystem support
+            target_link_libraries ( "lib${target_name}" PRIVATE "-lc++experimental" "-lc++fs" )     
+        endif()
     endif()
 
     # Integration of test-code, if requested

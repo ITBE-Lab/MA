@@ -34,7 +34,7 @@
 #include "libpq-fe.h"
 
 // For getting the code working with gcc 6.x.x compiler
-#if( __GNUC__ && ( __GNUC__ < 7 ) )
+#if( __GNUC__ && ( __GNUC__ < 7 ) && !defined(__clang__) )
 #include <experimental/tuple>
 #define STD_APPLY std::experimental::apply
 // Part of the C++17 standard now
@@ -47,7 +47,7 @@
 #define STD_APPLY std::apply
 #endif
 
-#if defined( __GNUC__ ) && ( __GNUC__ < 8 )
+#if (defined( __GNUC__ ) && ( __GNUC__ < 8 )) && !(defined(__clang__) && (__clang_major__ >= 10))
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else

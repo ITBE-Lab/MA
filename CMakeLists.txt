@@ -93,12 +93,13 @@ if( NOT MSVC )
     if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
         #add_compile_options( "-Werror" )
     endif()
-    message("${CMAKE_CXX_COMPILER_ID}" )
+    
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         # Clang prefers libc++ over libstdc++
         add_compile_options( "-stdlib=libc++" )
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
+        # Regarding the linker, there can be chosen among ld(gnu) and lld(llvm).
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld -stdlib=libc++")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -stdlib=libc++")
     endif()
 elseif( (CMAKE_BUILD_TYPE MATCHES "Debug") )
     # For fixing the fatal error C1128 if using MSVC and debug builds
@@ -123,7 +124,7 @@ if(WITH_ZLIB)
 endif()
 
 # Required for linking via libpthreads on UNIX systems
-set(THREADS_PREFER_PTHREAD_FLAG ON)
+# set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Use Cpp 17 standard
