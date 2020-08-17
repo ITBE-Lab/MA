@@ -17,10 +17,10 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
 
         nuc_seq_fetcher = NucSeqFetcher(parameter_set_manager)
         lock_module = Lock(parameter_set_manager)
-        seeding_module = MMFilteredSeeding(parameter_set_manager, 300)
+        seeding_module = MMFilteredSeeding(parameter_set_manager)
         seed_lumper = SeedLumping(parameter_set_manager)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
-        soc_filter = GetAllFeasibleSoCs(parameter_set_manager, 50)
+        soc_filter = GetAllFeasibleSoCs(parameter_set_manager)
         jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, single_con, "MS-SV",

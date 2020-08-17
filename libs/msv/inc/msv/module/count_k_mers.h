@@ -424,7 +424,8 @@ class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, 
   public:
     const nucSeqIndex uiMaxOcc;
 
-    MMFilteredSeeding( const ParameterSetManager& rParameters, nucSeqIndex uiMaxOcc ) : uiMaxOcc( uiMaxOcc )
+    MMFilteredSeeding( const ParameterSetManager& rParameters )
+        : uiMaxOcc( rParameters.getSelected( )->xMMFilterMaxOcc->get( ) )
     {} // constructor
 
     std::shared_ptr<Seeds> execute( std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pQuery,
@@ -484,6 +485,44 @@ class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, 
         return vRet;
     } // method
 
+#if 0
+    static std::vector<size_t> for_( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<minimizer::Index> pMMIndex,
+                                     std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pPack,
+                                     std::shared_ptr<HashCounter> pCounter )
+    {
+        assert( rS.end( ) <= pQuery->length( ) );
+        pQuery->vTranslateToCharacterForm( );
+        std::vector<size_t> vRet;
+        for( auto& rS : *pSeeds )
+        {
+            const char* sSeq = (const char*)( pQuery->pxSequenceRef + rS.start( ) );
+            const int iSize = (int)rS.size( );
+            // pack arguments for c function
+            auto xPtr = std::make_pair( pCounter, &vRet );
+            auto pRet = pMMIndex->seed_one(
+                sSeq, iSize, pPack,
+                // lambda function filters query minimizers before they are turned to seeds via hash table lookup
+                [/*cannot capture since lambda needs to be passed to c as function pointer*/]( mm128_t* a, size_t& n,
+                                                                                               void* pArg ) {
+                    // unpack arguments from c function
+                    auto pPair = static_cast<std::pair<std::shared_ptr<HashCounter>, std::vector<size_t>*>*>( pArg );
+                    for( size_t uiI = 0; uiI < n; uiI++ )
+                        pPair->second->push_back( pPair->first->get( minimizer::Index::_getHash( a[ uiI ] ) ) );
+                },
+                // c function can only take void* as arguments
+                static_cast<void*>( &xPtr ) );
+        } // for
+        pQuery->vTranslateToNumericForm( );
+        return vRet;
+    } // method
+
+    static std::vector<size_t> for_( const Seed& rS, std::shared_ptr<minimizer::Index> pMMIndex,
+                                     std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pPack,
+                                     std::shared_ptr<HashCounter> pCounter )
+    {
+        return for_( std::make_shared<Seeds>( {rS} ), pMMIndex, pQuery, pPack, pCounter );
+    } // method
+#endif
     static size_t getMinCount( const Seed& rS, std::shared_ptr<minimizer::Index> pMMIndex,
                                std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pPack,
                                std::shared_ptr<HashCounter> pCounter )

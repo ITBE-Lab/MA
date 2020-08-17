@@ -133,6 +133,6 @@ void exportStripOfConsideration( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<StripOfConsiderationSeeds>( xOrganizer, "StripOfConsiderationSeeds" );
     exportModule<StripOfConsideration>( xOrganizer, "StripOfConsideration" );
     exportModule<ExtractSeeds>( xOrganizer, "ExtractSeeds" );
-    exportModule<GetAllFeasibleSoCs, nucSeqIndex>( xOrganizer, "GetAllFeasibleSoCs" );
+    exportModule<GetAllFeasibleSoCs>( xOrganizer, "GetAllFeasibleSoCs" );
 } // function
 #endif

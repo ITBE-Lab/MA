@@ -208,7 +208,7 @@ class SQLDBGlobalSync
 }; // class (SQLDBGlobalSync)
 
 /** @brief Single master object for concurrency synchronization. */
-const SQLDBGlobalSync xSQLDBGlobalSync;
+extern SQLDBGlobalSync xSQLDBGlobalSync;
 
 /** @brief GLobal literals */
 const std::string SCHEMA = "SCHEMA";
@@ -728,9 +728,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             std::string sStmt = std::string( "DROP INDEX " ) +
 #ifdef POSTGRESQL
-                                "IF NOT EXISTS " +
+                                "IF EXISTS " +
 #endif
-                                rsIdxName + " ON " + rsTblName;
+                                rsIdxName
+#ifdef POSTGRESQL
+                                + " CASCADE"
+#else /* MySQL */
+                                + " ON " + rsTblName
+#endif
+                ;
             return sStmt;
         } // method
 
@@ -1032,749 +1038,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             // Throwing an exception in a destructor results in undefined behavior.
             // Therefore, we swallow these exceptions and report them via std:cerr.
+            std::cout << "BulkInserter destructed" << std::endl;
             doNoExcept( [this] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
         } // destructor
     }; // class (SQLBulkInserter)
-#if 0
-#define NUM_CON 1
-    /** @brief: Implements the concept of bulk inserts for table views.
-     *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
-     */
-    template <typename SQLDBConPoolType, size_t BUF_SIZE, typename FstType,
-              typename... OtherTypes> // InsTypes - either equal to corresponding type in ColTypes or std::nullptr_t
-    class AsyncSQLBulkInserter
-    {
-      private:
-        using InsTupleType = std::tuple<FstType, OtherTypes...>;
 
-        std::shared_ptr<SQLDBConPoolType> pxConPool; // Connection pool the delivers two dedicated connections.
-        // std::array<InsTupleType, BUF_SIZE> aBuf; // buffer of values inserted by a single op.
-        std::array<std::array<InsTupleType, BUF_SIZE>, NUM_CON> aBuf;
-        size_t uiInsPos; // index of the next insert into the array
-
-        std::array<std::unique_ptr<typename DBCon::PreparedStmt>, NUM_CON>
-            pBulkInsertStmt; // pointer to prepared bulk insert statement
-        std::array<std::unique_ptr<typename DBCon::PreparedStmt>, NUM_CON>
-            pSingleInsertStmt; // required for buffer flush
-
-        std::shared_ptr<std::atomic<PriKeyDefaultType>> pPriKeyCntr; // pointer to auto increment counter
-
-        // If local primary key counting is used, pLocalPriKeyCntr and uiNumRemainPriKey are used for this purpose
-        std::unique_ptr<PriKeyDefaultType> pLocalPriKeyCntr; // local primary key counter (nullptr if unused)
-        size_t uiNumRemainPriKey; // number of remaining primary keys in batch
-
-        /** @brief Unpack the tuple to an argument pack and bind using this pack.
-         *  (Part of bulkInsert)
-         */
-        template <int OFFSET, typename... Args> void doSingleBind( const std::tuple<Args...>& rTpl )
-        {
-            STD_APPLY( [ & ]( auto&... args ) //
-                       { pBulkInsertStmt[ 0 ]->template bind<OFFSET>( args... ); },
-                       rTpl );
-        } // method
-
-        /** @brief Implementation part of forAllDoBind */
-        template <typename T, std::size_t N, std::size_t... Idx>
-        void forAllDoBindImpl( const std::array<T, N>& a, std::index_sequence<Idx...> )
-        {
-            // Requires C++17 folded expression support ...
-            ( doSingleBind<Idx>( a[ Idx ] ), ... );
-        } // meta
-
-        //-- #define MAX_COMPILETIME_BIND_N 800
-
-        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
-         *  @details
-         *  This function is only used if the template parameter is N > MAX_COMPILETIME_BIND_N.
-         *  In that case we bind the parameters via a runtime loop.
-         */
-        //-- template <typename T, std::size_t N>
-        //-- typename std::enable_if</* condition -> */ ( N > MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
-        //-- forAllDoBind( const std::array<T, N>& a )
-        //-- {
-        //--     for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
-        //--         STD_APPLY( [ & ]( auto&... args ) //
-        //--                    { pBulkInsertStmt[0]->bindDynamic( (int)uiOffset, args... ); },
-        //--                    a[ uiOffset ] );
-        //-- } // meta
-
-        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
-         *  @details
-         *  This function is only used if the template parameter is N <= MAX_COMPILETIME_BIND_N.
-         *  In that case we bind the parameters via a compile-time loop.
-         *  @note If this would be compiled with N > 1000 GCC would compile forever and MSVC would throw an exception.
-         */
-        template <typename T, std::size_t N>
-        typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
-        forAllDoBind( const std::array<T, N>& a )
-        {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
-        } // method
-
-
-        /** @brief Computes a primary key for a fresh row. */
-        inline PriKeyDefaultType getPriKey( )
-        {
-            assert( pPriKeyCntr != nullptr );
-
-            if( pLocalPriKeyCntr )
-            {
-                // Keys are assigned from a batch
-                if( uiNumRemainPriKey == 0 )
-                {
-                    // All locals keys are exhausted, get a new batch of BUF_SIZE many keys
-                    uiNumRemainPriKey = BUF_SIZE;
-                    *pLocalPriKeyCntr = pPriKeyCntr->fetch_add( BUF_SIZE );
-                } // if
-                // Return a key from the current batch
-                uiNumRemainPriKey--;
-                return ( *pLocalPriKeyCntr )++;
-            } // if
-            else
-                // Each key is 'globally' requested.
-                return pPriKeyCntr->fetch_add( 1 );
-        } // method
-
-        std::array<std::future<void>, NUM_CON> aFutures; // array keeping futures for bulk inserts
-        std::array<int, NUM_CON> aThreadId; // array keeping ids of dedicated connections
-        std::string sInsStmtTxt;
-
-        /** @brief If the buffer is full, insert the buffer content into the table by executing a bulk insert
-         * statement. Design alternative: iterate over the array and bind each tuple separately. Discussion: The
-         * latter approach requires more code but avoids the template instantiation problems.
-         */
-        inline void bulkInsertIfBufFull( )
-        {
-            // If the buffer is full, do a bulk insert
-            if( ++uiInsPos >= BUF_SIZE )
-            {
-#if 0
-                // The DB operations does not inspects uiInsPos anymore. However, they can throw an exceptions.
-                // In order to avoid the crash scenario described in flush(), uiInsPos must be set zero before
-                // doing any DB ops.
-                uiInsPos = 0; // reset counter
-                // Write the buffer to the database
-                // Step 1: Iterates over the array during compile time and binds them.
-                forAllDoBind( aBuf[ 0 ] );
-
-                // Step 2: After binding all arguments, actually execute the insert statement.
-                pBulkInsertStmt[ 0 ]->exec( );
-#endif
-                // Guarantee that the previous exec for the selected connection finished already.
-                if( aFutures[ 0 ].valid( ) )
-                    aFutures[ 0 ].get( );
-
-                // The DB operations does not inspects uiInsPos anymore. However, they can throw an exceptions.
-                // In order to avoid the crash scenario described in flush(), uiInsPos must be set zero before
-                // doing any DB ops.
-                uiInsPos = 0; // reset counter
-                // Write the buffer to the database
-                // Step 1: Iterates over the array during compile time and binds them.
-                // Run and wait until the finished (until future is available).
-                auto xFut = pxConPool->enqueue(
-                    aThreadId[ 0 ],
-                    [ & ]( auto pCon, int id ) {
-                        pBulkInsertStmt[0] =
-                            std::make_unique<typename DBCon::PreparedStmt>(pCon, sInsStmtTxt);
-                        forAllDoBind( aBuf[ 0 ] );
-                        pBulkInsertStmt[ 0 ]->exec( );
-                    },
-                    0 );
-                xFut.get( );
-
-                // Step 2: After binding all arguments, actually execute the insert statement.
-                // aFutures[ 0 ] = pxConPool->enqueue( aThreadId[ 0 ],
-                //                                    [ & ]( auto pCon, int id ) { pBulkInsertStmt[ 0 ]->exec( ); }, 0
-                //                                    );
-                // aFutures[ 0 ].get( );
-            } // if
-        } // method
-
-        /** @brief Store a single row in the buffer and return the primary key. */
-        inline PriKeyDefaultType storeInBuf( Identity<PriKeyDefaultType> _, const OtherTypes&... args )
-        {
-            // If required book a new batch of primary keys.
-            PriKeyDefaultType uiPriKey = getPriKey( );
-            aBuf[ 0 ][ uiInsPos ] = InsTupleType( uiPriKey, args... );
-            return uiPriKey;
-        } // method
-
-        /** @brief Store a single row in the buffer and return a nullptr. */
-        inline std::nullptr_t storeInBuf( Identity<std::nullptr_t> _, const OtherTypes&... args )
-        {
-            aBuf[ 0 ][ uiInsPos ] = InsTupleType( nullptr, args... );
-            return nullptr;
-        } // method
-
-      public:
-        /** @brief Construct bulk-inserter.
-         *  The table must be part of the database already, or the construction fails.
-         *  @details
-         *  If bReserveBatchOfPriKeys is true, the bulk inserter reserves a batch of keys, where the size of the batch
-         *  is equal to the size of the buffer. The bulk inserter uses the keys in this batch for assigning keys in
-         *  strictly increasing order. This helps the database regarding the insertion of keys in the B-tree (index) and
-         *  speeds up the bulk inserter in a multi-threaded environment.
-         *  Implementation detail: Because we can not guarantee the life of host table for all of the life of the bulk
-         *  inserter, we should not keep a reference to the table. Instead we copy the required info of the table.
-         */
-        AsyncSQLBulkInserter( std::shared_ptr<SQLDBConPoolType> pxConPool, // connection pool
-                              const SQLTable& rxHost, // host table
-                              std::shared_ptr<std::atomic<PriKeyDefaultType>> pPriKeyCntr = nullptr,
-                              bool bReserveBatchOfPriKeys = false )
-            : pxConPool( pxConPool ), // store local copy of pointer to con pool
-              uiInsPos( 0 ),
-              pSingleInsertStmt( // compile single insert stmt
-                  { std::make_unique<typename DBCon::PreparedStmt>( rxHost.pDB, rxHost.makeInsertStmt( 1 ) ) } ),
-              pPriKeyCntr( pPriKeyCntr ),
-              pLocalPriKeyCntr( bReserveBatchOfPriKeys ? std::make_unique<PriKeyDefaultType>( 0 ) : nullptr ),
-              uiNumRemainPriKey( 0 ), // initially, the batch is empty
-              aFutures( { std::future<void>( ) } ),
-              sInsStmtTxt( rxHost.makeInsertStmt( BUF_SIZE ) )
-        {
-            static_assert( sizeof...( OtherTypes ) + 1 == sizeof...( ColTypes ) );
-
-            aThreadId[ 0 ] = pxConPool->getDedicatedConId( );
-
-
-            auto xFut = pxConPool->enqueue( //
-                aThreadId[ 0 ],
-                [ & ]( auto pCon, int id ) {
-                    pBulkInsertStmt[ 0 ] =
-                        std::make_unique<typename DBCon::PreparedStmt>( pCon, sInsStmtTxt );
-                },
-                0 );
-            xFut.get( );
-        } // constructor
-
-        /**
-         * @brief get a bulk inserter directly from a connection
-         * @details
-         * This constructs the respective table and then immediately destructs it again.
-         * That way we make sure the table exists in the DB.
-         */
-        // AsyncSQLBulkInserter(std::shared_ptr<DBCon> pConnection);
-
-        /** @brief Inserts a row into the table via a bulk-insert approach.
-         *  Reasonable addition: insert using moves.
-         */
-        inline void insert( const FstType& fstArg, const OtherTypes&... otherArgs )
-        {
-            assert( pPriKeyCntr == nullptr );
-
-            aBuf[ 0 ][ uiInsPos ] = InsTupleType( fstArg, otherArgs... ); // This triggers a copy...
-            bulkInsertIfBufFull( ); // write buffer to DB if full
-        } // method
-
-        /** @brief Inserts a row into the table via a bulk-insert approach for tables with automatic primary key. */
-        inline FstType insert( const OtherTypes&... args )
-        {
-            // First column is expected to keep a primary key. In the case of AUTO_INCREMENT, FstType is
-            // std::nullptr_t. In the case of a primary key that is incremented by the library, FstType is
-            // PriKeyDefaultType.
-            static_assert( ( std::is_same<FstType, std::nullptr_t>::value ) ||
-                               ( std::is_same<FstType, PriKeyDefaultType>::value ),
-                           "FstType must be either std::nullptr_t or PriKeyDefaultType" );
-            // pAutoIncrCounter must be initialized if FstType is PriKeyDefaultType
-            assert( !( std::is_same<FstType, PriKeyDefaultType>::value && ( pPriKeyCntr == nullptr ) ) );
-
-            FstType uiRetVal = storeInBuf( Identity<FstType>( ), args... );
-            bulkInsertIfBufFull( ); // write buffer to DB if full
-            return uiRetVal;
-        } // method
-
-        /** @brief Flush a non-full buffer to the database. */
-        inline void flush( )
-        {
-            // uiInsPos must be set zero before calling bindAndExec, because bindAndExec could throw an exception
-            // which in turn triggers a destructor call. However, in the case of an exception, the flush in the
-            // destructor should not lead to an additional call of bindAndExec, because it would lead to a crash.
-            auto uiInsPosBackup = uiInsPos;
-            uiInsPos = 0; // reset insert position counter
-            for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
-                // Write the current tuple in the array to the DB
-                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt[ 0 ]->bindAndExec( args... ); },
-                           aBuf[ 0 ][ uiCount ] );
-        } // method
-
-        /** @brief Destructor flushes the buffer. */
-        ~AsyncSQLBulkInserter( )
-        {
-            // Throwing an exception in a destructor results in undefined behavior.
-            // Therefore, we swallow these exceptions and report them via std:cerr.
-            doNoExcept( [ this ] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
-        } // destructor
-    }; // class (AsyncSQLBulkInserter)
-#endif
-#if 1
-    /** @brief: Implements the concept of bulk inserts for table views.
-     *  The bulk inserter always inserts NULL's on columns having type std::nullptr_t.
-     */
-#define NUM_CON 2
-    template <typename SQLDBConPoolType, size_t BUF_SIZE, typename FstType,
-              typename... OtherTypes> // InsTypes - either equal to corresponding type in ColTypes or std::nullptr_t
-    class AsyncSQLBulkInserter
-    {
-      private:
-        using InsTupleType = std::tuple<FstType, OtherTypes...>;
-        using ConIdType = int; // TODO: get this type from the pool
-
-        std::shared_ptr<SQLDBConPoolType> pxConPool; // Connection pool the delivers two dedicated connections.
-        std::array<std::array<InsTupleType, BUF_SIZE>, NUM_CON> aBufPair; // buffer of values inserted by a single op.
-        InsTupleType* pCurrBuf; // pointer to active buffer in buffer pair
-        size_t uiSelConId; // index of currently selected dedicated connection.
-        size_t uiInsPos; // index of the next insert into the array
-        std::array<std::unique_ptr<SQLStatement<DBCon>>, NUM_CON>
-            apBulkInsertStmt; // pointer to prepared bulk insert statement
-        std::array<std::unique_ptr<SQLStatement<DBCon>>, NUM_CON> apSingleInsertStmt; // required for buffer flush
-        std::shared_ptr<std::atomic<PriKeyDefaultType>> pPriKeyCntr; // pointer to auto increment counter
-
-        // If local primary key counting is used, pLocalPriKeyCntr and uiNumRemainPriKey are used for this purpose
-        std::unique_ptr<PriKeyDefaultType> pLocalPriKeyCntr; // local primary key counter (nullptr if unused)
-        size_t uiNumRemainPriKey; // number of remaining primary keys in batch
-
-        /** @brief Unpack the tuple to an argument pack and bind using this pack.
-         *  (Part of bulkInsert)
-         */
-        template <int OFFSET, typename... Args> void doSingleBind( size_t iConId, const std::tuple<Args...>& rTpl )
-        {
-            STD_APPLY( [&]( auto&... args ) //
-                       { apBulkInsertStmt[ iConId ]->template bindStatic<OFFSET>( args... ); },
-                       rTpl );
-        } // method
-
-        /** @brief Implementation part of forAllDoBind */
-        template <typename T, std::size_t N, std::size_t... Idx>
-        void forAllDoBindImpl( size_t iConId, const std::array<T, N>& a, std::index_sequence<Idx...> )
-        {
-            // Requires C++17 folded expression support ...
-            ( doSingleBind<Idx>( iConId, a[ Idx ] ), ... );
-        } // meta
-
-        //--template <typename T, std::size_t... Idx> void forAllDoBindImpl( int id, T* a, std::index_sequence<Idx...> )
-        //--{
-        //--    // Requires C++17 folded expression support ...
-        //--    ( doSingleBind<Idx>( id, a[ Idx ] ), ... );
-        //--} // meta
-
-        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
-         *  @details
-         *  This function is only used if the template parameter is N > MAX_COMPILETIME_BIND_N.
-         *  In that case we bind the parameters via a runtime loop.
-         */
-        template <typename T, std::size_t N>
-        typename std::enable_if</* condition -> */ ( N > MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
-        forAllDoBind( int id, const std::array<T, N>& a )
-        {
-            for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
-                STD_APPLY( [&]( auto&... args ) //
-                           { apBulkInsertStmt[ id ]->bindDynamic( (int)uiOffset, args... ); },
-                           a[ uiOffset ] );
-        } // meta
-
-        //-- template <typename T, std::size_t N>
-        //-- typename std::enable_if</* condition -> */ ( N > MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
-        //-- forAllDoBind( int id, T* a )
-        //-- {
-        //--     for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
-        //--         STD_APPLY( [ & ]( auto&... args ) //
-        //--                    { apBulkInsertStmt[ id ]->bindDynamic( (int)uiOffset, args... ); },
-        //--                    a[ uiOffset ] );
-        //-- } // meta
-
-        /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
-         *  @details
-         *  This function is only used if the template parameter is N <= MAX_COMPILETIME_BIND_N.
-         *  In that case we bind the parameters via a compile-time loop.
-         *  @note If this would be compiled with N > 1000 GCC would compile forever and MSVC would throw an exception.
-         */
-        template <typename T, std::size_t N>
-        typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
-        forAllDoBind( size_t iConId, const std::array<T, N>& a )
-        {
-            forAllDoBindImpl( iConId, a, std::make_index_sequence<N>{} );
-        } // method
-
-        //--template <typename T, std::size_t N>
-        //--typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
-        //--forAllDoBind( int id, T* a )
-        //--{
-        //--    forAllDoBindImpl( id, a, std::make_index_sequence<N>{ } );
-        //--} // method
-
-
-        /** @brief Computes a primary key for a fresh row. */
-        inline PriKeyDefaultType getPriKey( )
-        {
-            assert( pPriKeyCntr != nullptr );
-
-            if( pLocalPriKeyCntr )
-            {
-                // Keys are assigned from a batch
-                if( uiNumRemainPriKey == 0 )
-                {
-                    // All locals keys are exhausted, get a new batch of BUF_SIZE many keys
-                    uiNumRemainPriKey = BUF_SIZE;
-                    *pLocalPriKeyCntr = pPriKeyCntr->fetch_add( BUF_SIZE );
-                } // if
-                // Return a key from the current batch
-                uiNumRemainPriKey--;
-                return ( *pLocalPriKeyCntr )++;
-            } // if
-            else
-                // Each key is 'globally' requested.
-                return pPriKeyCntr->fetch_add( 1 );
-        } // method
-
-
-        std::array<std::future<void>, NUM_CON> aFutures; // array keeping futures for bulk inserts
-        std::array<int, NUM_CON> aThreadIds; // array keeping ids of dedicated connections
-
-        /** @brief If the buffer is full, insert the buffer content into the table by executing a bulk insert
-         * statement. Design alternative: iterate over the array and bind each tuple separately. Discussion: The
-         * latter approach requires more code but avoids the template instantiation problems.
-         */
-        inline void bulkInsertIfBufFull( )
-        {
-            // If the buffer is full, do a bulk insert
-            if( ++uiInsPos >= BUF_SIZE )
-            {
-                // The DB operations does not inspects uiInsPos anymore. However, they can throw an exceptions.
-                // In order to avoid the crash scenario described in flush(), uiInsPos must be set zero before
-                // doing any DB ops.
-                uiInsPos = 0; // reset counter
-                // Write the buffer to the database
-                // Step 1: Iterates over the array during compile time and binds them.
-                // Run and wait until the finished (until future is available).
-                pxConPool->run(
-                    aThreadIds[ uiSelConId ],
-                    [&]( auto pCon, size_t iConId ) { this->forAllDoBind( iConId, aBufPair[ iConId ] ); },
-                    uiSelConId );
-
-                // Step 2: After binding all arguments, actually execute the insert statement.
-                aFutures[ uiSelConId ] = pxConPool->enqueue(
-                    aThreadIds[ uiSelConId ],
-                    [&]( auto pCon, size_t iConId ) { apBulkInsertStmt[ iConId ]->execWithOutBind( ); },
-                    uiSelConId );
-                aFutures[ uiSelConId ].get( );
-                // Step 3: Switch to the opposite connection.
-                uiSelConId = !uiSelConId; // alters between zero and one
-                pCurrBuf = aBufPair[ uiSelConId ].data( ); // set the buffer pointer to the opposite connection
-            } // if
-        } // method
-
-        /** @brief Wait until the current connection finished its insertion into the DB */
-        void waitUntilInsDone( )
-        {
-            // if( aFutures[ uiSelConId ].valid( ) )
-            //     aFutures[ uiSelConId ].get( );
-        } // method
-
-        /** @brief Store a single row in the buffer and return the primary key. */
-        inline PriKeyDefaultType storeInBuf( Identity<PriKeyDefaultType> _, const OtherTypes&... args )
-        {
-            assert( pCurrBuf == aBufPair[ uiSelConId ].data( ) );
-            // Guarantee that the previous exec for the selected connection finished already.
-            // If required book a new batch of primary keys.
-            PriKeyDefaultType uiPriKey = getPriKey( );
-            pCurrBuf[ uiInsPos ] = InsTupleType( uiPriKey, args... );
-            return uiPriKey;
-        } // method
-
-        /** @brief Store a single row in the buffer and return a nullptr. */
-        inline std::nullptr_t storeInBuf( Identity<std::nullptr_t> _, const OtherTypes&... args )
-        {
-            // Guarantee that the previous exec for the selected connection finished already.
-            pCurrBuf[ uiInsPos ] = InsTupleType( nullptr, args... );
-            return nullptr;
-        } // method
-
-      public:
-        /** @brief Construct bulk-inserter.
-         *  The table must be part of the database already, or the construction fails.
-         *  @details
-         *  If bReserveBatchOfPriKeys is true, the bulk inserter reserves a batch of keys, where the size of the
-         * batch is equal to the size of the buffer. The bulk inserter uses the keys in this batch for assigning
-         * keys in strictly increasing order. This helps the database regarding the insertion of keys in the B-tree
-         * (index) and speeds up the bulk inserter in a multi-threaded environment. Implementation detail: Because
-         * we can not guarantee the life of host table for all of the life of the bulk inserter, we should not keep
-         * a reference to the table. Instead we copy the required info of the table.
-         */
-        AsyncSQLBulkInserter( std::shared_ptr<SQLDBConPoolType> pxConPool,
-                              const SQLTable& rxHost, // host table
-                              std::shared_ptr<std::atomic<PriKeyDefaultType>> pPriKeyCntr = nullptr,
-                              bool bReserveBatchOfPriKeys = false )
-            : pxConPool( pxConPool ), // store local copy of pointer to con pool
-              pCurrBuf( aBufPair[ 0 ].data( ) ),
-              uiSelConId( 0 ), // todo: move before pCurrBuf
-              uiInsPos( 0 ),
-              pPriKeyCntr( pPriKeyCntr ),
-              pLocalPriKeyCntr( bReserveBatchOfPriKeys ? std::make_unique<PriKeyDefaultType>( 0 ) : nullptr ),
-              uiNumRemainPriKey( 0 ), // initially, the batch is empty
-              aFutures( {std::future<void>( ), std::future<void>( )} ) // initialzied futures
-
-        {
-            static_assert( sizeof...( OtherTypes ) + 1 == sizeof...( ColTypes ) );
-
-            // Get the ids for two dedicated connections that will be used for bulk inserts
-            aThreadIds[ 0 ] = pxConPool->getDedicatedConId( );
-            aThreadIds[ 1 ] = pxConPool->getDedicatedConId( );
-
-            // Create the required insertion statements within both dedicated connections for later use.
-            for( size_t uiItr = 0; uiItr < NUM_CON; uiItr++ )
-            {
-                pxConPool->run( (int)aThreadIds[ uiItr ],
-                                [&]( auto pCon, size_t id ) {
-                                    // Compile bulk insert stmt
-                                    apBulkInsertStmt[ id ] = std::make_unique<SQLStatement<DBCon>>(
-                                        pCon, rxHost.makeInsertStmt( BUF_SIZE ) );
-                                    // compile single insert stmt
-                                    apSingleInsertStmt[ id ] =
-                                        std::make_unique<SQLStatement<DBCon>>( pCon, rxHost.makeInsertStmt( 1 ) );
-                                },
-                                uiItr );
-            } // for
-        } // constructor
-
-        /**
-         * @brief get a bulk inserter directly from a connection
-         * @details
-         * This constructs the respective table and then immediately destructs it again.
-         * That way we make sure the table exists in the DB.
-         */
-        // SQLBulkInserter( std::shared_ptr<DBCon> pConnection );
-
-        /** @brief Inserts a row into the table via a bulk-insert approach.
-         *  Reasonable addition: insert using moves.
-         */
-        inline void insert( const FstType& fstArg, const OtherTypes&... otherArgs )
-        {
-            assert( pPriKeyCntr == nullptr );
-
-            waitUntilInsDone( ); // wait until the current connection is available
-            pCurrBuf[ uiInsPos ] = InsTupleType( fstArg, otherArgs... ); // This triggers a copy...
-            bulkInsertIfBufFull( ); // write buffer to DB if full
-        } // method
-
-        /** @brief Inserts a row into the table via a bulk-insert approach for tables with
-         *  automatic primary key.
-         */
-        inline FstType insert( const OtherTypes&... args )
-        {
-            // First column is expected to keep a primary key. In the case of AUTO_INCREMENT, FstType is
-            // std::nullptr_t. In the case of a primary key that is incremented by the library, FstType is
-            // PriKeyDefaultType.
-            static_assert( ( std::is_same<FstType, std::nullptr_t>::value ) ||
-                               ( std::is_same<FstType, PriKeyDefaultType>::value ),
-                           "FstType must be either std::nullptr_t or PriKeyDefaultType" );
-            // pAutoIncrCounter must be initialized if FstType is PriKeyDefaultType
-            assert( !( std::is_same<FstType, PriKeyDefaultType>::value && ( pPriKeyCntr == nullptr ) ) );
-
-            waitUntilInsDone( ); // wait until the current connection is available
-            FstType uiRetVal = storeInBuf( Identity<FstType>( ), args... );
-            bulkInsertIfBufFull( ); // write buffer to DB if full
-            return uiRetVal;
-        } // method
-
-        /** @brief Flush a non-full buffer to the database. */
-        inline void flush( )
-        {
-            // Guarantee that both connections finished their exec.
-            for( size_t uiItr = 0; uiItr < NUM_CON; uiItr++ )
-            {
-                if( aFutures[ uiItr ].valid( ) )
-                    aFutures[ uiItr ].get( );
-            } // for
-
-            // uiInsPos must be set zero before calling bindAndExec, because bindAndExec could throw an
-            // exception which in turn triggers a destructor call. However, in the case of an exception, the
-            // flush in the destructor should not lead to an additional call of bindAndExec, because it
-            // would lead to a crash.
-            auto uiInsPosBackup = uiInsPos;
-            uiInsPos = 0; // reset insert position counter
-
-            // Write the remaining inserts using connection 0.
-            pxConPool->run( (int)aThreadIds[ 0 ], [&]( auto pCon ) {
-                for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
-                    // Write the current tuple in the array to the DB
-                    STD_APPLY( [&]( auto&... args ) { apSingleInsertStmt[ 0 ]->exec( args... ); },
-                               pCurrBuf[ uiCount ] );
-            } );
-        } // method
-
-        /** @brief Destructor flushes the buffer. */
-        ~AsyncSQLBulkInserter( )
-        {
-            // Throwing an exception in a destructor results in undefined behavior.
-            // Therefore, we swallow these exceptions and report them via std:cerr.
-            doNoExcept( [this] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
-        } // destructor
-    }; // class (AsyncSQLBulkInserter)
-#endif
-#if 0
-    /** @brief Like a standard SQLBulkInserter, but for the streaming a CSV-file is used in between. This
-     * approach is sometimes faster than the standard SQLBulkInserter. IMPORTANT NOTICE: Call release() before a
-     * SQLFileBulkInserter runs out of scope. In this case you get an exception, if something goes wrong. If you
-     * let do the release-job automatically by the destructor all exception are swallowed and you won't get any
-     * feedback about problems.
-     */
-    template <size_t BUF_SIZE,
-              typename... InsTypes> // InsTypes - either equal to corresponding type in ColTypes or
-                                    // std::nullptr_t
-    class SQLFileBulkInserter
-    {
-      private:
-        std::array<std::tuple<InsTypes...>, BUF_SIZE> aBuf; // buffer of values inserted by a single op.
-        size_t uiInsPos; // index of the next insert into the array
-        size_t uiInsCnt; // counter for all inserts so far
-
-        // Tuple printer for ostream.
-        // Found at: https://en.cppreference.com/w/cpp/utility/integer_sequence
-        template <class Ch, class Tr, class Tuple, std::size_t... Is>
-        void prtTpltoStreamImpl( std::basic_ostream<Ch, Tr>& os, const Tuple& t, std::index_sequence<Is...> )
-        {
-            // Requires C++17 folded expression support ...
-            ( ( os << ( Is == 0 ? "" : "\t" ) << csvPrint( *pHostTblDB, std::get<Is>( t ) ) ), ... );
-        } // meta
-
-        template <class Ch, class Tr, class... Args>
-        void prtTpltoStream( std::basic_ostream<Ch, Tr>& os, const std::tuple<Args...>& t )
-        {
-            prtTpltoStreamImpl( os, t, std::index_sequence_for<Args...>{} );
-            os << "\n";
-        } // meta
-
-        // FIXME: Move to library with meta programming
-        template <typename F, typename T, std::size_t N, std::size_t... Idx>
-        void for_all_do_impl( F f, const std::array<T, N>& a, std::index_sequence<Idx...> )
-        {
-            ( f( a[ Idx ] ), ... );
-        } // meta
-
-        // FIXME: Move to library with meta programming
-        template <typename F, typename T, std::size_t N> void for_all_do( F f, const std::array<T, N>& a )
-        {
-            for_all_do_impl( f, a, std::make_index_sequence<N>{} );
-        } // meta
-
-        /** @brief Writes the content of the buffer aBuf to the output-stream using CSV.
-         */
-        inline void writeBufToStream( )
-        {
-            for_all_do( [&]( auto& rTpl ) { prtTpltoStream( ofStream, rTpl ); }, aBuf );
-        } // method
-
-        /** @brief Creates a filename for the CSV-file to be uploaded using the directory given by the backend.
-         */
-        fs::path uploadFileName( const std::string& rsConId, // id of the SQL connection
-                                 const std::string& rsExtension ) // possible additive extension
-        {
-            auto pUploadDir = pHostTblDB->getDataUploadDir( );
-
-            return pUploadDir /
-                   fs::path( std::string( "upload_" ) + sHostTblName + "_con_" + rsConId + rsExtension + ".csv" );
-        } // method
-
-        // Private attributes of SQLFileBulkInserter
-        std::string sHostTblName; // name of host table
-        std::shared_ptr<DBCon> pHostTblDB; // database connection of the host table /--
-        fs::path sCSVFileName; // name of the file for CSV output
-        std::ofstream ofStream; // pointer to output stream
-        bool bStreamIsVoid; // boolean state; if the stream is void, it has to be opened first
-        int64_t uiReleaseThreshold; // if the file comprises uiReleaseThreshold rows, automatically release it
-
-      public:
-        SQLFileBulkInserter( SQLTable& rxHost, int64_t uiReleaseThreshold,
-                             const std::string& rsExtension )
-            : uiInsPos( 0 ), // initialize buffer position counter
-              uiInsCnt( 0 ), // initialize counter for total number of insertions
-              sHostTblName( rxHost.getTableName( ) ),
-              pHostTblDB( rxHost.pDB ),
-              sCSVFileName( uploadFileName( rxHost.pDB->sConId, rsExtension ) ), // filename used for CSV upload
-              bStreamIsVoid( true ), // Boolean state that
-              uiReleaseThreshold( uiReleaseThreshold )
-        {
-            std::cout << "COL NAMES:";
-            for( auto rxName : rxHost.tableColNames( ) )
-                std::cout << rxName << " ";
-            std::cout << std::endl;
-            // DEBUG: std::cout << "SQLFileBulkInserter filename:" << this->sCSVFileName.generic_string( ) <<
-            // std::endl;
-        } // constructor
-
-        /** @brief Inserts a row into the table belonging to the bulk inserter.
-         */
-        inline void insert( const InsTypes... args )
-        {
-            if( bStreamIsVoid ) // 'bRelease == true' implies that the stream (file) must be closed.
-            {
-                // Open the stream and get any existing content purged.
-                // DEBUG: std::cout << sCSVFileName << std::endl;
-                ofStream.open( sCSVFileName, std::ofstream::out | std::ofstream::trunc );
-                // Check whether something went wrong
-                if( !ofStream )
-                    throw std::runtime_error( "SQLFileBulkInserter - Opening file: " + sCSVFileName.string( ) +
-                                              " failed due to reason:\n" + strerror( errno ) );
-                bStreamIsVoid = false;
-            } // if
-            aBuf[ uiInsPos ] = std::tuple<InsTypes...>( args... );
-            if( ++uiInsPos == BUF_SIZE )
-            {
-                writeBufToStream( ); // write buffer to file
-                uiInsPos = 0;
-            } // if
-
-            // Release if file limit reached
-            if( ++uiInsCnt % ( static_cast<const size_t>( uiReleaseThreshold ) ) == 0 )
-                this->release( );
-        } // method
-
-        /** @brief: Actually insert the values in the file to the table.
-         *  With MySQL this results in a LOAD statement.
-         */
-        inline void release( bool bRelDueToDestruct = false )
-        {
-            if( !bStreamIsVoid )
-            {
-                this->flush( ); // flush remaining buffer rows
-                // IMPORTANT: Status setting must come first, because fillTableByFile can throw an exception
-                // (in this case, the release() call of the destructor should not go to the true branch!)
-                bStreamIsVoid = true;
-                // Close the stream so that it can be opened by the reader ...
-                ofStream.close( );
-                pHostTblDB->fillTableByFile( sCSVFileName, this->sHostTblName ); // blocks until finished
-            } // if
-            else if( !bRelDueToDestruct )
-                throw std::runtime_error( "FileBulkInserter: Your tried to release a void stream." );
-        } // method
-
-        /** @brief Flush a non-full buffer to the file.
-         */
-        inline void flush( )
-        {
-            for( size_t uiCount = 0; uiCount < uiInsPos; uiCount++ )
-                // Add the current tuple the file
-                prtTpltoStream( ofStream, aBuf[ uiCount ] );
-
-            uiInsPos = 0; // reset insert position counter
-        } // method
-
-        /** @brief Destructor flushes the buffer while dropping exceptions.
-         */
-        ~SQLFileBulkInserter( )
-        {
-            // Throwing an exception in a destructor results in undefined behavior. Therefore, we swallow these
-            // exceptions and report them via std:cerr.
-            doNoExcept(
-                [this] {
-                    this->release( true ); // true indicates that the release call is done by the destructor
-                    // Delete the CSV-file if it exists.
-                    if( fs::exists( this->sCSVFileName ) )
-                        fs::remove( this->sCSVFileName );
-                },
-                "Destructor of SQLFileBulkInserter threw exception." );
-        } // destructor
-    }; // class (SQLFileBulkInserter)
-#endif
   protected: // class SQLTable
     /** @brief get the SQL-type for each table column via the C++-type.
      *  ( C++ types are automatically translated to SQL types. )
@@ -2088,12 +1356,14 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     {
         // Create table if not existing in DB guarantee
         pDB->doPoolSafe( [&] {
+            std::cout << "Start Tabled creation" << std::endl;
             if( !pDB->tableExistsInDB( getTableName( ) ) )
                 pDB->execSQL( makeTableCreateStmt( ) );
             else
             {
                 // Verify the table for correctness
             } // else
+            std::cout << "End Tabled creation" << std::endl;
         } );
 
         // Create prepared insert statement, now where the existence of the table is guaranteed
@@ -2520,6 +1790,7 @@ class SQLTableWithLibIncrPriKey : public SQLTableWithPriKey<DBCon, PriKeyDefault
         return std::make_shared<SQLBulkInserterType<BUF_SIZE>>( *this, pPriKeyCntr, bReserveBatchOfPriKeys );
     } // method
 
+#if 0
     template <typename SQLDBConPoolType, size_t BUF_SIZE>
     using AsyncSQLBulkInserter =
         typename SQLTable<DBCon, PriKeyDefaultType, ColTypes...>::template AsyncSQLBulkInserter<
@@ -2532,6 +1803,7 @@ class SQLTableWithLibIncrPriKey : public SQLTableWithPriKey<DBCon, PriKeyDefault
         return std::make_shared<AsyncSQLBulkInserter<SQLDBConPoolPtrType, BUF_SIZE>>( pDBConPool, *this, pPriKeyCntr,
                                                                                       bReserveBatchOfPriKeys );
     } // method
+#endif
 }; // class
 
 #ifdef POSTGRESQL
@@ -2780,7 +2052,25 @@ template <typename DBImpl> class SQLDB : public DBImpl
     /** @brief Initialize DB connection using a given schema name.
      *  @details This constructor is exported to python.
      */
-    SQLDB( std::string sSchemaName ) : SQLDB( json{{SCHEMA, {{NAME, sSchemaName}}}} )
+    SQLDB( std::string sSchemaName )
+        : SQLDB( json{{SCHEMA, {{NAME, sSchemaName}}},
+#ifdef USE_PG
+                      { CONNECTION,
+                        { {HOSTNAME, "localhost"},
+                          {USER, "postgres"},
+                          {PASSWORD, "admin"},
+                          { PORT,
+                            0 } } }
+#endif
+#ifdef USE_MSQL
+                      { CONNECTION,
+                        { {HOSTNAME, "localhost"},
+                          {USER, "root"},
+                          {PASSWORD, "admin"},
+                          { PORT,
+                            0 } } }
+#endif
+          } )
     {}
 
     /** @brief Destructs connection in an exception safe way ... */

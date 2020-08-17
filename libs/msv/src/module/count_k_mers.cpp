@@ -22,7 +22,7 @@ void exportCountKMers( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<HashCounter, Container, std::shared_ptr<HashCounter>>( xOrganizer.container( ), "HashCounter" )
         .def( py::init<>( ) );
     exportModule<MMCounterModule>( xOrganizer, "MMCounterModule" );
-    exportModule<MMFilteredSeeding, nucSeqIndex>( xOrganizer, "MMFilteredSeeding", []( auto&& x ) {
+    exportModule<MMFilteredSeeding>( xOrganizer, "MMFilteredSeeding", []( auto&& x ) {
         x.def( "get_min_count", &MMFilteredSeeding::getMinCount )
             .def( "get_max_count", &MMFilteredSeeding::getMaxCount );
     } );

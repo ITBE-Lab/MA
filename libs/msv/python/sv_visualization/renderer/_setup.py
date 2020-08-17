@@ -32,35 +32,33 @@ def setup(self):
         self.main_plot.plot.y_range.end = self.pack.unpacked_size_single_strand
         self.main_plot.plot.x_range.start = 0
         self.main_plot.plot.y_range.start = 0
-        self.main_plot.plot.grid.ticker = FixedTicker(ticks=xs)
-        self.seed_plot.bottom_plot.grid.ticker = FixedTicker(ticks=xs)
-        self.seed_plot.left_plot.grid.ticker = FixedTicker(ticks=xs)
-        self.read_plot.plot.xgrid.ticker = FixedTicker(ticks=xs)
+        #self.main_plot.plot.grid.ticker = FixedTicker(ticks=xs)
+        #self.seed_plot.bottom_plot.grid.ticker = FixedTicker(ticks=xs)
+        #self.seed_plot.left_plot.grid.ticker = FixedTicker(ticks=xs)
+        #self.read_plot.plot.xgrid.ticker = FixedTicker(ticks=xs)
 
         self.main_plot.plot.grid.bounds = (0, self.pack.unpacked_size_single_strand)
         self.seed_plot.bottom_plot.grid.bounds = (0, self.pack.unpacked_size_single_strand)
         self.seed_plot.left_plot.grid.bounds = (0, self.pack.unpacked_size_single_strand)
         self.read_plot.plot.xgrid.bounds = (0, self.pack.unpacked_size_single_strand)
 
-        #contig_ends = [x+s for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
-        #self.seed_plot.left_plot.yaxis[0].formatter = FuncTickFormatter(
-        #                args={"contig_starts": [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand],
-        #                    "genome_end":self.pack.unpacked_size_single_strand,
-        #                    "contig_names": [*self.pack.contigNames()]},
-        #                code="""
-        #                        if(tick < 0 || tick >= genome_end)
-        #                            return "n/a";
-        #                        idx = 0;
-        #                        while(contig_starts[idx + 1] < tick)
-        #                            idx += 1;
-        #                        return contig_names[idx] + ": " + (tick - contig_starts[idx]);
-        #                    """)
+        contig_ends = [x+s for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
+        self.seed_plot.left_plot.yaxis[0].formatter = FuncTickFormatter(
+                        args={"contig_starts": [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand],
+                            "genome_end":self.pack.unpacked_size_single_strand,
+                            "contig_names": [*self.pack.contigNames()]},
+                        code="""
+                                if(tick < 0 || tick >= genome_end)
+                                    return "n/a";
+                                idx = 0;
+                                while(contig_starts[idx + 1] < tick)
+                                    idx += 1;
+                                return contig_names[idx] + ": " + (tick - contig_starts[idx]);
+                            """)
+        self.seed_plot.left_plot.yaxis.ticker.max_interval = min(*self.pack.contigLengths())
+        self.seed_plot.left_plot.yaxis.ticker.min_interval = 1
         #reference_ticks_center = [x+s/2 for x,s in zip(self.pack.contigStarts(), self.pack.contigLengths())]
-        #self.seed_plot.left_plot.yaxis.ticker.max_interval = min(*self.pack.contigLengths())
-        #self.seed_plot.left_plot.yaxis.ticker.min_interval = 1
-        #self.seed_plot.left_plot.yaxis[0].ticker = CompositeTicker(tickers=[
-        #                                                        self.seed_plot.left_plot.yaxis.ticker,
-        #                                                        f_ticker])
+        #self.seed_plot.left_plot.yaxis[0].ticker = FixedContinousTicker(extra_ticks=reference_ticks_center)
 
         self.seed_plot.bottom_plot.xaxis[0].formatter = self.seed_plot.left_plot.yaxis[0].formatter
         self.seed_plot.bottom_plot.xaxis[0].ticker = self.seed_plot.left_plot.yaxis[0].ticker
