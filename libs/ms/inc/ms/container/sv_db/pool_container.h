@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "ms/container/container.h"
 #include "db_con_pool.h"
+#include "ms/container/container.h"
 #include "ms/util/export.h"
 
 namespace libMS
@@ -26,7 +26,16 @@ template <class DBCon> class PoolContainer : public Container
     {} // constructor
 
     PoolContainer( size_t uiPoolSize, std::string sSchemaName )
-        : PoolContainer( uiPoolSize, json{{SCHEMA, {{NAME, sSchemaName}}}} )
+        : PoolContainer(
+              uiPoolSize,
+              json{{SCHEMA, {{NAME, sSchemaName}}},
+#ifdef USE_PG
+                   {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "postgres"}, {PASSWORD, "admin"}, {PORT, 0}}}
+#endif
+#ifdef USE_MSQL
+                   {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}
+#endif
+              } )
     {} // constructor
 
 }; // class

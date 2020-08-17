@@ -424,7 +424,8 @@ class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, 
   public:
     const nucSeqIndex uiMaxOcc;
 
-    MMFilteredSeeding( const ParameterSetManager& rParameters, nucSeqIndex uiMaxOcc ) : uiMaxOcc( uiMaxOcc )
+    MMFilteredSeeding( const ParameterSetManager& rParameters )
+        : uiMaxOcc( rParameters.getSelected( )->xMMFilterMaxOcc->get( ) )
     {} // constructor
 
     std::shared_ptr<Seeds> execute( std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pQuery,

@@ -2780,7 +2780,25 @@ template <typename DBImpl> class SQLDB : public DBImpl
     /** @brief Initialize DB connection using a given schema name.
      *  @details This constructor is exported to python.
      */
-    SQLDB( std::string sSchemaName ) : SQLDB( json{{SCHEMA, {{NAME, sSchemaName}}}} )
+    SQLDB( std::string sSchemaName )
+        : SQLDB( json{{SCHEMA, {{NAME, sSchemaName}}},
+#ifdef USE_PG
+                      { CONNECTION,
+                        { {HOSTNAME, "localhost"},
+                          {USER, "postgres"},
+                          {PASSWORD, "admin"},
+                          { PORT,
+                            0 } } }
+#endif
+#ifdef USE_MSQL
+                      { CONNECTION,
+                        { {HOSTNAME, "localhost"},
+                          {USER, "root"},
+                          {PASSWORD, "admin"},
+                          { PORT,
+                            0 } } }
+#endif
+          } )
     {}
 
     /** @brief Destructs connection in an exception safe way ... */

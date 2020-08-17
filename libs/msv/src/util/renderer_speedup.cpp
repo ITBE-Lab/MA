@@ -155,7 +155,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     std::vector<std::shared_ptr<NucSeq>> vReads;
     vRet.reserve( vReadIds.size( ) * 500 );
 
-    MMFilteredSeeding xSeeding( rParameters, 300 );
+    MMFilteredSeeding xSeeding( rParameters );
     SeedLumping xLumping( rParameters );
     StripOfConsiderationSeeds xSoc( rParameters );
     GetAllFeasibleSoCs xSocFilter( rParameters, 50 );
