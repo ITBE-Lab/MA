@@ -584,6 +584,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxCallSizeShortCallFilter; // maximal call size for short call low support filter
     AlignerParameterPointer<int> xMaxRefAmbiguityJump; // Max Ref Ambiguity Jump
     AlignerParameterPointer<int> xMMFilterMaxOcc; // xMMFilterMaxOcc
+    AlignerParameterPointer<int> xMinNtInSoc; // Min NT in SoC
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -774,6 +775,7 @@ class Presetting : public ParameterSetBase
           xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
           xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMMFilterMaxOcc( this, "Max Occ MM Filter", "@todo", SV_PARAMETERS, 200, checkPositiveValue ),
+          xMinNtInSoc( this, "Min NT in SoC", "@todo", SV_PARAMETERS, 25, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",

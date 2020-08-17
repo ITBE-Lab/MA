@@ -178,7 +178,7 @@ struct PG_GLobalEnv
 }; // struct
 
 /** @brief Single master object for concurrency synchronization. */
-const PG_GLobalEnv xPG_GLobalEnv;
+extern PG_GLobalEnv xPG_GLobalEnv;
 
 /** @brief Big endian to little endian translation for 8 bytes */
 template <typename TYPE> TYPE byteswap8( char* pVal )

@@ -106,13 +106,12 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
     inline void emplaceAllNonBridgingSeed( SegmentVector& rSegmentVector, FMIndex& rxFM_index, Pack& rxRefSequence,
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
-        rSegmentVector.emplaceAllEachSeeds(
-            rxFM_index, uiQLen, uiMaxAmbiguity, uiMinSeedSize, rvSeedVector,
-            [&rxRefSequence, &rvSeedVector, &uiQLen]( ) {
-                setDeltaOfSeed(rvSeedVector.back( ), uiQLen, rxRefSequence);
-                // returning true since we want to continue extracting seeds
-                return true;
-            } // lambda
+        rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiQLen, uiMaxAmbiguity, uiMinSeedSize, rvSeedVector,
+                                            [&rxRefSequence, &rvSeedVector, &uiQLen]( ) {
+                                                setDeltaOfSeed( rvSeedVector.back( ), uiQLen, rxRefSequence );
+                                                // returning true since we want to continue extracting seeds
+                                                return true;
+                                            } // lambda
         );
     } // method
     ExtractSeeds( const ParameterSetManager& rParameters )
@@ -175,9 +174,9 @@ class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
     const nucSeqIndex uiMinNt;
 
   public:
-    GetAllFeasibleSoCs( const ParameterSetManager& rParameters, nucSeqIndex uiMinNt )
+    GetAllFeasibleSoCs( const ParameterSetManager& rParameters )
         : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
-          uiMinNt( uiMinNt )
+          uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) )
     {} // constructor
 
 
