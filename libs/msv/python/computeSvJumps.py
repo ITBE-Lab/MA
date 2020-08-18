@@ -12,7 +12,7 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
     parameter_set_manager.by_name("Max Size Reseed").set(2000)
     parameter_set_manager.by_name("Maximal Ambiguity").set(1)
     parameter_set_manager.by_name("Min Size Edge").set(10) # runtime optimization...
-    parameter_set_manager.by_name("Min NT in SoC").set(50)
+    parameter_set_manager.by_name("Min NT in SoC").set(25)
     parameter_set_manager.by_name("Rectangular SoC").set(False)
     mm_index.set_max_occ(2)
     def scope():
@@ -24,7 +24,8 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
         seed_lumper = SeedLumping(parameter_set_manager)
         contig_filter = FilterContigBorder(parameter_set_manager)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
-        soc_filter = GetAllFeasibleSoCs(parameter_set_manager)
+        soc_filter = GetAllFeasibleSoCsAsSet(parameter_set_manager)
+        reseeding = RecursiveReseedingSoCs(parameter_set_manager, pack, 150)
         jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, single_con, "MS-SV",
@@ -74,7 +75,9 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
                 analyze.register("SoC", socs, True)
                 filtered_seeds_pledge_2 = promise_me(soc_filter, socs)
                 analyze.register("SoCFilter", filtered_seeds_pledge_2, True)
-                jumps_pledge = promise_me(jumps_from_seeds, filtered_seeds_pledge_2, pack_pledge, query_pledge)
+                filtered_seeds_pledge_3 = promise_me(reseeding, filtered_seeds_pledge_2, pack_pledge, queries_pledge)
+                analyze.register("RecursiveReseedingSoCs", filtered_seeds_pledge_3, True)
+                jumps_pledge = promise_me(jumps_from_seeds, filtered_seeds_pledge_3, pack_pledge, query_pledge)
                 analyze.register("SvJumpsFromSeeds", jumps_pledge, True)
                 filtered_jumps_pledge = promise_me(filter_by_ambiguity, jumps_pledge, pack_pledge)
                 analyze.register("FilterJumpsByRefAmbiguity", filtered_jumps_pledge, True)

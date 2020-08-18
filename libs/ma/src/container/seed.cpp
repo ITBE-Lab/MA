@@ -38,7 +38,7 @@ void Seeds::confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_pt
         for( size_t uiI = 0; uiI < pRefSec->length( ) && !bContinue; uiI++ )
             if( pRefSec->pxSequenceRef[ uiI ] >= 4 ) // have N
                 bContinue = true;
-        if(bContinue)
+        if( bContinue )
             continue;
 
         uint8_t uiBefore = 4;
@@ -146,5 +146,9 @@ void exportSeed( libMS::SubmoduleOrganizer& xOrganizer )
 
     // tell boost python that pointers of these classes can be converted implicitly
     py::implicitly_convertible<Seeds, libMS::Container>( );
+
+    py::class_<SeedsSet, libMS::Container, std::shared_ptr<SeedsSet>>( xOrganizer.container( ), "SeedsSet" )
+        .def( py::init<>( ) )
+        .def_readwrite( "content", &SeedsSet::xContent );
 } // function
 #endif

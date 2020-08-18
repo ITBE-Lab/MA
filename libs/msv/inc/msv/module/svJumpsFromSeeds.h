@@ -680,6 +680,33 @@ class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, NucSe
     }
 }; // class
 
+class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack, NucSeq>
+{
+    SvJumpsFromSeeds xJumpsFromSeeds;
+    nucSeqIndex uiMinNt;
+
+  public:
+    RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq, nucSeqIndex uiMinNt )
+        : xJumpsFromSeeds( rParameters, pRefSeq ), uiMinNt( uiMinNt )
+    {}
+
+    virtual std::shared_ptr<Seeds> execute( std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq,
+                                            std::shared_ptr<NucSeq> pQuery )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+        for( auto pSeeds : pSeedsSet->xContent )
+        {
+            auto pR = xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr );
+            nucSeqIndex uiNumNt = 0;
+            for( auto& xSeed : *pR )
+                uiNumNt += xSeed.size( );
+            if( uiNumNt >= uiMinNt )
+                pRet->append( pR );
+        } // for
+        return pRet;
+    }
+}; // class
+
 class FilterJumpsByRegion : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>>
 {
   public:
