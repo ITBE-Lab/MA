@@ -22,6 +22,8 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <mutex>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -34,7 +36,7 @@
 #include "libpq-fe.h"
 
 // For getting the code working with gcc 6.x.x compiler
-#if( __GNUC__ && ( __GNUC__ < 7 ) && !defined(__clang__) )
+#if( __GNUC__ && ( __GNUC__ < 7 ) && !defined( __clang__ ) )
 #include <experimental/tuple>
 #define STD_APPLY std::experimental::apply
 // Part of the C++17 standard now
@@ -47,7 +49,7 @@
 #define STD_APPLY std::apply
 #endif
 
-#if (defined( __GNUC__ ) && ( __GNUC__ < 8 )) && !(defined(__clang__) && (__clang_major__ >= 10))
+#if( defined( __GNUC__ ) && ( __GNUC__ < 8 ) ) && !( defined( __clang__ ) && ( __clang_major__ >= 10 ) )
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -171,9 +173,20 @@ struct PG_GLobalEnv
 {
     std::unique_ptr<std::atomic<size_t>> uiStmtCounter = std::make_unique<std::atomic<size_t>>( 0 );
 
+    std::mutex xGlobalLock;
+    std::set<std::string> xExistingTables;
+
     size_t getStmtId( ) const
     {
         return uiStmtCounter->fetch_add( 1 );
+    } // method
+
+    bool checkForTable( const std::string& sName )
+    {
+        std::unique_lock<std::mutex> xLock( xGlobalLock );
+        bool bExists = xExistingTables.count( sName ) > 0;
+        xExistingTables.insert( sName );
+        return bExists;
     } // method
 }; // struct
 
@@ -1385,15 +1398,22 @@ class PostgreSQLDBCon
      */
     bool tableExistsInDB( const std::string& sTblName )
     {
-        // Precompile the table exist stmt
-        if( this->pTableExistStmt == nullptr )
-            this->pTableExistStmt = std::make_unique<PreparedQueryTmpl<PostgreSQLDBCon*, int32_t>>(
-                this, std::string( "SELECT to_regclass($1)" ) );
+        bool bInternCheck = xPG_GLobalEnv.checkForTable( sTblName );
+        bool bTableExists = false;
+        do
+        {
+            // Precompile the table exist stmt
+            if( this->pTableExistStmt == nullptr )
+                this->pTableExistStmt = std::make_unique<PreparedQueryTmpl<PostgreSQLDBCon*, int32_t>>(
+                    this, std::string( "SELECT to_regclass($1)" ) );
 
-        pTableExistStmt->execBindFetch( std::string( this->sCurrSchema ) + "." + sTblName );
-        bool bTableExists = !( std::get<0>( this->pTableExistStmt->tCellWrappers ).isNull );
-        if( pTableExistStmt->fetchNextRow( ) )
-            throw PostgreSQLError( "PostgreSQL: Table exists logic error" );
+            pTableExistStmt->execBindFetch( std::string( this->sCurrSchema ) + "." + sTblName );
+            bTableExists = !( std::get<0>( this->pTableExistStmt->tCellWrappers ).isNull );
+            if( pTableExistStmt->fetchNextRow( ) )
+                throw PostgreSQLError( "PostgreSQL: Table exists logic error" );
+        } // do
+        while( bInternCheck && !bTableExists );
+
         return bTableExists;
     } // method
 

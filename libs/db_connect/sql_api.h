@@ -41,7 +41,7 @@
 #define STD_APPLY std::apply
 #endif
 
-#if (defined( __GNUC__ ) && ( __GNUC__ < 8 )) && !(defined(__clang__) && (__clang_major__ >= 10))
+#if( defined( __GNUC__ ) && ( __GNUC__ < 8 ) ) && !( defined( __clang__ ) && ( __clang_major__ >= 10 ) )
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -1109,7 +1109,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
      */
     std::string makeTableCreateStmt( )
     {
-        std::string sStmt = "CREATE TABLE " + getTableName( ) + " (";
+        std::string sStmt = "CREATE TABLE "
+#ifdef POSTGRESQL
+                            "IF NOT EXISTS "
+#endif
+                            + getTableName( ) + " (";
         // SQL code for regular columns
         for( size_t iItr = 0; iItr < this->rjTableCols.size( ); )
         {
@@ -1356,14 +1360,24 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     {
         // Create table if not existing in DB guarantee
         pDB->doPoolSafe( [&] {
-            std::cout << "Start Tabled creation" << std::endl;
-            if( !pDB->tableExistsInDB( getTableName( ) ) )
-                pDB->execSQL( makeTableCreateStmt( ) );
-            else
+            try
             {
-                // Verify the table for correctness
-            } // else
-            std::cout << "End Tabled creation" << std::endl;
+                std::cout << "Start Tabled creation" << std::endl << std::flush;
+                if( !pDB->tableExistsInDB( getTableName( ) ) )
+                {
+                    pDB->execSQL( makeTableCreateStmt( ) );
+
+                } // if
+                else
+                {
+                    // Verify the table for correctness
+                } // else
+                std::cout << "End Tabled creation" << std::endl << std::flush;
+            }
+            catch( std::runtime_error e )
+            {
+                std::cout << e.what( ) << std::endl;
+            }
         } );
 
         // Create prepared insert statement, now where the existence of the table is guaranteed

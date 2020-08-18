@@ -98,8 +98,8 @@ if( NOT MSVC )
         # Clang prefers libc++ over libstdc++
         add_compile_options( "-stdlib=libc++" )
         # Regarding the linker, there can be chosen among ld(gnu) and lld(llvm).
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld -stdlib=libc++")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -stdlib=libc++")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=ld -stdlib=libc++")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=ld -stdlib=libc++")
     endif()
 elseif( (CMAKE_BUILD_TYPE MATCHES "Debug") )
     # For fixing the fatal error C1128 if using MSVC and debug builds

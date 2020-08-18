@@ -8,25 +8,39 @@ INCLUDE(cmake/FindMySQL.cmake)
 # (With Windows, PostgreSQL DLL location must be added to search path. (bin and lib folders of installation)) 
 find_package(PostgreSQL)
 
+
+if( MySQL_FOUND )
+    file(GLOB DB_CONNECT_SRC
+        "sql_global_context.cpp"
+    ) # file
+endif()
+if( PostgreSQL_FOUND )
+    file(GLOB DB_CONNECT_SRC
+        "sql_global_context.cpp"
+        "connectors/postgre_global_context.cpp"
+    ) # file
+endif()
+
 # Define the target dbSQL
-add_library(dbSQL INTERFACE)
-target_compile_definitions( dbSQL INTERFACE DLL_PORT_util=dllimport )
+add_library(dbSQL SHARED ${DB_CONNECT_SRC})
+target_compile_definitions( dbSQL PUBLIC DLL_PORT_util=dllimport )
 
 # link to the fort object file
-target_link_libraries ( dbSQL INTERFACE Threads::Threads fort util contrib_CPP_header )
+target_link_libraries ( dbSQL PUBLIC Threads::Threads fort util contrib_CPP_header )
 # location of all includes 
-target_include_directories( dbSQL INTERFACE connectors . )
+target_include_directories( dbSQL PUBLIC connectors . )
+
 
 if( MySQL_FOUND )
     message( "Found MySQL includes and libraries")
-    target_link_libraries ( dbSQL INTERFACE ${MYSQL_LIBRARIES} )
-    target_include_directories( dbSQL INTERFACE ${MYSQL_INCLUDE_DIRS} )
+    target_link_libraries ( dbSQL PUBLIC ${MYSQL_LIBRARIES} )
+    target_include_directories( dbSQL PUBLIC ${MYSQL_INCLUDE_DIRS} )
 endif()
 
 if( PostgreSQL_FOUND )
     message( "Found PostgreSQL - library: " ${PostgreSQL_LIBRARIES} )
-    target_link_libraries ( dbSQL INTERFACE ${PostgreSQL_LIBRARIES} )
-    target_include_directories( dbSQL INTERFACE ${PostgreSQL_INCLUDE_DIRS} )
+    target_link_libraries ( dbSQL PUBLIC ${PostgreSQL_LIBRARIES} )
+    target_include_directories( dbSQL PUBLIC ${PostgreSQL_INCLUDE_DIRS} )
 endif()
 
 # Integration of test-code, if requested
