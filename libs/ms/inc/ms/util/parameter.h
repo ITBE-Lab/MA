@@ -4,7 +4,7 @@
 #include "util/support.h"
 #include <stdexcept>
 
-#if (defined( __GNUC__ ) && ( __GNUC__ < 8 )) && !(defined(__clang__) && (__clang_major__ >= 10))
+#if( defined( __GNUC__ ) && ( __GNUC__ < 8 ) ) && !( defined( __clang__ ) && ( __clang_major__ >= 10 ) )
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -98,8 +98,8 @@ class AlignerParameterBase
         throw std::runtime_error( "Cannot set value of AlignerParameterBase" );
     } // method
 
-     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~AlignerParameterBase()
+    /* Clang requires a virtual destructor for classes comprising virtual methods */
+    virtual ~AlignerParameterBase( )
     {} // destructor
 }; // class
 
@@ -280,7 +280,7 @@ template <> class AlignerParameter<AlignerParameterBase::ChoicesType> : public A
     } // method
 
     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~AlignerParameter()
+    virtual ~AlignerParameter( )
     {} // destructor
 }; // class
 
@@ -359,7 +359,7 @@ template <> class AlignerParameter<fs::path> : public AlignerParameterBase
     } // method
 
     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~AlignerParameter()
+    virtual ~AlignerParameter( )
     {} // destructor
 }; // class
 
@@ -454,7 +454,7 @@ class ParameterSetBase
         } // while
         for( auto& rPair : xpParametersByCategory )
             rPair.second.erase( std::remove_if( rPair.second.begin( ), rPair.second.end( ),
-                                                [ &pParameter ]( const std::shared_ptr<AlignerParameterBase> pX ) {
+                                                [&pParameter]( const std::shared_ptr<AlignerParameterBase> pX ) {
                                                     return ( pX == pParameter );
                                                 } ),
                                 rPair.second.end( ) );
@@ -490,7 +490,7 @@ class ParameterSetBase
         } // try
         catch( std::out_of_range& )
         {
-            throw std::runtime_error( std::string("Could not find parameter: ") += cX );
+            throw std::runtime_error( std::string( "Could not find parameter: " ) += cX );
         } // catch
     } // method
 
@@ -502,7 +502,7 @@ class ParameterSetBase
     } // method
 
     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~ParameterSetBase()
+    virtual ~ParameterSetBase( )
     {} // destructor
 }; // class
 
@@ -550,6 +550,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxNumSoC; // Maximal Number of SoCs
     AlignerParameterPointer<int> xMinNumSoC; // Min Number SoCs
     AlignerParameterPointer<int> xSoCWidth; // Fixed SoC Width
+    AlignerParameterPointer<bool> xRectangularSoc; // Rectangular SoC
 
     // SAM Options:
     AlignerParameterPointer<int> xReportN; // Maximal number of Reported alignments
@@ -675,7 +676,7 @@ class Presetting : public ParameterSetBase
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
                              AlignerParameterBase::ChoicesType{
-                                 { "maxSpan", "Maximally Spanning" }, { "SMEMs", "SMEMs" }, { "MEMs", "MEMs" } } ),
+                                 {"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}, {"MEMs", "MEMs"}} ),
           xMinSeedLength( this, "Minimal Seed Length", 'l',
                           "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
                           16, checkPositiveValue ),
@@ -715,6 +716,10 @@ class Presetting : public ParameterSetBase
                      "Set the SoC width to a fixed value. 0 = use the formula given in the paper. (for debugging "
                      "purposes.)",
                      SOC_PARAMETERS, 0, checkPositiveValue ),
+          xRectangularSoc( this, "Rectangular SoC",
+                           "Is the SoC Rectangular shape or parallelogram shape. A rectangular shape can help with "
+                           "finding inversions, but struggles more with seed-noise.",
+                           SOC_PARAMETERS, true ),
 
           // SAM
           xReportN( this, "Maximal Number of Reported Alignments", 'n',
@@ -769,13 +774,13 @@ class Presetting : public ParameterSetBase
           xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
-          xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
+          xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 0, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
           xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMMFilterMaxOcc( this, "Max Occ MM Filter", "@todo", SV_PARAMETERS, 200, checkPositiveValue ),
-          xMinNtInSoc( this, "Min NT in SoC", "@todo", SV_PARAMETERS, 25, checkPositiveValue ),
+          xMinNtInSoc( this, "Min NT in SoC", "@todo", SV_PARAMETERS, 150, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -844,10 +849,10 @@ class Presetting : public ParameterSetBase
           xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
           xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
     {
-        xMeanPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xStdPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xPairedBonus->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xZDropInversion->fEnabled = [ this ]( void ) { return this->xSearchInversions->get( ) == true; };
+        xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
     } // constructor
 
     Presetting( ) : Presetting( "Unnamed" )
@@ -871,7 +876,7 @@ class Presetting : public ParameterSetBase
     } // method
 
     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~Presetting()
+    virtual ~Presetting( )
     {} // destructor
 }; // class
 
@@ -905,9 +910,9 @@ class GeneralParameter : public ParameterSetBase
     /* Constructor */
     GeneralParameter( )
         : xSAMOutputTypeChoice( this, "SAM File output", "Select output type for sam file.", GENERAL_PARAMETER,
-                                AlignerParameterBase::ChoicesType{ { "Read_Folder", "In Read Folder" },
-                                                                   { "Specified_Folder", "In Specified Folder" },
-                                                                   { "Specified_File", "As Specified File" } } ),
+                                AlignerParameterBase::ChoicesType{{"Read_Folder", "In Read Folder"},
+                                                                  {"Specified_Folder", "In Specified Folder"},
+                                                                  {"Specified_File", "As Specified File"}} ),
           xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
@@ -924,9 +929,9 @@ class GeneralParameter : public ParameterSetBase
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
-        xSAMOutputPath->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
-        xSAMOutputFileName->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
-        piNumberOfThreads->fEnabled = [ this ]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
+        xSAMOutputPath->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
+        xSAMOutputFileName->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
+        piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
     /* Named copy Constructor */
@@ -1012,7 +1017,7 @@ class GlobalParameter : public ParameterSetBase
     } // method
 
     /* Clang requires a virtual destructor for classes comprising virtual methods */
-    virtual ~GlobalParameter()
+    virtual ~GlobalParameter( )
     {} // destructor
 }; // class
 
@@ -1137,7 +1142,7 @@ class ParameterSetManager
             return pGeneralParameterSet->byShort( cX );
         if( this->getSelected( )->hasShort( cX ) )
             return this->getSelected( )->byShort( cX );
-        throw std::runtime_error( std::string("Could not find parameter: ") += cX );
+        throw std::runtime_error( std::string( "Could not find parameter: " ) += cX );
     } // method
 
     size_t getNumThreads( ) const

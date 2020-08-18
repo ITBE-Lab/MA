@@ -11,6 +11,9 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
     parameter_set_manager.by_name("Fixed SoC Width").set(50)
     parameter_set_manager.by_name("Max Size Reseed").set(2000)
     parameter_set_manager.by_name("Maximal Ambiguity").set(1)
+    parameter_set_manager.by_name("Min Size Edge").set(10) # runtime optimization...
+    parameter_set_manager.by_name("Min NT in SoC").set(50)
+    parameter_set_manager.by_name("Rectangular SoC").set(False)
     mm_index.set_max_occ(2)
     def scope():
         single_con = DbConn(dataset_name)
@@ -19,6 +22,7 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
         lock_module = Lock(parameter_set_manager)
         seeding_module = MMFilteredSeeding(parameter_set_manager)
         seed_lumper = SeedLumping(parameter_set_manager)
+        contig_filter = FilterContigBorder(parameter_set_manager)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
         soc_filter = GetAllFeasibleSoCs(parameter_set_manager)
         jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
@@ -64,7 +68,9 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
                 analyze.register("MinimizerSeeding", seeds_pledge, True)
                 lumped_seeds = promise_me(seed_lumper, seeds_pledge, query_pledge, pack_pledge)
                 analyze.register("SeedLumping", lumped_seeds, True)
-                socs = promise_me(soc_module, lumped_seeds, query_pledge, pack_pledge)
+                c_filter_seeds = promise_me(contig_filter, lumped_seeds, pack_pledge)
+                analyze.register("FilterContigBorder", c_filter_seeds, True)
+                socs = promise_me(soc_module, c_filter_seeds, query_pledge, pack_pledge)
                 analyze.register("SoC", socs, True)
                 filtered_seeds_pledge_2 = promise_me(soc_filter, socs)
                 analyze.register("SoCFilter", filtered_seeds_pledge_2, True)

@@ -36,6 +36,7 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
     const nucSeqIndex uiMinGenomeSize;
 
     const size_t uiSoCWidth;
+    const bool bRectangular;
 
     inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS )
     {
@@ -56,7 +57,8 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
         : fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
           uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
           uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
-          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) )
+          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) ),
+          bRectangular( rParameters.getSelected( )->xRectangularSoc->get( ) )
     {} // default constructor
 
     virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT( MA )
