@@ -71,7 +71,7 @@ class MainPlot:
                                                 ("score", "@s"),
                                                 ("id", "@idx"),
                                                 ("desc", "@desc")],
-                                      names=["ground_truth_quad", "ground_truth_x", "call_quad", "call_x"],
+                                      names=["call_quad", "call_x"],
                                       name="Hover calls"))
         # the overview plot
         self.overview_quad = ColumnDataSource({"x":[], "y":[], "w":[], "h":[], "c":[]})

@@ -244,6 +244,7 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
             nucSeqIndex uiMaxQ = pSeeds->front( ).end( );
             for( Seed& xSeed : *pSeeds )
             {
+#if 0 // turn on/off the splitting of SoCs on gaps
                 if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
                 {
                     // last SoC had to little NT in it
@@ -252,6 +253,7 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
                     pRet->xContent.push_back( std::make_shared<Seeds>( ) );
                     uiNumNtLast = 0;
                 } // if
+#endif
                 uiNumNtLast += xSeed.size( );
                 uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
                 pRet->xContent.back( )->push_back( xSeed );

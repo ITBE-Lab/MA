@@ -482,8 +482,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -684,10 +684,13 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
 {
     SvJumpsFromSeeds xJumpsFromSeeds;
     nucSeqIndex uiMinNt;
+    const size_t uiSoCHeight;
 
   public:
     RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq, nucSeqIndex uiMinNt )
-        : xJumpsFromSeeds( rParameters, pRefSeq ), uiMinNt( uiMinNt )
+        : xJumpsFromSeeds( rParameters, pRefSeq ),
+          uiMinNt( uiMinNt ),
+          uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ) // same as width
     {}
 
     virtual std::shared_ptr<Seeds> execute( std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq,
@@ -697,14 +700,32 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
         for( auto pSeeds : pSeedsSet->xContent )
         {
             auto pR = xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr );
-            nucSeqIndex uiNumNt = 0;
-            for( auto& xSeed : *pR )
-                uiNumNt += xSeed.size( );
-            if( uiNumNt >= uiMinNt )
-                pRet->append( pR );
+            std::sort( pR->begin( ), pR->end( ),
+                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
+            nucSeqIndex uiNumNtLast = 0;
+            nucSeqIndex uiMaxQ = 0;
+            nucSeqIndex uiSizeLastSoC = 0;
+            for( Seed& xSeed : *pR )
+            {
+                if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
+                {
+                    // last SoC had to little NT in it
+                    if( uiNumNtLast < uiMinNt )
+                        pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+                    uiNumNtLast = 0;
+                    uiSizeLastSoC = 0;
+                } // if
+                uiNumNtLast += xSeed.size( );
+                uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
+                pRet->push_back( xSeed );
+                uiSizeLastSoC++;
+            } // for
+            // very last SoC had to little NT in it
+            if( uiNumNtLast < uiMinNt )
+                pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
         } // for
         return pRet;
-    }
+    } // method
 }; // class
 
 class FilterJumpsByRegion : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>>
@@ -775,8 +796,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

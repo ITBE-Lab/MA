@@ -158,7 +158,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     MMFilteredSeeding xSeeding( rParameters );
     SeedLumping xLumping( rParameters );
     StripOfConsiderationSeeds xSoc( rParameters );
-    GetAllFeasibleSoCs xSocFilter( rParameters );
+    GetAllFeasibleSoCsAsSet xSocFilter( rParameters );
+    RecursiveReseedingSoCs xReseeding( rParameters, pPack, 100 );
 
     std::vector<std::future<void>> vFutures;
     // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name
@@ -195,8 +196,9 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     auto pLumpedSeeds = xLumping.execute( pMinimizers, pRead, pPack );
                     auto pSoCs = xSoc.execute( pLumpedSeeds, pRead, pPack );
                     auto pFilteredSeeds = xSocFilter.execute( pSoCs );
+                    auto pReseeded = xReseeding.execute( pFilteredSeeds, pPack, pRead );
 
-                    auto xHelperRet = xJumpsFromSeeds.execute_helper_py2( pFilteredSeeds, pPack, pRead );
+                    auto xHelperRet = xJumpsFromSeeds.execute_helper_py2( pReseeded, pPack, pRead );
 
                     // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read
                     std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string,
