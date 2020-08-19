@@ -58,9 +58,9 @@ class SeedPlot:
         # seeds
         self.seeds = ColumnDataSource({"category":[0], "center":[0], "size":[10], "c":["white"], "x":[0], "y":[0]})
         self.left_plot.rect(x="category", y="center", width=1, height="size",
-                            fill_color="c", line_width=0, source=self.seeds, name="seeds")
+                            fill_color="c", line_color="c", line_width=1, source=self.seeds, name="seeds")
         self.bottom_plot.rect(y="category", x="center", height=1, width="size",
-                              fill_color="c", line_width=0, source=self.seeds, name="seeds")
+                              fill_color="c", line_color="c", line_width=1, source=self.seeds, name="seeds")
 
         hover_seeds = HoverTool(tooltips=[("read id", "@r_id"),
                                           ("read name", "@r_name"),

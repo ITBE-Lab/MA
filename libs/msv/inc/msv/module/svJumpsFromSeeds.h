@@ -397,7 +397,7 @@ class SvJumpsFromSeeds
 
             pRet->emplace_back( rA, rB, pQuery->iId );
             // remove jump again if it is too short (max of query and ref size)
-            if( pRet->back( ).size( ) < uiMinSizeJump )
+            if( rA.bOnForwStrand == rB.bOnForwStrand && pRet->back( ).size( ) < uiMinSizeJump )
                 pRet->pop_back( );
         } );
         // dummy jumps for first and last seed
@@ -678,6 +678,54 @@ class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, NucSe
     {
         return xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr );
     }
+}; // class
+
+class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack, NucSeq>
+{
+    SvJumpsFromSeeds xJumpsFromSeeds;
+    nucSeqIndex uiMinNt;
+    const size_t uiSoCHeight;
+
+  public:
+    RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq, nucSeqIndex uiMinNt )
+        : xJumpsFromSeeds( rParameters, pRefSeq ),
+          uiMinNt( uiMinNt ),
+          uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ) // same as width
+    {}
+
+    virtual std::shared_ptr<Seeds> execute( std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq,
+                                            std::shared_ptr<NucSeq> pQuery )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+        for( auto pSeeds : pSeedsSet->xContent )
+        {
+            auto pR = xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr );
+            std::sort( pR->begin( ), pR->end( ),
+                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
+            nucSeqIndex uiNumNtLast = 0;
+            nucSeqIndex uiMaxQ = 0;
+            nucSeqIndex uiSizeLastSoC = 0;
+            for( Seed& xSeed : *pR )
+            {
+                if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
+                {
+                    // last SoC had to little NT in it
+                    if( uiNumNtLast < uiMinNt )
+                        pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+                    uiNumNtLast = 0;
+                    uiSizeLastSoC = 0;
+                } // if
+                uiNumNtLast += xSeed.size( );
+                uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
+                pRet->push_back( xSeed );
+                uiSizeLastSoC++;
+            } // for
+            // very last SoC had to little NT in it
+            if( uiNumNtLast < uiMinNt )
+                pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+        } // for
+        return pRet;
+    } // method
 }; // class
 
 class FilterJumpsByRegion : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>>

@@ -36,6 +36,7 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
     const nucSeqIndex uiMinGenomeSize;
 
     const size_t uiSoCWidth;
+    const bool bRectangular;
 
     inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS )
     {
@@ -56,7 +57,8 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
         : fGiveUp( rParameters.getSelected( )->xHarmScoreMinRel->get( ) ),
           uiCurrHarmScoreMin( rParameters.getSelected( )->xHarmScoreMin->get( ) ),
           uiMinGenomeSize( rParameters.getSelected( )->xGenomeSizeDisable->get( ) ),
-          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) )
+          uiSoCWidth( rParameters.getSelected( )->xSoCWidth->get( ) ),
+          bRectangular( rParameters.getSelected( )->xRectangularSoc->get( ) )
     {} // default constructor
 
     virtual std::shared_ptr<SoCPriorityQueue> DLL_PORT( MA )
@@ -210,6 +212,55 @@ class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
             // very last SoC had to little NT in it
             if( uiNumNtLast < uiMinNt )
                 pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+        } // while
+
+        return pRet;
+    } // method
+}; // class
+
+class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorityQueue>
+{
+    const size_t uiSoCHeight;
+    const nucSeqIndex uiMinNt;
+
+  public:
+    GetAllFeasibleSoCsAsSet( const ParameterSetManager& rParameters )
+        : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
+          uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) )
+    {} // constructor
+
+
+    virtual std::shared_ptr<SeedsSet> DLL_PORT( MA ) execute( std::shared_ptr<SoCPriorityQueue> pSoCs )
+    {
+        auto pRet = std::make_shared<SeedsSet>( );
+
+        while( !pSoCs->empty( ) && pSoCs->getScoreOfNextSoC( ) >= uiMinNt )
+        {
+            pRet->xContent.push_back( std::make_shared<Seeds>( ) );
+            auto pSeeds = pSoCs->pop( );
+            std::sort( pSeeds->begin( ), pSeeds->end( ),
+                       []( auto& xA, auto& xB ) { return xA.start( ) < xB.start( ); } );
+            nucSeqIndex uiNumNtLast = 0;
+            nucSeqIndex uiMaxQ = pSeeds->front( ).end( );
+            for( Seed& xSeed : *pSeeds )
+            {
+#if 0 // turn on/off the splitting of SoCs on gaps
+                if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
+                {
+                    // last SoC had to little NT in it
+                    if( uiNumNtLast < uiMinNt )
+                        pRet->xContent.pop_back( ); // remove it
+                    pRet->xContent.push_back( std::make_shared<Seeds>( ) );
+                    uiNumNtLast = 0;
+                } // if
+#endif
+                uiNumNtLast += xSeed.size( );
+                uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
+                pRet->xContent.back( )->push_back( xSeed );
+            } // for
+            // very last SoC had to little NT in it
+            if( uiNumNtLast < uiMinNt )
+                pRet->xContent.pop_back( ); // remove it
         } // while
 
         return pRet;

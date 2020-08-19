@@ -622,6 +622,13 @@ class Seeds : public libMS::Container
         confirmSeedPositions( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef, bool bIsMaxExtended );
 }; // class
 
+
+class SeedsSet : public libMS::Container
+{
+  public:
+    std::vector<std::shared_ptr<Seeds>> xContent;
+}; // class
+
 } // namespace libMA
 
 #ifdef WITH_PYTHON

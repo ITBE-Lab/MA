@@ -65,17 +65,18 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
             filter1_pledge = promise_me(filter1, sweep2_pledge)
             analyze.register("FilterLowSupportShortCalls", filter1_pledge, True)
-            filter2_pledge = promise_me(filter2, filter1_pledge)
-            analyze.register("FilterFuzzyCalls", filter2_pledge, True)
+            
+            #filter2_pledge = promise_me(filter2, filter1_pledge)
+            #analyze.register("FilterFuzzyCalls", filter2_pledge, True)
 
             #filter3 = ConnectorPatternFilter(parameter_set_manager, sv_db)
             #filter3_pledge = promise_me(filter3, filter2_pledge, pack_pledge) # this filter was off already
             #analyze.register("[4] ConnectorPatternFilter", filter3_pledge)
 
-            filter3_pledge = promise_me(filter5, filter2_pledge)
-            analyze.register("FilterDiagonalLineCalls", filter3_pledge, True)
+            #filter3_pledge = promise_me(filter5, filter2_pledge)
+            #analyze.register("FilterDiagonalLineCalls", filter3_pledge, True)
 
-            call_ambiguity_pledge = promise_me(call_ambiguity, filter3_pledge, pack_pledge)
+            call_ambiguity_pledge = promise_me(call_ambiguity, filter1_pledge, pack_pledge)
             analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge, True)
 
             filter6_pledge = promise_me(filter6, call_ambiguity_pledge)

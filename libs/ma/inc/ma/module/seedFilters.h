@@ -368,6 +368,43 @@ class FilterToUnique : public libMS::Module<Seeds, false, Seeds, NucSeq, NucSeq>
     } // method
 }; // class
 
+/**
+ * @brief Filters a set of seeds according to the seeds reference positions
+ * @details
+ * assumes seeds are not bridging
+ * @ingroup module
+ */
+class FilterContigBorder : public libMS::Module<Seeds, false, Seeds, Pack>
+{
+  public:
+    size_t uiMaxDist = 25000;
+
+    FilterContigBorder( const ParameterSetManager& rParameters )
+    {} // default constructor
+    FilterContigBorder( )
+    {} // default constructor
+
+    // overload
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pPack )
+    {
+        auto pRet = std::make_shared<Seeds>( );
+        for( auto& rSeed : *pSeeds )
+        {
+            auto uiStart = rSeed.bOnForwStrand ? rSeed.start_ref( ) : rSeed.start_ref( ) - rSeed.size( ) - 1;
+            auto uiEnd = rSeed.bOnForwStrand ? rSeed.end_ref( ) : rSeed.start_ref( ) - 1;
+            auto uiIdx = pPack->uiSequenceIdForPosition( uiStart );
+            // sanity check
+            assert( uiIdx == pPack->uiSequenceIdForPosition( uiEnd ) );
+            if( pPack->startOfSequenceWithId( uiIdx ) + uiMaxDist >= uiStart )
+                continue;
+            if( pPack->endOfSequenceWithId( uiIdx ) <= uiEnd + uiMaxDist )
+                continue;
+            pRet->push_back( rSeed );
+        } // for
+        return pRet;
+    } // method
+}; // class
+
 #if 1
 /**
  * @brief Filters a set of maximally extended seeds down to SMEMs

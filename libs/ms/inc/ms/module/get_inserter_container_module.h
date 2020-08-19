@@ -133,8 +133,10 @@ class AbstractInserterContainer : public Container
   private:
     std::unique_ptr<InserterProfiler> pProfiler;
 
+#ifdef USE_MYSQL
     // needs to be below pTable, so that the transactions destructor is called first
-   // typename DBCon::sharedGuardedTrxnType pTransaction;
+    typename DBCon::sharedGuardedTrxnType pTransaction;
+#endif
     // needs to be below pTransaction to keep the connection alive until the transaction is destructed
     std::shared_ptr<DBCon> pConnection;
 
@@ -147,7 +149,9 @@ class AbstractInserterContainer : public Container
           iId( iId ),
           pInserter( std::get<2>( xFromRun ) ),
           pProfiler( std::make_unique<InserterProfiler>( pSharedProfiler ) ),
-         // pTransaction( std::get<0>( xFromRun ) ),
+#ifdef USE_MYSQL
+          pTransaction( std::get<0>( xFromRun ) ),
+#endif
           pConnection( std::get<3>( xFromRun ) )
     {}
 
@@ -193,7 +197,9 @@ class AbstractInserterContainer : public Container
     virtual void close( std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
         pInserter.reset( );
-       // pTransaction.reset( );
+#ifdef USE_MYSQL
+        pTransaction.reset( );
+#endif
         pProfiler.reset( );
         pConnection.reset( );
     } // method

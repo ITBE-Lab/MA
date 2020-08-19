@@ -65,7 +65,6 @@ def render_calls(self, render_all=False):
         }
     }
     desc_table = CallDescTable(self.db_conn)
-    num_call_jumps = 0
     jump_list = []
     with self.measure("SvCallFromDb(run_id)"):
         calls_from_db = SvCallsFromDb(self.params, self.db_conn, self.get_run_id(), int(self.xs - self.w),
@@ -74,7 +73,6 @@ def render_calls(self, render_all=False):
         while calls_from_db.hasNext():
             call = calls_from_db.next(self.do_render_call_jumps_only)
             if self.do_render_call_jumps_only:
-                num_call_jumps += len(call.supporing_jump_ids)
                 for idx in range(len(call.supporing_jump_ids)):
                     jump_list.append(call.get_jump(idx))
             if call.x.size == 0 and call.y.size == 0:
@@ -141,16 +139,5 @@ def render_calls(self, render_all=False):
     self.curdoc.add_next_tick_callback(callback)
 
     print("done rendering calls")
-    with self.measure("get_num_jumps_in_area"):
-        if self.do_render_call_jumps_only:
-            num_jumps = num_call_jumps
-        else:
-            num_jumps = get_num_jumps_in_area(self.db_conn, self.pack,
-                                                SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
-                                                int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
-                                                self.get_max_num_ele())
-    if num_jumps < self.get_max_num_ele() or render_all:
-        with self.measure("render_jumps"):
-            self.render_jumps(jump_list, render_all)
-    else:
-        self.analyze.analyze()
+    with self.measure("render_jumps"):
+        self.render_jumps(jump_list, render_all)

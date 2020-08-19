@@ -9,11 +9,8 @@ using namespace libMA;
 using namespace libMS;
 
 
-std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::shared_ptr<Seeds> pSeeds,
-                                                                      std::shared_ptr<NucSeq>
-                                                                          pQuerySeq,
-                                                                      std::shared_ptr<Pack>
-                                                                          pRefSeq )
+std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
+    std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )
@@ -106,7 +103,8 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::share
     pSoCs->make_heap( );
 
 
-    pSoCs->rectangularSoC( );
+    if( bRectangular )
+        pSoCs->rectangularSoC( );
 
     // return the strip collection
     return pSoCs;
@@ -134,5 +132,6 @@ void exportStripOfConsideration( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<StripOfConsideration>( xOrganizer, "StripOfConsideration" );
     exportModule<ExtractSeeds>( xOrganizer, "ExtractSeeds" );
     exportModule<GetAllFeasibleSoCs>( xOrganizer, "GetAllFeasibleSoCs" );
+    exportModule<GetAllFeasibleSoCsAsSet>( xOrganizer, "GetAllFeasibleSoCsAsSet" );
 } // function
 #endif

@@ -852,7 +852,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             ( doSingleBind<Idx>( a[ Idx ] ), ... );
         } // meta
 
-#define MAX_COMPILETIME_BIND_N 800
+#define MAX_COMPILETIME_BIND_N 400
 
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
          *  @details
@@ -1038,7 +1038,6 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             // Throwing an exception in a destructor results in undefined behavior.
             // Therefore, we swallow these exceptions and report them via std:cerr.
-            std::cout << "BulkInserter destructed" << std::endl;
             doNoExcept( [this] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
         } // destructor
     }; // class (SQLBulkInserter)
@@ -1362,7 +1361,6 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         pDB->doPoolSafe( [&] {
             try
             {
-                std::cout << "Start Tabled creation" << std::endl << std::flush;
                 if( !pDB->tableExistsInDB( getTableName( ) ) )
                 {
                     pDB->execSQL( makeTableCreateStmt( ) );
@@ -1372,7 +1370,6 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                 {
                     // Verify the table for correctness
                 } // else
-                std::cout << "End Tabled creation" << std::endl << std::flush;
             }
             catch( std::runtime_error e )
             {
