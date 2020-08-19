@@ -647,6 +647,7 @@ class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Con
             size_t uiDone = 0; 
 #ifndef POSTGRESQL
             pQueue->iter( [&]( auto pStream ) {
+                std::lock_guard<std::mutex> xLock2( pStream->xMutex );
                 if( pStream->tellg( ) == 0 )
                     uiRemaining++;
                 else if( pStream->tellg( ) >= pStream->fileSize( ) )

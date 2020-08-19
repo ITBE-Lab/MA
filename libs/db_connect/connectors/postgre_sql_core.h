@@ -798,8 +798,9 @@ class PostgreSQLDBCon
         /** @brief Throws an PostgreSQLError */
         void throwPostgreSQLError( )
         {
+            auto sErrorMsg = std::string( PQerrorMessage( this->pDBConn->pPGConn ) );
             throw PostgreSQLError( std::string( "Status Code:" ) + std::to_string( PQresultStatus( this->pPGRes ) ) +
-                                   "\n" + std::string( PQerrorMessage( this->pDBConn->pPGConn ) ) );
+                                   "\n" + sErrorMsg );
         } // method
 
         /** @brief Prepare the stmt */
@@ -1050,7 +1051,7 @@ class PostgreSQLDBCon
          *  The behavior of the query can be additionally controlled by an optionally passed JSON object.
          *  All placeholders are translated from MySQL syntax ('?') to PosgreSQL syntax ('$1', $2' ...)
          */
-        PreparedQueryTmpl( DBPtrType pDBConn, const std::string& rsStmtText, const json& rjConfig = json{ } )
+        PreparedQueryTmpl( DBPtrType pDBConn, const std::string& rsStmtText, const json& rjConfig = json{} )
             : PreparedStmtTmpl<DBPtrType>(
                   pDBConn, adaptPlaceholder( rsStmtText ), true /* do async */ ), // class superclass constructor
               tCellWrappers( ), // initialized via default constructors (couldn't find better way :-( )
@@ -1059,7 +1060,7 @@ class PostgreSQLDBCon
             // Connect row cell wrappers and tuple keeping the cell values itself.
             for_each_in_tuple_pairwise(
                 tCellWrappers,
-                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
                     // DEBUG: std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
                     rFstCell.init( &rSecCell, uiCol );
                 },
@@ -1120,7 +1121,7 @@ class PostgreSQLDBCon
                     this->uiRowCount++;
 
                     // get the actual cell values
-                    for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
+                    for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
                         if( PQgetisnull( this->pPGRes, 0, (int)rCell.uiColNum ) )
                             rCell.isNull = true;
                         else
@@ -1298,7 +1299,7 @@ class PostgreSQLDBCon
     PostgreSQLDBCon& operator=( const PostgreSQLDBCon& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    PostgreSQLDBCon( const json& jDBConfig = { } ) : pPGConn( NULL ), pPGRes( NULL ), pTableExistStmt( nullptr )
+    PostgreSQLDBCon( const json& jDBConfig = {} ) : pPGConn( NULL ), pPGRes( NULL ), pTableExistStmt( nullptr )
     {
         // See:
         // https://stackoverflow.com/questions/4181951/how-to-check-whether-a-system-is-big-endian-or-little-endian/4181991
@@ -1309,7 +1310,7 @@ class PostgreSQLDBCon
             throw std::runtime_error( "The PostgreSQL requires code adaption for your big endian platform  " );
 
         // Establish connection to database
-        open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
+        open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
         // Set always-secure search path, so malicious users can't take control.
         execSQL( "SELECT pg_catalog.set_config('search_path', '', false)", true );
         // Suppress PostgreSQL notices (as e.g. that a schema exists already)
@@ -1322,7 +1323,7 @@ class PostgreSQLDBCon
     /* Destructor */
     virtual ~PostgreSQLDBCon( )
     {
-        do_exception_safe( [ & ]( ) { this->close( ); } );
+        do_exception_safe( [&]( ) { this->close( ); } );
     } // destructor
 
     std::shared_ptr<QuerySingleTupleOwner> pCommInProgrInformer = nullptr;
