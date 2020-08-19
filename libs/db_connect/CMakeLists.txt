@@ -64,31 +64,6 @@ if(BUILD_TESTING)
 		endif()
         add_test( ${test_name} ${test_name} )
     endforeach()
-
-    if( PostgreSQL_FOUND )
-        # Add all PostgreSQL test
-        file(GLOB POSTGRESQL_TEST_SRC
-            "tests/PostgreSQL/*.cpp"
-        ) # file
-        
-        foreach(file ${POSTGRESQL_TEST_SRC})
-            get_filename_component(test_name ${file} NAME)
-            message( "-- Add PostgreSQL test: " ${test_name} )
-            add_executable( ${test_name} ${file} )
-	    	# Add include directories to your target. PRIVATE is useful with multi-target projects - see documentation of target_include_directories for more info
-            target_include_directories( ${test_name} PUBLIC dbSQL connectors )
-
-            # Add libraries to link your target against. Again, PRIVATE is important for multi-target projects
-            target_link_libraries( ${test_name} PUBLIC dbSQL )
-            # and for each of your dependent executable/library targets:
-		    if( ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0) )
-		        # std::filesystem is still experimental and for linkage we need separated library
-		        message( "-- libMA: Filesystem support for GCC below version 8" )
-		        target_link_libraries( ${test_name} PUBLIC stdc++fs )
-		    endif()
-            add_test( ${test_name} ${test_name} )
-        endforeach()
-    endif()
 endif()
 
 

@@ -1838,7 +1838,9 @@ class SQLTableWithAutoPriKey : public SQLTableWithPriKey<DBCon, AutoIncrPriKeyTy
     template <typename... ArgTypes> inline PriKeyDefaultType insert__( ArgTypes&&... args )
     {
         // This lock might not be necessary with POSTGRESQL
+#ifndef POSTGRESQL // MYSQL
         std::lock_guard<std::mutex> xGuard( this->pDBCon->pGlobalInsertLock );
+#endif
         // Thread-safe region (till end of method).
         SQLTable<DBCon, AutoIncrPriKeyTypeForTblDef, ColTypes...>::insertNonSafe(
 #ifndef POSTGRESQL // MYSQL
@@ -1986,7 +1988,9 @@ template <typename DBImpl> class SQLDB : public DBImpl
             if( *pHostTombStone )
                 throw std::runtime_error( "SQL-DB Transaction:\nYou tried to commit although the database connection "
                                           "has been gone already." );
+#ifndef POSTGRESQL
             rHost.commitTrxn( );
+#endif
             this->bStateCommitted = true;
         } // method
 
@@ -1999,14 +2003,18 @@ template <typename DBImpl> class SQLDB : public DBImpl
                 throw std::runtime_error(
                     "SQL-DB Transaction:\nYou tried to start a transaction although the database connection "
                     "has been gone already." );
+#ifndef POSTGRESQL
             rHost.startTrxn( );
+#endif
             this->bStateCommitted = false;
         } // method
 
         /** @brief Commits and destructs transaction. */
         ~GuardedTransaction( )
         {
+#ifndef POSTGRESQL
             this->commit( );
+#endif
         } // destructor
     }; // class (GuardedTransaction)
 
@@ -2048,7 +2056,9 @@ template <typename DBImpl> class SQLDB : public DBImpl
     // Necessary for getting the correct last insertion ID in case of an auto-increment column. (e.g. with
     // MySQL)
     // FIXME: Remove the lock, because it is not necessary.
+#ifndef POSTGRESQL // MYSQL
     std::mutex pGlobalInsertLock;
+#endif
 
     SQLDB( const json& jDBConData = json{} )
         : DBImpl( jDBConData ),

@@ -75,8 +75,8 @@ int main( void )
     std::vector<std::shared_ptr<NucSeq>> vNucSeq2;
     for( size_t uiItr = 0; uiItr < uiNumValues; uiItr++ )
     {
-        vNucSeq1.emplace_back( randomNucSeq( 250, 0, 0 ) );
-        vNucSeq2.emplace_back( randomNucSeq( 250, 0, 0 ) );
+        vNucSeq1.emplace_back( randomNucSeq( 2000, 0, 0 ) );
+        vNucSeq2.emplace_back( randomNucSeq( 2000, 0, 0 ) );
     } // for
 
     using duration = std::chrono::duration<double>;
