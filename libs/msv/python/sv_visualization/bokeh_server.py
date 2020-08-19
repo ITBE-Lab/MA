@@ -32,6 +32,7 @@ curdoc().add_root(row(
            renderer.widgets.full_render_button,
            renderer.widgets.render_mems_button,
            renderer.widgets.delete_button,
+           renderer.widgets.force_read_id,
            grid([[renderer.read_plot.nuc_plot.left_plot, renderer.read_plot.plot], 
                  [None,                                  renderer.read_plot.nuc_plot.bottom_plot]])),
     renderer.widgets.spinner_div

@@ -1,6 +1,6 @@
 from bokeh.plotting import figure
 from bokeh.models import Button, Slider
-from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup, Div
+from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup, Div, TextInput
 from bokeh.events import ButtonClick
 from ..util import *
 from MA import *
@@ -24,6 +24,7 @@ class Widgets:
         self.full_render_button = Button(label="render everything")
         self.render_mems_button = Button(label="render MEMs")
         self.delete_button = Button(label="Delete Dataset")
+        self.force_read_id = TextInput(value="", title="Render reads with ids (comma seperated list):")
 
         self.file_input.on_change("value", lambda x,y,z: self.file_input_change(renderer))
         self.run_id_dropdown.on_change("value", lambda x,y,z: self.run_id_change(renderer))
@@ -34,6 +35,7 @@ class Widgets:
         self.full_render_button.on_event(ButtonClick, lambda x: self.full_render(renderer))
         self.render_mems_button.on_event(ButtonClick, lambda x: self.render_mems_button_event(renderer))
         self.delete_button.on_event(ButtonClick, lambda x: self.delete_button_event(renderer))
+        self.force_read_id.on_change("value", lambda x,y,z: self.forced_read_ids_change(renderer))
 
         self.spinner_div = Div(text=html_file("spinner"), sizing_mode="scale_both", visible=False)
 
@@ -73,8 +75,16 @@ class Widgets:
     def slider_change(self, renderer):
         renderer.render()
 
+    def forced_read_ids_change(self, renderer):
+        renderer.render()
+
     def full_render(self, renderer):
         renderer.render(render_all=True)
+
+    def get_forced_read_ids(self):
+        if len(self.force_read_id.value) == 0:
+            return []
+        return [int(idx) for idx in self.force_read_id.value.split(",")]
 
     def render_mems_button_event(self, renderer):
         if not renderer.selected_read_id is None:
