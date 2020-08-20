@@ -1268,13 +1268,15 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         getValueStmtImpl_PG<ColTypes...>( sStmtText, uiArgCount );
 #else // MySQL
         getValueStmtImpl_MYSQL( sStmtText, std::index_sequence_for<ColTypes...>{} );
-#endif
+
+        // in MYSQL:
         // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated
         // explicitly, the only permitted value is DEFAULT. this assumes that the create table statement always
         // appends all generated columns at the end
         if( this->jTableDef.count( GENERATED_COLUMNS ) )
             for( size_t iItr = 0; iItr < this->jTableDef[ GENERATED_COLUMNS ].size( ); iItr++ )
                 sStmtText.append( ", DEFAULT" );
+#endif
         return sStmtText.append( ")" );
     } // method
 
