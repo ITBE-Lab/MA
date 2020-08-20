@@ -89,7 +89,7 @@ def render_reads(self, render_all=False):
     if not self.selected_read_id is None:
         self.read_ids.add(self.selected_read_id)
 
-    for idx in self.widgets.get_forced_read_ids():
+    for idx in self.widgets.get_forced_read_ids(self):
         self.read_ids.add(idx)
 
     if len(self.read_ids) > 0:
@@ -98,7 +98,7 @@ def render_reads(self, render_all=False):
                 info_ret = seedDisplaysForReadIds(self.params, 
                                                         self.db_pool, self.read_ids, self.pack,
                                                         self.mm_index, self.mm_counter,
-                                                        len(self.read_ids) > self.do_compressed_seeds or True, 
+                                                        len(self.read_ids) > self.do_compressed_seeds, 
                                                         self.get_max_num_ele()//1000)
 
         with self.measure("render seeds"):
@@ -131,6 +131,8 @@ def render_reads(self, render_all=False):
                         append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read.id], nuc, y, "p")
                 for x, y in info_ret.vReadsNCols:
                     read_id_n_cols[x] = y
+                col_ids = [*info_ret.vColIds]
+                all_col_ids = [*info_ret.vAllColIds]
                 for r_i in info_ret.vRectangles:
                     for rectangle, fill, seed_sample_size, k_mer_size, use_dp in zip(r_i.vRectangles,
                                                                 r_i.vRectangleFillPercentage,

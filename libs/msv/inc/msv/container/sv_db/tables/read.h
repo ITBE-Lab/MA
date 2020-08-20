@@ -64,6 +64,11 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
         return xGetSeqId.scalar( iReadId );
     } // method
 
+    inline int64_t getReadId( int64_t iSeqId, std::string sName )
+    {
+        return xGetReadId.scalar( iSeqId, sName );
+    } // method
+
     inline std::vector<std::shared_ptr<NucSeq>> getUsedReads( std::shared_ptr<DBCon> pDB )
     {
         SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetAllUsedReads(

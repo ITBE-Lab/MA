@@ -644,8 +644,7 @@ class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Con
             xLastTime = xNow;
             std::cout << "Open files:" << std::endl;
             size_t uiRemaining = 0;
-            size_t uiDone = 0; 
-#ifndef POSTGRESQL
+            size_t uiDone = 0;
             pQueue->iter( [&]( auto pStream ) {
                 std::lock_guard<std::mutex> xLock2( pStream->xMutex );
                 if( pStream->tellg( ) == 0 )
@@ -656,7 +655,6 @@ class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Con
                     std::cout << pStream->status( ) << std::endl;
             } // lambda
             );
-#endif
             std::cout << "Remaining files: " << uiRemaining << " Finished files: " << uiDone << std::endl;
         } // if
         return pContainer;

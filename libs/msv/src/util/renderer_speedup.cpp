@@ -54,7 +54,7 @@ struct RectangleInfo
 
 
 void addSeed( Seed& rSeed, std::vector<SeedInfo>& vRet, std::vector<std::pair<nucSeqIndex, int64_t>>& vEndColumn,
-              std::vector<int64_t> vAllColIds, size_t uiCategoryCounter, bool bParlindrome, bool bOverlapping,
+              std::vector<int64_t>& vAllColIds, size_t uiCategoryCounter, bool bParlindrome, bool bOverlapping,
               int64_t iLayer, int64_t iReadId, size_t uiSeedOrderOnQuery, std::string sReadName,
               std::shared_ptr<HashCounter> pCounter, std::shared_ptr<Pack> pPack,
               std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pRead )
@@ -103,7 +103,7 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
     xInfo.vRectangles.swap( xHelper.vRectangles );
     xInfo.vRectangleFillPercentage.swap( xHelper.vRectangleFillPercentage );
     xInfo.vRectangleReferenceAmbiguity.swap( xHelper.vRectangleReferenceAmbiguity );
-    xInfo.vRectangleKMerSize.swap( xHelper.vRectangleKMerSize );
+    xInfo.vRectangleKMerSize.swap( xHelper.vRectangleKMerSize ); 
     xInfo.vRectangleUsedDp.swap( xHelper.vRectangleUsedDp );
     xInfo.uiCategory = uiCategoryCounter;
     xInfo.uiEndColumnSize = uiEndColumnSize;
@@ -118,6 +118,8 @@ struct ReadInfo
     std::vector<RectangleInfo> vRectangles;
     std::vector<std::pair<size_t, int64_t>> vReadsNCols;
     std::vector<std::shared_ptr<NucSeq>> vReads;
+    std::vector<int64_t> vColIds;
+    std::vector<int64_t> vAllColIds;
 }; // struct
 
 struct HashCounters
@@ -167,6 +169,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                            std::shared_ptr<HashCounter>>>
         vAllSeeds;
     // x-end position of last seeds and the seeds read id for each column
+    std::vector<int64_t> vColIds;
     std::vector<int64_t> vAllColIds;
     size_t uiCategoryCounter = 0;
     bool bStop = false;
@@ -227,6 +230,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     } // if
                     else
                     {
+                        // @fixme overlapping seeds are not rendered correctly
                         std::sort( vSeedsNIndex.begin( ), vSeedsNIndex.end( ), []( auto& xA, auto& xB ) {
                             return std::get<1>( xA ).start_ref( ) < std::get<1>( xB ).start_ref( );
                         } );
@@ -234,7 +238,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                         std::lock_guard<std::mutex> xGuard( xLock );
                         if( bStop )
                             return;
-                        for( auto& xTup : vAllSeeds )
+                        for( auto& xTup : vSeedsNIndex )
                             addSeed( std::get<1>( xTup ),
                                      vRet,
                                      vEndColumn,
@@ -250,12 +254,12 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                                      pPack,
                                      pMMIndex,
                                      pRead );
-                        vAllColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
+                        vColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
 
                         addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ) );
 
-                        uiCategoryCounter += vEndColumn.size( );
-                        vReadsNCols.emplace_back( vAllColIds.back( ), iReadId );
+                        uiCategoryCounter += vEndColumn.size( ) + 2;
+                        vReadsNCols.emplace_back( vColIds.back( ), iReadId );
                         vReads.push_back( pRead );
                     } // else
                 } // for
@@ -287,6 +291,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
         vRectangles.clear( );
         vReadsNCols.clear( );
         vReads.clear( );
+        vColIds.clear( );
+        vAllColIds.clear( );
     } // if
     else if( bDoCompress && !vAllSeeds.empty( ) )
     {
@@ -303,7 +309,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
         uiCategoryCounter += vEndColumn.size( );
     } // if
 
-    return std::make_shared<ReadInfo>( ReadInfo{vRet, vRectangles, vReadsNCols, vReads} );
+    return std::make_shared<ReadInfo>( ReadInfo{vRet, vRectangles, vReadsNCols, vReads, vColIds, vAllColIds} );
 } // method
 
 
@@ -346,7 +352,9 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "vRet", &ReadInfo::vRet )
         .def_readwrite( "vRectangles", &ReadInfo::vRectangles )
         .def_readwrite( "vReadsNCols", &ReadInfo::vReadsNCols )
-        .def_readwrite( "vReads", &ReadInfo::vReads );
+        .def_readwrite( "vReads", &ReadInfo::vReads )
+        .def_readwrite( "vColIds", &ReadInfo::vColIds )
+        .def_readwrite( "vAllColIds", &ReadInfo::vAllColIds );
 
     xOrganizer.util( ).def( "seedDisplaysForReadIds", &seedDisplaysForReadIds<DBCon> );
 } // function
