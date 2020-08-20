@@ -852,7 +852,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             ( doSingleBind<Idx>( a[ Idx ] ), ... );
         } // meta
 
-#define MAX_COMPILETIME_BIND_N 400
+#define MAX_COMPILETIME_BIND_N 100
 
         /** @brief Compile time iteration over the array a for binding each tuple in the array (each row)
          *  @details
@@ -1159,7 +1159,9 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     .append( std::string( rjCol[ COLUMN_NAME ] ) ) // column name
                     .append( " " )
                     .append( std::string( rjCol[ TYPE ] ) ) // column type
-
+#ifdef POSTGRESQL
+                    .append( " GENERATED ALWAYS " )
+#endif
                     // Generated columns are columns that are computed from other columns
                     // InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
                     // the STORED variant. -> actually it doesn't...
@@ -1170,7 +1172,13 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     .append( " AS ( " )
                     .append( std::string( rjCol[ AS ] ) )
                     .append( " ) " )
-                    .append( rjCol.count( STORED ) == 0 || !rjCol[ STORED ] ? "VIRTUAL" : "STORED" );
+#ifdef POSTGRESQL
+                    //https://www.postgresql.org/docs/12/ddl-generated-columns.html
+                    "STORED" // PG only supports stored generated columns at the moment
+#else
+                    .append( rjCol.count( STORED ) == 0 || !rjCol[ STORED ] ? "VIRTUAL" : "STORED"
+#endif
+                     );
                 // generated columns can have constraints as well
                 if( rjCol.count( CONSTRAINTS ) )
                     // CONSTRAINTS must be plain text describing all constraints

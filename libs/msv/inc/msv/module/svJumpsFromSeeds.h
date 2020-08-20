@@ -397,7 +397,7 @@ class SvJumpsFromSeeds
 
             pRet->emplace_back( rA, rB, pQuery->iId );
             // remove jump again if it is too short (max of query and ref size)
-            if( rA.bOnForwStrand == rB.bOnForwStrand && pRet->back( ).size( ) < uiMinSizeJump )
+            if( pRet->back( ).size( ) < uiMinSizeJump )
                 pRet->pop_back( );
         } );
         // dummy jumps for first and last seed
@@ -683,12 +683,16 @@ class RecursiveReseeding : public libMS::Module<Seeds, false, Seeds, Pack, NucSe
 class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack, NucSeq>
 {
     SvJumpsFromSeeds xJumpsFromSeeds;
+    SortRemoveDuplicates xDupRem;
+    FilterOverlappingSeeds xFilter;
     nucSeqIndex uiMinNt;
     const size_t uiSoCHeight;
 
   public:
     RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq, nucSeqIndex uiMinNt )
         : xJumpsFromSeeds( rParameters, pRefSeq ),
+          xDupRem( rParameters ),
+          xFilter( rParameters ),
           uiMinNt( uiMinNt ),
           uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ) // same as width
     {}
@@ -724,7 +728,8 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
             if( uiNumNtLast < uiMinNt )
                 pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
         } // for
-        return pRet;
+        //return pRet;
+        return xFilter.execute( xDupRem.execute( pRet ) );
     } // method
 }; // class
 

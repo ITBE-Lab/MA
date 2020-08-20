@@ -81,10 +81,15 @@ class Widgets:
     def full_render(self, renderer):
         renderer.render(render_all=True)
 
-    def get_forced_read_ids(self):
+    def get_forced_read_ids(self, renderer):
         if len(self.force_read_id.value) == 0:
             return []
-        return [int(idx) for idx in self.force_read_id.value.split(",")]
+        read_table = ReadTable(renderer.db_conn)
+        ret = []
+        for id_n_name in self.force_read_id.value.split(";"):
+            seq_id, name = id_n_name.split(":")
+            ret.append(read_table.get_read_id(int(seq_id), name))
+        return ret
 
     def render_mems_button_event(self, renderer):
         if not renderer.selected_read_id is None:
