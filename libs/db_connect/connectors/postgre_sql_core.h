@@ -589,8 +589,8 @@ class PostgreSQLDBCon
 
         static inline std::string getSQLTypeName( identity<nullptr_t> )
         {
-            throw PostgreSQLError( "PG: Invalid request in getSQLTypeName for the type nullptr_t" );
-            return "null";
+            //throw PostgreSQLError( "PG: Invalid request in getSQLTypeName for the type nullptr_t" );
+            return "bytea";
         } // private method
     }; // class
 

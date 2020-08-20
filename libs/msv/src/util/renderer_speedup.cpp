@@ -103,7 +103,7 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
     xInfo.vRectangles.swap( xHelper.vRectangles );
     xInfo.vRectangleFillPercentage.swap( xHelper.vRectangleFillPercentage );
     xInfo.vRectangleReferenceAmbiguity.swap( xHelper.vRectangleReferenceAmbiguity );
-    xInfo.vRectangleKMerSize.swap( xHelper.vRectangleKMerSize ); 
+    xInfo.vRectangleKMerSize.swap( xHelper.vRectangleKMerSize );
     xInfo.vRectangleUsedDp.swap( xHelper.vRectangleUsedDp );
     xInfo.uiCategory = uiCategoryCounter;
     xInfo.uiEndColumnSize = uiEndColumnSize;
@@ -173,11 +173,12 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     std::vector<int64_t> vAllColIds;
     size_t uiCategoryCounter = 0;
     bool bStop = false;
+
     for( size_t uiI = 0; uiI < rParameters.getNumThreads( ); uiI++ )
         vFutures.push_back( pConPool->xPool.enqueue(
             [&]( std::shared_ptr<DBCon> pConn, size_t uiI ) { //
                 SvJumpsFromSeeds xJumpsFromSeeds( rParameters, pPack );
-                auto pReadTable = std::make_shared<ReadTable<DBCon>>( pConn );
+                auto pReadTable = std::make_unique<ReadTable<DBCon>>( pConn );
                 for( size_t uiJ = uiI; uiJ < vReadIds.size( ); uiJ += rParameters.getNumThreads( ) )
                 {
                     auto iReadId = vReadIds[ uiJ ];
@@ -190,7 +191,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                             pCounter = pIt->second;
                         else
                         {
-                            pCounter = std::make_shared<HashFilterTable<DBCon>>( pConn )->getCounter( uiSeqId );
+                            pCounter = std::make_unique<HashFilterTable<DBCon>>( pConn )->getCounter( uiSeqId );
                             pHashCounters->xCounters[ uiSeqId ] = pCounter;
                         } // else
                     } // scope of xGuard2
@@ -265,6 +266,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                 } // for
             },
             uiI ) );
+
 
     // wait for threads to finish at most iMaxTime seconds, then stop all work and give up
     for( auto& xFuture : vFutures )

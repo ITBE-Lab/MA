@@ -380,6 +380,20 @@ void tableCreationTest3(std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr)
     SQLTableWithLibIncrPriKey<SQLDB<DBConn>, int, int, int, std::string, uint32_t> xTestTable(pDBConn, xTestTableDef);
 } // test function
 
+void textNullPtrInsertion(std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr)
+{
+     json xTestTableDef = json{ { TABLE_NAME, "TEST_TABLE" },
+                               { TABLE_COLUMNS,
+                                 { { { COLUMN_NAME, "INT_COL_1" } },
+                                   { { COLUMN_NAME, "INT_COL_2" } },
+                                   { { COLUMN_NAME, "INT_COL_3" } } } } //,
+                               //{ CPP_EXTRA, { "DROP ON DESTRUCTION" } }
+    /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
+    SQLTableWithLibIncrPriKey<SQLDB<DBConn>, int, int, int> xTestTable(pDBConn, xTestTableDef);
+
+    xTestTable.insertNonSafe(nullptr, 4, 6);
+}
+
 int test_in_pool( size_t uiPoolSize, const std::function<void( std::shared_ptr<SQLDB<DBConn>>, size_t )>& rfTestFun )
 {
     try
@@ -417,13 +431,13 @@ int test_in_pool( size_t uiPoolSize, const std::function<void( std::shared_ptr<S
 int main( int argc, char** argv )
 {
     // Several connections create tables of different names
-    // test_in_pool( 20, tableCreationTest1 );
+    test_in_pool( 1, textNullPtrInsertion );
 
     // Several connections create the same table
-    test_in_pool(20, tableCreationTest2);
+    //test_in_pool(20, tableCreationTest2);
 
     // Several connections create the same table
-    test_in_pool(1, tableCreationTest3);
+    //test_in_pool(1, tableCreationTest3);
 
     std::cout << "ALL WORK DONE ..." << std::endl;
     // #ifdef _MSC_VER

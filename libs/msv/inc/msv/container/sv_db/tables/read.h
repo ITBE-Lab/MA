@@ -56,7 +56,8 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
         auto xTuple = xGetRead.get( );
         std::get<0>( xTuple )->pUncomNucSeq->iId = iId;
         std::get<0>( xTuple )->pUncomNucSeq->sName = std::get<1>( xTuple );
-        assert( !xGetRead.next( ) );
+        if( xGetRead.next( ) )
+            assert( false ); // can never find two reads with same ID
         return std::get<0>( xTuple )->pUncomNucSeq;
     } // method
     inline int64_t getSeqId( int64_t iReadId )
