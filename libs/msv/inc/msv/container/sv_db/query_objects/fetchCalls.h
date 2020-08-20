@@ -29,8 +29,8 @@ template <typename DBCon> class SvCallsFromDb
     SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, NucSeqSql, uint32_t,
              uint32_t>
         xQuery;
-    SQLQuery<typename DBCon::SlaveType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
-             PriKeyDefaultType>
+    SQLQuery<typename DBCon::SlaveType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t,
+             PriKeyDefaultType, PriKeyDefaultType>
         xQuerySupport;
 
     /// @brief called from the other constructors of this class only
@@ -187,6 +187,12 @@ template <typename DBCon> class SvCallsFromDb
     {
         xQuery.execAndFetch( iSvCallerId, xWkb, dMinScore );
     } // constructor
+
+    ~SvCallsFromDb( )
+    {
+        while( !hasNext( ) )
+            next( false );
+    } // destructor
 
     /**
      * @brief fetches the next call.
