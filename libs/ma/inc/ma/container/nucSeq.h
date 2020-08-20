@@ -516,7 +516,7 @@ class NucSeq : public libMS::Container
         /* Complements of nucleotides
          *                               0  1  2  3
          */
-        static const char chars[ 4 ] = { 3, 2, 1, 0 };
+        static const char chars[ 4 ] = {3, 2, 1, 0};
 
         return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
@@ -547,7 +547,7 @@ class NucSeq : public libMS::Container
      */
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
-        static const char chars[ 4 ] = { 'A', 'C', 'G', 'T' };
+        static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
         if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
@@ -796,7 +796,7 @@ class NucSeq : public libMS::Container
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
-        static const uint8_t aTranslate[ 4 ] = { 1, 2, 4, 8 };
+        static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
@@ -1235,13 +1235,22 @@ template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<C
 // Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
 template <> inline void PostgreSQLDBCon::StmtArg::set( const CompNucSeqSharedPtr& rxCompSeq )
 {
-    unsigned long uiCompSeqSize = static_cast<unsigned long>( rxCompSeq->size( ) );
-    if( uiCompSeqSize > (size_t)std::numeric_limits<int>::max( ) )
-        throw PostgreSQLError( "PG: Length of NucSeq exceeds maximum of type integer." );
+    if( rxCompSeq != nullptr )
+    {
+        unsigned long uiCompSeqSize = static_cast<unsigned long>( rxCompSeq->size( ) );
+        if( uiCompSeqSize > (size_t)std::numeric_limits<int>::max( ) )
+            throw PostgreSQLError( "PG: Length of NucSeq exceeds maximum of type integer." );
 
-    rpParamValue = (char*)( rxCompSeq->get( ) );
-    riParamLength = static_cast<int>( uiCompSeqSize );
-    riParamFormat = PG_BINARY_ARG;
+        rpParamValue = (char*)( rxCompSeq->get( ) );
+        riParamLength = static_cast<int>( uiCompSeqSize );
+        riParamFormat = PG_BINARY_ARG;
+    } // if
+    else
+    {
+        rpParamValue = (char*)NULL;
+        riParamLength = 0;
+        riParamFormat = PG_BINARY_ARG;
+    } // else
 } // specialized method
 
 // Part 3: Code for supporting query output:
@@ -1259,12 +1268,12 @@ template <> struct PGRowCell<CompNucSeqSharedPtr> : public PGRowCellBase<CompNuc
     inline void store( const PGresult* pPGRes )
     {
         // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
-        if (!(this->isNull))
+        if( !( this->isNull ) )
         {
-            if (*pCellValue == nullptr)
-                *pCellValue = std::make_shared<libMA::CompressedNucSeq>();
-            (*pCellValue)
-                ->decompress(reinterpret_cast<uint8_t*>(this->getValPtr(pPGRes)), this->getValLength(pPGRes));
+            if( *pCellValue == nullptr )
+                *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
+            ( *pCellValue )
+                ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
         } // if
     } // method
 }; // specialized class

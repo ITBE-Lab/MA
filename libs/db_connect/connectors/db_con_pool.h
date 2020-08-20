@@ -30,6 +30,7 @@ template <typename DBImpl> class PooledSQLDBCon : public SQLDB<DBImpl>
 
   public:
     using DBImplForwarded = DBImpl;
+    typedef SQLDB<DBImpl> SlaveType; // Forwarding the return type of getSlave
 
     size_t uiThreadId; // id of the task belonging to the PooledSQLDBCon
     PooledSQLDBCon( const PooledSQLDBCon<DBImpl>& ) = delete; // no copies of pooled connections

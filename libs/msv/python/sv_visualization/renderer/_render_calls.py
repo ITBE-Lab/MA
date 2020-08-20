@@ -64,7 +64,7 @@ def render_calls(self, render_all=False):
             False: "darkorange",
         }
     }
-    desc_table = CallDescTable(self.db_conn)
+    desc_table = CallDescTable(self.db_conn_2)
     jump_list = []
     with self.measure("SvCallFromDb(run_id)"):
         calls_from_db = SvCallsFromDb(self.params, self.db_conn, self.get_run_id(), int(self.xs - self.w),

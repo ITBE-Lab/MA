@@ -99,7 +99,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
                             "FROM sv_call_table "
                             "WHERE sv_caller_run_id = ? "
                             "AND id > ? "
-                            "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                            "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
                             "AND from_forward = ? "
                             "AND to_forward = ? ",
                             "combineOverlappingCalls::xInsertIntoOverlapTable" );

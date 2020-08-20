@@ -29,7 +29,7 @@ template <typename DBCon> class SvCallsFromDb
     SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, NucSeqSql, uint32_t,
              uint32_t>
         xQuery;
-    SQLQuery<DBCon, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
+    SQLQuery<typename DBCon::SlaveType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
              PriKeyDefaultType>
         xQuerySupport;
 
@@ -41,7 +41,7 @@ template <typename DBCon> class SvCallsFromDb
           pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
           xWkb( xWkb ),
           xQuery( pConnection, sQueryString ),
-          xQuerySupport( pConnection, sSupportString )
+          xQuerySupport( pConnection->getSlave( ), sSupportString )
     {}
 
   public:
@@ -90,7 +90,8 @@ template <typename DBCon> class SvCallsFromDb
                   "     SELECT outer.id "
                   "     FROM sv_call_table AS outer "
                   "     WHERE idx_outer.sv_caller_run_id = ? "
-                  "     AND MBRIntersects(outer.rectangle, inner.rectangle) " // @todo this results in a full table scan
+                  "     AND " ST_INTERSCTS
+                  "(outer.rectangle, inner.rectangle) " // @todo this results in a full table scan
                   "     AND outer.from_forward = inner.from_forward "
                   "     AND outer.to_forward = inner.to_forward "
                   ") "
@@ -102,8 +103,8 @@ template <typename DBCon> class SvCallsFromDb
                   "     AND inner2.score >= inner.score "
                   "     AND idx_inner2.run_id_b >= inner.id " // dim 1
                   "     AND idx_inner2.run_id_a <= inner.id " // dim 1
-                  "     AND MBRIntersects(inner2.rectangle, inner.rectangle) " // @todo this results in a full table
-                                                                               // scan
+                  "     AND " ST_INTERSCTS "(inner2.rectangle, inner.rectangle) " // @todo this results in a full table
+                                                                                  // scan
                   "     AND inner2.from_forward = inner.from_forward "
                   "     AND inner2.to_forward = inner.to_forward "
                   ") ",
@@ -152,7 +153,7 @@ template <typename DBCon> class SvCallsFromDb
                          "       reference_ambiguity "
                          "FROM sv_call_table "
                          "WHERE sv_caller_run_id = ? "
-                         "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) ",
+                         "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) ",
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
@@ -174,7 +175,7 @@ template <typename DBCon> class SvCallsFromDb
               "       supporting_reads, reference_ambiguity "
               "FROM sv_call_table "
               "WHERE sv_caller_run_id = ? "
-              "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+              "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
               "AND score >= ? ",
               "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
               "       num_supporting_nt, sv_jump_table.id, read_id "
@@ -192,7 +193,7 @@ template <typename DBCon> class SvCallsFromDb
      * @details
      * behaviour is undefined if libMSV::SvCallsFromDb::hasNext returns false
      */
-    SvCall next( bool bWithSupport=true )
+    SvCall next( bool bWithSupport = true )
     {
         auto xTup = xQuery.get( );
         SvCall xRet( std::get<1>( xTup ), // uiFromStart
@@ -207,7 +208,7 @@ template <typename DBCon> class SvCallsFromDb
         xRet.pInsertedSequence = std::get<7>( xTup ).pNucSeq;
         xRet.iId = std::get<0>( xTup );
 
-        if(bWithSupport)
+        if( bWithSupport )
         {
             xQuerySupport.execAndFetch( std::get<0>( xTup ) );
             while( !xQuerySupport.eof( ) )
@@ -215,9 +216,9 @@ template <typename DBCon> class SvCallsFromDb
                 auto xTup = xQuerySupport.get( );
                 xRet.vSupportingJumpIds.push_back( std::get<8>( xTup ) );
                 xRet.vSupportingJumps.push_back( std::make_shared<SvJump>(
-                    std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ), std::get<4>( xTup ),
-                    std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ), std::get<8>( xTup ),
-                    std::get<9>( xTup ) ) );
+                    std::get<0>( xTup ), std::get<1>( xTup ), std::get<2>( xTup ), std::get<3>( xTup ),
+                    std::get<4>( xTup ), std::get<5>( xTup ), std::get<6>( xTup ), std::get<7>( xTup ),
+                    std::get<8>( xTup ), std::get<9>( xTup ) ) );
                 xQuerySupport.next( );
             } // while
         } // if

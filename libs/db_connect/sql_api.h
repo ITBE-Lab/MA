@@ -53,6 +53,17 @@ namespace fs = std::filesystem;
 #include <json.hpp>
 using nlohmann::json;
 
+
+#ifdef POSTGRESQL
+
+#define ST_INTERSCTS "ST_Intersects"
+
+#else /* MySQL */
+
+#define ST_INTERSCTS "MBRIntersects"
+
+#endif
+
 /**
  * @brief completely empty struct
  * @details
@@ -1160,7 +1171,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     .append( " " )
                     .append( std::string( rjCol[ TYPE ] ) ) // column type
 #ifdef POSTGRESQL
-                    .append( " GENERATED ALWAYS " )
+                    .append( " GENERATED ALWAYS" )
 #endif
                     // Generated columns are columns that are computed from other columns
                     // InnoDb supports indices on VIRTUAL generated columns, so there is no need to make use of
@@ -1169,16 +1180,16 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     // see:
                     // https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
                     // https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
-                    .append( " AS ( " )
+                    .append( " AS (" )
                     .append( std::string( rjCol[ AS ] ) )
-                    .append( " ) " )
+                    .append( ") " )
 #ifdef POSTGRESQL
-                    //https://www.postgresql.org/docs/12/ddl-generated-columns.html
-                    "STORED" // PG only supports stored generated columns at the moment
+                    // https://www.postgresql.org/docs/12/ddl-generated-columns.html
+                    .append( "STORED" ) // PG only supports stored generated columns at the moment
 #else
-                    .append( rjCol.count( STORED ) == 0 || !rjCol[ STORED ] ? "VIRTUAL" : "STORED"
+                    .append( rjCol.count( STORED ) == 0 || !rjCol[ STORED ] ? "VIRTUAL" : "STORED" )
 #endif
-                     );
+                    ;
                 // generated columns can have constraints as well
                 if( rjCol.count( CONSTRAINTS ) )
                     // CONSTRAINTS must be plain text describing all constraints
@@ -1952,7 +1963,13 @@ template <typename DBConType> class SQLDBInformer
     /** @brief Returns a vector of strings holding all schema-names */
     std::vector<std::string> getAllSchemas( )
     {
-        SQLQuery<DBConType, std::string> xQuery( pDBCon, "SHOW SCHEMAS" );
+        SQLQuery<DBConType, std::string> xQuery( pDBCon, 
+#ifdef POSTGRESQL
+        "SELECT schema_name FROM information_schema.schemata"
+#else // MYSQL
+        "SHOW SCHEMAS"
+#endif
+         );
         return xQuery.template executeAndStoreInVector<0>( );
     } // method
 }; // class SQLDBInformer
@@ -2051,9 +2068,13 @@ template <typename DBImpl> class SQLDB : public DBImpl
     typedef std::unique_ptr<GuardedTransaction> uniqueGuardedTrxnType;
     typedef std::shared_ptr<GuardedTransaction> sharedGuardedTrxnType;
     typedef DBImpl DBImplForward; // Forwarding of the template parameter type
+    typedef SQLDB SlaveType; // Forwarding the return type of getSlave
     const std::string sConId; // unique connection ID with respect to the current machine (used by the FileBulkInserter)
     const std::string sSchemaName; // the schema name used by the connection
     const bool bDropOnClosure; // this is true the schema shall self delete in its destructor
+    std::shared_ptr<SQLDB> pSlave;
+    const json jDBConData;
+    const bool bIsSlave;
 
     SQLDB( const SQLDB& ) = delete; // no DB connection copies
 
@@ -2065,14 +2086,16 @@ template <typename DBImpl> class SQLDB : public DBImpl
     std::mutex pGlobalInsertLock;
 #endif
 
-    SQLDB( const json& jDBConData = json{} )
+    SQLDB( const json& jDBConData = json{}, bool bIsSlave = false )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
           sSchemaName( getSchemaName( jDBConData ) ),
-          bDropOnClosure( getDropOnClosureFlag( jDBConData ) )
+          bDropOnClosure( getDropOnClosureFlag( jDBConData ) ),
+          pSlave( nullptr ),
+          jDBConData( jDBConData ),
+          bIsSlave( bIsSlave )
     {
-        // std::cout << jDBConData << std::endl;
         // Register the selected schema with global warden and select it for use.
         xSQLDBGlobalSync.registerSchema( sSchemaName );
         DBImpl::useSchema( sSchemaName );
@@ -2171,5 +2194,12 @@ template <typename DBImpl> class SQLDB : public DBImpl
     {
         // DEBUG: std::cout << "doPoolSafe in SQLDB ..." << std::endl;
         func( );
+    } // method
+
+    virtual std::shared_ptr<SQLDB> getSlave( )
+    {
+        if( pSlave == nullptr )
+            pSlave = std::make_shared<SQLDB>( jDBConData, true);
+        return pSlave;
     } // method
 }; // SQLDB

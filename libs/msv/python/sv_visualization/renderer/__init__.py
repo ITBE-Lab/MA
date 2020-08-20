@@ -19,6 +19,7 @@ class Renderer():
         self.fm_index = None
         self.mm_counter = HashCounters()
         self.db_conn = None
+        self.db_conn_2 = None
         self.db_pool = None
         self.w = None
         self.h = None

@@ -23,7 +23,7 @@ template <typename DBCon> class CountCallsQuery : public SQLQuery<DBCon, uint32_
                                             "   SELECT id "
                                             "   FROM sv_call_table "
                                             "   WHERE sv_caller_run_id = ? "
-                                            "   AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "   AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
                                             "   AND score >= ? "
                                             "   LIMIT ? "
                                             ") AS tmp_table " )
@@ -112,8 +112,7 @@ std::vector<rect> getCallOverview( std::shared_ptr<libMS::PoolContainer<DBCon>> 
             for( size_t uiI = 0; uiI < uiNumW; uiI++ )
                 vFutures.push_back( pConPool->xPool.enqueue(
                     [&]( std::shared_ptr<DBCon> pConnection, size_t uiContigX, size_t uiContigY, size_t uiI, double dW,
-                         double dH, uint32_t uiStartX, uint32_t uiStartY, uint32_t uiNumH ) -> std::vector<rect>
-                    {
+                         double dH, uint32_t uiStartX, uint32_t uiStartY, uint32_t uiNumH ) -> std::vector<rect> {
                         std::vector<rect> vRet;
                         for( size_t uiJ = 0; uiJ < uiNumH; uiJ++ )
                         {

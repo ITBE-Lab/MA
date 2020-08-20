@@ -24,8 +24,9 @@ const json jSvCallSupportTableDef = {
          {{COLUMN_NAME, "call_id"}},
          {{COLUMN_NAME, "jump_id"}},
      }},
-    {FOREIGN_KEY, {{COLUMN_NAME, "call_id"}, {REFERENCES, "sv_call_table(id) ON DELETE CASCADE"}}},
-    {FOREIGN_KEY, {{COLUMN_NAME, "jump_id"}, {REFERENCES, "sv_jump_table(id) ON DELETE CASCADE"}}}};
+    //{FOREIGN_KEY, {{COLUMN_NAME, "call_id"}, {REFERENCES, "sv_call_table(id) ON DELETE CASCADE"}}},
+    //{FOREIGN_KEY, {{COLUMN_NAME, "jump_id"}, {REFERENCES, "sv_jump_table(id) ON DELETE CASCADE"}}}
+    };
 
 
 template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableType<DBCon>

@@ -33,8 +33,8 @@ template <typename DBCon> class SortedSvJumpFromSql
     SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
              PriKeyDefaultType>
         xQueryStart;
-    SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t, PriKeyDefaultType,
-             PriKeyDefaultType>
+    SQLQuery<typename DBCon::SlaveType, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, bool, uint32_t,
+             PriKeyDefaultType, PriKeyDefaultType>
         xQueryEnd;
 
     /// @brief called from the other constructors of this class only
@@ -43,7 +43,7 @@ template <typename DBCon> class SortedSvJumpFromSql
         : pConnection( pConnection ),
           pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
           xQueryStart( pConnection, sQueryStart ),
-          xQueryEnd( pConnection, sQueryEnd )
+          xQueryEnd( pConnection->getSlave( ), sQueryEnd )
     {} // constructor
 
   public:
@@ -167,8 +167,8 @@ template <typename DBCon> class SvJumpFromSql
      * - are sorted by their start/end position
      * - are within the rectangle iX,iY,uiW,uiH
      */
-    SvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iX, int64_t iY,
-                         uint32_t uiW, uint32_t uiH )
+    SvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iX, int64_t iY, uint32_t uiW,
+                   uint32_t uiH )
         : pConnection( pConnection ),
           pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
           xQuery( pConnection,
@@ -176,14 +176,14 @@ template <typename DBCon> class SvJumpFromSql
                   "       was_mirrored, num_supporting_nt, id, read_id "
                   "FROM sv_jump_table "
                   "WHERE sv_jump_run_id = ? "
-                  "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) " )
+                  "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) " )
     {
         auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( iX, iY, uiW, uiH ) );
         xQuery.execAndFetch( iSvCallerRunId, xRectangle );
     } // constructor
 
-    SvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iX, int64_t iY,
-                         uint32_t uiW, uint32_t uiH, int64_t iLimit )
+    SvJumpFromSql( std::shared_ptr<DBCon> pConnection, int64_t iSvCallerRunId, int64_t iX, int64_t iY, uint32_t uiW,
+                   uint32_t uiH, int64_t iLimit )
         : pConnection( pConnection ),
           pSvJumpTable( std::make_shared<SvJumpTable<DBCon>>( pConnection ) ),
           xQuery( pConnection,
@@ -191,7 +191,7 @@ template <typename DBCon> class SvJumpFromSql
                   "       was_mirrored, num_supporting_nt, id, read_id "
                   "FROM sv_jump_table "
                   "WHERE sv_jump_run_id = ? "
-                  "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                  "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
                   "LIMIT ? " )
     {
         auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( iX, iY, uiW, uiH ) );

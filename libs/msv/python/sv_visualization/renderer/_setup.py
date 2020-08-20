@@ -23,6 +23,7 @@ def setup(self):
         self.mm_index = MinimizerIndex(ParameterSetManager(), self.pack.contigSeqs(), self.pack.contigNames())
         self.mm_index.set_max_occ(2)
         self.db_conn = DbConn(dataset_name)
+        self.db_conn_2 = DbConn(dataset_name)
         print("NUM THREADS", self.params.get_num_threads())
         self.db_pool = PoolContainer(self.params.get_num_threads() + 1, dataset_name)
 

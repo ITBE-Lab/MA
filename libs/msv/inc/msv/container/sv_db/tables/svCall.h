@@ -75,7 +75,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
               {{COLUMN_NAME, "mirrored"}},
               {{COLUMN_NAME, "rectangle"}, {CONSTRAINTS, "NOT NULL"}}}},
             {GENERATED_COLUMNS,
-             {{{COLUMN_NAME, "score"}, {TYPE, "DOUBLE"}, {AS, " ( supporting_reads * 1.0 ) / reference_ambiguity "}}}},
+             {{{COLUMN_NAME, "score"},
+               {TYPE, DBCon::TypeTranslator::template getSQLTypeName<double>( )},
+               {AS, "( supporting_reads * 1.0 ) / reference_ambiguity"}}}},
         };
     }; // method
 
@@ -640,7 +642,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                          "SELECT COUNT(*) "
                                          "FROM sv_call_table "
                                          "WHERE sv_caller_run_id = ? "
-                                         "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                         "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
                                          "AND from_forward = ? "
                                          "AND to_forward = ? "
                                          "AND (score, id) > (?, ?) "
@@ -658,7 +660,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                                    "SELECT ST_AsBinary(rectangle) "
                                                    "FROM sv_call_table "
                                                    "WHERE sv_caller_run_id = ? "
-                                                   "AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                                   "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
                                                    "AND from_forward = ? "
                                                    "AND to_forward = ? "
                                                    // ST_Envelope returns MBR of rectangle

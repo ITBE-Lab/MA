@@ -41,7 +41,7 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
                                             "   SELECT id "
                                             "   FROM sv_jump_table "
                                             "   WHERE sv_jump_run_id = ? "
-                                            "   AND MBRIntersects(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "   AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
                                             "   LIMIT ? "
                                             ") AS tmp_table " );
     // FIXME: Don't use scalar anymore!
