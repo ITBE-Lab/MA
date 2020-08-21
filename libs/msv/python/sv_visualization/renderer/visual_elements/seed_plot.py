@@ -139,9 +139,9 @@ class SeedPlot:
         renderer.selected_read_id = None
         for idx, _ in enumerate(self.seeds.data["center"]):
             if self.seeds.data["category"][idx] - 1/2 <= y and \
-               self.seeds.data["category"][idx] + 1/2 >= y:
+            self.seeds.data["category"][idx] + 1/2 >= y:
                 if self.seeds.data["center"][idx] - self.seeds.data["size"][idx]/2 <= x and \
-                   self.seeds.data["center"][idx] + self.seeds.data["size"][idx]/2 >= x:
+                self.seeds.data["center"][idx] + self.seeds.data["size"][idx]/2 >= x:
                     renderer.selected_seed_id = (self.seeds.data["idx"][idx], self.seeds.data["r_id"][idx])
                     renderer.selected_read_id = self.seeds.data["r_id"][idx]
                     break
@@ -152,6 +152,6 @@ class SeedPlot:
         renderer.main_plot.update_selection(renderer)
         renderer.read_plot.auto_adjust_y_range(renderer)
 
-    def reset_cds(self):
+    def reset_cds(self, renderer):
         self.ambiguous_regions.data = {"l":[0], "b":[0], "r":[0], "t":[0]}
         self.seeds.data = {"category":[0], "center":[0], "size":[10], "c":["white"], "x":[0], "y":[0]}

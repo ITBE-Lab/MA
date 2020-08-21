@@ -190,7 +190,7 @@ template <typename DBCon> class SvCallsFromDb
 
     ~SvCallsFromDb( )
     {
-        while( !hasNext( ) )
+        while( hasNext( ) )
             next( false );
     } // destructor
 

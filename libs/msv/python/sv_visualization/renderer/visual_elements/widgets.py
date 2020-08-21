@@ -13,6 +13,8 @@ class Widgets:
         for dataset_name in SQLDBInformer(DbConn({})).get_all_schemas():
             if dataset_name in set(["information_schema", "performance_schema", "sys", "defaultDB", "mysql"]):
                 continue
+            if dataset_name[:3] == "pg_":
+                continue
             self.file_input.menu.append(dataset_name)
         self.run_id_dropdown = Dropdown(label="select run id here", menu=[])
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
@@ -40,14 +42,10 @@ class Widgets:
         self.spinner_div = Div(text=html_file("spinner"), sizing_mode="scale_both", visible=False)
 
     def show_spinner(self, renderer):
-        def callback():
-            self.spinner_div.visible = True
-        renderer.curdoc.add_next_tick_callback(callback)
+        self.spinner_div.visible = True
 
     def hide_spinner(self, renderer):
-        def callback():
-            self.spinner_div.visible = False
-        renderer.curdoc.add_next_tick_callback(callback)
+        self.spinner_div.visible = False
 
     def file_input_change(self, renderer):
         self.file_input.label = "Selected dataset: " + self.file_input.value
@@ -58,7 +56,7 @@ class Widgets:
         renderer.cached_global_overview = None
         run_table = SvCallerRunTable(renderer.db_conn)
         self.run_id_dropdown.label = "Selected run: " + run_table.getName(int(self.run_id_dropdown.value)) + \
-                                     " - " + self.run_id_dropdown.value
+                                        " - " + self.run_id_dropdown.value
         call_table = SvCallTable(renderer.db_conn)
         self.score_slider.end = 0
         if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
@@ -68,8 +66,8 @@ class Widgets:
     def ground_id_change(self, renderer):
         run_table = SvCallerRunTable(renderer.db_conn)
         self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
-                                            run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
-                                            " - " + self.ground_truth_id_dropdown.value
+                                                run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
+                                                " - " + self.ground_truth_id_dropdown.value
         renderer.render()
 
     def slider_change(self, renderer):

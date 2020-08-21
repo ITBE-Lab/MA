@@ -32,8 +32,6 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
         read_ambiguous_reg_dict["s"].append(seed_sample_size)
 
 def render_reads(self, render_all=False):
-    print("rendering reads")
-
     read_dict = {
         "center": [],
         "r_id": [],
@@ -99,7 +97,7 @@ def render_reads(self, render_all=False):
                                                         self.db_pool, self.read_ids, self.pack,
                                                         self.mm_index, self.mm_counter,
                                                         len(self.read_ids) > self.do_compressed_seeds, 
-                                                        self.get_max_num_ele()//1000)
+                                                        self.get_max_num_ele()//10)
 
         with self.measure("render seeds"):
             if self.do_render_seeds and len(info_ret.vRet) < self.get_max_num_ele() * 10:
@@ -183,6 +181,4 @@ def render_reads(self, render_all=False):
                 self.seed_plot.bottom_plot.ygrid.ticker = FixedTicker(ticks=all_col_ids)
 
                 self.seed_plot.update_selection(self)
-
-        print("done rendering reads")
-        self.curdoc.add_next_tick_callback(callback)
+        self.do_callback(callback)

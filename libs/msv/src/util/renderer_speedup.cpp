@@ -80,7 +80,7 @@ void addSeed( Seed& rSeed, std::vector<SeedInfo>& vRet, std::vector<std::pair<nu
         vEndColumn.emplace_back( 0, 0 );
         vAllColIds.push_back( uiCurrColumn + uiCategoryCounter );
     } // if
-    std::get<0>( vEndColumn[ uiCurrColumn ] ) = uiR;
+    std::get<0>( vEndColumn[ uiCurrColumn ] ) = uiR + rSeed.size( );
     std::get<1>( vEndColumn[ uiCurrColumn ] ) = iReadId;
 
 
@@ -143,7 +143,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                                                   size_t iMaxTime )
 {
     std::chrono::system_clock::time_point xEndTime =
-        std::chrono::system_clock::now( ) + std::chrono::seconds( iMaxTime );
+        std::chrono::system_clock::now( ) + std::chrono::milliseconds( iMaxTime );
 
     std::vector<int64_t> vReadIds;
     vReadIds.insert( vReadIds.begin( ), xReadIds.begin( ), xReadIds.end( ) );
@@ -231,7 +231,6 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     } // if
                     else
                     {
-                        // @fixme overlapping seeds are not rendered correctly
                         std::sort( vSeedsNIndex.begin( ), vSeedsNIndex.end( ), []( auto& xA, auto& xB ) {
                             return std::get<1>( xA ).start_ref( ) < std::get<1>( xB ).start_ref( );
                         } );
@@ -273,7 +272,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     {
         // get status until it is either timeout or ready
         std::future_status xStatus = std::future_status::deferred;
-        while( xStatus == std::future_status::deferred )
+        while( !bStop && xStatus == std::future_status::deferred )
             xStatus = xFuture.wait_until( xEndTime );
 
         if( xStatus == std::future_status::timeout )
@@ -281,10 +280,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
             std::lock_guard<std::mutex> xGuard( xLock );
             bStop = true;
         } // if
-        else if( xStatus == std::future_status::ready )
-            xFuture.get( );
-        else
-            throw std::runtime_error( "should be unreachable" );
+        
+        xFuture.get( );
     } // for
 
     if( bStop )

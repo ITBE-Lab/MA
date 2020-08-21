@@ -7,6 +7,7 @@ from .visual_elements.nuc_plot import *
 from .visual_elements.read_plot import *
 from .visual_elements.widgets import *
 from bokeh.plotting import curdoc
+from threading import Thread, Condition
 
 class Renderer():
     def __init__(self):
@@ -56,6 +57,9 @@ class Renderer():
         self.global_overview_threshold = 0.2
         self._do_overview_cache = False
         self.curdoc = curdoc()
+        self.cv = Condition()
+        self.cv2 = Condition()
+        self.num_renders_queue = 0
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:
@@ -92,9 +96,9 @@ class Renderer():
 
     def reset_cds(self):
         self.main_plot.reset_cds(self)
-        self.nuc_plot.reset_cds()
-        self.seed_plot.reset_cds()
-        self.read_plot.reset_cds()
+        self.nuc_plot.reset_cds(self)
+        self.seed_plot.reset_cds(self)
+        self.read_plot.reset_cds(self)
 
     def get_global_overview(self):
         if self.cached_global_overview is None or self.cached_overview_min_score != self.get_min_score() or \
@@ -113,6 +117,9 @@ class Renderer():
     def do_overview_cache(self):
         p_s = self.pack.unpacked_size_single_strand
         return self._do_overview_cache and self.w*3 * self.h*3 >= p_s * p_s * self.global_overview_threshold
+
+    def do_callback(self, callback):
+        self.curdoc.add_next_tick_callback(callback)
 
     # imported methdos
     from ._render import render

@@ -17,7 +17,6 @@ def render_jumps(self, jump_list=[], render_all=False):
                                                 self.get_max_num_ele())
     self.read_ids = set()
     if num_jumps < self.get_max_num_ele() or render_all:
-        print("rendering jumps")
         out_dicts = []
         patch = {
             "x": [],
@@ -119,12 +118,13 @@ def render_jumps(self, jump_list=[], render_all=False):
                 patch["x"].append([f + 0.25, f + 0.75])
                 patch["y"].append([t + 0.25, t + 0.75])
                 patch["y"].append([t + 0.75, t + 0.25])
+
             def callback():
                 for idx in range(6):
                     self.main_plot.jump_quads[idx].data = out_dicts[idx]
                 self.main_plot.jump_x.data = patch
                 self.main_plot.update_selection(self)
-            self.curdoc.add_next_tick_callback(callback)
+            self.do_callback(callback)
 
     if self.w*3+self.h*3 < self.get_max_num_ele() or render_all:
         # render nucs in read plot

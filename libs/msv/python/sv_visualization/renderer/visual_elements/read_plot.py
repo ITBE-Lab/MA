@@ -176,7 +176,7 @@ class ReadPlot:
         self.copy_seeds(renderer, lambda idx: renderer.seed_plot.seeds.data["r_id"][idx] == renderer.selected_read_id)
         renderer.main_plot.update_selection(renderer)
 
-    def reset_cds(self):
+    def reset_cds(self, renderer):
         self.ambiguity_rect.data = {"l":[], "b":[], "r":[], "t":[], "c":[]}
         self.seeds.data = {"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]}
         #self.nuc_plot.reset_nts()

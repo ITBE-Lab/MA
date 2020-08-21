@@ -41,8 +41,9 @@ def render_overview(self):
             cds["f"].append(names[rect.i])
             cds["t"].append(names[rect.j])
             cds["i"].append(str(rect.c))
+
     def callback():
         self.main_plot.overview_quad.data = cds
-    self.curdoc.add_next_tick_callback(callback)
+    self.do_callback(callback)
 
     self.analyze.analyze()

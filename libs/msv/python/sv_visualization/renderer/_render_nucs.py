@@ -23,4 +23,4 @@ def render_nucs(self):
     def callback():
         self.nuc_plot.left_nucs.data = l_plot_nucs
         self.nuc_plot.bottom_nucs.data = d_plot_nucs
-    self.curdoc.add_next_tick_callback(callback)
+    self.do_callback(callback)

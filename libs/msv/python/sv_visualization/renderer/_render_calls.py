@@ -7,7 +7,6 @@ import math
 from .util import *
 
 def render_calls(self, render_all=False):
-    print("rendering calls")
     accepted_boxes_data = {
         "x": [],
         "w": [],
@@ -136,8 +135,7 @@ def render_calls(self, render_all=False):
         self.main_plot.call_x.data = accepted_plus_data
         self.main_plot.ground_truth_quad.data = ground_boxes_data
         self.main_plot.ground_truth_x.data = ground_plus_data
-    self.curdoc.add_next_tick_callback(callback)
+    self.do_callback(callback)
 
-    print("done rendering calls")
     with self.measure("render_jumps"):
         self.render_jumps(jump_list, render_all)

@@ -178,7 +178,7 @@ class MainPlot:
                         elif sel_read_id != self.jump_quads[quad_idx].data["r"][idx]:
                             sel_read_id = False
 
-        # if nothing at all was hit do total reset
+        # if nothing at all was hit do a total reset
         if len(renderer.selected_jump_id) == 0:
             renderer.selected_read_id = None
 

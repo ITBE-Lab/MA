@@ -39,6 +39,6 @@ class NucPlot:
         self.left_plot.add_tools(hover_nucleotides)
         self.bottom_plot.add_tools(hover_nucleotides)
 
-    def reset_cds(self):
+    def reset_cds(self, renderer):
         self.left_nucs.data = {"p":[], "c":[]}
         self.bottom_nucs.data = {"p":[], "c":[]}
