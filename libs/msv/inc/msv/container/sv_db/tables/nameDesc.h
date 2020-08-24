@@ -30,9 +30,9 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
     SQLStatement<DBCon> xDelete;
     SQLQuery<DBCon, int64_t> xGetId;
     SQLQuery<DBCon, std::string, std::string, int64_t> xGetName;
-    SQLQuery<DBCon, uint32_t> xNum;
-    SQLQuery<DBCon, uint32_t> xExists;
-    SQLQuery<DBCon, uint32_t> xNameExists;
+    SQLQuery<DBCon, uint64_t> xNum;
+    SQLQuery<DBCon, uint64_t> xExists;
+    SQLQuery<DBCon, uint64_t> xNameExists;
     SQLQuery<DBCon, int64_t> xNewestUnique;
 
   public:
@@ -43,23 +43,23 @@ template <typename DBCon> class NameDescTable : public NameDescTableType<DBCon>
               json{
                   {TABLE_NAME, sTableName},
                   {TABLE_COLUMNS,
-                   {{{COLUMN_NAME, "name"}},
+                   {{{COLUMN_NAME, "_name_"}},
                     {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
                     {{COLUMN_NAME, "time_stamp"}}}},
               } ),
           pDatabase( pDatabase ),
-          xDelete( pDatabase, ( "DELETE FROM " + sTableName + " WHERE name = ?" ).c_str( ) ),
+          xDelete( pDatabase, ( "DELETE FROM " + sTableName + " WHERE _name_ = ?" ).c_str( ) ),
           xGetId( pDatabase,
-                  ( "SELECT id FROM " + sTableName + " WHERE name = ? ORDER BY time_stamp ASC LIMIT 1" ).c_str( ) ),
-          xGetName( pDatabase, ( "SELECT name, _desc_, time_stamp FROM " + sTableName + " WHERE id = ?" ).c_str( ) ),
+                  ( "SELECT id FROM " + sTableName + " WHERE _name_ = ? ORDER BY time_stamp ASC LIMIT 1" ).c_str( ) ),
+          xGetName( pDatabase, ( "SELECT _name_, _desc_, time_stamp FROM " + sTableName + " WHERE id = ?" ).c_str( ) ),
           xNum( pDatabase, ( "SELECT COUNT(*) FROM " + sTableName ).c_str( ) ),
           xExists( pDatabase, ( "SELECT COUNT(*) FROM " + sTableName + " WHERE id = ?" ).c_str( ) ),
-          xNameExists( pDatabase, ( "SELECT COUNT(*) FROM " + sTableName + " WHERE name = ?" ).c_str( ) ),
+          xNameExists( pDatabase, ( "SELECT COUNT(*) FROM " + sTableName + " WHERE _name_ = ?" ).c_str( ) ),
           // FIXED: outer and inner are reserved words in MySQL
           xNewestUnique(
               pDatabase,
               ( "SELECT id FROM " + sTableName + " AS _outer_ WHERE ( SELECT COUNT(*) FROM " + sTableName +
-                " AS _inner_ WHERE _inner_.name = _outer_.name AND _inner_.time_stamp >= _outer_.time_stamp ) < ?" )
+                " AS _inner_ WHERE _inner_._name_ = _outer_._name_ AND _inner_.time_stamp >= _outer_.time_stamp ) < ?" )
                   .c_str( ) )
     {} // default constructor
 

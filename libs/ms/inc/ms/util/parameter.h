@@ -985,7 +985,7 @@ class GlobalParameter : public ParameterSetBase
 
     /* Constructor */
     GlobalParameter( )
-        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 500 ),
+        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 200 ),
           xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 200 ),
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
           xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 1000 ),

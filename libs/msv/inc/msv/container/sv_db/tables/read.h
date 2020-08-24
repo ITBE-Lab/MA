@@ -21,24 +21,28 @@ using ReadTableType = SQLTableWithLibIncrPriKey<DBCon,
                                                 >;
 const json jReadTableDef = {
     {TABLE_NAME, "read_table"},
-    {TABLE_COLUMNS, {{{COLUMN_NAME, "sequencer_id"}}, {{COLUMN_NAME, "name"}}, {{COLUMN_NAME, "sequence"}}}},
+    {TABLE_COLUMNS, {{{COLUMN_NAME, "sequencer_id"}}, {{COLUMN_NAME, "_name_"}}, {{COLUMN_NAME, "sequence"}}}},
     {FOREIGN_KEY, {{COLUMN_NAME, "sequencer_id"}, {REFERENCES, "sequencer_table(id)"}}}};
 /**
  * @brief this table saves reads
  */
 template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
 {
-    bool bDoDuplicateWarning = true;
 
   public:
-    SQLQuery<DBCon, int32_t> xGetReadId;
+    // std::shared_ptr<DBCon> pDB;
+    SQLQuery<DBCon, PriKeyDefaultType> xGetReadId;
+    SQLQuery<DBCon, uint64_t> xGetNumMatchingReads;
     SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetRead;
-    SQLQuery<DBCon, int32_t> xGetSeqId;
+    SQLQuery<DBCon, PriKeyDefaultType> xGetSeqId;
 
     ReadTable( std::shared_ptr<DBCon> pDB )
         : ReadTableType<DBCon>( pDB, jReadTableDef ),
-          xGetReadId( pDB, "SELECT id FROM read_table WHERE sequencer_id = ? AND name = ? " ),
-          xGetRead( pDB, "SELECT sequence, name FROM read_table WHERE id = ? " ),
+
+          // pDB( pDB ),
+          xGetReadId( pDB, "SELECT id FROM read_table WHERE sequencer_id = ? AND _name_ = ? " ),
+          xGetNumMatchingReads( pDB, "SELECT COUNT(*) FROM read_table WHERE sequencer_id = ? AND _name_ = ? " ),
+          xGetRead( pDB, "SELECT sequence, _name_ FROM read_table WHERE id = ? " ),
           xGetSeqId( pDB, "SELECT sequencer_id FROM read_table WHERE id = ? " )
     {} // default constructor
 
@@ -50,7 +54,7 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
 
     inline std::shared_ptr<NucSeq> getRead( int64_t iId )
     {
-        if( !xGetRead.execAndFetch( iId ) )
+        if( !xGetRead.execAndFetch( (PriKeyDefaultType)iId ) )
             throw std::runtime_error( "Read with id " + std::to_string( iId ) +
                                       " could not be found in the database." );
         auto xTuple = xGetRead.get( );
@@ -67,13 +71,17 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
 
     inline int64_t getReadId( int64_t iSeqId, std::string sName )
     {
-        return xGetReadId.scalar( iSeqId, sName );
+        // char* pcEscapedName = PQescapeLiteral( this->pDB->pPGConn, sName.c_str( ), sName.size( ) );
+        // std::string sEscapedName( pcEscapedName );
+        if( xGetNumMatchingReads.scalar( (PriKeyDefaultType)iSeqId, sName ) == 0 )
+            return -1;
+        return xGetReadId.scalar( (PriKeyDefaultType)iSeqId, sName );
     } // method
 
     inline std::vector<std::shared_ptr<NucSeq>> getUsedReads( std::shared_ptr<DBCon> pDB )
     {
         SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetAllUsedReads(
-            pDB, "SELECT sequence, name FROM read_table WHERE id IN (SELECT DISTINCT read_id FROM sv_jump_table)" );
+            pDB, "SELECT sequence, _name_ FROM read_table WHERE id IN (SELECT DISTINCT read_id FROM sv_jump_table)" );
         std::vector<std::shared_ptr<NucSeq>> vRet;
         xGetAllUsedReads.execAndForAll( [&]( std::shared_ptr<CompressedNucSeq> pComp, std::string sName ) {
             vRet.push_back( pComp->pUncomNucSeq );

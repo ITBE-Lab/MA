@@ -11,7 +11,7 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
     parameter_set_manager.by_name("Fixed SoC Width").set(100)
     parameter_set_manager.by_name("Max Size Reseed").set(2000)
     parameter_set_manager.by_name("Maximal Ambiguity").set(1)
-    parameter_set_manager.by_name("Min Size Edge").set(10) # runtime optimization...
+    parameter_set_manager.by_name("Min Size Edge").set(200) # runtime optimization...
     parameter_set_manager.by_name("Min NT in SoC").set(25)
     parameter_set_manager.by_name("Rectangular SoC").set(False)
     mm_index.set_max_occ(2)

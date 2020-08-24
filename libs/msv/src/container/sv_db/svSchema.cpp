@@ -35,7 +35,7 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
 
     auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
 
-    SQLQuery<DBConSingle, uint32_t> xQuery( pConnection,
+    SQLQuery<DBConSingle, uint64_t> xQuery( pConnection,
                                             "SELECT COUNT(*) FROM ( "
                                             // requires subquery here so that limit actually optimizes the count
                                             "   SELECT id "

@@ -51,7 +51,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
             throw std::runtime_error( "Invalid line in fasta" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
-        pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
+        pRet->sName = sLine.substr( 1, sLine.find( ' ' ) - 1 );
 
         while( !pStream->eof( ) && pStream->peek( ) != '>' && pStream->peek( ) != ' ' )
         {
@@ -104,7 +104,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
             throw std::runtime_error( "Invalid line in fasta" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
-        pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
+        pRet->sName = sLine.substr( 1, sLine.find( ' ' ) - 1 );
         while( !pStream->eof( ) && pStream->peek( ) != '+' && pStream->peek( ) != ' ' )
         {
             sLine = "";
@@ -146,7 +146,7 @@ std::shared_ptr<NucSeq> FileReader::execute( std::shared_ptr<FileStream> pStream
             throw std::runtime_error( "Invalid line in fastq" );
         // make sure that the name contains no spaces
         // in fact everythin past the first space is considered description rather than name
-        pRet->sName = sLine.substr( 1, sLine.find( ' ' ) );
+        pRet->sName = sLine.substr( 1, sLine.find( ' ' ) - 1 );
         size_t uiNumChars = 0;
         while( !pStream->eof( ) && pStream->peek( ) != '+' && pStream->peek( ) != ' ' )
         {

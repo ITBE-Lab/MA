@@ -96,14 +96,11 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
 
     # run the graph
     res.simultaneous_get(parameter_set.get_num_threads())
-    print("a")
 
     for inserter in inserter_vec:
         inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
-    print("b")
 
     HashFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, hash_counter_container, 50)
-    print("c")
 
     analyze.analyze(runtime_file)
 

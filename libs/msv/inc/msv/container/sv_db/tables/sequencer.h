@@ -13,7 +13,7 @@ namespace libMSV
 
 /* NEW DATABASE INTERFACE */
 /* Discuss with Markus:
- * In MySQL, the constraint UNIQUE on the column "name" leads to the error message:
+ * In MySQL, the constraint UNIQUE on the column "_name_" leads to the error message:
  * MySQL database error: BLOB/TEXT column 'name' used in key specification without a key length
  * Explanation and possible solution(s):
  * https://stackoverflow.com/questions/1827063/mysql-error-key-specification-without-a-key-length
@@ -24,7 +24,7 @@ using SequencerTableType = SQLTableWithAutoPriKey<DBCon,
                                                    std::string // sequencer name
                                                    >;
 const json jSequencerTableDef = { { TABLE_NAME, "sequencer_table" },
-                                  { TABLE_COLUMNS, { { { COLUMN_NAME, "name" } /*, {CONSTRAINTS, "UNIQUE"} */ } } } };
+                                  { TABLE_COLUMNS, { { { COLUMN_NAME, "_name_" } /*, {CONSTRAINTS, "UNIQUE"} */ } } } };
 
 /**
  * @brief contains the name of a sequencer run

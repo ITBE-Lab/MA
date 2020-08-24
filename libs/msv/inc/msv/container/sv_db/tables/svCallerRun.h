@@ -22,11 +22,11 @@ using SvCallerRunTableType = SQLTableWithAutoPriKey<DBCon,
 const json jSvCallerRunTableDef = {
     {TABLE_NAME, "sv_caller_run_table"},
     {TABLE_COLUMNS,
-     {{{COLUMN_NAME, "name"}},
+     {{{COLUMN_NAME, "_name_"}},
       {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
       {{COLUMN_NAME, "time_stamp"}},
       {{COLUMN_NAME, "sv_jump_run_id"}}}}
-      // @todo ask arne about inserting NULL
+    // @todo ask arne about inserting NULL
     /*,{FOREIGN_KEY, {{COLUMN_NAME, "sv_jump_run_id"}, {REFERENCES, "sv_jump_run_table(id)"}}}*/};
 
 template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<DBCon>
@@ -37,9 +37,9 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
     SQLQuery<DBCon, int64_t> xGetId;
     SQLQuery<DBCon, int64_t> xGetIds;
     SQLQuery<DBCon, std::string, std::string, int64_t, int64_t> xGetName;
-    SQLQuery<DBCon, uint32_t> xNum;
-    SQLQuery<DBCon, uint32_t> xExists;
-    SQLQuery<DBCon, uint32_t> xNameExists;
+    SQLQuery<DBCon, uint64_t> xNum;
+    SQLQuery<DBCon, uint64_t> xExists;
+    SQLQuery<DBCon, uint64_t> xNameExists;
     SQLQuery<DBCon, int64_t> xNewestUnique;
 
   public:
@@ -47,17 +47,17 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
         : SvCallerRunTableType<DBCon>( pDB, // the database where the table resides
                                        jSvCallerRunTableDef ),
           pDatabase( pDB ),
-          xDelete( pDB, "DELETE FROM sv_caller_run_table WHERE name = ?" ),
-          xGetId( pDB, "SELECT id FROM sv_caller_run_table WHERE name = ? ORDER BY time_stamp ASC LIMIT 1" ),
+          xDelete( pDB, "DELETE FROM sv_caller_run_table WHERE _name_ = ?" ),
+          xGetId( pDB, "SELECT id FROM sv_caller_run_table WHERE _name_ = ? ORDER BY time_stamp ASC LIMIT 1" ),
           xGetIds( pDB, "SELECT id FROM sv_caller_run_table" ),
-          xGetName( pDB, "SELECT name, _desc_, time_stamp, sv_jump_run_id FROM sv_caller_run_table WHERE id = ?" ),
+          xGetName( pDB, "SELECT _name_, _desc_, time_stamp, sv_jump_run_id FROM sv_caller_run_table WHERE id = ?" ),
           xNum( pDB, "SELECT COUNT(*) FROM sv_caller_run_table " ),
           xExists( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id = ?" ),
-          xNameExists( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE name = ?" ),
+          xNameExists( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE _name_ = ?" ),
           xNewestUnique(
               pDB,
               "SELECT id FROM sv_caller_run_table AS _outer_ WHERE ( SELECT COUNT(*) FROM sv_caller_run_table AS "
-              "_inner_ WHERE _inner_.name = _outer_.name AND _inner_.time_stamp >= _outer_.time_stamp ) < ? "
+              "_inner_ WHERE _inner_._name_ = _outer_._name_ AND _inner_.time_stamp >= _outer_.time_stamp ) < ? "
               "AND _desc_ = ? " )
     {} // default constructor
 

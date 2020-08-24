@@ -31,7 +31,7 @@ using SvJumpTableType = SQLTableWithLibIncrPriKey<DBCon,
 template <typename DBCon> class SvJumpTable : public SvJumpTableType<DBCon>
 {
     std::shared_ptr<DBCon> pDatabase;
-    SQLQuery<DBCon, uint32_t> xQuerySize;
+    SQLQuery<DBCon, uint64_t> xQuerySize;
     SQLStatement<DBCon> xDeleteRun;
 
   public:

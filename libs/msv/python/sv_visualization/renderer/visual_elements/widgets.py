@@ -83,10 +83,21 @@ class Widgets:
         if len(self.force_read_id.value) == 0:
             return []
         read_table = ReadTable(renderer.db_conn)
+        #print("AAAA", read_table.get_seq_id(396760))
         ret = []
         for id_n_name in self.force_read_id.value.split(";"):
-            seq_id, name = id_n_name.split(":")
-            ret.append(read_table.get_read_id(int(seq_id), name))
+            split = id_n_name.split(":")
+            print(split)
+            if not len(split) == 2:
+                continue
+            seq_id, name = split
+            print(seq_id, "\"" + name + "\"")
+            idx = read_table.get_read_id(int(seq_id), name)
+            print(">", idx)
+            if idx == -1:
+                print(name, "does not exist in DB")
+                continue
+            ret.append(idx)
         return ret
 
     def render_mems_button_event(self, renderer):

@@ -43,8 +43,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 {
 
     std::shared_ptr<DBCon> pConnection;
-    SQLQuery<DBCon, uint32_t> xQuerySize;
-    SQLQuery<DBCon, uint32_t> xQuerySizeSpecific;
+    SQLQuery<DBCon, uint64_t> xQuerySize;
+    SQLQuery<DBCon, uint64_t> xQuerySizeSpecific;
     SQLQuery<DBCon, int64_t> xCallArea;
     SQLQuery<DBCon, double> xMaxScore;
     SQLQuery<DBCon, double> xMinScore;
@@ -298,7 +298,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
 
         auto uiNumCalls =
-            SQLQuery<DBCon, int64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
+            SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
         std::cout << "num calls: " << uiNumCalls << std::endl;
 
 
@@ -634,11 +634,11 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     }; // class
 
     /** @brief counts intersecting calls with higher score */
-    class HelperIntersecCallWHigherScore : public SQLQuery<DBCon, uint32_t>
+    class HelperIntersecCallWHigherScore : public SQLQuery<DBCon, uint64_t>
     {
       public:
         HelperIntersecCallWHigherScore( std::shared_ptr<DBCon> pConnection )
-            : SQLQuery<DBCon, uint32_t>( pConnection,
+            : SQLQuery<DBCon, uint64_t>( pConnection,
                                          "SELECT COUNT(*) "
                                          "FROM sv_call_table "
                                          "WHERE sv_caller_run_id = ? "

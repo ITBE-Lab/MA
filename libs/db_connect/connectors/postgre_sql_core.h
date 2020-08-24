@@ -257,6 +257,7 @@ template <typename CellType> class PGRowCellBase
     size_t uiColNum; // column number of cell in query
     bool isNull = false; // if true, cell keeps a null value
 
+
     /** @brief Initialization of a cell must be done via this init method. */
     inline void init( CellType* pCellValue, // pointer to actual cell value
                       size_t uiColNum ) // column number of cell in query outcome
@@ -283,6 +284,44 @@ template <typename CellType> class PGRowCellBase
     //     throw PostgreSQLError( std::string( "store in PGRowCellBase called for type: " ) + typeid( CellType ).name( )
     //     );
     // } // method
+
+    inline void checkOid( const PGresult* pPGRes, Oid xCppOid, const std::map<std::string, Oid>& xOidMap )
+    {
+        Oid xPGOid = PQftype( pPGRes, this->uiColNum );
+
+        // Hard coded compatibilities
+        switch( xPGOid )
+        {
+            case 19:
+                xPGOid = 25; // name -> string
+                break;
+
+            case 2205:
+                xPGOid = 23; // regclass -> int4 (regclass == oid)
+                break;
+
+            default:
+                break;
+        } // switch
+
+        if( xPGOid != xCppOid )
+        {
+            std::string sPGOidName = "unknown";
+            for( auto xKeyValuePair : xOidMap )
+                if( xKeyValuePair.second == xPGOid )
+                    sPGOidName = xKeyValuePair.first;
+
+            std::string sCppOidName = "unknown";
+            for( auto xKeyValuePair : xOidMap )
+                if( xKeyValuePair.second == xCppOid )
+                    sCppOidName = xKeyValuePair.first;
+
+            throw PostgreSQLError( "Returned OID missmatch in column " + std::to_string( this->uiColNum ) +
+                                   ". Got: " + std::to_string( xCppOid ) + " = " + sCppOidName +
+                                   " Expected: " + std::to_string( xPGOid ) + " = " + sPGOidName );
+        } // if
+    } // method
+
 }; // class (PGRowCellBase)
 
 /* This class is intended to be specialized for specific types. */
@@ -589,7 +628,7 @@ class PostgreSQLDBCon
 
         static inline std::string getSQLTypeName( identity<nullptr_t> )
         {
-            //throw PostgreSQLError( "PG: Invalid request in getSQLTypeName for the type nullptr_t" );
+            // throw PostgreSQLError( "PG: Invalid request in getSQLTypeName for the type nullptr_t" );
             return "bytea";
         } // private method
     }; // class
@@ -715,7 +754,7 @@ class PostgreSQLDBCon
         void inline setOverloaded( const std::string& rsText ) // Text
         {
             rpParamValue = (char*)rsText.c_str( );
-            riParamLength = 0;
+            // riParamLength = 0; // is ignored anyways
             riParamFormat = PG_TEXT_ARG;
         } // method
 
@@ -1132,6 +1171,16 @@ class PostgreSQLDBCon
                     // if( this->uiRowCount == 0 )
                     //     // PQnfields(res) // Check C++ type for query
                     //     ;
+                    if( this->iStatus != 1 )
+                    {
+                        // We are in the first row of a result and check all oids for correctness.
+                        for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                            auto xCppOid = this->pDBConn->getOidMap( ).at(
+                                TypeTranslator::template getSQLTypeName<typeof( *rCell.pCellValue )>( ) );
+                            rCell.checkOid( this->pPGRes, xCppOid, this->pDBConn->getOidMap( ) );
+                        } ); // for each tuple
+                    } // if
+
                     this->uiRowCount++;
 
                     // get the actual cell values
@@ -1335,6 +1384,11 @@ class PostgreSQLDBCon
 
         initOidMap( );
     } // constructor
+
+    std::map<std::string, Oid>& getOidMap( )
+    {
+        return mOidMap;
+    } // method
 
     /* Destructor */
     virtual ~PostgreSQLDBCon( )

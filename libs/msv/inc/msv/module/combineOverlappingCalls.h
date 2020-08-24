@@ -118,7 +118,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
 
         // create index on overlap table  (mysql cannot deal with empty tables apparently)
         metaMeasureAndLogDuration<LOG>( "xOverlapTable.addIndex", [&]( ) {
-            if( SQLQuery<DBCon, uint32_t>( pOuterConnection, "SELECT COUNT(*) FROM call_overlap_table" ).scalar( ) > 0 )
+            if( SQLQuery<DBCon, uint64_t>( pOuterConnection, "SELECT COUNT(*) FROM call_overlap_table" ).scalar( ) > 0 )
                 xOverlapTable.addIndex( json{{INDEX_NAME, "from_to"}, {INDEX_COLUMNS, "from_call_id, to_call_id"}} );
         } );
 
@@ -214,7 +214,7 @@ size_t combineOverlappingCalls( const ParameterSetManager& rParameters,
         } );
 
         // delete calls that have been overlapped (mysql cannot deal with empty tables apparently)
-        if( SQLQuery<DBCon, uint32_t>( pOuterConnection, "SELECT COUNT(*) FROM to_delete_table" ).scalar( ) > 0 )
+        if( SQLQuery<DBCon, uint64_t>( pOuterConnection, "SELECT COUNT(*) FROM to_delete_table" ).scalar( ) > 0 )
         {
             SQLStatement<DBCon> xDeleteOverlapped( pOuterConnection,
                                                    "DELETE FROM sv_call_table "
