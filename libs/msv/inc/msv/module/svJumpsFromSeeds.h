@@ -728,7 +728,7 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
             if( uiNumNtLast < uiMinNt )
                 pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
         } // for
-        //return pRet;
+        // return pRet;
         return xFilter.execute( xDupRem.execute( pRet ) );
     } // method
 }; // class

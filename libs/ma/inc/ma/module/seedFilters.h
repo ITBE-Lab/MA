@@ -209,7 +209,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
     virtual std::shared_ptr<Seeds> DLL_PORT( MA )
         execute( std::shared_ptr<Seeds> pIn, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef )
     {
-        return execute_helper(
+        auto pRet = execute_helper(
             pIn, [&]( Seed& rSeed ) { SeedExtender::extendSeed( rSeed, pQuery, pRef ); },
             [&]( Seed& rLast, Seed& rSeed ) {
                 auto uiContigID = pRef->uiSequenceIdForPosition( rLast.start_ref( ) );
@@ -229,6 +229,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
                         uiBackw++;
                 rLast.iSize += uiBackw;
             } );
+        return pRet;
     } // method
 
     // overload

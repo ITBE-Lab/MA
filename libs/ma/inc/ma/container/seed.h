@@ -195,6 +195,14 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
 
 }; // class
 
+
+inline std::ostream& operator<<( std::ostream& os, const Seed& rS )
+{
+    os << "iStart= " << rS.iStart << " iSize= " << rS.iSize << " uiPosOnReference= " << rS.uiPosOnReference
+       << " uiAmbiguity= " << rS.uiAmbiguity << " bOnForwStrand= " << rS.bOnForwStrand;
+    return os;
+}
+
 class Alignment;
 /**
  * @brief Used to store some statistics to each alignment

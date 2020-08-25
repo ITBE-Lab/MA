@@ -364,6 +364,15 @@ class SvJump : public libMS::Container
     }
 }; // class
 
+inline std::ostream& operator<<( std::ostream& os, const SvJump& rJ )
+{
+    os << "bWasMirrored= " << rJ.bWasMirrored << " uiFrom= " << rJ.uiFrom << " uiTo= " << rJ.uiTo
+       << " uiQueryFrom= " << rJ.uiQueryFrom << " uiQueryTo= " << rJ.uiQueryTo << " bFromForward= " << rJ.bFromForward
+       << " bToForward= " << rJ.bToForward << " uiNumSupportingNt= " << rJ.uiNumSupportingNt << " iId= " << rJ.iId
+       << " iReadId= " << rJ.iReadId;
+    return os;
+}
+
 // @todo move this to it's own file
 class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 {
