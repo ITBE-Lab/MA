@@ -6,6 +6,7 @@ from ..util import *
 from MA import *
 from MSV import *
 import copy
+import threading
 
 class Widgets:
     def __init__(self, renderer):
@@ -23,7 +24,7 @@ class Widgets:
                                           callback_policy='mouseup', title="max render")
         self.range_link_radio = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"],
                                            active=0)
-        self.full_render_button = Button(label="render everything")
+        self.full_render_button = Button(label="render without limit")
         self.render_mems_button = Button(label="render MEMs")
         self.delete_button = Button(label="Delete Dataset")
         self.force_read_id = TextInput(value="", title="Render reads with ids (comma seperated list):")
@@ -40,6 +41,7 @@ class Widgets:
         self.force_read_id.on_change("value", lambda x,y,z: self.forced_read_ids_change(renderer))
 
         self.spinner_div = Div(text=html_file("spinner"), sizing_mode="scale_both", visible=False)
+        self.condition = threading.Condition()
 
     def show_spinner(self, renderer):
         self.spinner_div.visible = True
@@ -48,27 +50,30 @@ class Widgets:
         self.spinner_div.visible = False
 
     def file_input_change(self, renderer):
-        self.file_input.label = "Selected dataset: " + self.file_input.value
-        renderer.setup()
+        with self.condition:
+            self.file_input.label = "Selected dataset: " + self.file_input.value
+            renderer.setup()
 
     def run_id_change(self, renderer):
-        print("new run_id:", self.run_id_dropdown.value)
-        renderer.cached_global_overview = None
-        run_table = SvCallerRunTable(renderer.db_conn)
-        self.run_id_dropdown.label = "Selected run: " + run_table.getName(int(self.run_id_dropdown.value)) + \
-                                        " - " + self.run_id_dropdown.value
-        call_table = SvCallTable(renderer.db_conn)
-        self.score_slider.end = 0
-        if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
-            self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
-        renderer.render()
+        with self.condition:
+            print("new run_id:", self.run_id_dropdown.value)
+            renderer.cached_global_overview = None
+            run_table = SvCallerRunTable(renderer.db_conn)
+            self.run_id_dropdown.label = "Selected run: " + run_table.getName(int(self.run_id_dropdown.value)) + \
+                                            " - " + self.run_id_dropdown.value
+            call_table = SvCallTable(renderer.db_conn)
+            self.score_slider.end = 0
+            if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
+                self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
+            renderer.render()
 
     def ground_id_change(self, renderer):
-        run_table = SvCallerRunTable(renderer.db_conn)
-        self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
-                                                run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
-                                                " - " + self.ground_truth_id_dropdown.value
-        renderer.render()
+        with self.condition:
+            run_table = SvCallerRunTable(renderer.db_conn)
+            self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
+                                                    run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
+                                                    " - " + self.ground_truth_id_dropdown.value
+            renderer.render()
 
     def slider_change(self, renderer):
         renderer.render()

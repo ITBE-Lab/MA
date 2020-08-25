@@ -277,17 +277,17 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<geom::Rectangle<nucSeqIndex>>( xOrganizer.util( ), "nucSeqRectangle" )
         .def_readwrite( "x_axis", &geom::Rectangle<nucSeqIndex>::xXAxis )
         .def_readwrite( "y_axis", &geom::Rectangle<nucSeqIndex>::xYAxis );
-    py::class_<libMSV::SvJumpsFromSeeds::HelperRetVal>( xOrganizer._util( ), "SvJumpsFromSeedsHelperRetVal" )
-        .def_readwrite( "layer_of_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vLayerOfSeeds )
-        .def_readwrite( "seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::pSeeds )
-        .def_readwrite( "rectangles", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangles )
-        .def_readwrite( "parlindrome", &libMSV::SvJumpsFromSeeds::HelperRetVal::vParlindromeSeed )
-        .def_readwrite( "overlapping", &libMSV::SvJumpsFromSeeds::HelperRetVal::vOverlappingSeed )
-        .def_readwrite( "rectangles_fill", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleFillPercentage )
-        .def_readwrite( "rectangle_ambiguity", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleReferenceAmbiguity )
-        .def_readwrite( "rectangle_k_mer_size", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleKMerSize )
-        .def_readwrite( "rectangle_used_dp", &libMSV::SvJumpsFromSeeds::HelperRetVal::vRectangleUsedDp )
-        .def_readwrite( "jump_seeds", &libMSV::SvJumpsFromSeeds::HelperRetVal::vJumpSeeds );
+    py::class_<libMSV::HelperRetVal>( xOrganizer._util( ), "SvJumpsFromSeedsHelperRetVal" )
+        .def_readwrite( "layer_of_seeds", &libMSV::HelperRetVal::vLayerOfSeeds )
+        .def_readwrite( "seeds", &libMSV::HelperRetVal::pSeeds )
+        .def_readwrite( "rectangles", &libMSV::HelperRetVal::vRectangles )
+        .def_readwrite( "parlindrome", &libMSV::HelperRetVal::vParlindromeSeed )
+        .def_readwrite( "overlapping", &libMSV::HelperRetVal::vOverlappingSeed )
+        .def_readwrite( "rectangles_fill", &libMSV::HelperRetVal::vRectangleFillPercentage )
+        .def_readwrite( "rectangle_ambiguity", &libMSV::HelperRetVal::vRectangleReferenceAmbiguity )
+        .def_readwrite( "rectangle_k_mer_size", &libMSV::HelperRetVal::vRectangleKMerSize )
+        .def_readwrite( "rectangle_used_dp", &libMSV::HelperRetVal::vRectangleUsedDp )
+        .def_readwrite( "jump_seeds", &libMSV::HelperRetVal::vJumpSeeds );
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util( ), "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( xOrganizer._util( ), "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );
@@ -302,7 +302,10 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumpsPy );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
-    exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>, nucSeqIndex>( xOrganizer, "RecursiveReseedingSoCs" );
+    exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>, nucSeqIndex>(
+        xOrganizer, "RecursiveReseedingSoCs", []( auto&& x ) {
+            x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py );
+        } );
     exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );
     exportModule<ExtractSeedsFilter, std::shared_ptr<Pack>, nucSeqIndex, nucSeqIndex>( xOrganizer,
                                                                                        "ExtractSeedsFilter" );

@@ -66,7 +66,7 @@ class SeedPlot:
                                           ("read name", "@r_name"),
                                           ("q, r, l", "@q, @r, @l"),
                                           ("index", "@idx"),
-                                          ("reseeding-layer", "@layer"),
+                                          ("reseeding", "layer:@layer, in_soc: @in_soc_reseed"),
                                           ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
                                           ("read MM count", "min: @min_filter, max: @max_filter")],
                                 names=['seeds'],
@@ -82,15 +82,21 @@ class SeedPlot:
         def highlight_seed(condition):
             if len(self.seeds.data["c"]) > 0 and "parlindrome" in self.seeds.data:
                 repl_dict = copy.copy(self.seeds.data)
-                max_seed_size = max(repl_dict["size"])
+                #max_seed_size = max(repl_dict["size"])
                 for idx, _ in enumerate(repl_dict["c"]):
                     if condition(idx):
                         if repl_dict["parlindrome"][idx] or repl_dict["overlapping"][idx]:
                             repl_dict["c"][idx] = "red"
                         elif repl_dict["f"][idx]: # on forward strand
-                            repl_dict["c"][idx] = "green"
+                            if repl_dict["in_soc_reseed"][idx] and repl_dict["layer"][idx] == 0:
+                                repl_dict["c"][idx] = "green"
+                            else:
+                                repl_dict["c"][idx] = "lightgreen"
                         else:
-                            repl_dict["c"][idx] = "purple"
+                            if repl_dict["in_soc_reseed"][idx] and repl_dict["layer"][idx] == 0:
+                                repl_dict["c"][idx] = "purple"
+                            else:
+                                repl_dict["c"][idx] = "orchid"
                     else:
                         repl_dict["c"][idx] = "lightgrey"
                 # this copy is inefficient

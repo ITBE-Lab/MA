@@ -781,7 +781,8 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
      */
     void keepParlindromes( )
     {
-        pParlindromes = std::make_shared<Seeds>( );
+        if( pParlindromes == nullptr )
+            pParlindromes = std::make_shared<Seeds>( );
     } // method
 
 /**

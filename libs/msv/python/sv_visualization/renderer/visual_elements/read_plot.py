@@ -84,7 +84,8 @@ class ReadPlot:
                                                 ("fill percentage", "@f"),
                                                 ("additional seed size", "@s"),
                                                 ("k", "@k"),
-                                                ("by DP", "@dp")
+                                                ("by DP", "@dp"),
+                                                ("in_soc", "@i_soc")
                                                 ],
                                      names=['ambiguity_rect'],
                                      name="Hover ambiguity rects"))
@@ -97,7 +98,7 @@ class ReadPlot:
                                                 ("read name", "@r_name"),
                                                 ("q, r, l", "@q, @r, @l"),
                                                 ("index", "@idx"),
-                                                ("reseeding-layer", "@layer"),
+                                                ("reseeding", "layer:@layer, in_soc: @in_soc_reseed"),
                                                 ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
                                                 ("read MM count", "min: @min_filter, max: @max_filter")
                                                 ],

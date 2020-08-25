@@ -33,6 +33,7 @@ struct SeedInfo
     int64_t uiLayer;
     bool bParlindrome;
     bool bOverlapping;
+    bool bInSocReseed;
     std::pair<nucSeqIndex, nucSeqIndex> xX;
     std::pair<nucSeqIndex, nucSeqIndex> xY;
     size_t uiCategory;
@@ -50,6 +51,7 @@ struct RectangleInfo
     size_t uiCategory;
     size_t uiEndColumnSize;
     int64_t iReadId;
+    bool bInSoCReseeding;
 }; // struct
 
 
@@ -57,7 +59,7 @@ void addSeed( Seed& rSeed, std::vector<SeedInfo>& vRet, std::vector<std::pair<nu
               std::vector<int64_t>& vAllColIds, size_t uiCategoryCounter, bool bParlindrome, bool bOverlapping,
               int64_t iLayer, int64_t iReadId, size_t uiSeedOrderOnQuery, std::string sReadName,
               std::shared_ptr<HashCounter> pCounter, std::shared_ptr<Pack> pPack,
-              std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pRead )
+              std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pRead, bool bInSocReseed )
 {
     float fCenter = rSeed.start_ref( ) + rSeed.size( ) / 2.0f;
     nucSeqIndex uiR = rSeed.start_ref( );
@@ -88,16 +90,17 @@ void addSeed( Seed& rSeed, std::vector<SeedInfo>& vRet, std::vector<std::pair<nu
     size_t uiMin = MMFilteredSeeding::getMaxCount( rSeed, pMMIndex, pRead, pPack, pCounter );
 
     vRet.emplace_back( SeedInfo{fCenter, iReadId, sReadName, rSeed.size( ), rSeed.start( ), uiR, rSeed.size( ),
-                                uiSeedOrderOnQuery, rSeed.bOnForwStrand, iLayer, bParlindrome, bOverlapping, xX,
-                                std::make_pair( rSeed.start( ), rSeed.end( ) ), uiCurrColumn + uiCategoryCounter, uiMin,
-                                uiMax} );
+                                uiSeedOrderOnQuery, rSeed.bOnForwStrand, iLayer, bParlindrome, bOverlapping,
+                                bInSocReseed, xX, std::make_pair( rSeed.start( ), rSeed.end( ) ),
+                                uiCurrColumn + uiCategoryCounter, uiMin, uiMax} );
 } // function
 
 void addRectangle( std::vector<RectangleInfo>& vRectangles,
-                   SvJumpsFromSeeds::HelperRetVal& xHelper,
+                   HelperRetVal& xHelper,
                    size_t uiCategoryCounter,
                    int64_t iReadId,
-                   size_t uiEndColumnSize )
+                   size_t uiEndColumnSize,
+                   bool bInSoCReseeding )
 {
     RectangleInfo xInfo{};
     xInfo.vRectangles.swap( xHelper.vRectangles );
@@ -108,6 +111,7 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
     xInfo.uiCategory = uiCategoryCounter;
     xInfo.uiEndColumnSize = uiEndColumnSize;
     xInfo.iReadId = iReadId;
+    xInfo.bInSoCReseeding = bInSoCReseeding;
     vRectangles.push_back( xInfo );
 } // function
 
@@ -162,11 +166,10 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     FilterContigBorder xCtgFilter( rParameters );
     StripOfConsiderationSeeds xSoc( rParameters );
     GetAllFeasibleSoCsAsSet xSocFilter( rParameters );
-    RecursiveReseedingSoCs xReseeding( rParameters, pPack, 100 );
 
     std::vector<std::future<void>> vFutures;
-    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name
-    std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string, std::shared_ptr<NucSeq>,
+    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read, bInSocReseed
+    std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string, std::shared_ptr<NucSeq>, bool,
                            std::shared_ptr<HashCounter>>>
         vAllSeeds;
     // x-end position of last seeds and the seeds read id for each column
@@ -178,10 +181,12 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     for( size_t uiI = 0; uiI < rParameters.getNumThreads( ); uiI++ )
         vFutures.push_back( pConPool->xPool.enqueue(
             [&]( std::shared_ptr<DBCon> pConn, size_t uiI ) { //
-                SvJumpsFromSeeds xJumpsFromSeeds( rParameters, pPack );
                 auto pReadTable = std::make_unique<ReadTable<DBCon>>( pConn );
                 for( size_t uiJ = uiI; uiJ < vReadIds.size( ); uiJ += rParameters.getNumThreads( ) )
                 {
+                    // modules not threadsave if HelperRetVal is given
+                    RecursiveReseedingSoCs xReseeding( rParameters, pPack, 100 );
+                    SvJumpsFromSeeds xJumpsFromSeeds( rParameters, pPack );
                     auto iReadId = vReadIds[ uiJ ];
                     int64_t uiSeqId = pReadTable->getSeqId( iReadId );
                     std::shared_ptr<HashCounter> pCounter;
@@ -202,19 +207,31 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     auto pCtgFilteredSeeds = xCtgFilter.execute( pLumpedSeeds, pPack );
                     auto pSoCs = xSoc.execute( pCtgFilteredSeeds, pRead, pPack );
                     auto pFilteredSeeds = xSocFilter.execute( pSoCs );
-                    auto pReseeded = xReseeding.execute( pFilteredSeeds, pPack, pRead );
+                    HelperRetVal xReseedOutExtraInfo;
+                    auto pReseeded = xReseeding.execute_helper( pFilteredSeeds, pPack, pRead, &xReseedOutExtraInfo );
 
                     auto xHelperRet = xJumpsFromSeeds.execute_helper_py2( pReseeded, pPack, pRead );
 
-                    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read
+                    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read,
+                    // bInSocReseed
                     std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string,
-                                           std::shared_ptr<NucSeq>, std::shared_ptr<HashCounter>>>
+                                           std::shared_ptr<NucSeq>, bool, std::shared_ptr<HashCounter>>>
                         vSeedsNIndex;
+                    for( size_t uiK = 0; uiK < xReseedOutExtraInfo.pSeeds->size( ); uiK++ )
+                        if( !xReseedOutExtraInfo.vOverlappingSeed[ uiK ] )
+                            vSeedsNIndex.emplace_back( 0, ( *xReseedOutExtraInfo.pSeeds )[ uiK ],
+                                                       xReseedOutExtraInfo.vLayerOfSeeds[ uiK ],
+                                                       xReseedOutExtraInfo.vParlindromeSeed[ uiK ],
+                                                       xReseedOutExtraInfo.vOverlappingSeed[ uiK ], iReadId,
+                                                       pRead->sName, pRead, true, pCounter );
                     for( size_t uiK = 0; uiK < xHelperRet.pSeeds->size( ); uiK++ )
-                        vSeedsNIndex.emplace_back( 0, ( *xHelperRet.pSeeds )[ uiK ], xHelperRet.vLayerOfSeeds[ uiK ],
-                                                   xHelperRet.vParlindromeSeed[ uiK ],
-                                                   xHelperRet.vOverlappingSeed[ uiK ], iReadId, pRead->sName, pRead,
-                                                   pCounter );
+                        // only use seeds that we do not get from xReseedOutExtraInfo already
+                        if( xHelperRet.vLayerOfSeeds[ uiK ] > 0 )
+                            vSeedsNIndex.emplace_back(
+                                0, ( *xHelperRet.pSeeds )[ uiK ], xHelperRet.vLayerOfSeeds[ uiK ],
+                                xHelperRet.vParlindromeSeed[ uiK ], xHelperRet.vOverlappingSeed[ uiK ], iReadId,
+                                pRead->sName, pRead, false, pCounter );
+
                     std::sort( vSeedsNIndex.begin( ), vSeedsNIndex.end( ), []( auto& xA, auto& xB ) {
                         return std::get<1>( xA ).start( ) < std::get<1>( xB ).start( );
                     } );
@@ -228,7 +245,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                         if( bStop )
                             return;
                         vAllSeeds.insert( vAllSeeds.end( ), vSeedsNIndex.begin( ), vSeedsNIndex.end( ) );
-                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, 0 );
+                        //addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, 0, false );
+                        addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId, 0, true );
                         vReads.push_back( pRead );
                     } // if
                     else
@@ -252,13 +270,16 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                                      std::get<5>( xTup ),
                                      std::get<0>( xTup ),
                                      std::get<6>( xTup ),
-                                     std::get<8>( xTup ),
+                                     std::get<9>( xTup ),
                                      pPack,
                                      pMMIndex,
-                                     pRead );
+                                     pRead,
+                                     std::get<8>( xTup ) );
                         vColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
 
-                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ) );
+                        //addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ), false );
+                        addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId,
+                                      vEndColumn.size( ), true );
 
                         uiCategoryCounter += vEndColumn.size( ) + 2;
                         vReadsNCols.emplace_back( vColIds.back( ), iReadId );
@@ -272,17 +293,21 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     // wait for threads to finish at most iMaxTime seconds, then stop all work and give up
     for( auto& xFuture : vFutures )
     {
-        // get status until it is either timeout or ready
-        std::future_status xStatus = std::future_status::deferred;
-        while( !bStop && xStatus == std::future_status::deferred )
-            xStatus = xFuture.wait_until( xEndTime );
-
-        if( xStatus == std::future_status::timeout )
+        // if maxtime is 0 wait for howeverlong the complete computation takes
+        if( iMaxTime > 0 )
         {
-            std::lock_guard<std::mutex> xGuard( xLock );
-            bStop = true;
+            // get status until it is either timeout or ready
+            std::future_status xStatus = std::future_status::deferred;
+            while( !bStop && xStatus == std::future_status::deferred )
+                xStatus = xFuture.wait_until( xEndTime );
+
+            if( xStatus == std::future_status::timeout )
+            {
+                std::lock_guard<std::mutex> xGuard( xLock );
+                bStop = true;
+            } // if
         } // if
-        
+
         xFuture.get( );
     } // for
 
@@ -306,7 +331,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
         for( auto& xTup : vAllSeeds )
             addSeed( std::get<1>( xTup ), vRet, vEndColumn, vAllColIds, uiCategoryCounter, std::get<3>( xTup ),
                      std::get<4>( xTup ), std::get<2>( xTup ), std::get<5>( xTup ), std::get<0>( xTup ),
-                     std::get<6>( xTup ), std::get<8>( xTup ), pPack, pMMIndex, std::get<7>( xTup ) );
+                     std::get<6>( xTup ), std::get<9>( xTup ), pPack, pMMIndex, std::get<7>( xTup ),
+                     std::get<8>( xTup ) );
         uiCategoryCounter += vEndColumn.size( );
     } // if
 
@@ -333,6 +359,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "uiLayer", &SeedInfo::uiLayer )
         .def_readwrite( "bParlindrome", &SeedInfo::bParlindrome )
         .def_readwrite( "bOverlapping", &SeedInfo::bOverlapping )
+        .def_readwrite( "bInSocReseed", &SeedInfo::bInSocReseed )
         .def_readwrite( "xX", &SeedInfo::xX )
         .def_readwrite( "xY", &SeedInfo::xY )
         .def_readwrite( "uiMinFilterCount", &SeedInfo::uiMinFilterCount )
@@ -347,6 +374,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "vRectangleUsedDp", &RectangleInfo::vRectangleUsedDp )
         .def_readwrite( "uiCategory", &RectangleInfo::uiCategory )
         .def_readwrite( "iReadId", &RectangleInfo::iReadId )
+        .def_readwrite( "bInSoCReseeding", &RectangleInfo::bInSoCReseeding )
         .def_readwrite( "uiEndColumnSize", &RectangleInfo::uiEndColumnSize );
 
     py::class_<ReadInfo, std::shared_ptr<ReadInfo>>( xOrganizer._util( ), "ReadInfo" )
