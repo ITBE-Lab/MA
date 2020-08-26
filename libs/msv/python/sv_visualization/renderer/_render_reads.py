@@ -9,7 +9,7 @@ from .util import *
 import sys, traceback
 
 def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguous_reg_dict, end_column_len,
-                  category_counter, k_mer_size, use_dp, in_so_reseeding):
+                  category_counter, k_mer_size, use_dp, in_so_reseeding, layer):
     
     if rectangle.x_axis.size != 0:
         seed_sample_size /= rectangle.x_axis.size
@@ -24,6 +24,7 @@ def add_rectangle(self, seed_sample_size, read_id, rectangle, fill, read_ambiguo
     self.read_plot_rects[read_id]["k"].append(k_mer_size)
     self.read_plot_rects[read_id]["dp"].append(use_dp)
     self.read_plot_rects[read_id]["i_soc"].append(in_so_reseeding)
+    self.read_plot_rects[read_id]["layer"].append(layer)
     if use_dp and len(self.read_ids) <= self.do_compressed_seeds:
         read_ambiguous_reg_dict["l"].append(rectangle.x_axis.start)
         read_ambiguous_reg_dict["b"].append(category_counter - 0.5)
@@ -128,7 +129,7 @@ def render_reads(self, render_all=False):
                 for read in info_ret.vReads:
                     self.read_plot.nuc_plot.nucs_by_r_id[read.id] = {"p": [], "c": [], "i": []}
                     self.read_plot_rects[read.id] = {"l": [], "b": [], "t": [], "r": [], "f":[], "s":[], "k":[],
-                                                    "c":[], "dp": [], "i_soc": []}
+                                                    "c":[], "dp": [], "i_soc": [], "layer":[]}
                     for y, nuc in enumerate(str(read)):
                         append_nuc_type(self.read_plot.nuc_plot.nucs_by_r_id[read.id], nuc, y, "p")
                 for x, y in info_ret.vReadsNCols:
@@ -136,13 +137,15 @@ def render_reads(self, render_all=False):
                 col_ids = [*info_ret.vColIds]
                 all_col_ids = [*info_ret.vAllColIds]
                 for r_i in info_ret.vRectangles:
-                    for rectangle, fill, seed_sample_size, k_mer_size, use_dp in zip(r_i.vRectangles,
+                    for rectangle, layer, fill, seed_sample_size, k_mer_size, use_dp in zip(r_i.vRectangles,
+                                                                r_i.vRectangleLayers,
                                                                 r_i.vRectangleFillPercentage,
                                                                 r_i.vRectangleReferenceAmbiguity,
                                                                 r_i.vRectangleKMerSize,
                                                                 r_i.vRectangleUsedDp):
                         self.add_rectangle(seed_sample_size, r_i.iReadId, rectangle, fill, read_ambiguous_reg_dict,
-                                        r_i.uiEndColumnSize, r_i.uiCategory, k_mer_size, use_dp, r_i.bInSoCReseeding)
+                                        r_i.uiEndColumnSize, r_i.uiCategory, k_mer_size, use_dp, r_i.bInSoCReseeding,
+                                        layer)
             else:
                 print("gave up rendering reads")
 

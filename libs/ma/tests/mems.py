@@ -32,7 +32,7 @@ for _ in range(1000):
     reads.append(str(query))
     queries = VecRetNuc()
     queries.append(query)
-    mm_seeds = SeedLumping(p_m).cpp_module.lump(mm_index.seed(reads, pack), queries, pack)
+    mm_seeds = SeedLumping(p_m).cpp_module.lump(mm_index.seed(reads, True, pack), queries, pack)
 
     for i in range(10):
         print(i, end="")

@@ -29,7 +29,7 @@ class Renderer():
         self.params.by_name("Maximal Ambiguity SV").set(100)
         self.params.by_name("Min NT in SoC").set(25)
         self.params.by_name("Rectangular SoC").set(False)
-        self.params.by_name("Fixed SoC Width").set(100)
+        self.params.by_name("Fixed SoC Width").set(1000)
         self.params.by_name("Max Size Reseed").set(2000)
         self.quads = []
         self.read_ids = set() # @todo make two dicts? read ids new and read ids old?

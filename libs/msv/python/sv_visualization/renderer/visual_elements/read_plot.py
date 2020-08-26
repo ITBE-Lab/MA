@@ -82,10 +82,11 @@ class ReadPlot:
                                                 ("right", "@r"),
                                                 ("top", "@t"),
                                                 ("fill percentage", "@f"),
-                                                ("additional seed size", "@s"),
+                                                ("add seed size", "@s"),
                                                 ("k", "@k"),
                                                 ("by DP", "@dp"),
-                                                ("in_soc", "@i_soc")
+                                                ("in_soc", "@i_soc"),
+                                                ("layer", "@layer")
                                                 ],
                                      names=['ambiguity_rect'],
                                      name="Hover ambiguity rects"))

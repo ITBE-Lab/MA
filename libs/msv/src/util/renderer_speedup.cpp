@@ -44,6 +44,7 @@ struct SeedInfo
 struct RectangleInfo
 {
     std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
+    std::vector<size_t> vRectangleLayers;
     std::vector<double> vRectangleFillPercentage;
     std::vector<size_t> vRectangleReferenceAmbiguity;
     std::vector<size_t> vRectangleKMerSize;
@@ -59,7 +60,8 @@ void addSeed( Seed& rSeed, std::vector<SeedInfo>& vRet, std::vector<std::pair<nu
               std::vector<int64_t>& vAllColIds, size_t uiCategoryCounter, bool bParlindrome, bool bOverlapping,
               int64_t iLayer, int64_t iReadId, size_t uiSeedOrderOnQuery, std::string sReadName,
               std::shared_ptr<HashCounter> pCounter, std::shared_ptr<Pack> pPack,
-              std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pRead, bool bInSocReseed )
+              std::shared_ptr<minimizer::Index> pMMIndex, std::shared_ptr<NucSeq> pRead, bool bInSocReseed,
+              bool bRectSoc )
 {
     float fCenter = rSeed.start_ref( ) + rSeed.size( ) / 2.0f;
     nucSeqIndex uiR = rSeed.start_ref( );
@@ -86,8 +88,8 @@ void addSeed( Seed& rSeed, std::vector<SeedInfo>& vRet, std::vector<std::pair<nu
     std::get<1>( vEndColumn[ uiCurrColumn ] ) = iReadId;
 
 
-    size_t uiMax = MMFilteredSeeding::getMinCount( rSeed, pMMIndex, pRead, pPack, pCounter );
-    size_t uiMin = MMFilteredSeeding::getMaxCount( rSeed, pMMIndex, pRead, pPack, pCounter );
+    size_t uiMax = MMFilteredSeeding::getMinCount( rSeed, pMMIndex, pRead, pPack, pCounter, bRectSoc );
+    size_t uiMin = MMFilteredSeeding::getMaxCount( rSeed, pMMIndex, pRead, pPack, pCounter, bRectSoc );
 
     vRet.emplace_back( SeedInfo{fCenter, iReadId, sReadName, rSeed.size( ), rSeed.start( ), uiR, rSeed.size( ),
                                 uiSeedOrderOnQuery, rSeed.bOnForwStrand, iLayer, bParlindrome, bOverlapping,
@@ -104,6 +106,7 @@ void addRectangle( std::vector<RectangleInfo>& vRectangles,
 {
     RectangleInfo xInfo{};
     xInfo.vRectangles.swap( xHelper.vRectangles );
+    xInfo.vRectangleLayers.swap( xHelper.vRectangleLayers );
     xInfo.vRectangleFillPercentage.swap( xHelper.vRectangleFillPercentage );
     xInfo.vRectangleReferenceAmbiguity.swap( xHelper.vRectangleReferenceAmbiguity );
     xInfo.vRectangleKMerSize.swap( xHelper.vRectangleKMerSize );
@@ -245,7 +248,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                         if( bStop )
                             return;
                         vAllSeeds.insert( vAllSeeds.end( ), vSeedsNIndex.begin( ), vSeedsNIndex.end( ) );
-                        //addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, 0, false );
+                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, 0, false );
                         addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId, 0, true );
                         vReads.push_back( pRead );
                     } // if
@@ -274,12 +277,13 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                                      pPack,
                                      pMMIndex,
                                      pRead,
-                                     std::get<8>( xTup ) );
+                                     std::get<8>( xTup ),
+                                     rParameters.getSelected( )->xRectangularSoc->get( ) );
                         vColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
 
-                        //addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ), false );
-                        addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId,
-                                      vEndColumn.size( ), true );
+                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ), false );
+                        addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId, vEndColumn.size( ),
+                                      true );
 
                         uiCategoryCounter += vEndColumn.size( ) + 2;
                         vReadsNCols.emplace_back( vColIds.back( ), iReadId );
@@ -332,7 +336,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
             addSeed( std::get<1>( xTup ), vRet, vEndColumn, vAllColIds, uiCategoryCounter, std::get<3>( xTup ),
                      std::get<4>( xTup ), std::get<2>( xTup ), std::get<5>( xTup ), std::get<0>( xTup ),
                      std::get<6>( xTup ), std::get<9>( xTup ), pPack, pMMIndex, std::get<7>( xTup ),
-                     std::get<8>( xTup ) );
+                     std::get<8>( xTup ), rParameters.getSelected( )->xRectangularSoc->get( ) );
         uiCategoryCounter += vEndColumn.size( );
     } // if
 
@@ -368,6 +372,7 @@ void exportRendererSpeedUp( libMS::SubmoduleOrganizer& xOrganizer )
 
     py::class_<RectangleInfo>( xOrganizer._util( ), "RectangleInfo" )
         .def_readwrite( "vRectangles", &RectangleInfo::vRectangles )
+        .def_readwrite( "vRectangleLayers", &RectangleInfo::vRectangleLayers )
         .def_readwrite( "vRectangleFillPercentage", &RectangleInfo::vRectangleFillPercentage )
         .def_readwrite( "vRectangleReferenceAmbiguity", &RectangleInfo::vRectangleReferenceAmbiguity )
         .def_readwrite( "vRectangleKMerSize", &RectangleInfo::vRectangleKMerSize )

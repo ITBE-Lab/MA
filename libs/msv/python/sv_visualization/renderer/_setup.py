@@ -20,7 +20,7 @@ def setup(self):
         self.pack.load(ref_genome)
         self.fm_index = FMIndex()
         self.fm_index.load(ref_genome)
-        self.mm_index = MinimizerIndex(ParameterSetManager(), self.pack.contigSeqs(), self.pack.contigNames())
+        self.mm_index = MinimizerIndex(self.params, self.pack.contigSeqs(), self.pack.contigNames())
         self.mm_index.set_max_occ(2)
         self.db_conn = DbConn(dataset_name)
         self.db_conn_2 = DbConn(dataset_name)

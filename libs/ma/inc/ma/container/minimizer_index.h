@@ -203,7 +203,8 @@ class Index : public libMS::Container
     } // method
 
 
-    std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, std::shared_ptr<libMA::Pack> pPack,
+    std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, bool bRectangular,
+                                            std::shared_ptr<libMA::Pack> pPack,
                                             void ( *mm_filter )( mm128_t*, size_t&, void* ), void* pFilterArg )
     {
         auto pRet = std::make_shared<libMA::Seeds>( );
@@ -265,21 +266,22 @@ class Index : public libMS::Container
         // @todo this should be done by the SoC module but is done as well in the binary seeding module so i added it
         // here for now
         for( auto& rSeed : *pRet )
-            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, iSize, *pPack );
+            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, iSize, *pPack, !bRectangular );
 
         return pRet;
     } // method
 
-    std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, std::shared_ptr<libMA::Pack> pPack )
+    std::shared_ptr<libMA::Seeds> seed_one( std::string& sQuery, bool bRectangular, std::shared_ptr<libMA::Pack> pPack )
     {
         const char* sSeq = sQuery.c_str( );
         const int iSize = (int)sQuery.size( );
-        return seed_one( sSeq, iSize, pPack, &mm_filter_none, nullptr );
+        return seed_one( sSeq, iSize, bRectangular, pPack, &mm_filter_none, nullptr );
     } // method
 
-    std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, std::shared_ptr<libMA::Pack> pPack )
+    std::shared_ptr<libMA::Seeds> seed_one( const char* sSeq, const int iSize, bool bRectangular,
+                                            std::shared_ptr<libMA::Pack> pPack )
     {
-        return seed_one( sSeq, iSize, pPack, &mm_filter_none, nullptr );
+        return seed_one( sSeq, iSize, bRectangular, pPack, &mm_filter_none, nullptr );
     } // method
 
 #define VOID_MM UINT64_MAX
@@ -473,13 +475,13 @@ class Index : public libMS::Container
         return _getHash( sSeq, iSize, xOptions.w, xOptions.k );
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries,
-                                                     std::shared_ptr<libMA::Pack> pPack )
+    std::vector<std::shared_ptr<libMA::Seeds>>
+    seed( std::vector<std::string> vQueries, bool bRectangular, std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
 
         for( auto& sQuery : vQueries )
-            vRet.push_back( seed_one( sQuery, pPack ) );
+            vRet.push_back( seed_one( sQuery, bRectangular, pPack ) );
 
         return vRet;
     } // method

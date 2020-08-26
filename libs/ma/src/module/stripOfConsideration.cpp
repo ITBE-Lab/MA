@@ -50,16 +50,18 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
     while( xStripEnd != pSeeds->end( ) && xStripStart != pSeeds->end( ) )
     {
         // xStripStart might have moved forward so adjust uiContigIdStart.
-        assert( (int64_t)uiContigIdStart <= pRefSeq->uiSequenceIdForPosition( xStripStart->start_ref( ) ) );
+        if( bRectangular || xStripStart->bOnForwStrand )
+            assert( (int64_t)uiContigIdStart <= pRefSeq->uiSequenceIdForPosition( xStripStart->start_ref( ) ) );
+        else
+            assert( (int64_t)uiContigIdStart >= pRefSeq->uiSequenceIdForPosition( xStripStart->start_ref( ) ) );
         // adjust the contig id
         while( !pRefSeq->isForwPositionInSequenceWithId( uiContigIdStart, xStripStart->start_ref( ) ) )
-            uiContigIdStart++;
+            uiContigIdStart += ( bRectangular || xStripStart->bOnForwStrand ) ? 1 : -1;
 
         // move xStripEnd forwards while it is closer to xStripStart than uiStripSize
-        while( xStripEnd != pSeeds->end( ) &&
-               getPositionForBucketing( uiQLen, *xStripStart ) + uiStripSize >=
-                   getPositionForBucketing( uiQLen, *xStripEnd ) &&
-               uiContigIdStart == uiContigIdEnd )
+        while( xStripEnd != pSeeds->end( ) && xStripStart->uiDelta + uiStripSize >= xStripEnd->uiDelta &&
+               uiContigIdStart == uiContigIdEnd &&
+               ( bRectangular || ( xStripStart->bOnForwStrand == xStripEnd->bOnForwStrand ) ) )
         {
             // remember the additional score
             xCurrScore += *xStripEnd;
@@ -69,15 +71,20 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
             {
 #if DEBUG_LEVEL > 0
                 int64_t uiExpectedContigIdEnd = pRefSeq->uiSequenceIdForPosition( xStripEnd->start_ref( ) );
-                if( (int64_t)uiContigIdEnd > uiExpectedContigIdEnd )
+                if( bRectangular || xStripEnd->bOnForwStrand && (int64_t)uiContigIdEnd > uiExpectedContigIdEnd )
                 {
                     std::cerr << "got weired contig id: " << uiContigIdEnd << " " << uiExpectedContigIdEnd << std::endl;
                     assert( false );
                 } // if
+                else if( (int64_t)uiContigIdEnd < uiExpectedContigIdEnd )
+                {
+                    std::cerr << "got weired contig id: " << uiContigIdEnd << " " << uiExpectedContigIdEnd << std::endl;
+                    assert( false );
+                } // else if
 #endif
                 // adjust the contig id
                 while( !pRefSeq->isForwPositionInSequenceWithId( uiContigIdEnd, xStripEnd->start_ref( ) ) )
-                    uiContigIdEnd++;
+                    uiContigIdEnd += ( bRectangular || xStripEnd->bOnForwStrand ) ? 1 : -1;
             } // if
         } // while
 
@@ -91,9 +98,8 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
          * all fGiveUp = 0 disables this.
          */
         if( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
-            pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd,
-                                         getPositionForBucketing( uiQLen, *xStripStart ),
-                                         getPositionForBucketing( uiQLen, *( xStripEnd - 1 ) ) );
+            pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, xStripStart->uiDelta,
+                                         ( xStripEnd - 1 )->uiDelta );
         // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         xCurrScore -= *( xStripStart++ );
     } // while

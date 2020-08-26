@@ -199,7 +199,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
 inline std::ostream& operator<<( std::ostream& os, const Seed& rS )
 {
     os << "iStart= " << rS.iStart << " iSize= " << rS.iSize << " uiPosOnReference= " << rS.uiPosOnReference
-       << " uiAmbiguity= " << rS.uiAmbiguity << " bOnForwStrand= " << rS.bOnForwStrand;
+       << " uiAmbiguity= " << rS.uiAmbiguity << " bOnForwStrand= " << rS.bOnForwStrand << " uiDelta= " << rS.uiDelta;
     return os;
 }
 

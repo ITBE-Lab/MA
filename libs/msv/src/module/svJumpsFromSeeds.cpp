@@ -17,118 +17,158 @@ std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>>
 SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex uiQStart, nucSeqIndex uiQEnd,
                                         std::shared_ptr<Pack> pRefSeq )
 {
-    // seeds are overlapping on query -> rectange size zero
-    if( &rLast != &xDummySeed && &rNext != &xDummySeed && rNext.start( ) < rLast.end( ) )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
-    if( &rLast != &xDummySeed && rLast.end( ) >= uiQEnd )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
-    if( &rNext != &xDummySeed && rNext.start( ) <= uiQStart )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
-
-    int64_t iLastRef; // inclusive
-    int64_t iNextRef; // exclusive
-
-    if( &rLast == &xDummySeed )
-    {
-        if( rNext.bOnForwStrand )
-        {
-            // make sure we do not create a contig bridging rectangle
-            int64_t iStartOfContig =
-                pRefSeq->startOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rNext.start_ref( ) ) ); // inclusive
-            // estimate size fo rectangle based on query position of existing seed
-            int64_t iQueryDistance = ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > iMaxSizeReseed / 2 )
-                iQueryDistance = iMaxSizeReseed / 2;
-            iLastRef = std::max( iStartOfContig, (int64_t)rNext.start_ref( ) - iQueryDistance );
-        } // if
-        else
-        {
-            // make sure we do not create a contig bridging rectangle
-            int64_t iEndOfContig =
-                pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rNext.start_ref( ) + 1 ) ); // exclusive
-            // estimate size fo rectangle based on query position of existing seed
-            int64_t iQueryDistance = ( int64_t )( ( rNext.start( ) - uiQStart ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > iMaxSizeReseed / 2 )
-                iQueryDistance = iMaxSizeReseed / 2;
-            iLastRef = std::min( iEndOfContig, (int64_t)rNext.start_ref( ) + 1 + iQueryDistance );
-        } // else
-    } // if
-    else if( rLast.bOnForwStrand )
-        iLastRef = (int64_t)rLast.end_ref( );
-    else
-        iLastRef = (int64_t)rLast.start_ref( ) - rLast.size( ) + 1;
-
     if( &rNext == &xDummySeed )
     {
+        nucSeqIndex uiBottom = rLast.end( );
+
+        if( uiBottom >= uiQEnd )
+            return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                                   geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+
+        nucSeqIndex uiTop = uiQEnd;
+        // limit height of rectangle
+        if( uiTop - uiBottom > iMaxSizeReseed / 2 )
+            uiTop = uiBottom + iMaxSizeReseed / 2;
+
+        int64_t iLeft;
+        int64_t iRight;
         if( rLast.bOnForwStrand )
         {
+            iLeft = ( int64_t )( rLast.end_ref( ) );
+            // exclusive
+            int64_t iEndOfContig = pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( iLeft ) );
             // make sure we do not create a contig bridging rectangle
-            int64_t iEndOfContig =
-                pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( rLast.end_ref( ) ) ); // exclusive
-            // estimate size fo rectangle based on query position of existing seed
-            int64_t iQueryDistance = ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > iMaxSizeReseed / 2 )
-                iQueryDistance = iMaxSizeReseed / 2;
-            iNextRef = std::min( iEndOfContig, (int64_t)rLast.end_ref( ) + iQueryDistance );
-        } // if
+            iRight = std::min( iLeft + iMaxSizeReseed / 2, iEndOfContig );
+
+            // make square
+            if( iRight - iLeft < uiTop - uiBottom )
+                uiTop = uiBottom + ( iRight - iLeft );
+            else
+                iRight = iLeft + ( uiTop - uiBottom );
+        } // else
         else
         {
+            iRight = ( int64_t )( rLast.start_ref( ) - rLast.size( ) + 1 );
+            // inclusive
+            int64_t iStartOfContig = pRefSeq->startOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( iRight ) );
             // make sure we do not create a contig bridging rectangle
-            int64_t iStartOfContig = pRefSeq->startOfSequenceWithId(
-                pRefSeq->uiSequenceIdForPosition( rLast.start_ref( ) + 1 - rLast.size( ) ) ); // inclusive
-            // estimate size fo rectangle based on query position of existing seed
-            int64_t iQueryDistance = ( int64_t )( ( uiQEnd - rLast.end( ) ) * dExtraSeedingAreaFactor );
-            if( iQueryDistance > iMaxSizeReseed / 2 )
-                iQueryDistance = iMaxSizeReseed / 2;
-            iNextRef = std::max( iStartOfContig,
-                                 (int64_t)rLast.start_ref( ) + 1 - ( int64_t )( rLast.size( ) + iQueryDistance ) );
+            iLeft = std::max( iRight - iMaxSizeReseed / 2, iStartOfContig );
+
+            // make square
+            if( iRight - iLeft < uiTop - uiBottom )
+                uiTop = uiBottom + ( iRight - iLeft );
+            else
+                iLeft = iRight - ( uiTop - uiBottom );
         } // else
+        // can return as a single rectangle
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iLeft, uiBottom,
+                                                             ( nucSeqIndex )( iRight - iLeft ), uiTop - uiBottom ),
+                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
     } // if
-    else if( rNext.bOnForwStrand )
-        iNextRef = (int64_t)rNext.start_ref( );
-    else
-        iNextRef = (int64_t)rNext.start_ref( ) + 1;
-
-    if( iLastRef == iNextRef )
-        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ), geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
-    if( &rLast != &xDummySeed && &rNext != &xDummySeed )
+    else if( &rLast == &xDummySeed )
     {
-        int64_t iRefSize;
-        if( rLast.bOnForwStrand && rNext.bOnForwStrand )
-            iRefSize = iNextRef - iLastRef;
-        else if( !rLast.bOnForwStrand && !rNext.bOnForwStrand )
-            iRefSize = iLastRef - iNextRef;
+        nucSeqIndex uiTop = rNext.start( );
+
+        if( uiTop <= uiQStart )
+            return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                                   geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+
+        nucSeqIndex uiBottom = uiQStart;
+        // limit height of rectangle
+        if( uiTop - uiBottom > iMaxSizeReseed / 2 )
+        {
+            if( uiTop < iMaxSizeReseed / 2 )
+                uiBottom = 0;
+            else
+                uiBottom = uiTop - iMaxSizeReseed / 2;
+        } // if
+
+        int64_t iLeft;
+        int64_t iRight;
+        if( rNext.bOnForwStrand )
+        {
+            iRight = ( int64_t )( rNext.start_ref( ) );
+            // inclusive
+            int64_t iStartOfContig = pRefSeq->startOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( iRight ) );
+            // make sure we do not create a contig bridging rectangle
+            iLeft = std::max( iRight - iMaxSizeReseed / 2, iStartOfContig );
+
+            // make square
+            if( iRight - iLeft < uiTop - uiBottom )
+                uiBottom = uiTop - ( iRight - iLeft );
+            else
+                iLeft = iRight - ( uiTop - uiBottom );
+        } // else
         else
-            iRefSize = -1; // seeds on different strands always need separate rectangles.
+        {
+            iLeft = ( int64_t )( rNext.start_ref( ) + 1 );
+            // exclusive
+            int64_t iEndOfContig = pRefSeq->endOfSequenceWithId( pRefSeq->uiSequenceIdForPosition( iLeft ) );
+            // make sure we do not create a contig bridging rectangle
+            iRight = std::min( iLeft + iMaxSizeReseed / 2, iEndOfContig );
 
-        if( iRefSize > iMaxSizeReseed || // check for too large rectangle
-            iRefSize < 0 || // check for seeds pointing the wrong direction
-            // check for rectangle bridging multiple contigs
-            pRefSeq->uiSequenceIdForPosition( iLastRef ) != pRefSeq->uiSequenceIdForPosition( iNextRef - 1 ) )
-            // if the rectangle between the seeds is too large or spans over tow contigs, split it in two
-            return std::make_pair(
-                getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), pRefSeq ).first,
-                getPositionsForSeeds( xDummySeed, rNext, rLast.end( ), rNext.start( ), pRefSeq ).first );
-    }
-    int64_t iRefStart = std::min( iLastRef, iNextRef );
-    int64_t iRefEnd = std::max( iLastRef, iNextRef );
-    int64_t iRefSize = iRefEnd - iRefStart;
+            // make square
+            if( iRight - iLeft < uiTop - uiBottom )
+                uiBottom = uiTop - ( iRight - iLeft );
+            else
+                iRight = iLeft + ( uiTop - uiBottom );
+        } // else
+        // can return as a single rectangle
+        return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iLeft, uiBottom,
+                                                             ( nucSeqIndex )( iRight - iLeft ), uiTop - uiBottom ),
+                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+    } // else if
 
-    int64_t iRectQStart = &rLast != &xDummySeed ? rLast.end( ) : uiQStart;
-    int64_t iRectQEnd = &rNext != &xDummySeed ? rNext.start( ) : uiQEnd;
 
-    if( iRectQEnd - iRectQStart > iMaxSizeReseed / 2 )
+    // if seeds are on same strand we have a chance to connect the rectangles
+    else if( rLast.bOnForwStrand == rNext.bOnForwStrand )
     {
-        if( &rLast == &xDummySeed )
-            iRectQStart = iRectQEnd - iMaxSizeReseed / 2;
-        else
-            iRectQEnd = iRectQStart + iMaxSizeReseed / 2;
-    } // if
+        nucSeqIndex uiBottom = rLast.end( );
+        nucSeqIndex uiTop = rNext.start( );
 
-    return std::make_pair( geom::Rectangle<nucSeqIndex>( (nucSeqIndex)iRefStart, (nucSeqIndex)iRectQStart,
-                                                         (nucSeqIndex)iRefSize,
-                                                         ( nucSeqIndex )( iRectQEnd - iRectQStart ) ),
-                           geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        if( uiTop <= uiBottom )
+            return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                                   geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+
+        nucSeqIndex uiLeft;
+        if( rLast.bOnForwStrand )
+            uiLeft = rLast.end_ref( );
+        else
+            uiLeft = rNext.start_ref( ) + 1;
+
+
+        nucSeqIndex uiRight;
+        if( rLast.bOnForwStrand )
+            uiRight = rNext.start_ref( );
+        else
+            uiRight = rLast.start_ref( ) - rLast.size( ) + 1;
+
+        // check if rectangle exists on reference
+        if( uiRight >= uiLeft )
+            // check if rectangle is small enough
+            if( std::max( uiTop - uiBottom, uiRight - uiLeft ) <= iMaxSizeReseed / 2 )
+            {
+                // check if rectangle is not bridging
+                auto uiIDLeft = pRefSeq->uiSequenceIdForPosition( uiLeft );
+                auto uiIDRight = pRefSeq->uiSequenceIdForPosition( uiRight );
+                if( uiIDLeft == uiIDRight )
+                {
+                    // can return as a single rectangle
+                    return std::make_pair(
+                        geom::Rectangle<nucSeqIndex>( uiLeft, uiBottom, uiRight - uiLeft, uiTop - uiBottom ),
+                        geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+                } // if
+                // else triggers return at end of function
+            } // if
+        // else triggers return at end of function
+    } // else if
+    // else triggers return at end of function
+
+
+    // if we reach this point, the rectangle between the seeds is too large or spans over tow contigs
+    // so we create two separate rectangles
+    return std::make_pair( getPositionsForSeeds( rLast, xDummySeed, rLast.end( ), rNext.start( ), pRefSeq ).first,
+                           getPositionsForSeeds( xDummySeed, rNext, rLast.end( ), rNext.start( ), pRefSeq ).first );
 } // method
 
 
@@ -281,6 +321,7 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "layer_of_seeds", &libMSV::HelperRetVal::vLayerOfSeeds )
         .def_readwrite( "seeds", &libMSV::HelperRetVal::pSeeds )
         .def_readwrite( "rectangles", &libMSV::HelperRetVal::vRectangles )
+        .def_readwrite( "rectangle_layers", &libMSV::HelperRetVal::vRectangleLayers )
         .def_readwrite( "parlindrome", &libMSV::HelperRetVal::vParlindromeSeed )
         .def_readwrite( "overlapping", &libMSV::HelperRetVal::vOverlappingSeed )
         .def_readwrite( "rectangles_fill", &libMSV::HelperRetVal::vRectangleFillPercentage )
@@ -303,9 +344,8 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
     exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>, nucSeqIndex>(
-        xOrganizer, "RecursiveReseedingSoCs", []( auto&& x ) {
-            x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py );
-        } );
+        xOrganizer, "RecursiveReseedingSoCs",
+        []( auto&& x ) { x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py ); } );
     exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );
     exportModule<ExtractSeedsFilter, std::shared_ptr<Pack>, nucSeqIndex, nucSeqIndex>( xOrganizer,
                                                                                        "ExtractSeedsFilter" );

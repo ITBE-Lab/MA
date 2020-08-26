@@ -38,9 +38,13 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
     const size_t uiSoCWidth;
     const bool bRectangular;
 
-    inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS )
+    inline static nucSeqIndex getPositionForBucketing( nucSeqIndex uiQueryLength, const Seed& xS, Pack& rxRefSequence,
+                                                       bool bSplitStrands )
     {
-        return xS.start_ref( ) + ( uiQueryLength - xS.start( ) );
+        auto uiRet = xS.start_ref( );
+        if( bSplitStrands && !xS.bOnForwStrand )
+            uiRet = 2 * rxRefSequence.uiUnpackedSizeForwardStrand - ( xS.start_ref( ) - xS.size( ) );
+        return uiRet + ( uiQueryLength - xS.start( ) );
     } // function
 
     inline nucSeqIndex getStripSize( nucSeqIndex uiQueryLength, int iMatch, int iExtend, int iGap ) const
@@ -74,6 +78,7 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
 {
     const unsigned int uiMaxAmbiguity;
     const size_t uiMinSeedSize;
+    const bool bRectangular;
 
     /**
      * @brief skip seeds with too much ambiguity
@@ -84,21 +89,21 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
     const bool bSkipLongBWTIntervals;
 
   public:
-    static void setDeltaOfSeed( Seed& rSeed, const nucSeqIndex uiQLen, Pack& rxRefSequence )
+    static void setDeltaOfSeed( Seed& rSeed, const nucSeqIndex uiQLen, Pack& rxRefSequence, bool bSplitStrands )
     {
-        /*
-         * @note this bridging check is not required since we check weather a SoC
-         * is brigding in general.
-         * If any of the seeds within a SoC are bridging then the SoC is bridging.
-         * Could turn this into a debug assertion...
-         */
-        rSeed.uiDelta = StripOfConsiderationSeeds::getPositionForBucketing( uiQLen, rSeed );
+        rSeed.uiDelta =
+            StripOfConsiderationSeeds::getPositionForBucketing( uiQLen, rSeed, rxRefSequence, bSplitStrands );
 
         size_t uiContig = rxRefSequence.uiSequenceIdForPosition( rSeed.start_ref( ) );
+
+        if( bSplitStrands && !rSeed.bOnForwStrand )
+            // if strands are split reverse strand reads are sorted in reverse order so the buffer space must be added
+            // in reverse
+            uiContig = rxRefSequence.uiNumContigs( ) - uiContig;
         // move the delta position to the right by the contig index
         // this way we ensure seeds are ordered by contigs first
         // and then their delta positions within the contig.
-        rSeed.uiDelta += ( uiQLen + 10 ) * uiContig;
+        rSeed.uiDelta += ( uiQLen + 1 ) * uiContig;
     } // method
     /**
      * @brief extracts all seeds from a SegmentVector
@@ -109,8 +114,9 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
         rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiQLen, uiMaxAmbiguity, uiMinSeedSize, rvSeedVector,
-                                            [&rxRefSequence, &rvSeedVector, &uiQLen]( ) {
-                                                setDeltaOfSeed( rvSeedVector.back( ), uiQLen, rxRefSequence );
+                                            [&]( ) {
+                                                setDeltaOfSeed( rvSeedVector.back( ), uiQLen, rxRefSequence,
+                                                                !bRectangular );
                                                 // returning true since we want to continue extracting seeds
                                                 return true;
                                             } // lambda
@@ -119,6 +125,7 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
     ExtractSeeds( const ParameterSetManager& rParameters )
         : uiMaxAmbiguity( rParameters.getSelected( )->xMaximalSeedAmbiguity->get( ) ),
           uiMinSeedSize( rParameters.getSelected( )->xMinSeedLength->get( ) ),
+          bRectangular( rParameters.getSelected( )->xRectangularSoc->get( ) ),
           bSkipLongBWTIntervals( rParameters.getSelected( )->xSkipAmbiguousSeeds->get( ) )
     {} // constructor
 
@@ -238,11 +245,7 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
         {
 #if 1 // turn on/off the splitting of SoCs on gaps
             auto pSeeds = pSoCs->pop( );
-            nucSeqIndex uiNumNt = 0;
-            for( Seed& xSeed : *pSeeds )
-                uiNumNt += xSeed.size( );
-            if( uiNumNt >= uiMinNt )
-                pRet->xContent.push_back( pSeeds );
+            pRet->xContent.push_back( pSeeds );
 #else
             pRet->xContent.push_back( std::make_shared<Seeds>( ) );
             auto pSeeds = pSoCs->pop( );

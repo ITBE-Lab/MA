@@ -69,7 +69,7 @@ struct SeedCmp
 
         if( rA.bOnForwStrand != rB.bOnForwStrand )
             return rA.bOnForwStrand;
-            
+
         return rA.size( ) < rB.size( );
     }
 }; // struct
@@ -83,6 +83,7 @@ class HelperRetVal
     std::vector<bool> vParlindromeSeed;
     std::vector<bool> vOverlappingSeed;
     std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
+    std::vector<size_t> vRectangleLayers;
     std::vector<double> vRectangleFillPercentage;
     std::vector<size_t> vRectangleReferenceAmbiguity;
     std::vector<size_t> vRectangleKMerSize;
@@ -198,14 +199,15 @@ class SvJumpsFromSeeds
             size_t uiJ = uiI + 1;
 
             // skip seeds that overlap with uiI more the 95% on query
-            // (size 0 seeds are skipped automatically)
-            while( uiJ < pSeeds->size( ) && overlap( ( *pSeeds )[ uiI ], ( *pSeeds )[ uiJ ] ) > 0.95 )
+            while( uiJ < pSeeds->size( ) &&
+                   ( ( ( *pSeeds )[ uiJ ] ).size( ) == 0 || overlap( ( *pSeeds )[ uiI ], ( *pSeeds )[ uiJ ] ) > 0.95 ) )
                 uiJ++;
 
             // uiJ now points to the first seeds that follows uiI and is not overlapping
             size_t uiK = uiJ;
             // create entry from uiI to all seeds overlapping more than 95% with uiJ (incl. itself)
-            while( uiK < pSeeds->size( ) && overlap( ( *pSeeds )[ uiK ], ( *pSeeds )[ uiJ ] ) > 0.95 )
+            while( uiK < pSeeds->size( ) &&
+                   ( ( ( *pSeeds )[ uiK ] ).size( ) == 0 || overlap( ( *pSeeds )[ uiK ], ( *pSeeds )[ uiJ ] ) > 0.95 ) )
             {
                 if( ( *pSeeds )[ uiK ].size( ) != 0 ) // make sure uiK was not deleted earlier
                     fOut( ( *pSeeds )[ uiI ], ( *pSeeds )[ uiK ] );
@@ -298,6 +300,9 @@ class SvJumpsFromSeeds
         size_t uiLayer = 1;
         while( uiLayer <= 100 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
         {
+#if SV_JUMP_FROM_SEED_DEBUG_PRINT
+            std::cout << " --- Layer " << uiLayer << " --- " << std::endl;
+#endif
             // sort seeds and remove duplicates (from reseeding)
             eraseMarked( pRet );
             SeedCmp xSort;
@@ -340,6 +345,7 @@ class SvJumpsFromSeeds
                 if( pOutExtra != nullptr )
                 {
                     pOutExtra->vRectangles.push_back( xRect );
+                    pOutExtra->vRectangleLayers.push_back( uiLayer );
                     pOutExtra->vRectangleFillPercentage.push_back( rectFillPercentage( pNewSeeds, xRect ) );
                 } // if
                 auto pParlindromeFiltered = xParlindromeFilter.execute( pNewSeeds );
@@ -371,9 +377,6 @@ class SvJumpsFromSeeds
                     } // for
                 } // if
             } // for
-#if SV_JUMP_FROM_SEED_DEBUG_PRINT
-            std::cout << " --- Layer --- " << std::endl;
-#endif
             uiLayer++;
         } // while
 
