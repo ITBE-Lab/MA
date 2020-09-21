@@ -185,8 +185,7 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
         size_t uiForw = 1;
         while( uiForw <= rSeed.start( ) && //
                uiForw <= rSeed.start_ref( ) && //
-               pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] ==
-                   pRef->vExtract( rSeed.start_ref( ) - uiForw ) )
+               pQuery->pxSequenceRef[ rSeed.start( ) - uiForw ] == pRef->vExtract( rSeed.start_ref( ) - uiForw ) )
             uiForw++;
         uiForw--; // uiForward is one too high after loop
         // std::cout << "uiForw " << uiForw << std::endl;
@@ -196,9 +195,8 @@ class SeedExtender : public Module<Seeds, false, Seeds, NucSeq, Pack>
 
         size_t uiBackw = 0;
         while( uiBackw + rSeed.end( ) < pQuery->length( ) && //
-               uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand*2 && //
-               pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] ==
-                   pRef->vExtract( rSeed.end_ref( ) + uiBackw ) )
+               uiBackw + rSeed.end_ref( ) < pRef->uiUnpackedSizeForwardStrand * 2 && //
+               pQuery->pxSequenceRef[ rSeed.end( ) + uiBackw ] == pRef->vExtract( rSeed.end_ref( ) + uiBackw ) )
             uiBackw++;
         // std::cout << "uiBackw " << uiBackw << std::endl;
         rSeed.iSize += uiBackw;
@@ -273,7 +271,7 @@ template <bool IS_SORTED> class SeedLumping : public Module<Seeds, false, Seeds,
             std::sort( //
                 vSortedSeeds.begin( ),
                 vSortedSeeds.end( ),
-                [&]( const std::pair<Seed*, int64_t>& rA, const std::pair<Seed*, int64_t>& rB ) //
+                [ & ]( const std::pair<Seed*, int64_t>& rA, const std::pair<Seed*, int64_t>& rB ) //
                 { //
                     if( rA.second != rB.second )
                         return rA.second < rB.second;
@@ -294,9 +292,8 @@ template <bool IS_SORTED> class SeedLumping : public Module<Seeds, false, Seeds,
             if( iLastDelta == iCurrDelta )
             {
                 size_t uiBackw = 0;
-                while( pLast->end( ) + uiBackw < pSeed->start( ) &&
-                       pQuery->pxSequenceRef[ pLast->end( ) + uiBackw ] ==
-                           pRef->vExtract( pLast->end_ref( ) + uiBackw ) )
+                while( pLast->end( ) + uiBackw < pSeed->start( ) && pQuery->pxSequenceRef[ pLast->end( ) + uiBackw ] ==
+                                                                        pRef->vExtract( pLast->end_ref( ) + uiBackw ) )
                     uiBackw++;
                 pLast->iSize += uiBackw;
                 if( pLast->end( ) >= pSeed->start( ) )
@@ -454,7 +451,7 @@ class MinLength : public Module<Seeds, false, Seeds>
     virtual std::shared_ptr<Seeds> EXPORTED execute( std::shared_ptr<Seeds> pSeeds )
     {
         pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
-                                       [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
+                                       [ & ]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
                        pSeeds->end( ) );
         return pSeeds;
     } // method
@@ -512,10 +509,10 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
         while( true )
         {
             std::vector<Seed*> vOverlaps;
-            xTree.visit_overlapping( uiX, uiX,
-                                     [&]( const interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval& rInterval ) {
-                                         vOverlaps.push_back( rInterval.value );
-                                     } ); // visit_overlapping call
+            xTree.visit_overlapping(
+                uiX, uiX, [ & ]( const interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval& rInterval ) {
+                    vOverlaps.push_back( rInterval.value );
+                } ); // visit_overlapping call
             if( vOverlaps.size( ) == 0 )
             {
                 // check for non overlapping seed to the right
@@ -530,20 +527,25 @@ class MaxExtendedToMaxSpanning : public Module<Seeds, false, Seeds>
             } // if
             else
             {
-                std::make_heap( vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp( ) );
-                pRet->push_back( *vOverlaps.front( ) );
-                uiX = vOverlaps.front( )->end( );
-                // next two lines: pop heap
-                std::pop_heap( vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp( ) );
-                vOverlaps.pop_back( );
-                while( vOverlaps.size( ) > 0 && vOverlaps.front( )->size( ) == pRet->back( ).size( ) )
+                size_t uiInitRetSize = pRet->size( );
+                for( Seed* pSeed : vOverlaps )
                 {
-                    if( pRet->back( ).start_ref( ) != vOverlaps.front( )->start_ref( ) )
-                        pRet->push_back( *vOverlaps.front( ) );
-                    // next two lines: pop heap
-                    std::pop_heap( vOverlaps.begin( ), vOverlaps.end( ), SeedSmallerComp( ) );
-                    vOverlaps.pop_back( );
-                } // while
+                    if( pRet->size( ) > uiInitRetSize && pSeed->size( ) > pRet->back( ).size( ) )
+                    {
+                        // we found a seed that's larger than the seeds we pushed back so far
+                        // -> remove the previous seeds
+                        pRet->resize( uiInitRetSize );
+                        // since we removed the previous seeds we invalidated uiX; make if valid again
+                        uiX = pSeed->end( );
+                    } // if
+                    if( pRet->size( ) == uiInitRetSize || pSeed->size( ) == pRet->back( ).size( ) )
+                    {
+                        // this is longest seed we have seen so far -> save it in pRet
+                        pRet->push_back( *pSeed );
+                        // uiX shall hold the rightmost endposition of the longest seeds (there can be more than one!)
+                        uiX = std::max( uiX, pSeed->end( ) );
+                    } // if
+                } // for
             } // else
         } // while
 

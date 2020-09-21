@@ -404,7 +404,7 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
              * remove outliers
              */
             pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ),
-                                             [&]( const Seed& rS ) {
+                                             [ & ]( const Seed& rS ) {
                                                  return deltaDistance( rS, xSlopeIntercept.first,
                                                                        (int64_t)xSlopeIntercept.second ) > fMAD;
                                              } ),

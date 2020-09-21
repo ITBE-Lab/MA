@@ -394,6 +394,11 @@ class Seeds : public Container
         vContent.reserve( uiN );
     } // method
 
+    void resize( size_type uiN )
+    {
+        vContent.resize( uiN );
+    } // method
+
     void clear( ) noexcept
     {
         vContent.clear( );
