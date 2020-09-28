@@ -596,7 +596,7 @@ class PostgreSQLDBCon
 
         static inline std::string getSQLTypeName( identity<bool> )
         {
-            return "int2";
+            return "bool";
         } // private method
 
         static inline std::string getSQLTypeName( identity<int32_t> )
