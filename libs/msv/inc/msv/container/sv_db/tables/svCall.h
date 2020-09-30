@@ -261,8 +261,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         if( ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).execAndFetch( uiFrom ) )
         {
             auto xQ = ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).get( );
-            // fetch next element to terminate query
-            ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).next();
+#if 0
+            std::cout << "bForwardContext: " << bForwardContext << " id: " << std::get<0>( xQ )
+                      << " from_forward: " << std::get<1>( xQ ) << " to_forward: " << std::get<2>( xQ )
+                      << " from_pos: " << std::get<3>( xQ ) << " to_pos: " << std::get<4>( xQ )
+                      << " from_size: " << std::get<5>( xQ ) << " to_size: " << std::get<6>( xQ )
+                      << " inserted_sequence: " << std::get<7>( xQ ) << " do_reverse: " << std::get<8>( xQ )
+                      << std::endl;
+#endif
             // if the call was reverted
             if( std::get<8>( xQ ) )
             {
@@ -290,6 +296,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             // if we have a forward context next, the end of the jump is at the bottom of the call
             // if we have a backward context next, the end of the jump is at the top of the call
             std::get<4>( xRet ) = std::get<2>( xQ ) ? std::get<4>( xQ ) : std::get<4>( xQ ) + std::get<6>( xQ );
+
+            // fetch next element to terminate query
+            ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).next( );
         } // if
         return xRet;
     } // method
@@ -344,15 +353,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #endif
 #if 0
                 std::cout << "contig: " << std::get<2>( xStart ) << " id: " << std::get<0>( tNextCall )
-                            << " currpos: " << uiCurrPos << " from: " << std::get<1>( tNextCall )
-                            << " to: " << std::get<4>( tNextCall )
-                            << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << " inserted_seq: "
-                            << ( std::get<3>( tNextCall ) == nullptr
-                                    ? "nullptr"
-                                    : ( std::get<3>( tNextCall )->uiSize == 0
-                                            ? "empty"
-                                            : std::get<3>( tNextCall )->toString( ) ) )
-                            << std::endl;
+                          << " currpos: " << uiCurrPos << " from: " << std::get<1>( tNextCall )
+                          << " to: " << std::get<4>( tNextCall )
+                          << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << " inserted_seq: "
+                          << ( std::get<3>( tNextCall ) == nullptr
+                                   ? "nullptr"
+                                   : ( std::get<3>( tNextCall )->uiSize == 0 ? "empty"
+                                                                             : std::get<3>( tNextCall )->toString( ) ) )
+                          << std::endl;
 #endif
 
                 // if there are no more calls or the next call starts in the next chromosome
@@ -454,7 +462,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                      "SELECT id, from_pos, to_pos, from_forward, false, order_id, mirrored "
                                      "FROM sv_call_table "
                                      "WHERE sv_caller_run_id = ? "
-                                     "AND ( GREATEST(ABS(to_pos - from_pos), "
+                                     "AND ( GREATEST(ABS(CAST(to_pos AS int8) - CAST(from_pos AS int8)), "
                                      "             inserted_sequence_size) >= ? "
                                      "OR from_forward != to_forward ) " );
         SQLStatement<DBCon> xInsert2(
@@ -464,7 +472,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "SELECT id, to_pos, from_pos, NOT to_forward, true, order_id, NOT mirrored "
             "FROM sv_call_table "
             "WHERE sv_caller_run_id = ? "
-            "AND ( GREATEST(ABS(to_pos - from_pos), "
+            "AND ( GREATEST(ABS(CAST(to_pos AS int8) - CAST(from_pos AS int8)), "
             "             inserted_sequence_size) >= ? "
             "OR from_forward != to_forward ) " );
 
@@ -512,7 +520,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "LIMIT 1 " );
 
         SQLStatement<DBCon> xDelete( this->pConnection->getSlave( )->getSlave( ), "DELETE FROM reconstruction_table "
-                                                        "WHERE call_id = ? " );
+                                                                                  "WHERE call_id = ? " );
 
         return callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, vStarts, xNextCallForwardContext,
                                    xNextCallBackwardContext, xDelete );

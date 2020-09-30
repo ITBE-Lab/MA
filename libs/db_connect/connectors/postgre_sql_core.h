@@ -343,7 +343,8 @@ template <> struct PGRowCell<bool> : public PGRowCellBase<bool>
 
     inline void store( const PGresult* pPGRes )
     {
-        *pCellValue = byteswap2<bool>( this->getValPtr( pPGRes ) );
+        // no swapping required, just check for 0
+        *pCellValue = ((uint16_t)*this->getValPtr( pPGRes )) != 0;
         this->isNull = false;
     } // method
 }; // specialized class
