@@ -58,6 +58,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome )
         .def( "calls_to_seeds", &SvCallTable<DBConSingle>::callsToSeeds )
         .def( "calls_to_seeds_by_id", &SvCallTable<DBConSingle>::callsToSeedsById )
+        .def( "calls_to_seeds_by_id_auto", &SvCallTable<DBConSingle>::callsToSeedsByIdAutoStart )
         .def( "reconstruct_sequenced_genome_from_seeds",
               &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )

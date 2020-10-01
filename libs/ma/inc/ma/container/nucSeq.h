@@ -1275,6 +1275,8 @@ template <> struct PGRowCell<CompNucSeqSharedPtr> : public PGRowCellBase<CompNuc
             ( *pCellValue )
                 ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
         } // if
+        else
+            *pCellValue = nullptr; // read 'Null' table entry
     } // method
 }; // specialized class
 #endif
