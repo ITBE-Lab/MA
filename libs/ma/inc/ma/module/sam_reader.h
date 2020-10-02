@@ -13,6 +13,8 @@ class ReadByName : public libMS::Container
     std::map<std::string, std::shared_ptr<NucSeq>> xQueries;
 
   public:
+    bool bReturnNullForUnknown = false;
+
     ReadByName( std::vector<std::shared_ptr<NucSeq>> vQueries )
     {
         for( auto pQuery : vQueries )
@@ -38,7 +40,11 @@ class ReadByName : public libMS::Container
     std::shared_ptr<NucSeq> operator[]( std::string sName )
     {
         if( xQueries.count( sName ) == 0 )
+        {
+            if( bReturnNullForUnknown )
+                return nullptr;
             throw std::runtime_error( "unknown query name" );
+        } // if
         return xQueries[ sName ];
     } // method
 
@@ -74,39 +80,45 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
     std::shared_ptr<Alignment> DLL_PORT( MA )
         execute( std::shared_ptr<FileStream> pStream, std::shared_ptr<Pack> pRef, std::shared_ptr<ReadByName> pReads )
     {
-        std::string sLine = "";
+        while( true )
         {
-            std::lock_guard<std::mutex> xLock( pStream->xMutex );
-            pStream->peek( ); // potentionally trigger eof
-            if( pStream->eof( ) ) // eof case
-                return nullptr;
-            // ignore empty lines and comment/header lines (starting with '@')
-            while( sLine.empty( ) || sLine[ 0 ] == '@' )
-                pStream->safeGetLine( sLine );
-            while( !pStream->eof( ) && pStream->peek( ) == '\n' && pStream->peek( ) == '\r' &&
-                   pStream->peek( ) == '@' && pStream->peek( ) == ' ' && pStream->peek( ) == '\t' )
-                pStream->pop( );
-        } // scope for xLock
-        auto vColumns = splitString<std::vector<std::string>>( sLine, '\t' );
-        if( vColumns.size( ) <= 5 )
-            throw std::runtime_error( "too little tab seperated columns for a SAM file!" );
-        std::shared_ptr<NucSeq> pQuery;
-        // only use pReads is sequence is not given in sam file
-        if( vColumns[ 0 ][ 0 ] == '*' )
-            throw std::runtime_error( "unnamed read in sam file." );
-        pQuery = ( *pReads )[ vColumns[ 0 ] ];
+            std::string sLine = "";
+            {
+                std::lock_guard<std::mutex> xLock( pStream->xMutex );
+                pStream->peek( ); // potentionally trigger eof
+                if( pStream->eof( ) ) // eof case
+                    return nullptr;
+                // ignore empty lines and comment/header lines (starting with '@')
+                while( sLine.empty( ) || sLine[ 0 ] == '@' )
+                    pStream->safeGetLine( sLine );
+                while( !pStream->eof( ) && pStream->peek( ) == '\n' && pStream->peek( ) == '\r' &&
+                       pStream->peek( ) == '@' && pStream->peek( ) == ' ' && pStream->peek( ) == '\t' )
+                    pStream->pop( );
+            } // scope for xLock
+            auto vColumns = splitString<std::vector<std::string>>( sLine, '\t' );
+            if( vColumns[ 3 ].compare( "" ) == 0 )
+                continue; // skip empty alignments
+            if( vColumns.size( ) <= 5 )
+                throw std::runtime_error( "too little tab seperated columns for a SAM file!" );
+            std::shared_ptr<NucSeq> pQuery;
+            // only use pReads if sequence is not given in sam file
+            if( vColumns[ 0 ][ 0 ] == '*' )
+                throw std::runtime_error( "unnamed read in sam file." );
+            pQuery = ( *pReads )[ vColumns[ 0 ] ];
 
-        nucSeqIndex uiRefStart = atoll( vColumns[ 3 ].c_str( ) ) + pRef->startOfSequenceWithName( vColumns[ 2 ] ) - 1;
-        if( atoll( vColumns[ 1 ].c_str( ) ) & 16 ) // check if seq was rev-complemented
-            // uiRefStart - 1: convert from 1 based to 0 based index
-            uiRefStart =
-                pRef->uiPositionToReverseStrand( uiRefStart - 1 )
-                // add reference length of cigar so that our alignment representation matches the one of the sam format
-                - Alignment::refLenCigar( vColumns[ 5 ] );
-        auto pRet = std::make_shared<Alignment>( uiRefStart );
-        pRet->xStats.sName = vColumns[ 0 ];
-        pRet->appendCigarString( vColumns[ 5 ], pQuery, *pRef );
-        return pRet;
+            nucSeqIndex uiRefStart =
+                atoll( vColumns[ 3 ].c_str( ) ) + pRef->startOfSequenceWithName( vColumns[ 2 ] ) - 1;
+            if( atoll( vColumns[ 1 ].c_str( ) ) & 16 ) // check if seq was rev-complemented
+                // uiRefStart - 1: convert from 1 based to 0 based index
+                uiRefStart = pRef->uiPositionToReverseStrand( uiRefStart - 1 )
+                             // add reference length of cigar so that our alignment representation matches the one of
+                             // the sam format
+                             - Alignment::refLenCigar( vColumns[ 5 ] );
+            auto pRet = std::make_shared<Alignment>( uiRefStart );
+            pRet->xStats.sName = vColumns[ 0 ];
+            pRet->appendCigarString( vColumns[ 5 ], pQuery, *pRef );
+            return pRet;
+        } // while
     } // method
 
 }; // class SamFileReader

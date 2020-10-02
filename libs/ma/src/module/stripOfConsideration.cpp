@@ -9,8 +9,9 @@ using namespace libMA;
 using namespace libMS;
 
 
-std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
-    std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
+std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::shared_ptr<Seeds> pSeeds,
+                                                                      std::shared_ptr<NucSeq> pQuerySeq,
+                                                                      std::shared_ptr<Pack> pRefSeq )
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )
@@ -31,7 +32,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
 
     // sort the seeds according to their initial positions
     std::sort( pSeeds->begin( ), pSeeds->end( ),
-               [&]( const Seed& a, const Seed& b ) { return a.uiDelta < b.uiDelta; } // lambda
+               [ & ]( const Seed& a, const Seed& b ) { return a.uiDelta < b.uiDelta; } // lambda
     ); // sort function call
 
 
@@ -71,7 +72,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
             {
 #if DEBUG_LEVEL > 0
                 int64_t uiExpectedContigIdEnd = pRefSeq->uiSequenceIdForPosition( xStripEnd->start_ref( ) );
-                if( bRectangular || xStripEnd->bOnForwStrand && (int64_t)uiContigIdEnd > uiExpectedContigIdEnd )
+                if( ( bRectangular || xStripEnd->bOnForwStrand ) && (int64_t)uiContigIdEnd > uiExpectedContigIdEnd )
                 {
                     std::cerr << "got weired contig id: " << uiContigIdEnd << " " << uiExpectedContigIdEnd << std::endl;
                     assert( false );

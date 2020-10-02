@@ -11,6 +11,7 @@ void exportSamFileReader( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<ReadByName, libMS::Container, std::shared_ptr<ReadByName>>( xOrganizer.container( ), "ReadByName" )
         .def( py::init<>( ) ) // default constructor
         .def( "append", &ReadByName::append )
+        .def_readwrite( "return_null_for_unknown", &ReadByName::bReturnNullForUnknown )
         .def( "__iter__", &ReadByName::iter );
     py::class_<SeedsByName, libMS::Container, std::shared_ptr<SeedsByName>>( xOrganizer.container( ), "SeedsByName" )
         .def( py::init<>( ) ) // default constructor

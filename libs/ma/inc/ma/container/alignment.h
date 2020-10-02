@@ -146,7 +146,7 @@ class Alignment : public libMS::Container
     inline std::string toString( ) const
     {
         std::string sRet = "Alignment Dump: ";
-        constexpr char vTranslate[ 5 ] = {'S', '=', 'X', 'I', 'D'};
+        constexpr char vTranslate[ 5 ] = { 'S', '=', 'X', 'I', 'D' };
         for( auto& tuple : data )
             sRet += vTranslate[ (unsigned int)tuple.first ] + std::to_string( tuple.second ) + " ";
         sRet += " | Score: ";
@@ -503,7 +503,10 @@ class Alignment : public libMS::Container
     void appendCigarString( std::string sCigar, std::shared_ptr<NucSeq> pQuery, Pack& rPack )
     {
         if( sCigar.size( ) == 1 && sCigar[ 0 ] == '*' )
-            append( MatchType::match, pQuery->length( ) );
+        {
+            if( pQuery != nullptr )
+                append( MatchType::match, pQuery->length( ) );
+        }
         else
         {
             std::stringstream xStream( sCigar );
@@ -525,7 +528,8 @@ class Alignment : public libMS::Container
                     case 'M':
                         for( size_t uiX = 0; uiX < vData[ uiI ].second; uiX++ )
                         {
-                            if( pQuery->pxSequenceRef[ uiEndOnQuery ] == rPack.vExtract( uiEndOnRef ) )
+                            if( pQuery != nullptr &&
+                                pQuery->pxSequenceRef[ uiEndOnQuery ] == rPack.vExtract( uiEndOnRef ) )
                                 append( MatchType::match, 1 );
                             else
                                 append( MatchType::missmatch, 1 );
@@ -916,8 +920,8 @@ class Alignment : public libMS::Container
         } // if
 #endif
     } // method
-    
-    void setOther(std::shared_ptr<Alignment> pOther)
+
+    void setOther( std::shared_ptr<Alignment> pOther )
     {
         this->xStats.pOther = pOther;
     }

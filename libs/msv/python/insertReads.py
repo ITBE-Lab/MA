@@ -128,3 +128,14 @@ def write_used_reads_to_file(dataset_name, file_name):
             fasta_out.write("\n")
             fasta_out.write(str(read))
             fasta_out.write("\n")
+
+def iterate_reads(parameter_set, db_name, seq_id):
+    db_conn_pool = PoolContainer(1, db_name)
+    nuc_seq_fetcher = NucSeqFetcher(parameter_set)
+    nuc_seq_query_getter = GetNucSeqFromSqlQuery(parameter_set, seq_id, 0, 1, True, True)
+    nuc_seq_query = nuc_seq_query_getter.execute(db_conn_pool)
+    while True:
+        read = nuc_seq_fetcher.execute(db_conn_pool, nuc_seq_query)
+        if read is None:
+            break
+        yield read
