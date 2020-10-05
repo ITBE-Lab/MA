@@ -344,7 +344,7 @@ template <> struct PGRowCell<bool> : public PGRowCellBase<bool>
     inline void store( const PGresult* pPGRes )
     {
         // no swapping required, just check for 0
-        *pCellValue = ((uint16_t)*this->getValPtr( pPGRes )) != 0;
+        *pCellValue = ( ( uint16_t ) * this->getValPtr( pPGRes ) ) != 0;
         this->isNull = false;
     } // method
 }; // specialized class
@@ -571,6 +571,21 @@ class PostgreSQLDBCon
         template <typename Type> static inline std::string getPlaceholderForType( const std::string& rsInsertedText )
         {
             return rsInsertedText;
+        } // method
+
+        /** @brief Do not include this cell in table creation statements
+         * @details
+         * Purpose:
+         * There are SQL-types that require two (or more) values in insert statements. E.g. the postgres range types.
+         * For these types we add two (or more) CellTypes:
+         * The first one uses it's type to initialize the column in the SQL-table.
+         * All following types return false in useInCreate and do not contribute SQL-columns themselves this way.
+         * In the insert statement these following columns can then be used to fill out the remaining values for the
+         * column.
+         */
+        template <typename Type> static inline bool useInCreate( )
+        {
+            return true;
         } // method
 
       private:
@@ -1102,7 +1117,7 @@ class PostgreSQLDBCon
          *  The behavior of the query can be additionally controlled by an optionally passed JSON object.
          *  All placeholders are translated from MySQL syntax ('?') to PosgreSQL syntax ('$1', $2' ...)
          */
-        PreparedQueryTmpl( DBPtrType pDBConn, const std::string& rsStmtText, const json& rjConfig = json{} )
+        PreparedQueryTmpl( DBPtrType pDBConn, const std::string& rsStmtText, const json& rjConfig = json{ } )
             : PreparedStmtTmpl<DBPtrType>( pDBConn, rsStmtText, true /* do async */ ), // class superclass constructor
               tCellWrappers( ), // initialized via default constructors (couldn't find better way :-( )
               iStatus( 0 ) // initially 'fetchNextRow not called at all'
@@ -1110,7 +1125,7 @@ class PostgreSQLDBCon
             // Connect row cell wrappers and tuple keeping the cell values itself.
             for_each_in_tuple_pairwise(
                 tCellWrappers,
-                [&]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
+                [ & ]( auto& rFstCell, auto& rSecCell, size_t uiCol ) {
                     // DEBUG: std::cout << "uiColNum:" << uiColNum << " uiCol: " << uiCol << std::endl;
                     rFstCell.init( &rSecCell, uiCol );
                 },
@@ -1175,7 +1190,7 @@ class PostgreSQLDBCon
                     if( this->iStatus != 1 )
                     {
                         // We are in the first row of a result and check all oids for correctness.
-                        for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                        for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                             auto xCppOid = this->pDBConn->getOidMap( ).at(
                                 TypeTranslator::template getSQLTypeName<typeof( *rCell.pCellValue )>( ) );
                             rCell.checkOid( this->pPGRes, xCppOid, this->pDBConn->getOidMap( ) );
@@ -1185,7 +1200,7 @@ class PostgreSQLDBCon
                     this->uiRowCount++;
 
                     // get the actual cell values
-                    for_each_in_tuple( tCellWrappers, [&]( auto& rCell ) {
+                    for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                         if( PQgetisnull( this->pPGRes, 0, (int)rCell.uiColNum ) )
                             rCell.isNull = true;
                         else
@@ -1311,6 +1326,9 @@ class PostgreSQLDBCon
         // currently unsed: int iFields = PQnfields( this->pPGRes );
         for( int i = 0; i < PQntuples( this->pPGRes ); i++ )
             mOidMap.emplace( PQgetvalue( this->pPGRes, i, 0 ), std::stoi( PQgetvalue( this->pPGRes, i, 1 ) ) );
+
+        // insert dummy oid for range types
+        mOidMap.emplace( "int8range", mOidMap["int8"] );
     } // method
 
     /** @brief Dumps all key-value in the OID map. */
@@ -1364,7 +1382,7 @@ class PostgreSQLDBCon
     PostgreSQLDBCon& operator=( const PostgreSQLDBCon& db ) = delete; // no object assignments
 
     /** @brief Constructs a MySQL DB connection. Configuration is given via a JSON object */
-    PostgreSQLDBCon( const json& jDBConfig = {} )
+    PostgreSQLDBCon( const json& jDBConfig = { } )
         : pPGConn( NULL ), pPGRes( NULL ), pTableExistStmt( nullptr ), pConnMutex( std::make_shared<std::mutex>( ) )
     {
         // See:
@@ -1376,7 +1394,7 @@ class PostgreSQLDBCon
             throw std::runtime_error( "The PostgreSQL requires code adaption for your big endian platform  " );
 
         // Establish connection to database
-        open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{} );
+        open( jDBConfig.count( CONNECTION ) > 0 ? jDBConfig[ CONNECTION ] : json{ } );
         // Set always-secure search path, so malicious users can't take control.
         execSQL( "SELECT pg_catalog.set_config('search_path', '', false)", true );
         // Suppress PostgreSQL notices (as e.g. that a schema exists already)
@@ -1394,7 +1412,7 @@ class PostgreSQLDBCon
     /* Destructor */
     virtual ~PostgreSQLDBCon( )
     {
-        do_exception_safe( [&]( ) { this->close( ); } );
+        do_exception_safe( [ & ]( ) { this->close( ); } );
     } // destructor
 
     std::shared_ptr<QuerySingleTupleOwner> pCommInProgrInformer = nullptr;

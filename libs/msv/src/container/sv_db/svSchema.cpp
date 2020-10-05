@@ -113,14 +113,14 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "get_seq_id", &ReadTable<DBConSingle>::getSeqId )
         .def( "get_used_reads", &ReadTable<DBConSingle>::getUsedReads );
 
-    py::class_<ReadExtensionTable<DBConSingle>, std::shared_ptr<ReadExtensionTable<DBConSingle>>>(
-        xOrganizer.util( ), "ReadExtensionTable" )
+    py::class_<ReadRangeTable<DBConSingle>, std::shared_ptr<ReadRangeTable<DBConSingle>>>(
+        xOrganizer.util( ), "ReadRangeTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "insert", &ReadExtensionTable<DBConSingle>::insertAlignment )
-        .def( "insert", &ReadExtensionTable<DBConSingle>::insertAlignmentId )
-        .def( "coverage", &ReadExtensionTable<DBConSingle>::coverage )
-        .def( "dropIndices", &ReadExtensionTable<DBConSingle>::dropIndices )
-        .def( "genIndices", &ReadExtensionTable<DBConSingle>::genIndices );
+        .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignment )
+        .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignmentId )
+        .def( "coverage", &ReadRangeTable<DBConSingle>::coverage )
+        .def( "drop_indices", &ReadRangeTable<DBConSingle>::dropIndices )
+        .def( "gen_indices", &ReadRangeTable<DBConSingle>::genIndices );
 
     py::class_<SvCallSupportTable<DBConSingle>, std::shared_ptr<SvCallSupportTable<DBConSingle>>>(
         xOrganizer.util( ), "SvCallSupportTable" )

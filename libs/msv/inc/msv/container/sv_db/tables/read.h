@@ -93,54 +93,130 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
     } // method
 }; // class
 
+} // namespace libMSV
+
+struct RangeStartInt64_t
+{
+    int64_t iP;
+};
+struct RangeEndInt64_t
+{
+    int64_t iP;
+};
+
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<RangeStartInt64_t>( )
+{
+    return "int8range";
+} // specialized method
+// Part1 : Specify the corresponding MySQL-type for your blob.
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<RangeEndInt64_t>( )
+{
+    // needs to be this type eventhough it is not used in create
+    // we use it to check/set the oid of outputs & inputs...
+    return "int8range";
+} // specialized method
+
+// Part1 : Specify that the end type is not used for create statements
+template <> inline bool PostgreSQLDBCon::TypeTranslator::useInCreate<RangeEndInt64_t>( )
+{
+    return false;
+} // specialized method
+
+// Part1b : Spatial types require an indication that the argument passed at a placeholder's
+//          position has the format 'WKB'.
+template <>
+inline std::string
+PostgreSQLDBCon::TypeTranslator::getPlaceholderForType<RangeStartInt64_t>( const std::string& rsInsertedText )
+{
+    // closing bracket is im RangeEndInt64_t
+    return "int8range(" + rsInsertedText;
+} // specialized method
+
+// Part1b : Spatial types require an indication that the argument passed at a placeholder's
+//          position has the format 'WKB'.
+template <>
+inline std::string
+PostgreSQLDBCon::TypeTranslator::getPlaceholderForType<RangeEndInt64_t>( const std::string& rsInsertedText )
+{
+    // opening bracket is im RangeStartInt64_t
+    // comma is already provided
+    return rsInsertedText + ")";
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void PostgreSQLDBCon::StmtArg::set( const RangeStartInt64_t& rRange )
+{
+    // forwards to the overload for int64_t
+    PostgreSQLDBCon::StmtArg::set( rRange.iP );
+} // specialized method
+
+// Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
+template <> inline void PostgreSQLDBCon::StmtArg::set( const RangeEndInt64_t& rRange )
+{
+    // forwards to the overload for int64_t
+    PostgreSQLDBCon::StmtArg::set( rRange.iP );
+} // specialized method
+
+// Part 3: Code for supporting query output: Here we can just forward to PGRowCell<int64_t>
+template <>
+struct /* PostgreSQLDBCon:: */ PGRowCell<RangeStartInt64_t> : public /* PostgreSQLDBCon::*/ PGRowCell<int64_t>
+{}; // specialized class
+
+// Part 3: Code for supporting query output: Here we can just forward to PGRowCell<int64_t>
+template <> struct /* PostgreSQLDBCon:: */ PGRowCell<RangeEndInt64_t> : public /* PostgreSQLDBCon::*/ PGRowCell<int64_t>
+{}; // specialized class
+
+namespace libMSV
+{
+
 template <typename DBCon>
-using ReadExtensionTableType = SQLTableWithLibIncrPriKey<DBCon,
-                                                         PriKeyDefaultType, // read id (foreign key)
-                                                         uint32_t, // from_pos
-                                                         uint32_t // to_pos
-                                                         >;
+using ReadRangeTableType = SQLTableWithLibIncrPriKey<DBCon,
+                                                     PriKeyDefaultType, // read id (foreign key)
+                                                     RangeStartInt64_t, // read_range
+                                                     RangeEndInt64_t>;
 const json jReadExtensionTableDef = {
-    { TABLE_NAME, "read_extension_table" },
+    { TABLE_NAME, "read_range_table" },
     { TABLE_COLUMNS,
-      { { { COLUMN_NAME, "read_id" } }, { { COLUMN_NAME, "from_pos" } }, { { COLUMN_NAME, "to_pos" } } } },
+      { { { COLUMN_NAME, "read_id" } }, { { COLUMN_NAME, "read_range" } }, { { COLUMN_NAME, "read_range_DUMMY" } } } },
     { FOREIGN_KEY, { { COLUMN_NAME, "read_id" }, { REFERENCES, "read_table(id)" } } } };
 /**
  * @brief this table saves reads
  */
-template <typename DBCon> class ReadExtensionTable : public ReadExtensionTableType<DBCon>
+template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon>
 {
     SQLQuery<DBCon, uint32_t> xGetCoverage;
 
   public:
-    ReadExtensionTable( std::shared_ptr<DBCon> pDB )
-        : ReadExtensionTableType<DBCon>( pDB, jReadExtensionTableDef ),
+    ReadRangeTable( std::shared_ptr<DBCon> pDB )
+        : ReadRangeTableType<DBCon>( pDB, jReadExtensionTableDef ),
           xGetCoverage( pDB, "SELECT COUNT(*) "
-                             "FROM read_extension_table "
-                             "JOIN read_table ON read_table.id = read_extension_table.read_id "
-                             "WHERE from_pos <= ? "
-                             "AND to_pos > ? "
+                             "FROM read_range_table "
+                             "JOIN read_table ON read_table.id = read_range_table.read_id "
+                             "WHERE int8range(?,?) && read_range " // checks for OVERLAP
                              "AND sequencer_id = ? " )
     {} // default constructor
 
-    inline void insertAlignment( std::shared_ptr<NucSeq> pRead, std::shared_ptr<Alignment> pAlignment )
-    {
-        ReadExtensionTable<DBCon>::insert( pRead->iId, pAlignment->beginOnRef( ), pAlignment->endOnRef( ) );
-    } // method
-
     inline void insertAlignmentId( int64_t iReadId, std::shared_ptr<Alignment> pAlignment )
     {
-        ReadExtensionTable<DBCon>::insert( iReadId, pAlignment->beginOnRef( ), pAlignment->endOnRef( ) );
+        ReadRangeTable<DBCon>::insert( iReadId, RangeStartInt64_t{ (int64_t)pAlignment->beginOnRef( ) },
+                                       RangeEndInt64_t{ (int64_t)pAlignment->endOnRef( ) } );
+    } // method
+
+    inline void insertAlignment( std::shared_ptr<NucSeq> pRead, std::shared_ptr<Alignment> pAlignment )
+    {
+        insertAlignmentId( pRead->iId, pAlignment );
     } // method
 
     inline void genIndices( )
     {
-        // @todo range index...
-        this->addIndex( json{ { INDEX_NAME, "from_to" }, { INDEX_COLUMNS, "from_pos, to_pos" } } );
+        this->addIndex(
+            json{ { INDEX_NAME, "range_index" }, { INDEX_COLUMNS, "read_range" }, { INDEX_METHOD, "GIST" } } );
     } // method
 
     inline void dropIndices( )
     {
-        this->dropIndex( json{ { INDEX_NAME, "from_to" } } );
+        this->dropIndex( json{ { INDEX_NAME, "read_range" } } );
     } // method
 
     inline uint32_t coverage( uint32_t from, uint32_t to, int64_t iSeqId )
