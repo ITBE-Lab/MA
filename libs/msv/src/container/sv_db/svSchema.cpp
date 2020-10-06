@@ -76,6 +76,12 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "num_invalid_calls", &X::numInvalidCalls )
         .def( "blur_on_overlaps", &X::blurOnOverlaps );
 
+    py::class_<OneSidedCallsTable<DBConSingle>, std::shared_ptr<OneSidedCallsTable<DBConSingle>>>(
+        xOrganizer.util( ), "OneSidedCallsTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "get_name", &OneSidedCallsTable<DBConSingle>::getMate )
+        .def( "insert_calls", &OneSidedCallsTable<DBConSingle>::insertCalls );
+
     py::class_<KMerFilterTable<DBConSingle>, std::shared_ptr<KMerFilterTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                              "KMerFilterTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
@@ -87,6 +93,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "get_counter", &HashFilterTable<DBConSingle>::getCounter )
         .def( "insert_counter_set", &HashFilterTable<DBConSingle>::insert_counter_set );
+
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
@@ -113,8 +120,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "get_seq_id", &ReadTable<DBConSingle>::getSeqId )
         .def( "get_used_reads", &ReadTable<DBConSingle>::getUsedReads );
 
-    py::class_<ReadRangeTable<DBConSingle>, std::shared_ptr<ReadRangeTable<DBConSingle>>>(
-        xOrganizer.util( ), "ReadRangeTable" )
+    py::class_<ReadRangeTable<DBConSingle>, std::shared_ptr<ReadRangeTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                           "ReadRangeTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignment )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignmentId )

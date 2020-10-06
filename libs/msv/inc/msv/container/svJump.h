@@ -444,7 +444,6 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     int64_t iId;
     int64_t iOrderID = -1;
     bool bMirrored = false;
-    bool bOneSided = false;
 #if 0
     Regex xRegex;
 #endif
