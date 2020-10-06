@@ -67,7 +67,7 @@ int main( void )
 
             for( size_t uiI = 0; uiI < vxRectangles.size( ); uiI++ )
             {
-                auto xRect = xQuery.execAndGetNthCell<0>( vuiIds[ uiI ] ).getRect( );
+                /*auto xRect =*/ xQuery.execAndGetNthCell<0>( vuiIds[ uiI ] ).getRect( );
                 // std::cout << xRect << std::endl;
             } // for
         } // scope SQLQuery

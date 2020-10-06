@@ -116,6 +116,9 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
                              - Alignment::refLenCigar( vColumns[ 5 ] );
             auto pRet = std::make_shared<Alignment>( uiRefStart );
             pRet->xStats.sName = vColumns[ 0 ];
+            pRet->fMappingQuality = (float)atoi( vColumns[ 4 ].c_str( ) ) / 255.0f;
+            pRet->bSecondary = atoll( vColumns[ 1 ].c_str( ) ) & 256;
+            pRet->bSupplementary = atoll( vColumns[ 1 ].c_str( ) ) & 2048;
             pRet->appendCigarString( vColumns[ 5 ], pQuery, *pRef );
             return pRet;
         } // while

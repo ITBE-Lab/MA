@@ -676,9 +676,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             std::string sCols = jIndexDef[ INDEX_COLUMNS ];
 
             std::string sIndexType = jIndexDef.count( INDEX_TYPE ) == 0 ? "" : jIndexDef[ INDEX_TYPE ];
-            std::string sIndexMethod = jIndexDef.count( INDEX_METHOD ) == 0
-                                           ? ""
-                                           : std::string( " USING " ) + jIndexDef[ INDEX_METHOD ].get<std::string>( );
+            std::string sIndexMethod =
+                jIndexDef.count( INDEX_METHOD ) == 0
+                    ? ""
+                    : std::string( " USING " ) + jIndexDef[ INDEX_METHOD ].template get<std::string>( );
 
             std::string sStmt = std::string( "CREATE " ) +
 #ifndef POSTGRESQL // MySQL
@@ -1163,8 +1164,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                             + getTableName( ) + " (";
         // SQL code for regular columns
         auto uiLastUsed = this->rjTableCols.size( ) - 1;
-        while(!this->vUseColumnTypeInCreateStatement[ uiLastUsed ] && uiLastUsed > 0)
-            uiLastUsed -=1;
+        while( !this->vUseColumnTypeInCreateStatement[ uiLastUsed ] && uiLastUsed > 0 )
+            uiLastUsed -= 1;
         for( size_t iItr = 0; iItr <= uiLastUsed; iItr++ )
         {
             if( this->vUseColumnTypeInCreateStatement[ iItr ] )

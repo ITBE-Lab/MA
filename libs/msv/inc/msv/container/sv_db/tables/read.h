@@ -174,11 +174,18 @@ template <typename DBCon>
 using ReadRangeTableType = SQLTableWithLibIncrPriKey<DBCon,
                                                      PriKeyDefaultType, // read id (foreign key)
                                                      RangeStartInt64_t, // read_range
-                                                     RangeEndInt64_t>;
+                                                     RangeEndInt64_t, // read_range (dummy)
+                                                     bool, // primary alignment
+                                                     double // mapping quality
+                                                     >;
 const json jReadExtensionTableDef = {
     { TABLE_NAME, "read_range_table" },
     { TABLE_COLUMNS,
-      { { { COLUMN_NAME, "read_id" } }, { { COLUMN_NAME, "read_range" } }, { { COLUMN_NAME, "read_range_DUMMY" } } } },
+      { { { COLUMN_NAME, "read_id" } },
+        { { COLUMN_NAME, "read_range" } },
+        { { COLUMN_NAME, "read_range_DUMMY" } },
+        { { COLUMN_NAME, "primary_alignment" } },
+        { { COLUMN_NAME, "mapping_quality" } } } },
     { FOREIGN_KEY, { { COLUMN_NAME, "read_id" }, { REFERENCES, "read_table(id)" } } } };
 /**
  * @brief this table saves reads
@@ -186,6 +193,7 @@ const json jReadExtensionTableDef = {
 template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon>
 {
     SQLQuery<DBCon, uint32_t> xGetCoverage;
+    SQLQuery<DBCon, uint32_t> xGetPrimCoverage;
 
   public:
     ReadRangeTable( std::shared_ptr<DBCon> pDB )
@@ -193,14 +201,24 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
           xGetCoverage( pDB, "SELECT COUNT(*) "
                              "FROM read_range_table "
                              "JOIN read_table ON read_table.id = read_range_table.read_id "
-                             "WHERE int8range(?,?) && read_range " // checks for OVERLAP
-                             "AND sequencer_id = ? " )
+                             "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
+                             "AND sequencer_id = ? "
+                             "AND mapping_quality >= ? " ),
+          xGetPrimCoverage( pDB, "SELECT COUNT(*) "
+                                 "FROM read_range_table "
+                                 "JOIN read_table ON read_table.id = read_range_table.read_id "
+                                 "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
+                                 "AND sequencer_id = ? "
+                                 "AND mapping_quality >= ? "
+                                 "AND primary_alignment " )
     {} // default constructor
 
     inline void insertAlignmentId( int64_t iReadId, std::shared_ptr<Alignment> pAlignment )
     {
         ReadRangeTable<DBCon>::insert( iReadId, RangeStartInt64_t{ (int64_t)pAlignment->beginOnRef( ) },
-                                       RangeEndInt64_t{ (int64_t)pAlignment->endOnRef( ) } );
+                                       RangeEndInt64_t{ (int64_t)pAlignment->endOnRef( ) },
+                                       !pAlignment->bSecondary && !pAlignment->bSupplementary,
+                                       (double)pAlignment->fMappingQuality );
     } // method
 
     inline void insertAlignment( std::shared_ptr<NucSeq> pRead, std::shared_ptr<Alignment> pAlignment )
@@ -219,9 +237,10 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
         this->dropIndex( json{ { INDEX_NAME, "read_range" } } );
     } // method
 
-    inline uint32_t coverage( uint32_t from, uint32_t to, int64_t iSeqId )
+    inline uint32_t coverage( int64_t from, int64_t to, int64_t iSeqId, bool bOnlyPrimary, double fMinMapQ )
     {
-        return xGetCoverage.scalar( from, to, iSeqId );
+        return bOnlyPrimary ? xGetPrimCoverage.scalar( from, to, iSeqId, fMinMapQ )
+                            : xGetCoverage.scalar( from, to, iSeqId, fMinMapQ );
     }
 }; // class
 

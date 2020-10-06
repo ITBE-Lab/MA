@@ -43,7 +43,12 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
     {
         auto uiRet = xS.start_ref( );
         if( bSplitStrands && !xS.bOnForwStrand )
-            uiRet = 2 * rxRefSequence.uiUnpackedSizeForwardStrand - ( xS.start_ref( ) - xS.size( ) );
+            // if strands are split reverse strand reads are sorted in reverse order so the position must be calculated
+            // from the back (back of genome is 2*|R|+(|Q|+1)*num_contigs so that no seed's land in between contigs is
+            // considered )
+            uiRet = 2 * ( rxRefSequence.uiUnpackedSizeForwardStrand +
+                          ( uiQueryLength + 1 ) * rxRefSequence.uiNumContigs( ) ) -
+                    ( xS.start_ref( ) - xS.size( ) );
         return uiRet + ( uiQueryLength - xS.start( ) );
     } // function
 
@@ -114,7 +119,7 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
         rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiQLen, uiMaxAmbiguity, uiMinSeedSize, rvSeedVector,
-                                            [&]( ) {
+                                            [ & ]( ) {
                                                 setDeltaOfSeed( rvSeedVector.back( ), uiQLen, rxRefSequence,
                                                                 !bRectangular );
                                                 // returning true since we want to continue extracting seeds
