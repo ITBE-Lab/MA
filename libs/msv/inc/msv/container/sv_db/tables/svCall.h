@@ -36,6 +36,7 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                   uint32_t, // reference_ambiguity
                                                   int64_t, // order_id
                                                   bool, // mirrored
+                                                  bool, // one_sided
                                                   WKBUint64Rectangle // rectangle (geometry)
                                                   >;
 
@@ -73,6 +74,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 { { COLUMN_NAME, "reference_ambiguity" } },
                 { { COLUMN_NAME, "order_id" } },
                 { { COLUMN_NAME, "mirrored" } },
+                { { COLUMN_NAME, "one_sided" } },
                 { { COLUMN_NAME, "rectangle" }, { CONSTRAINTS, "NOT NULL" } } } },
             { GENERATED_COLUMNS,
               { { { COLUMN_NAME, "score" },
@@ -125,6 +127,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    reference_ambiguity = ?, "
                        "    order_id = ?, "
                        "    mirrored = ?, "
+                       "    one_sided = ?, "
                        "    rectangle = ST_PolyFromWKB(?, 0) "
                        "WHERE id = ? " ),
           xFilterCallsWithHighScore( pConnection,
@@ -193,7 +196,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                         makeSharedCompNucSeq( rCall.pInsertedSequence ), //
                                         rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
                                         (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity,
-                                        rCall.iOrderID, rCall.bMirrored, xRectangle );
+                                        rCall.iOrderID, rCall.bMirrored, rCall.bOneSided, xRectangle );
         rCall.iId = iCallId;
 
         return iCallId;
@@ -202,13 +205,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline int64_t updateCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        xUpdateCall.exec(
-            (uint32_t)rCall.xXAxis.start( ), (uint32_t)rCall.xYAxis.start( ), (uint32_t)rCall.xXAxis.size( ),
-            (uint32_t)rCall.xYAxis.size( ), rCall.bFromForward, rCall.bToForward,
-            // can deal with nullpointers
-            makeSharedCompNucSeq( rCall.pInsertedSequence ),
-            rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ), (uint32_t)rCall.uiNumSuppReads,
-            (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.bMirrored, xRectangle, rCall.iId );
+        xUpdateCall.exec( (uint32_t)rCall.xXAxis.start( ), (uint32_t)rCall.xYAxis.start( ),
+                          (uint32_t)rCall.xXAxis.size( ), (uint32_t)rCall.xYAxis.size( ), rCall.bFromForward,
+                          rCall.bToForward,
+                          // can deal with nullpointers
+                          makeSharedCompNucSeq( rCall.pInsertedSequence ),
+                          rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
+                          (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID,
+                          rCall.bMirrored, rCall.bOneSided, xRectangle, rCall.iId );
         return rCall.iId;
     } // method
 
@@ -267,6 +271,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                       << " from_pos: " << std::get<3>( xQ ) << " to_pos: " << std::get<4>( xQ )
                       << " from_size: " << std::get<5>( xQ ) << " to_size: " << std::get<6>( xQ )
                       << " inserted_sequence: " << std::get<7>( xQ ) << " do_reverse: " << std::get<8>( xQ )
+                      << " one_sided: " << std::get<9>( xQ )
                       << std::endl;
 #endif
             // if the call was reverted
@@ -297,6 +302,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             // if we have a backward context next, the end of the jump is at the top of the call
             std::get<4>( xRet ) = std::get<2>( xQ ) ? std::get<4>( xQ ) : std::get<4>( xQ ) + std::get<6>( xQ );
 
+            // if the call is one sided then mark the end pos
+            if( std::get<9>( xQ ) )
+                std::get<4>( xRet ) = std::numeric_limits<uint32_t>::max( );
+
             // fetch next element to terminate query
             ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).next( );
         } // if
@@ -313,7 +322,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         auto uiNumCalls = SQLQuery<DBCon, uint64_t>( this->pConnection,
                                                      "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
-                              .scalar( iCallerRun ) * 2;
+                              .scalar( iCallerRun ) *
+                          2;
 #if 0
         std::cout << "num calls: " << uiNumCalls << std::endl;
 #endif
@@ -368,7 +378,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                                                              : std::get<3>( tNextCall )->toString( ) ) )
                           << std::endl;
 #endif
-
+                if( std::get<4>( tNextCall ) == std::numeric_limits<uint32_t>::max( ) )
+                {
+                    // @todo what to do if this is a dummy jump
+                } // if
                 // if there are no more calls or the next call starts in the next chromosome
                 if( std::get<0>( tNextCall ) == -1 || pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                 {
@@ -524,7 +537,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         NextCallType xNextCallForwardContext(
             this->pConnection,
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, one_sided "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos >= ? "
@@ -534,7 +547,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         NextCallSlaveType xNextCallBackwardContext(
             this->pConnection->getSlave( ),
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, one_sided "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos <= ? "
@@ -575,7 +588,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         NextCallType xNextCallForwardContext(
             this->pConnection,
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, one_sided "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos >= ? "
@@ -586,7 +599,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         NextCallSlaveType xNextCallBackwardContext(
             this->pConnection->getSlave( ), // slave not actually necessary here...
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, one_sided "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "WHERE reconstruction_table.from_pos <= ? "
