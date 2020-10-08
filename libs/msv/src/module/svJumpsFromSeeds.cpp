@@ -27,7 +27,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 
         nucSeqIndex uiTop = uiQEnd;
         // limit height of rectangle
-        if( uiTop - uiBottom > iMaxSizeReseed / 2 )
+        if( (int64_t)uiTop - (int64_t)uiBottom > iMaxSizeReseed / 2 )
             uiTop = uiBottom + iMaxSizeReseed / 2;
 
         int64_t iLeft;
@@ -41,7 +41,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             iRight = std::min( iLeft + iMaxSizeReseed / 2, iEndOfContig );
 
             // make square
-            if( iRight - iLeft < uiTop - uiBottom )
+            if( iRight - iLeft < (int64_t)uiTop - (int64_t)uiBottom )
                 uiTop = uiBottom + ( iRight - iLeft );
             else
                 iRight = iLeft + ( uiTop - uiBottom );
@@ -55,7 +55,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             iLeft = std::max( iRight - iMaxSizeReseed / 2, iStartOfContig );
 
             // make square
-            if( iRight - iLeft < uiTop - uiBottom )
+            if( iRight - iLeft < (int64_t)uiTop - (int64_t)uiBottom )
                 uiTop = uiBottom + ( iRight - iLeft );
             else
                 iLeft = iRight - ( uiTop - uiBottom );
@@ -75,9 +75,9 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
 
         nucSeqIndex uiBottom = uiQStart;
         // limit height of rectangle
-        if( uiTop - uiBottom > iMaxSizeReseed / 2 )
+        if( (int64_t)uiTop - (int64_t)uiBottom > iMaxSizeReseed / 2 )
         {
-            if( uiTop < iMaxSizeReseed / 2 )
+            if( (int64_t)uiTop < iMaxSizeReseed / 2 )
                 uiBottom = 0;
             else
                 uiBottom = uiTop - iMaxSizeReseed / 2;
@@ -94,7 +94,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             iLeft = std::max( iRight - iMaxSizeReseed / 2, iStartOfContig );
 
             // make square
-            if( iRight - iLeft < uiTop - uiBottom )
+            if( iRight - iLeft < (int64_t)uiTop - (int64_t)uiBottom )
                 uiBottom = uiTop - ( iRight - iLeft );
             else
                 iLeft = iRight - ( uiTop - uiBottom );
@@ -108,7 +108,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
             iRight = std::min( iLeft + iMaxSizeReseed / 2, iEndOfContig );
 
             // make square
-            if( iRight - iLeft < uiTop - uiBottom )
+            if( iRight - iLeft < (int64_t)uiTop - (int64_t)uiBottom )
                 uiBottom = uiTop - ( iRight - iLeft );
             else
                 iRight = iLeft + ( uiTop - uiBottom );
@@ -146,7 +146,7 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
         // check if rectangle exists on reference
         if( uiRight >= uiLeft )
             // check if rectangle is small enough
-            if( std::max( uiTop - uiBottom, uiRight - uiLeft ) <= iMaxSizeReseed / 2 )
+            if( (int64_t)std::max( uiTop - uiBottom, uiRight - uiLeft ) <= iMaxSizeReseed / 2 )
             {
                 // check if rectangle is not bridging
                 auto uiIDLeft = pRefSeq->uiSequenceIdForPosition( uiLeft );

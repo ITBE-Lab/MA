@@ -173,6 +173,7 @@ namespace libMSV
 template <typename DBCon>
 using ReadRangeTableType = SQLTableWithLibIncrPriKey<DBCon,
                                                      PriKeyDefaultType, // read id (foreign key)
+                                                     PriKeyDefaultType, // sequencer_id (foreign key)
                                                      RangeStartInt64_t, // read_range
                                                      RangeEndInt64_t, // read_range (dummy)
                                                      bool, // primary alignment
@@ -182,6 +183,8 @@ const json jReadExtensionTableDef = {
     { TABLE_NAME, "read_range_table" },
     { TABLE_COLUMNS,
       { { { COLUMN_NAME, "read_id" } },
+        // usually you are not supposed to repeat columns from other tables (but i need the performance for this query..)
+        { { COLUMN_NAME, "sequencer_id" } },
         { { COLUMN_NAME, "read_range" } },
         { { COLUMN_NAME, "read_range_DUMMY" } },
         { { COLUMN_NAME, "primary_alignment" } },
@@ -192,21 +195,21 @@ const json jReadExtensionTableDef = {
  */
 template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon>
 {
+    ReadTable<DBCon> xReads;
     SQLQuery<DBCon, uint32_t> xGetCoverage;
     SQLQuery<DBCon, uint32_t> xGetPrimCoverage;
 
   public:
     ReadRangeTable( std::shared_ptr<DBCon> pDB )
         : ReadRangeTableType<DBCon>( pDB, jReadExtensionTableDef ),
+          xReads( pDB ),
           xGetCoverage( pDB, "SELECT COUNT(*) "
                              "FROM read_range_table "
-                             "JOIN read_table ON read_table.id = read_range_table.read_id "
                              "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
                              "AND sequencer_id = ? "
                              "AND mapping_quality >= ? " ),
           xGetPrimCoverage( pDB, "SELECT COUNT(*) "
                                  "FROM read_range_table "
-                                 "JOIN read_table ON read_table.id = read_range_table.read_id "
                                  "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
                                  "AND sequencer_id = ? "
                                  "AND mapping_quality >= ? "
@@ -215,7 +218,8 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
 
     inline void insertAlignmentId( int64_t iReadId, std::shared_ptr<Alignment> pAlignment )
     {
-        ReadRangeTable<DBCon>::insert( iReadId, RangeStartInt64_t{ (int64_t)pAlignment->beginOnRef( ) },
+        auto iSeqId = xReads.getSeqId( iReadId );
+        ReadRangeTable<DBCon>::insert( iReadId, iSeqId, RangeStartInt64_t{ (int64_t)pAlignment->beginOnRef( ) },
                                        RangeEndInt64_t{ (int64_t)pAlignment->endOnRef( ) },
                                        !pAlignment->bSecondary && !pAlignment->bSupplementary,
                                        (double)pAlignment->fMappingQuality );
@@ -229,12 +233,12 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
     inline void genIndices( )
     {
         this->addIndex(
-            json{ { INDEX_NAME, "range_index" }, { INDEX_COLUMNS, "read_range" }, { INDEX_METHOD, "GIST" } } );
+            json{ { INDEX_NAME, "range_index" }, { INDEX_COLUMNS, "sequencer_id, read_range" }, { INDEX_METHOD, "GIST" } } );
     } // method
 
     inline void dropIndices( )
     {
-        this->dropIndex( json{ { INDEX_NAME, "read_range" } } );
+        this->dropIndex( json{ { INDEX_NAME, "range_index" } } );
     } // method
 
     inline uint32_t coverage( int64_t from, int64_t to, int64_t iSeqId, bool bOnlyPrimary, double fMinMapQ )

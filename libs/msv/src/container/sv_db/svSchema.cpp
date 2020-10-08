@@ -67,7 +67,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "call_area", &SvCallTable<DBConSingle>::callArea )
         .def( "drop_indices", &SvCallTable<DBConSingle>::dropIndices )
         .def( "filter_calls_with_high_score", &SvCallTable<DBConSingle>::filterCallsWithHighScore )
-        .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices );
+        .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices )
+        .def( "insert_call", &SvCallTable<DBConSingle>::insertCall );
 
     using X = SvCallTableAnalyzer<DBCon, false>;
     py::class_<X, std::shared_ptr<X>>( xOrganizer.util( ), "SvCallTableAnalyzer" )

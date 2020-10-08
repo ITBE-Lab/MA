@@ -903,14 +903,14 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
     /** @brief iterates over calls
      * @details
      * Iterates over calls of run_id iCallerRunId and with score between dMinScore and dMaxScore.
-     * Fetches batches of 10000 calls at a time.
+     * Fetches batches of 10.000 calls at a time.
      * Then splits each batch into multiple tasks (number of tasks chosen according to number of connection in pool).
      * For each task fInit is called to initialize one object of type ComputeData.
      * Then fCompute is called for each call in the task.
      * Once all tasks are finished fCombine is called once for each ComputeData.
      * @note fCompute is called in parallel with itself, fInit, fCombine and the fetching of the next batch.
      *       fInit and fCompute of the same task are called sequentially.
-     *       fCombine if only called on tasks that finished all fCompute calls.
+     *       fCombine is only called on tasks that finished all fCompute calls.
      * This parallelizes the work on the individual calls as well as the fetching of the next batch.
      */
     template <typename ComputeData, typename E, typename F, typename G>

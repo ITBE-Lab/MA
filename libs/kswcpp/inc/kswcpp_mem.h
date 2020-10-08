@@ -1,7 +1,9 @@
 #pragma once
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 
 #if defined( __GNUC__ )
 #include <stdlib.h>
@@ -203,6 +205,110 @@ class AlignedMemoryManager
         if( this->pMemH != NULL )
             free( this->pMemH );
     } // destructor
+}; // class
+
+template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE, size_t HASH_TABLE_GB_MIN_SIZE> class CIGARMemoryManager
+{
+    std::unordered_map<int64_t, std::array<TP_DIFF_VEC, CHUNK_SIZE>> xData;
+    void* mem2 = nullptr;
+    TP_DIFF_VEC* p_pstruct = nullptr;
+    int64_t iPROffset = 0;
+    TP_DIFF_VEC xZero;
+    std::array<TP_DIFF_VEC, CHUNK_SIZE> xZeroArray;
+
+  public:
+    CIGARMemoryManager( )
+    {} // constructor
+
+    void resize( size_t uiSize )
+    {
+        if( uiSize * sizeof( TP_DIFF_VEC ) <= HASH_TABLE_GB_MIN_SIZE * 1073741824 )
+        {
+            if( p_pstruct != nullptr ) // safety check
+                free( mem2 );
+            // std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE *
+            // 1073741824
+            //          << " bytes." << std::endl;
+            // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
+            // HASH_TABLE_GB_MIN_SIZE
+            //          << " gigabytes." << std::endl;
+            mem2 = malloc( uiSize * sizeof( TP_DIFF_VEC ) );
+            p_pstruct = (TP_DIFF_VEC*)( ( ( (size_t)mem2 + ( sizeof( TP_DIFF_VEC ) - 1 ) ) / sizeof( TP_DIFF_VEC ) ) *
+                                        sizeof( TP_DIFF_VEC ) );
+        } // if
+        else
+        {
+            // std::cout << "using hash table because: " << uiSize * sizeof( TP_DIFF_VEC ) << " / "
+            //          << HASH_TABLE_GB_MIN_SIZE * 1073741824 << " bytes are required." << std::endl;
+            // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
+            // HASH_TABLE_GB_MIN_SIZE
+            //          << " gigabytes." << std::endl;
+
+            // zero initialize zero value
+            xZero.setzero( );
+            // zero initialize zero array
+            for( size_t uiI = 0; uiI < xZeroArray.size( ); uiI++ )
+                xZeroArray[ uiI ] = xZero;
+        } // else
+    } // method
+
+    void set( size_t iI, TP_DIFF_VEC xVal )
+    {
+        if( p_pstruct == nullptr )
+        {
+            for( size_t uiX = 0; uiX < sizeof( TP_DIFF_VEC ); uiX++ )
+                if( xVal.at( uiX ) != 0 )
+                {
+                    // insert zero array (this triggers a copy; however this is necessary) if no array exists for that
+                    // chunk.
+                    // Then sets the appropriate element in the array.
+                    // We need to zero initialize arrays manually as their constructors do not guarantee that
+                    // and because we ignore inserting zero elements.
+                    xData.try_emplace( ( iPROffset + iI ) / CHUNK_SIZE, xZeroArray )
+                        .first->second[ ( iPROffset + iI ) % CHUNK_SIZE ] = xVal;
+                    return;
+                } // if
+        } // if
+        else
+            p_pstruct[ iPROffset + iI ] = xVal;
+    }
+
+    TP_DIFF_VEC& get( size_t iI )
+    {
+        if( p_pstruct == nullptr )
+        {
+            auto xIt = xData.find( iI / CHUNK_SIZE );
+            if( xIt == xData.end( ) )
+                return xZero;
+            return xIt->second[ iI % CHUNK_SIZE ];
+        } // if
+        else
+            return p_pstruct[ iI ];
+    }
+
+    void setPROffset( int64_t iI )
+    {
+        iPROffset = iI;
+    } // method
+
+    template <typename TP_RET_TYPE> TP_RET_TYPE accessAs( size_t uiIndex )
+    {
+        if( p_pstruct == nullptr )
+        {
+            assert( sizeof( TP_RET_TYPE ) <= sizeof( TP_DIFF_VEC ) );
+            size_t iI = uiIndex / ( sizeof( TP_DIFF_VEC ) / sizeof( TP_RET_TYPE ) );
+            size_t uiModulo = uiIndex % ( sizeof( TP_DIFF_VEC ) / sizeof( TP_RET_TYPE ) );
+            return ( (TP_RET_TYPE*)&this->get( iI ) )[ uiModulo ];
+        } // if
+        else
+            return ( (TP_RET_TYPE*)p_pstruct )[ uiIndex ];
+    }
+
+    ~CIGARMemoryManager( )
+    {
+        if( p_pstruct != nullptr )
+            free( mem2 );
+    }
 }; // class
 
 //// void ksw_extd2_old( void *km,

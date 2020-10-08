@@ -68,12 +68,22 @@ static inline uint32_t* ksw_push_cigar( void* km, int* n_cigar, int* m_cigar, ui
 //   bit 0-2: which type gets the max - 0 for H, 1 for E, 2 for F, 3 for \tilde{E} and 4 for \tilde{F}
 //   bit 3/0x08: 1 if a continuation on the E state (bit 5/0x20 for a continuation on \tilde{E})
 //   bit 4/0x10: 1 if a continuation on the F state (bit 6/0x40 for a continuation on \tilde{F})
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
 template <typename TP_DIFF_SCORE_UNSIGNED>
+#else
+template <typename TP_DIFF_SCORE_UNSIGNED, typename TP_MEM_MANAGER>
+#endif
 static inline void ksw_backtrack__( void* km, int is_rot, int is_rev, int min_intron_len,
-                                    const TP_DIFF_SCORE_UNSIGNED* p, const int* off, const int* off_end, int n_col,
-                                    int i0, int j0, int* m_cigar_, int* n_cigar_, uint32_t** cigar_ )
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
+                                    const TP_DIFF_SCORE_UNSIGNED* p,
+#else
+                                    TP_MEM_MANAGER& xMem,
+#endif
+                                    const int* off, const int* off_end, int n_col, int i0, int j0, int* m_cigar_,
+                                    int* n_cigar_, uint32_t** cigar_ )
 { // p[] - lower 3 bits: which type gets the max; bit
-    int n_cigar = 0, m_cigar = *m_cigar_, i = i0, j = j0, r, state = 0;
+    int n_cigar = 0, m_cigar = *m_cigar_;
+    int64_t i = i0, j = j0, r, state = 0;
     uint32_t *cigar = *cigar_, tmp;
     while( i >= 0 && j >= 0 )
     { // at the beginning of the loop, _state_ tells us which state to check
@@ -85,7 +95,13 @@ static inline void ksw_backtrack__( void* km, int is_rot, int is_rev, int min_in
                 force_state = 2;
             if( off_end && i > off_end[ r ] )
                 force_state = 1;
-            tmp = force_state < 0 ? p[ r * n_col + i - off[ r ] ] : 0;
+            tmp = force_state < 0 ?
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
+                                  p[ r * n_col + i - off[ r ] ]
+#else
+                                  xMem.template accessAs<TP_DIFF_SCORE_UNSIGNED>( r * n_col + i - off[ r ] )
+#endif
+                                  : 0;
         }
         else
         {
@@ -93,7 +109,13 @@ static inline void ksw_backtrack__( void* km, int is_rot, int is_rev, int min_in
                 force_state = 2;
             if( off_end && j > off_end[ i ] )
                 force_state = 1;
-            tmp = force_state < 0 ? p[ i * n_col + j - off[ i ] ] : 0;
+            tmp = force_state < 0 ?
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
+                                  p[ i * n_col + j - off[ i ] ]
+#else
+                                  xMem.template accessAs<TP_DIFF_SCORE_UNSIGNED>( i * n_col + j - off[ i ] )
+#endif
+                                  : 0;
         }
 
         if( state == 0 )
@@ -122,7 +144,7 @@ static inline void ksw_backtrack__( void* km, int is_rot, int is_rev, int min_in
     if( j >= 0 )
         cigar = ksw_push_cigar( km, &n_cigar, &m_cigar, cigar, 1, j + 1 ); // first insertion
     if( !is_rev )
-        for( i = 0; i<n_cigar>> 1; ++i ) // reverse CIGAR
+        for( i = 0; i < ( n_cigar >> 1 ); ++i ) // reverse CIGAR
             tmp = cigar[ i ], cigar[ i ] = cigar[ n_cigar - 1 - i ], cigar[ n_cigar - 1 - i ] = tmp;
     *m_cigar_ = m_cigar, *n_cigar_ = n_cigar, *cigar_ = cigar;
 } // function
@@ -313,8 +335,9 @@ static inline void kswcpp_inner_core( const int qlen, // query length
     /* Code start. */
     constexpr const TP_SCORE iKSW_NEG_INF = std::numeric_limits<TP_SCORE>::min( );
 
-    int t, qe = q + e, n_col_, *off = 0, *off_end = 0, qlen_, /* last_st, */ last_en, wl, wr, max_sc, min_sc,
-           long_thres, long_diff;
+    int64_t t, qe = q + e, n_col_;
+    int *off = 0, *off_end = 0;
+    int64_t qlen_, /* last_st, */ last_en, wl, wr, max_sc, min_sc, long_thres, long_diff;
 
     // int with_cigar = !(flag & KSW_EZ_SCORE_ONLY);
     int approx_max = !!( flag & KSW_EZ_APPROX_MAX );
@@ -326,7 +349,15 @@ static inline void kswcpp_inner_core( const int qlen, // query length
 #ifdef OLD_MEMORY_MANAGMENT
     T_VecEleUnsigned* mem;
 #endif
+
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
     TP_DIFF_SCORE_UNSIGNED* mem2 = 0;
+#else
+    // allocate max. 5GB of array (for larger arrays use hash map instead)
+    // use chunks of 10.000 within the hash map in order to minimize buckets (we know that actually used indices occur
+    // in sequence)
+    CIGARMemoryManager<TP_DIFF_VEC, 10000, 30> xMem;
+#endif
 
     ksw_reset_extz( ez );
     if( m <= 1 || qlen <= 0 || tlen <= 0 )
@@ -396,7 +427,9 @@ static inline void kswcpp_inner_core( const int qlen, // query length
     TP_DIFF_VEC* x2_pstruct;
     TP_DIFF_VEC* y2_pstruct;
     TP_DIFF_VEC* s_pstruct;
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
     TP_DIFF_VEC* p_pstruct = NULL;
+#endif
 
     u_pstruct = rxMemManager.reserveMemMatrix<TP_DIFF_VEC>( ( tlen_ * 8 + qlen_ ) );
     v_pstruct = u_pstruct + tlen_; // aligned to SIMD-type
@@ -455,9 +488,14 @@ static inline void kswcpp_inner_core( const int qlen, // query length
 
     if( WITH_CIGAR )
     { /* Allocate aligned memory for p */
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
         mem2 = (TP_DIFF_SCORE_UNSIGNED*)malloc( ( ( qlen + tlen - 1 ) * n_col_ + 1 ) * sizeof( TP_DIFF_VEC ) );
         p_pstruct = (TP_DIFF_VEC*)( ( ( (size_t)mem2 + ( sizeof( TP_DIFF_VEC ) - 1 ) ) / sizeof( TP_DIFF_VEC ) ) *
                                     sizeof( TP_DIFF_VEC ) );
+#else
+        xMem.resize( ( ( qlen + tlen - 1 ) * n_col_ + 1 ) );
+        // xMem.setPOffset( ( ( sizeof( TP_DIFF_VEC ) - 1 ) / sizeof( TP_DIFF_VEC ) ) * sizeof( TP_DIFF_VEC ) );
+#endif
 
         /* Allocate memory for the cigar itself */
         off = (int*)malloc( ( qlen + tlen - 1 ) * sizeof( int ) * 2 );
@@ -476,7 +514,7 @@ static inline void kswcpp_inner_core( const int qlen, // query length
     memcpy( sf, target, tlen ); // copy the reference to target
 
     /* Central iteration */
-    for( int r = 0, last_st = last_en = -1; r < qlen + tlen - 1; ++r )
+    for( int64_t r = 0, last_st = last_en = -1; r < qlen + tlen - 1; ++r )
     {
         int st = 0; // start reference
         int en = tlen - 1; // end
@@ -504,7 +542,7 @@ static inline void kswcpp_inner_core( const int qlen, // query length
             st = r - qlen + 1;
         if( en > r )
             en = r;
-        if( st<( r - wr + 1 )>> 1 )
+        if( st < ( ( r - wr + 1 ) >> 1 ) )
             st = ( r - wr + 1 ) >> 1; // take the ceil
         if( en > ( r + wl ) >> 1 )
             en = ( r + wl ) >> 1; // take the floor
@@ -593,10 +631,20 @@ static inline void kswcpp_inner_core( const int qlen, // query length
 
         assert( en_ - st_ + 1 <= n_col_ );
 
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
         TP_DIFF_VEC* pr_pstruct = nullptr; // used in the context of cigar construction merely
+#endif
         if( WITH_CIGAR )
         { /* Only requied for cigar */
+            // std::cout << "A:" << r * ((int64_t)n_col_)  << std::endl;
+            // std::cout << "B:" << ( ( r * ((int64_t)n_col_) ) - st_ )  << std::endl;
+            // std::cout << "C:" << st_  << std::endl;
+
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
             pr_pstruct = (TP_DIFF_VEC*)( p_pstruct + ( ( r * n_col_ ) - st_ ) );
+#else
+            xMem.setPROffset( ( r * n_col_ ) - st_ );
+#endif
             off[ r ] = st;
             off_end[ r ] = en;
         } // if
@@ -681,7 +729,11 @@ static inline void kswcpp_inner_core( const int qlen, // query length
                     tmp_struct = LEFT_GAP_ALIGN ? b2_struct > zero_struct : zero_struct > b2_struct;
                     y2_pstruct[ t ] = ( tmp_struct & b2_struct ) - qe2_struct;
                     d_struct = d_struct | ( tmp_struct & TP_DIFF_VEC( 0x40 ) );
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
                     pr_pstruct[ t ] = d_struct;
+#else
+                    xMem.set( t, d_struct );
+#endif
                 } // if
                 else
                 { /* Right aligned gaps */
@@ -697,7 +749,11 @@ static inline void kswcpp_inner_core( const int qlen, // query length
                     tmp_struct = zero_struct > b2_struct;
                     y2_pstruct[ t ] = ( tmp_struct.andnot( b2_struct ) ) - qe2_struct;
                     d_struct = d_struct | ( tmp_struct.andnot( TP_DIFF_VEC( 0x40 ) ) );
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
                     pr_pstruct[ t ] = d_struct;
+#else
+                    xMem.set( t, d_struct );
+#endif
                 } // else
             } // if
             else
@@ -742,21 +798,44 @@ static inline void kswcpp_inner_core( const int qlen, // query length
         int rev_cigar = !!( flag & KSW_EZ_REV_CIGAR );
         if( !ez->zdropped && !( flag & KSW_EZ_EXTZ_ONLY ) )
         { /* Backtracking up to tlen - 1, qlen - 1 */
-            ksw_backtrack__( nullptr, 1, rev_cigar, 0, (TP_DIFF_SCORE_UNSIGNED*)p_pstruct, off, off_end,
-                             n_col_ * TP_DIFF_VEC::SIZE, tlen - 1, qlen - 1, &ez->m_cigar, &ez->n_cigar, &ez->cigar );
+            ksw_backtrack__
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
+                ( nullptr, 1, rev_cigar, 0, (TP_DIFF_SCORE_UNSIGNED*)p_pstruct,
+#else
+                <TP_DIFF_SCORE_UNSIGNED>(
+                    nullptr, 1, rev_cigar, 0, xMem,
+#endif
+                  off, off_end, n_col_ * TP_DIFF_VEC::SIZE, tlen - 1, qlen - 1, &ez->m_cigar, &ez->n_cigar,
+                  &ez->cigar );
         } // if
         else if( !ez->zdropped && ( flag & KSW_EZ_EXTZ_ONLY ) && ez->mqe > (int)( ez->max ) ) // AK: int cast added
         { /* Backtracking up to mqe_t, qlen - 1 */
             ez->reach_end = 1;
-            ksw_backtrack__( nullptr, 1, rev_cigar, 0, (TP_DIFF_SCORE_UNSIGNED*)p_pstruct, off, off_end,
-                             n_col_ * TP_DIFF_VEC::SIZE, ez->mqe_t, qlen - 1, &ez->m_cigar, &ez->n_cigar, &ez->cigar );
+            ksw_backtrack__
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
+                ( nullptr, 1, rev_cigar, 0, (TP_DIFF_SCORE_UNSIGNED*)p_pstruct,
+#else
+                <TP_DIFF_SCORE_UNSIGNED>(
+                    nullptr, 1, rev_cigar, 0, xMem,
+#endif
+                  off, off_end, n_col_ * TP_DIFF_VEC::SIZE, ez->mqe_t, qlen - 1, &ez->m_cigar, &ez->n_cigar,
+                  &ez->cigar );
         } // else if
         else if( ez->max_t >= 0 && ez->max_q >= 0 )
         { /* Backtracking up to max_t, max_q */
-            ksw_backtrack__( nullptr, 1, rev_cigar, 0, (TP_DIFF_SCORE_UNSIGNED*)p_pstruct, off, off_end,
-                             n_col_ * TP_DIFF_VEC::SIZE, ez->max_t, ez->max_q, &ez->m_cigar, &ez->n_cigar, &ez->cigar );
+            ksw_backtrack__
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
+                ( nullptr, 1, rev_cigar, 0, (TP_DIFF_SCORE_UNSIGNED*)p_pstruct,
+#else
+                <TP_DIFF_SCORE_UNSIGNED>(
+                    nullptr, 1, rev_cigar, 0, xMem,
+#endif
+                  off, off_end, n_col_ * TP_DIFF_VEC::SIZE, ez->max_t, ez->max_q, &ez->m_cigar, &ez->n_cigar,
+                  &ez->cigar );
         } // else if
+#ifdef OLD_CIGAR_MEMORY_MANAGMENT
         kfree( nullptr, mem2 );
+#endif
         kfree( nullptr, off );
     } // if
 } // function

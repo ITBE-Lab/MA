@@ -141,7 +141,7 @@ void NeedlemanWunsch::ksw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSe
         } // switch
     } // for
 #if DEBUG_LEVEL >= 1
-    const char vMIDN[] = {'M', 'I', 'D', 'N'};
+    const char vMIDN[] = { 'M', 'I', 'D', 'N' };
     if( qPos != (uint32_t)toQuery && rPos != (uint32_t)toRef )
     {
         std::cerr << "ksw did neither extend till end of query nor ref " << (int)toQuery - qPos << "; "
@@ -881,7 +881,7 @@ std::shared_ptr<Alignment> NeedlemanWunsch::execute_one( std::shared_ptr<Seeds> 
  */
 std::vector<char> randomNucSeq( const size_t uiLen )
 {
-    static const char nucleotides[] = {0, 1, 2, 3};
+    static const char nucleotides[] = { 0, 1, 2, 3 };
 
     std::vector<char> vNucSeq( uiLen );
     for( size_t i = 0; i < uiLen; ++i )
@@ -913,6 +913,7 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
 
     uint32_t qPos = 0;
     uint32_t rPos = 0;
+#if 1
     for( int i = 0; i < ez.ez->n_cigar; ++i )
     {
         uint32_t uiSymbol = ez.ez->cigar[ i ] & 0xf;
@@ -944,6 +945,7 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
                 break;
         } // switch
     } // for
+#endif
     return pAlignment;
 } // function
 
