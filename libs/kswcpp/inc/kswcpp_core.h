@@ -354,9 +354,9 @@ static inline void kswcpp_inner_core( const int qlen, // query length
     TP_DIFF_SCORE_UNSIGNED* mem2 = 0;
 #else
     // allocate max. 5GB of array (for larger arrays use hash map instead)
-    // use chunks of 10.000 within the hash map in order to minimize buckets (we know that actually used indices occur
+    // use chunks of 1.000 within the hash map in order to minimize buckets (we know that actually used indices occur
     // in sequence)
-    CIGARMemoryManager<TP_DIFF_VEC, 10000, 30> xMem;
+    CIGARMemoryManager<TP_DIFF_VEC, 3, 90> xMem;
 #endif
 
     ksw_reset_extz( ez );

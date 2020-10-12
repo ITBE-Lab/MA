@@ -1,9 +1,12 @@
 #pragma once
 #include <cassert>
 #include <cstring>
+#include <fstream>
 #include <iostream>
+#include <list>
 #include <memory>
-#include <unordered_map>
+#include <stdio.h>
+#include <unordered_set>
 
 #if defined( __GNUC__ )
 #include <stdlib.h>
@@ -207,14 +210,111 @@ class AlignedMemoryManager
     } // destructor
 }; // class
 
-template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE, size_t HASH_TABLE_GB_MIN_SIZE> class CIGARMemoryManager
+
+template <typename TP_CONTENT> std::ofstream& operator<<( std::ofstream& xOut, std::vector<TP_CONTENT>& xA )
 {
-    std::unordered_map<int64_t, std::array<TP_DIFF_VEC, CHUNK_SIZE>> xData;
+    xOut.write( (char*)xA.data( ), xA.size( ) * sizeof( TP_CONTENT ) );
+    return xOut;
+}
+
+template <typename TP_CONTENT> std::ifstream& operator>>( std::ifstream& xIn, std::vector<TP_CONTENT>& xA )
+{
+    xIn.read( (char*)xA.data( ), xA.size( ) * sizeof( TP_CONTENT ) );
+    return xIn;
+}
+
+template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicFileCache
+{
+    std::string sPrefix;
+    std::array<std::tuple<bool, TP_KEY, TP_CONTENT>, NUM_CACHED> vContent;
+    std::list<size_t> xCacheOrder;
+    std::unordered_set<TP_KEY> xInFile;
+    uint64_t uiCacheMisses = 0;
+    uint64_t uiCacheHits = 0;
+    std::function<void( TP_CONTENT& )> fInit = []( TP_CONTENT& ) {};
+
+  public:
+    CyclicFileCache( )
+    {}
+
+    void init( std::string sPrefix, std::function<void( TP_CONTENT& )> fInit )
+    {
+        this->sPrefix = sPrefix;
+        this->fInit = fInit;
+        xCacheOrder.clear( );
+        for( auto iKey : xInFile )
+            remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
+        xInFile.clear( );
+        for( size_t uiI = 0; uiI < NUM_CACHED; uiI++ )
+        {
+            std::get<0>( vContent[ uiI ] ) = false;
+            xCacheOrder.push_back( uiI );
+        } // for
+    }
+
+    TP_CONTENT& operator[]( TP_KEY iKey )
+    {
+        for( auto xIt = xCacheOrder.begin( ); xIt != xCacheOrder.end( ) && std::get<0>( vContent[ *xIt ] ); xIt++ )
+            if( std::get<1>( vContent[ *xIt ] ) == iKey )
+            {
+                // move the element to the start of the list
+                size_t uiI = *xIt;
+                xCacheOrder.erase( xIt );
+                xCacheOrder.push_front( uiI );
+                uiCacheHits++;
+                return std::get<2>( vContent[ uiI ] );
+            } // if
+        // if we reach this point then the key was not found in the cache
+
+        // always replace the element that is last in the list
+        xCacheOrder.push_front( xCacheOrder.back( ) );
+        xCacheOrder.pop_back( );
+        auto& rCurr = vContent[ xCacheOrder.front( ) ];
+
+        // write old content to file
+        if( std::get<0>( rCurr ) )
+        {
+            std::ofstream xOut( ( sPrefix + std::to_string( std::get<1>( rCurr ) ) ).c_str( ), std::ofstream::binary );
+            xOut << std::get<2>( rCurr );
+            xOut.close( );
+            xInFile.insert( std::get<1>( rCurr ) );
+        } // if
+        // load new content from file
+        if( xInFile.count( iKey ) > 0 )
+        {
+            uiCacheMisses++;
+            std::ifstream xIn( ( sPrefix + std::to_string( iKey ) ).c_str( ), std::ifstream::binary );
+            xIn >> std::get<2>( rCurr );
+            xIn.close( );
+        } // if
+        else
+            fInit( std::get<2>( rCurr ) );
+        std::get<0>( rCurr ) = true;
+        std::get<1>( rCurr ) = iKey;
+
+        return std::get<2>( rCurr );
+    } // method
+
+    ~CyclicFileCache( )
+    {
+        if( uiCacheHits + uiCacheMisses > 0 )
+            std::cout << "CyclicFileCache hits: " << uiCacheHits << " misses: " << uiCacheMisses << " = "
+                      << 100.0 * uiCacheHits / (double)( uiCacheHits + uiCacheMisses ) << "%" << std::endl;
+        for( auto iKey : xInFile )
+            remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
+    } // deconstructor
+
+}; // class
+
+template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_SIZE> class CIGARMemoryManager
+{
+    static const int64_t CHUNK_SIZE = ( CHUNK_SIZE_GB * 1073741824 ) / sizeof( TP_DIFF_VEC );
     void* mem2 = nullptr;
     TP_DIFF_VEC* p_pstruct = nullptr;
     int64_t iPROffset = 0;
-    TP_DIFF_VEC xZero;
-    std::array<TP_DIFF_VEC, CHUNK_SIZE> xZeroArray;
+    // eventhough we know the size of the vector in xCache during compiletime
+    // we cannot use a std::array; since that would drastically increase compile times
+    CyclicFileCache<int64_t, std::vector<TP_DIFF_VEC>, 10> xCache;
 
   public:
     CIGARMemoryManager( )
@@ -226,29 +326,27 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE, size_t HASH_TABLE_GB_MIN_SIZ
         {
             if( p_pstruct != nullptr ) // safety check
                 free( mem2 );
-            // std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE *
-            // 1073741824
-            //          << " bytes." << std::endl;
-            // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
-            // HASH_TABLE_GB_MIN_SIZE
-            //          << " gigabytes." << std::endl;
+            std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE * 1073741824
+                      << " bytes." << std::endl;
+            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << HASH_TABLE_GB_MIN_SIZE
+                      << " gigabytes." << std::endl;
             mem2 = malloc( uiSize * sizeof( TP_DIFF_VEC ) );
             p_pstruct = (TP_DIFF_VEC*)( ( ( (size_t)mem2 + ( sizeof( TP_DIFF_VEC ) - 1 ) ) / sizeof( TP_DIFF_VEC ) ) *
                                         sizeof( TP_DIFF_VEC ) );
         } // if
         else
         {
-            // std::cout << "using hash table because: " << uiSize * sizeof( TP_DIFF_VEC ) << " / "
-            //          << HASH_TABLE_GB_MIN_SIZE * 1073741824 << " bytes are required." << std::endl;
-            // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
-            // HASH_TABLE_GB_MIN_SIZE
-            //          << " gigabytes." << std::endl;
+            std::cout << "using filesystem because: " << uiSize * sizeof( TP_DIFF_VEC ) << " / "
+                      << HASH_TABLE_GB_MIN_SIZE * 1073741824 << " bytes are required." << std::endl;
+            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << HASH_TABLE_GB_MIN_SIZE
+                      << " gigabytes." << std::endl;
 
             // zero initialize zero value
-            xZero.setzero( );
-            // zero initialize zero array
-            for( size_t uiI = 0; uiI < xZeroArray.size( ); uiI++ )
-                xZeroArray[ uiI ] = xZero;
+            xCache.init( "/tmp/.CIGARMemoryManager", []( std::vector<TP_DIFF_VEC>& rArr ) {
+                rArr.resize( CHUNK_SIZE );
+                for( size_t uiI = 0; uiI < CHUNK_SIZE; uiI++ )
+                    rArr[ uiI ].setzero( );
+            } );
         } // else
     } // method
 
@@ -264,26 +362,12 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE, size_t HASH_TABLE_GB_MIN_SIZ
                     // Then sets the appropriate element in the array.
                     // We need to zero initialize arrays manually as their constructors do not guarantee that
                     // and because we ignore inserting zero elements.
-                    xData.try_emplace( ( iPROffset + iI ) / CHUNK_SIZE, xZeroArray )
-                        .first->second[ ( iPROffset + iI ) % CHUNK_SIZE ] = xVal;
+                    xCache[ ( iPROffset + iI ) / CHUNK_SIZE ][ ( iPROffset + iI ) % CHUNK_SIZE ] = xVal;
                     return;
                 } // if
         } // if
         else
             p_pstruct[ iPROffset + iI ] = xVal;
-    }
-
-    TP_DIFF_VEC& get( size_t iI )
-    {
-        if( p_pstruct == nullptr )
-        {
-            auto xIt = xData.find( iI / CHUNK_SIZE );
-            if( xIt == xData.end( ) )
-                return xZero;
-            return xIt->second[ iI % CHUNK_SIZE ];
-        } // if
-        else
-            return p_pstruct[ iI ];
     }
 
     void setPROffset( int64_t iI )
@@ -298,7 +382,7 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE, size_t HASH_TABLE_GB_MIN_SIZ
             assert( sizeof( TP_RET_TYPE ) <= sizeof( TP_DIFF_VEC ) );
             size_t iI = uiIndex / ( sizeof( TP_DIFF_VEC ) / sizeof( TP_RET_TYPE ) );
             size_t uiModulo = uiIndex % ( sizeof( TP_DIFF_VEC ) / sizeof( TP_RET_TYPE ) );
-            return ( (TP_RET_TYPE*)&this->get( iI ) )[ uiModulo ];
+            return ( (TP_RET_TYPE*)&xCache[ iI / CHUNK_SIZE ][ iI % CHUNK_SIZE ] )[ uiModulo ];
         } // if
         else
             return ( (TP_RET_TYPE*)p_pstruct )[ uiIndex ];

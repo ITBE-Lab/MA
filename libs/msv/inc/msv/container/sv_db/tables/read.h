@@ -176,14 +176,15 @@ using ReadRangeTableType = SQLTableWithLibIncrPriKey<DBCon,
                                                      PriKeyDefaultType, // sequencer_id (foreign key)
                                                      RangeStartInt64_t, // read_range
                                                      RangeEndInt64_t, // read_range (dummy)
-                                                     bool, // primary alignment
+                                                     int, // primary alignment
                                                      double // mapping quality
                                                      >;
 const json jReadExtensionTableDef = {
     { TABLE_NAME, "read_range_table" },
     { TABLE_COLUMNS,
       { { { COLUMN_NAME, "read_id" } },
-        // usually you are not supposed to repeat columns from other tables (but i need the performance for this query..)
+        // usually you are not supposed to repeat columns from other tables (but i need the performance for this
+        // query..)
         { { COLUMN_NAME, "sequencer_id" } },
         { { COLUMN_NAME, "read_range" } },
         { { COLUMN_NAME, "read_range_DUMMY" } },
@@ -198,6 +199,7 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
     ReadTable<DBCon> xReads;
     SQLQuery<DBCon, uint32_t> xGetCoverage;
     SQLQuery<DBCon, uint32_t> xGetPrimCoverage;
+    SQLStatement<DBCon> xEnableExtension;
 
   public:
     ReadRangeTable( std::shared_ptr<DBCon> pDB )
@@ -213,7 +215,8 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
                                  "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
                                  "AND sequencer_id = ? "
                                  "AND mapping_quality >= ? "
-                                 "AND primary_alignment " )
+                                 "AND primary_alignment = ? " ),
+          xEnableExtension( pDB, "CREATE EXTENSION IF NOT EXISTS btree_gist" )
     {} // default constructor
 
     inline void insertAlignmentId( int64_t iReadId, std::shared_ptr<Alignment> pAlignment )
@@ -221,7 +224,7 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
         auto iSeqId = xReads.getSeqId( iReadId );
         ReadRangeTable<DBCon>::insert( iReadId, iSeqId, RangeStartInt64_t{ (int64_t)pAlignment->beginOnRef( ) },
                                        RangeEndInt64_t{ (int64_t)pAlignment->endOnRef( ) },
-                                       !pAlignment->bSecondary && !pAlignment->bSupplementary,
+                                       !pAlignment->bSecondary && !pAlignment->bSupplementary ? 1 : 0,
                                        (double)pAlignment->fMappingQuality );
     } // method
 
@@ -232,18 +235,24 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
 
     inline void genIndices( )
     {
-        this->addIndex(
-            json{ { INDEX_NAME, "range_index" }, { INDEX_COLUMNS, "sequencer_id, read_range" }, { INDEX_METHOD, "GIST" } } );
+        xEnableExtension.exec( );
+        this->addIndex( json{ { INDEX_NAME, "range_index" },
+                              { INDEX_COLUMNS, "sequencer_id, read_range, mapping_quality" },
+                              { INDEX_METHOD, "GIST" } } );
+        this->addIndex( json{ { INDEX_NAME, "range_index2" },
+                              { INDEX_COLUMNS, "sequencer_id, primary_alignment, read_range, mapping_quality" },
+                              { INDEX_METHOD, "GIST" } } );
     } // method
 
     inline void dropIndices( )
     {
         this->dropIndex( json{ { INDEX_NAME, "range_index" } } );
+        this->dropIndex( json{ { INDEX_NAME, "range_index2" } } );
     } // method
 
     inline uint32_t coverage( int64_t from, int64_t to, int64_t iSeqId, bool bOnlyPrimary, double fMinMapQ )
     {
-        return bOnlyPrimary ? xGetPrimCoverage.scalar( from, to, iSeqId, fMinMapQ )
+        return bOnlyPrimary ? xGetPrimCoverage.scalar( from, to, iSeqId, fMinMapQ, 1 )
                             : xGetCoverage.scalar( from, to, iSeqId, fMinMapQ );
     }
 }; // class

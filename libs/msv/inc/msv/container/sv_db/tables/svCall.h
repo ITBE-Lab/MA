@@ -397,7 +397,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>> vRet;
 
 
-        SQLQuery<DBCon, uint64_t> xGetCallFromPos( this->pConnection,
+        SQLQuery<DBCon, uint64_t> xGetPosFromCall( this->pConnection,
                                                    "SELECT from_pos "
                                                    "FROM sv_call_table "
                                                    "WHERE id = ? " );
@@ -498,7 +498,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     else
                         uiLastEdgeInsertionSize = 0;
 
-                    metaMeasureAndLogDuration<false>( "xInsertRow", [ & ]( ) {
+                    metaMeasureAndLogDuration<false>( "xDelete", [ & ]( ) {
                         // remember that we used this call
                         xDelete.exec( std::get<0>( tNextCall ) );
 #if DEBUG_LEVEL > 0
@@ -510,7 +510,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                             auto iNextCallID = std::get<5>( tNextCall );
                             auto bDoReverseContext = std::get<6>( tNextCall );
                             xDelete.exec( iNextCallID );
-                            uiCurrPos = xGetCallFromPos.scalar( iNextCallID );
+                            uiCurrPos = xGetPosFromCall.scalar( iNextCallID );
                             if( bDoReverseContext )
                                 bForwContext = !bForwContext;
                         } // if
@@ -530,7 +530,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                             std::cout << 100.0 * ( uiNumCalls - uiNumCallsRemaining ) / (float)uiNumCalls << "%"
                                       << std::endl;
                         }
-                    } ); // metaMeasureAndLogDuration xInsertRow
+                    } ); // metaMeasureAndLogDuration xDelete
                 } ); // metaMeasureAndLogDuration seq copy
 
                 // for jumps to the end of a contig we do not want to continue...
@@ -617,7 +617,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_from is NULL THEN -1 ELSE call_id_from END AS v1, "
+            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
@@ -631,7 +631,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_from is NULL THEN -1 ELSE call_id_from END AS v1, "
+            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END as v2 "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
@@ -676,7 +676,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_from is NULL THEN -1 ELSE call_id_from END AS v1,"
+            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1,"
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
@@ -691,7 +691,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_from is NULL THEN -1 ELSE call_id_from END AS v1, "
+            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
@@ -736,10 +736,15 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     callsToSeedsByIdAutoStart( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
                                nucSeqIndex uiMinEntrySize )
     {
-        size_t uiStartCnt = 0;
+        size_t uiStartCnt = 1;
         auto getNextStart = [ & ]( ) {
             auto uiNumCalls =
-                SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
+                SQLQuery<DBCon, uint64_t>( this->pConnection,
+                                           "SELECT COUNT(*) FROM reconstruction_table " )
+                    .scalar( );
+#if 0
+            std::cout << "uiNumCalls: " << uiNumCalls << std::endl;
+#endif
             if( uiNumCalls == 0 )
                 return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
             else
@@ -761,8 +766,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // start pos depending on context and contig of lowest id call
                 auto uiStartPos = bForwContext ? pRef->startOfSequenceWithId( uiStartId )
                                                : pRef->endOfSequenceWithId( uiStartId ) - 1;
-#if 0 
-                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << bForwContext
+#if 0
+                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << (bForwContext ? "true" : "false")
                           << " uiStartPos: " << uiStartPos << std::endl;
 #endif
                 return std::make_tuple( false, uiStartPos, bForwContext,

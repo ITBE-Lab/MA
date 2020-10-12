@@ -231,6 +231,12 @@ class NucSeq : public libMS::Container
     NucSeq( const NucSeq& rOther, nucSeqIndex uiFrom, nucSeqIndex uiTo )
     {
         vResetProtectedAttributes( );
+        if( uiTo > rOther.length( ) )
+            throw std::runtime_error( "out of bounds: " + std::to_string( uiFrom ) + " " + std::to_string( uiTo ) +
+                                      " " + std::to_string( rOther.length( ) ) );
+        if( uiFrom > uiTo )
+            throw std::runtime_error( "out of bounds: " + std::to_string( uiFrom ) + " " + std::to_string( uiTo ) +
+                                      " " + std::to_string( rOther.length( ) ) );
         vAppend( rOther.pxSequenceRef + uiFrom, uiTo - uiFrom );
     } // constructor
 
@@ -516,7 +522,7 @@ class NucSeq : public libMS::Container
         /* Complements of nucleotides
          *                               0  1  2  3
          */
-        static const char chars[ 4 ] = {3, 2, 1, 0};
+        static const char chars[ 4 ] = { 3, 2, 1, 0 };
 
         return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
@@ -547,7 +553,7 @@ class NucSeq : public libMS::Container
      */
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
-        static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
+        static const char chars[ 4 ] = { 'A', 'C', 'G', 'T' };
         if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
@@ -775,8 +781,8 @@ class NucSeq : public libMS::Container
             if( pxSequenceRef[ i ] > 4 )
             {
                 // if was not allow print error and throw exception
-                std::cerr << "Having invalid character in string: '" << pxSequenceRef[ i ] << "' at position: " << i
-                          << " full fastaq: " << fastaq( ) << std::endl;
+                std::cerr << "Having invalid character in string: '" << (uint16_t)pxSequenceRef[ i ]
+                          << "' at position: " << i << " full fastaq: " << fastaq( ) << std::endl;
                 throw std::runtime_error( "Found invalid character in nucSeq." );
             } // if
         } // for
@@ -796,7 +802,7 @@ class NucSeq : public libMS::Container
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
-        static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
+        static const uint8_t aTranslate[ 4 ] = { 1, 2, 4, 8 };
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
