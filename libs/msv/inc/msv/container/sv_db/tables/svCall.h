@@ -510,6 +510,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                         {
                             auto iNextCallID = std::get<5>( tNextCall );
                             auto bDoReverseContext = std::get<6>( tNextCall );
+                            uiCurrPos = xGetPosFromCall.scalar( iNextCallID );
                             deleteEntries( iNextCallID );
                             if( bDoReverseContext )
                                 bForwContext = !bForwContext;
@@ -569,6 +570,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                       { { COLUMN_NAME, "mirrored" } } // was the call mirored on the diagonal during it's creation?
                       //
                   } } } );
+
+        // clear table
+        pReconstructionTable->deleteAllRows( );
 
         SQLStatement<DBCon> xInsert( this->pConnection,
                                      "INSERT INTO reconstruction_table (call_id, from_pos, "
@@ -712,41 +716,43 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "ORDER BY reconstruction_table.order_id ASC "
             "LIMIT 1 " );
 
-#if DEBUG_LEVEL > 0 || 1
-        size_t uiNumPassedEntries = 0;
-        SQLQuery<DBCon, int64_t> xDelete(
-            this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
-            "DELETE FROM reconstruction_table "
-            "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) "
-            "RETURNING call_id " );
-        auto fDeleteEntries = [ & ]( int64_t iId ) {
-            xDelete.execAndForAll(
-                [ & ]( std::tuple<int64_t> xDeletedRow ) {
-                    if( iId != std::get<0>( xDeletedRow ) )
-                    {
-                        std::cout << "genome reconstruction: passed over entry " << std::get<0>( xDeletedRow )
-                                  << " while reconstructing entry " << iId << std::endl;
-                        uiNumPassedEntries++;
-                    } // if
-                },
-                iId );
-        };
-#else
         SQLStatement<DBCon> xDelete(
             this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
             "DELETE FROM reconstruction_table "
             "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) " );
-        auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); };
+
+#if DEBUG_LEVEL > 0 || 1
+        size_t uiNumPassedEntries = 0;
+        SQLQuery<DBCon, uint32_t> xCount(
+            this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
+            "SELECT COUNT(DISTINCT call_id)"
+            "FROM reconstruction_table "
+            "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) " );
+        auto fDeleteEntries = [ & ]( int64_t iId ) {
+            size_t uiNumDeleted = xCount.scalar( iId );
+            if( uiNumDeleted > 1 )
+            {
+                std::cout << "genome reconstruction: passed over " << uiNumDeleted - 1
+                          << " entries while reconstructing entry " << iId << std::endl;
+                uiNumPassedEntries += uiNumDeleted - 1;
+            } // if
+            xDelete.exec( iId );
+        }; // lambda function
+#else
+        auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); }; // lambda function
 #endif
 
         auto xRet = callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, getNextStart, xNextCallForwardContext,
                                         xNextCallBackwardContext, fDeleteEntries );
 #if DEBUG_LEVEL > 0 || 1
-        auto uiNumCalls = SQLQuery<DBCon, uint64_t>( this->pConnection,
-                                                     "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
-                              .scalar( iCallerRun );
-        std::cout << "Passed a total of " << uiNumPassedEntries << " entries, thats "
-                  << 100.0 * ( (double)uiNumPassedEntries ) / ( (double)uiNumCalls ) << "%." << std::endl;
+        if( uiNumPassedEntries > 0 )
+        {
+            auto uiNumCalls = SQLQuery<DBCon, uint64_t>(
+                                  this->pConnection, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
+                                  .scalar( iCallerRun );
+            std::cout << "Passed over a total of " << uiNumPassedEntries << " entries, thats "
+                      << 100.0 * ( (double)uiNumPassedEntries ) / ( (double)uiNumCalls ) << "%." << std::endl;
+        } // if
 #endif
         return xRet;
     } // method
