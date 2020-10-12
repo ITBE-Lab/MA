@@ -372,13 +372,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xRet;
     } // method
 
-    template <typename Func_t>
+
+    template <typename Func_t, typename Func2_t>
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
     callsToSeedsHelper( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
                         Func_t&& getNextStart,
                         // std::vector<std::tuple<bool, std::string, bool, std::string>> vStarts,
                         NextCallType& xNextCallForwardContext, NextCallSlaveType& xNextCallBackwardContext,
-                        SQLStatement<DBCon>& xDelete )
+                        Func2_t&& deleteEntries )
     {
         auto uiNumCalls = SQLQuery<DBCon, uint64_t>( this->pConnection,
                                                      "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
@@ -500,7 +501,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
                     metaMeasureAndLogDuration<false>( "xDelete", [ & ]( ) {
                         // remember that we used this call
-                        xDelete.exec( std::get<0>( tNextCall ) );
+                        deleteEntries( std::get<0>( tNextCall ) );
 #if DEBUG_LEVEL > 0
                         xVisitedCalls.insert( std::get<0>( tNextCall ) );
 #endif
@@ -509,8 +510,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                         {
                             auto iNextCallID = std::get<5>( tNextCall );
                             auto bDoReverseContext = std::get<6>( tNextCall );
-                            xDelete.exec( iNextCallID );
-                            uiCurrPos = xGetPosFromCall.scalar( iNextCallID );
+                            deleteEntries( iNextCallID );
                             if( bDoReverseContext )
                                 bForwContext = !bForwContext;
                         } // if
@@ -539,7 +539,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // reverse complement of the contig...
                 if( pRef->onContigBorder( uiCurrPos ) )
                 {
-                    xDelete.exec( std::get<0>( tNextCall ) );
+                    deleteEntries( std::get<0>( tNextCall ) );
                     break;
                 }
             } // while
@@ -641,8 +641,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "ORDER BY reconstruction_table.from_pos DESC "
             "LIMIT 1 " );
 
-        SQLStatement<DBCon> xDelete( this->pConnection->getSlave( )->getSlave( ), "DELETE FROM reconstruction_table "
-                                                                                  "WHERE call_id = ? " );
+        SQLStatement<DBCon> xDelete( this->pConnection->getSlave( )->getSlave( ),
+                                     "DELETE FROM reconstruction_table "
+                                     "WHERE call_id = ? " );
+        auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); };
 
         size_t uiStartCnt = 0;
         auto getNextStart = [ & ]( ) {
@@ -660,7 +662,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         };
 
         return callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, getNextStart, xNextCallForwardContext,
-                                   xNextCallBackwardContext, xDelete );
+                                   xNextCallBackwardContext, fDeleteEntries );
     } // method
 
     template <typename Func_t>
@@ -680,9 +682,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            // check if the selected entry is one sided
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
             "WHERE reconstruction_table.from_pos >= ? "
+            // prevent going backwards on one sided jumps
+            "AND sv_call_table.id NOT IN (SELECT call_id_to FROM one_sided_calls_table) "
             "AND reconstruction_table.from_forward "
+            // only use correctly mirrored entries
             "AND NOT reconstruction_table.mirrored "
             "ORDER BY reconstruction_table.order_id ASC "
             "LIMIT 1 " );
@@ -695,20 +701,54 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            // check if the selected entry is one sided
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
             "WHERE reconstruction_table.from_pos <= ? "
+            // prevent going backwards on one sided jumps
+            "AND sv_call_table.id NOT IN (SELECT call_id_to FROM one_sided_calls_table) "
             "AND NOT reconstruction_table.from_forward "
+            // only use correctly mirrored entries
             "AND NOT reconstruction_table.mirrored "
             "ORDER BY reconstruction_table.order_id ASC "
             "LIMIT 1 " );
 
+#if DEBUG_LEVEL > 0 || 1
+        size_t uiNumPassedEntries = 0;
+        SQLQuery<DBCon, int64_t> xDelete(
+            this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
+            "DELETE FROM reconstruction_table "
+            "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) "
+            "RETURNING call_id " );
+        auto fDeleteEntries = [ & ]( int64_t iId ) {
+            xDelete.execAndForAll(
+                [ & ]( std::tuple<int64_t> xDeletedRow ) {
+                    if( iId != std::get<0>( xDeletedRow ) )
+                    {
+                        std::cout << "genome reconstruction: passed over entry " << std::get<0>( xDeletedRow )
+                                  << " while reconstructing entry " << iId << std::endl;
+                        uiNumPassedEntries++;
+                    } // if
+                },
+                iId );
+        };
+#else
         SQLStatement<DBCon> xDelete(
             this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
             "DELETE FROM reconstruction_table "
             "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) " );
+        auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); };
+#endif
 
-        return callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, getNextStart, xNextCallForwardContext,
-                                   xNextCallBackwardContext, xDelete );
+        auto xRet = callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, getNextStart, xNextCallForwardContext,
+                                        xNextCallBackwardContext, fDeleteEntries );
+#if DEBUG_LEVEL > 0 || 1
+        auto uiNumCalls = SQLQuery<DBCon, uint64_t>( this->pConnection,
+                                                     "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
+                              .scalar( iCallerRun );
+        std::cout << "Passed a total of " << uiNumPassedEntries << " entries, thats "
+                  << 100.0 * ( (double)uiNumPassedEntries ) / ( (double)uiNumCalls ) << "%." << std::endl;
+#endif
+        return xRet;
     } // method
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
     callsToSeedsById( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
@@ -739,9 +779,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         size_t uiStartCnt = 1;
         auto getNextStart = [ & ]( ) {
             auto uiNumCalls =
-                SQLQuery<DBCon, uint64_t>( this->pConnection,
-                                           "SELECT COUNT(*) FROM reconstruction_table " )
-                    .scalar( );
+                SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table " ).scalar( );
 #if 0
             std::cout << "uiNumCalls: " << uiNumCalls << std::endl;
 #endif
@@ -816,7 +854,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     /** @brief reconstruct a sequenced genome from a reference and the calls of the run with id iCallerRun.
      *  @details
-     *  @todo at the moment this does not deal with jumped over sequences
      *  @todo at the moment this does not check the regex (?)
      *  Creates a reconstruction_table that is filled with all unused calls from iCallerRun and then deletes the calls
      *  one by one until the sequenced genome is reconstructed

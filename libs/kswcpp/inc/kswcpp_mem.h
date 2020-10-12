@@ -223,11 +223,16 @@ template <typename TP_CONTENT> std::ifstream& operator>>( std::ifstream& xIn, st
     return xIn;
 }
 
+/**
+ * Caches NUM_CACHED elements of TP_CONTENT in memory.
+ * Writes all further elements into files and loads & replaces the cached elements on access if necessary
+ * the chache buffer is simply determined by a modulo operation with NUM_CACHED.
+ * So, this assumes that access is mostly in sequential and not random.
+ */
 template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicFileCache
 {
     std::string sPrefix;
     std::array<std::tuple<bool, TP_KEY, TP_CONTENT>, NUM_CACHED> vContent;
-    std::list<size_t> xCacheOrder;
     std::unordered_set<TP_KEY> xInFile;
     uint64_t uiCacheMisses = 0;
     uint64_t uiCacheHits = 0;
@@ -241,56 +246,43 @@ template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicF
     {
         this->sPrefix = sPrefix;
         this->fInit = fInit;
-        xCacheOrder.clear( );
         for( auto iKey : xInFile )
             remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
         xInFile.clear( );
         for( size_t uiI = 0; uiI < NUM_CACHED; uiI++ )
-        {
             std::get<0>( vContent[ uiI ] ) = false;
-            xCacheOrder.push_back( uiI );
-        } // for
     }
 
     TP_CONTENT& operator[]( TP_KEY iKey )
     {
-        for( auto xIt = xCacheOrder.begin( ); xIt != xCacheOrder.end( ) && std::get<0>( vContent[ *xIt ] ); xIt++ )
-            if( std::get<1>( vContent[ *xIt ] ) == iKey )
-            {
-                // move the element to the start of the list
-                size_t uiI = *xIt;
-                xCacheOrder.erase( xIt );
-                xCacheOrder.push_front( uiI );
-                uiCacheHits++;
-                return std::get<2>( vContent[ uiI ] );
-            } // if
-        // if we reach this point then the key was not found in the cache
-
-        // always replace the element that is last in the list
-        xCacheOrder.push_front( xCacheOrder.back( ) );
-        xCacheOrder.pop_back( );
-        auto& rCurr = vContent[ xCacheOrder.front( ) ];
-
-        // write old content to file
-        if( std::get<0>( rCurr ) )
-        {
-            std::ofstream xOut( ( sPrefix + std::to_string( std::get<1>( rCurr ) ) ).c_str( ), std::ofstream::binary );
-            xOut << std::get<2>( rCurr );
-            xOut.close( );
-            xInFile.insert( std::get<1>( rCurr ) );
-        } // if
-        // load new content from file
-        if( xInFile.count( iKey ) > 0 )
-        {
-            uiCacheMisses++;
-            std::ifstream xIn( ( sPrefix + std::to_string( iKey ) ).c_str( ), std::ifstream::binary );
-            xIn >> std::get<2>( rCurr );
-            xIn.close( );
-        } // if
+        auto& rCurr = vContent[ iKey % NUM_CACHED ];
+        if( std::get<0>( rCurr ) && std::get<1>( rCurr ) == iKey )
+            uiCacheHits++;
         else
+        {
+            // write old content to file (if there is some old content)
+            if( std::get<0>( rCurr ) )
+            {
+                std::ofstream xOut( ( sPrefix + std::to_string( std::get<1>( rCurr ) ) ).c_str( ),
+                                    std::ofstream::binary );
+                xOut << std::get<2>( rCurr );
+                xOut.close( );
+                xInFile.insert( std::get<1>( rCurr ) );
+            } // if
+            // (re)initialize buffer
             fInit( std::get<2>( rCurr ) );
-        std::get<0>( rCurr ) = true;
-        std::get<1>( rCurr ) = iKey;
+            std::get<0>( rCurr ) = true;
+            std::get<1>( rCurr ) = iKey;
+            // load new content from file (if it was saved to file before)
+            if( xInFile.count( iKey ) > 0 )
+            {
+                uiCacheMisses++;
+                std::ifstream xIn( ( sPrefix + std::to_string( std::get<1>( rCurr ) ) ).c_str( ),
+                                   std::ifstream::binary );
+                xIn >> std::get<2>( rCurr );
+                xIn.close( );
+            } // if
+        } // else
 
         return std::get<2>( rCurr );
     } // method
@@ -299,7 +291,7 @@ template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicF
     {
         if( uiCacheHits + uiCacheMisses > 0 )
             std::cout << "CyclicFileCache hits: " << uiCacheHits << " misses: " << uiCacheMisses << " = "
-                      << 100.0 * uiCacheHits / (double)( uiCacheHits + uiCacheMisses ) << "%" << std::endl;
+                      << (100.0 * (double)uiCacheHits) / (double)( uiCacheHits + uiCacheMisses ) << "%" << std::endl;
         for( auto iKey : xInFile )
             remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
     } // deconstructor
@@ -326,10 +318,12 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_
         {
             if( p_pstruct != nullptr ) // safety check
                 free( mem2 );
-            std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE * 1073741824
-                      << " bytes." << std::endl;
-            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << HASH_TABLE_GB_MIN_SIZE
-                      << " gigabytes." << std::endl;
+            // std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE *
+            // 1073741824
+            //          << " bytes." << std::endl;
+            // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
+            // HASH_TABLE_GB_MIN_SIZE
+            //          << " gigabytes." << std::endl;
             mem2 = malloc( uiSize * sizeof( TP_DIFF_VEC ) );
             p_pstruct = (TP_DIFF_VEC*)( ( ( (size_t)mem2 + ( sizeof( TP_DIFF_VEC ) - 1 ) ) / sizeof( TP_DIFF_VEC ) ) *
                                         sizeof( TP_DIFF_VEC ) );
@@ -353,19 +347,7 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_
     void set( size_t iI, TP_DIFF_VEC xVal )
     {
         if( p_pstruct == nullptr )
-        {
-            for( size_t uiX = 0; uiX < sizeof( TP_DIFF_VEC ); uiX++ )
-                if( xVal.at( uiX ) != 0 )
-                {
-                    // insert zero array (this triggers a copy; however this is necessary) if no array exists for that
-                    // chunk.
-                    // Then sets the appropriate element in the array.
-                    // We need to zero initialize arrays manually as their constructors do not guarantee that
-                    // and because we ignore inserting zero elements.
-                    xCache[ ( iPROffset + iI ) / CHUNK_SIZE ][ ( iPROffset + iI ) % CHUNK_SIZE ] = xVal;
-                    return;
-                } // if
-        } // if
+            xCache[ ( iPROffset + iI ) / CHUNK_SIZE ][ ( iPROffset + iI ) % CHUNK_SIZE ] = xVal;
         else
             p_pstruct[ iPROffset + iI ] = xVal;
     }

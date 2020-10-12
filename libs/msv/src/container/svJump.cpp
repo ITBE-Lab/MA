@@ -36,7 +36,7 @@ void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readonly( "to_pos", &SvJump::uiTo )
         .def_readwrite( "query_from", &SvJump::uiQueryFrom )
         .def_readwrite( "query_to", &SvJump::uiQueryTo )
-        .def_readonly( "id", &SvJump::iId )
+        .def_readwrite( "id", &SvJump::iId )
         .def_readonly( "read_id", &SvJump::iReadId );
 
     // export the SvCall class
