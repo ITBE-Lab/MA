@@ -57,8 +57,7 @@ struct /* MySQLConDB:: */ PGRowCell<WKBUint64Rectangle> : public /* MySQLConDB::
 
     inline void store( const PGresult* pPGRes )
     {
-        if( !( this->isNull ) )
-            pCellValue->setData( this->getValPtr( pPGRes ) );
+        pCellValue->setData( this->getValPtr( pPGRes ) );
     } // method
 }; // specialized class
 
@@ -96,7 +95,6 @@ template <> struct /* PostgreSQLDBCon:: */ PGRowCell<WKBPoint> : public /* Postg
 
     inline void store( const PGresult* pPGRes )
     {
-        if( !( this->isNull ) )
-            pCellValue->setData( this->getValPtr( pPGRes ) );
+        pCellValue->setData( this->getValPtr( pPGRes ) );
     } // method
 }; // specialized class

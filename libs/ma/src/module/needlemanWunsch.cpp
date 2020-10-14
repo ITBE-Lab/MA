@@ -60,9 +60,9 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
 #else
                             kswcpp_extz_t* ez,
 #endif
-                            AlignedMemoryManager& rMemoryManager )
+                            AlignedMemoryManager& rMemoryManager,
+                            int minAddBandwidth = 10 )
 {
-    int minAddBandwidth = 10; // must be >= 0 otherwise ksw will not align till the end
     /*
      * Adjust the bandwith according to the delta distance of the seeds creating this gap
      * the add minAddBandwidth so that the alignment can go a little further out.
@@ -893,7 +893,7 @@ std::vector<char> randomNucSeq( const size_t uiLen )
 } // function
 
 
-std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef )
+std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, int iMinAddBandwidth )
 {
     auto pAlignment = std::make_shared<Alignment>( );
     Wrapper_ksw_extz_t ez;
@@ -909,7 +909,8 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
                     xParams,
                     -1,
                     ez.ez, // return value
-                    xMemoryManager );
+                    xMemoryManager,
+                    iMinAddBandwidth );
 
     uint32_t qPos = 0;
     uint32_t rPos = 0;

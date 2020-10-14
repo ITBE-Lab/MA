@@ -124,11 +124,17 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<ReadRangeTable<DBConSingle>, std::shared_ptr<ReadRangeTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "ReadRangeTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( py::init<std::shared_ptr<DBConSingle>, bool>( ) )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignment )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignmentId )
         .def( "coverage", &ReadRangeTable<DBConSingle>::coverage )
         .def( "drop_indices", &ReadRangeTable<DBConSingle>::dropIndices )
         .def( "gen_indices", &ReadRangeTable<DBConSingle>::genIndices );
+
+    py::class_<ReadSelectionTable<DBConSingle>, std::shared_ptr<ReadSelectionTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                           "ReadSelectionTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "insert_by_name", &ReadSelectionTable<DBConSingle>::insertReadByName );
 
     py::class_<SvCallSupportTable<DBConSingle>, std::shared_ptr<SvCallSupportTable<DBConSingle>>>(
         xOrganizer.util( ), "SvCallSupportTable" )

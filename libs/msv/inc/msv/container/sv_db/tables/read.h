@@ -202,21 +202,28 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
     SQLStatement<DBCon> xEnableExtension;
 
   public:
-    ReadRangeTable( std::shared_ptr<DBCon> pDB )
+    ReadRangeTable( std::shared_ptr<DBCon> pDB, bool bWithSelection )
         : ReadRangeTableType<DBCon>( pDB, jReadExtensionTableDef ),
           xReads( pDB ),
-          xGetCoverage( pDB, "SELECT COUNT(*) "
-                             "FROM read_range_table "
-                             "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
-                             "AND sequencer_id = ? "
-                             "AND mapping_quality >= ? " ),
-          xGetPrimCoverage( pDB, "SELECT COUNT(*) "
-                                 "FROM read_range_table "
-                                 "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
-                                 "AND sequencer_id = ? "
-                                 "AND mapping_quality >= ? "
-                                 "AND primary_alignment = ? " ),
+          xGetCoverage( pDB,
+                        std::string( "SELECT COUNT(*) "
+                                     "FROM read_range_table "
+                                     "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
+                                     "AND sequencer_id = ? "
+                                     "AND mapping_quality >= ? " ) +
+                            ( bWithSelection ? "AND read_id IN (SELECT read_id FROM read_selection_table) " : "" ) ),
+          xGetPrimCoverage(
+              pDB, std::string( "SELECT COUNT(*) "
+                                "FROM read_range_table "
+                                "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
+                                "AND sequencer_id = ? "
+                                "AND mapping_quality >= ? "
+                                "AND primary_alignment = ? " ) +
+                       ( bWithSelection ? "AND read_id IN (SELECT read_id FROM read_selection_table) " : "" ) ),
           xEnableExtension( pDB, "CREATE EXTENSION IF NOT EXISTS btree_gist" )
+    {} // constructor
+
+    ReadRangeTable( std::shared_ptr<DBCon> pDB ) : ReadRangeTable( pDB, false )
     {} // default constructor
 
     inline void insertAlignmentId( int64_t iReadId, std::shared_ptr<Alignment> pAlignment )
@@ -255,6 +262,35 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
         return bOnlyPrimary ? xGetPrimCoverage.scalar( from, to, iSeqId, fMinMapQ, 1 )
                             : xGetCoverage.scalar( from, to, iSeqId, fMinMapQ );
     }
+}; // class
+
+
+template <typename DBCon>
+using ReadSelectionTableType = SQLTable<DBCon,
+                                        PriKeyDefaultType // read id (foreign key)
+                                        >;
+const json jReadSelectionTableDef = {
+    { TABLE_NAME, "read_selection_table" },
+    { TABLE_COLUMNS, { { { COLUMN_NAME, "read_id" }, { CONSTRAINTS, "NOT NULL PRIMARY KEY" } } } },
+    { FOREIGN_KEY, { { COLUMN_NAME, "read_id" }, { REFERENCES, "read_table(id)" } } } };
+/**
+ * @brief this table saves reads
+ */
+template <typename DBCon> class ReadSelectionTable : public ReadSelectionTableType<DBCon>
+{
+    ReadTable<DBCon> xReads;
+
+  public:
+    ReadSelectionTable( std::shared_ptr<DBCon> pDB )
+        : ReadSelectionTableType<DBCon>( pDB, jReadSelectionTableDef ), xReads( pDB )
+    {} // default constructor
+
+    inline void insertReadByName( int64_t iSeqId, std::string sName )
+    {
+        auto iReadId = xReads.getReadId( iSeqId, sName );
+        this->insert( iReadId );
+    } // method
+
 }; // class
 
 } // namespace libMSV

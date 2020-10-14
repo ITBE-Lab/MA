@@ -303,9 +303,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
 
     using NextCallType = SQLQuery<DBCon, int64_t, bool, bool, uint32_t, uint32_t, uint32_t, uint32_t,
-                                  std::shared_ptr<CompressedNucSeq>, bool, int64_t, bool>;
+                                  std::shared_ptr<CompressedNucSeq>, bool, int64_t, bool, uint32_t>;
     using NextCallSlaveType = SQLQuery<typename DBCon::SlaveType, int64_t, bool, bool, uint32_t, uint32_t, uint32_t,
-                                       uint32_t, std::shared_ptr<CompressedNucSeq>, bool, int64_t, bool>;
+                                       uint32_t, std::shared_ptr<CompressedNucSeq>, bool, int64_t, bool, uint32_t>;
 
     /** @brief returns call id, jump start pos, next context, inserted sequence, jump end position, one_sided_mate_id
      *  @details helper function for reconstructSequencedGenome */
@@ -329,9 +329,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                       << " from_forward: " << std::get<1>( xQ ) << " to_forward: " << std::get<2>( xQ )
                       << " from_pos: " << std::get<3>( xQ ) << " to_pos: " << std::get<4>( xQ )
                       << " from_size: " << std::get<5>( xQ ) << " to_size: " << std::get<6>( xQ )
-                      << " inserted_sequence: " << std::get<7>( xQ ) << " do_reverse: " << std::get<8>( xQ )
-                      << " one_sided_mate: " << std::get<9>( xQ )
-                      << std::endl;
+                      << " inserted_sequence: "
+                      << ( std::get<7>( xQ ) == nullptr ? "NULL" : std::get<7>( xQ )->pUncomNucSeq->toString( ) )
+                      << " inserted_sequence_size: " << std::get<11>( xQ ) << " do_reverse: " << std::get<8>( xQ )
+                      << " one_sided_mate: " << std::get<9>( xQ ) << std::endl;
 #endif
             // if the call was reverted
             if( std::get<8>( xQ ) )
@@ -356,6 +357,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             std::get<2>( xRet ) = std::get<2>( xQ );
             // check if we have an insertion
             std::get<3>( xRet ) = std::get<7>( xQ ) == nullptr ? nullptr : std::get<7>( xQ )->pUncomNucSeq;
+            if( std::get<3>( xRet ) != nullptr && std::get<11>( xQ ) != std::get<3>( xRet )->length( ) )
+                throw std::runtime_error( "sanity check failed: inserted_sequence is inconsistent with "
+                                          "inserted_sequence_size column for call with id " +
+                                          std::to_string( std::get<0>( xQ ) ) +
+                                          " lengths are: " + std::to_string( std::get<11>( xQ ) ) + " and " +
+                                          std::to_string( std::get<3>( xRet )->length( ) ) );
 
             // if we have a forward context next, the end of the jump is at the bottom of the call
             // if we have a backward context next, the end of the jump is at the top of the call
@@ -622,7 +629,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
             "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
+            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
+            "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
@@ -636,7 +644,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
             "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END as v2 "
+            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END as v2, "
+            "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
@@ -683,7 +692,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
             "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1,"
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
+            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
+            "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             // check if the selected entry is one sided
@@ -702,7 +712,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
             "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2 "
+            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
+            "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             // check if the selected entry is one sided

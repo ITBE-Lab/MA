@@ -1273,16 +1273,15 @@ template <> struct PGRowCell<CompNucSeqSharedPtr> : public PGRowCellBase<CompNuc
     // Decompress the nucleotide sequence directly from the buffer.
     inline void store( const PGresult* pPGRes )
     {
-        // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
-        if( !( this->isNull ) )
-        {
-            if( *pCellValue == nullptr )
-                *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
-            ( *pCellValue )
-                ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
-        } // if
-        else
-            *pCellValue = nullptr; // read 'Null' table entry
+        if( *pCellValue == nullptr )
+            *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
+        ( *pCellValue )
+            ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
+    } // method
+
+    inline void setNull( )
+    {
+        *pCellValue = nullptr; // read 'Null' table entry
     } // method
 }; // specialized class
 #endif
@@ -1407,9 +1406,13 @@ template <> struct PGRowCell<libMA::NucSeqSql> : public PGRowCellBase<libMA::Nuc
 
     inline void store( const PGresult* pPGRes )
     {
-        if( !( this->isNull ) )
-            pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->getValPtr( pPGRes ) ),
-                                  this->getValLength( pPGRes ) );
+        pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->getValPtr( pPGRes ) ),
+                              this->getValLength( pPGRes ) );
+    } // method
+
+    inline void setNull( )
+    {
+        pCellValue->pNucSeq = nullptr; // read 'Null' table entry
     } // method
 }; // specialized class
 #endif
