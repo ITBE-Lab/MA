@@ -65,6 +65,7 @@ class Widgets:
 
     def run_id_change(self, renderer):
         with self.condition:
+            renderer.read_plot.recalc_stats = True
             print("new run_id:", self.run_id_dropdown.value)
             renderer.cached_global_overview = None
             run_table = SvCallerRunTable(renderer.db_conn)
@@ -73,12 +74,13 @@ class Widgets:
             call_table = SvCallTable(renderer.db_conn)
             self.score_slider.end = 0
             if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
-                self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
+                self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value)) + 1
                 self.score_slider.value = (0, self.score_slider.end)
             renderer.render(ignorable=False)
 
     def ground_id_change(self, renderer):
         with self.condition:
+            renderer.read_plot.recalc_stats = True
             run_table = SvCallerRunTable(renderer.db_conn)
             self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
                                                     run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
@@ -86,6 +88,7 @@ class Widgets:
             renderer.render(ignorable=False)
 
     def slider_change(self, renderer):
+        renderer.read_plot.recalc_stats = True
         renderer.render(ignorable=False)
 
     def forced_read_ids_change(self, renderer):

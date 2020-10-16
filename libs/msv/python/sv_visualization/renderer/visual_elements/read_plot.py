@@ -114,6 +114,20 @@ class ReadPlot:
         # make seeds clickable
         self.plot.on_event(Tap, lambda tap: self.seed_tap(renderer, tap.x, tap.y))
 
+        self.recalc_stat = True
+        self.stat_plot = figure(
+            width=self.plot.width,
+            height=200,
+            tools=[
+                "pan", "box_zoom",
+                "wheel_zoom", "reset"
+            ],
+            active_scroll="wheel_zoom"
+        )
+        self.stat_lines = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
+        self.stat_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines,
+                                  legend_label="l")
+
     def auto_adjust_y_range(self, renderer):
         if renderer.widgets.range_link_radio.active == 0:
             self.plot.x_range.start = renderer.main_plot.plot.x_range.start
@@ -181,5 +195,7 @@ class ReadPlot:
     def reset_cds(self, renderer):
         self.ambiguity_rect.data = {"l":[], "b":[], "r":[], "t":[], "c":[]}
         self.seeds.data = {"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]}
+        self.stat_lines.data = {"l":[], "x":[], "y":[], "c":[]}
+        self.recalc_stats = True
         #self.nuc_plot.reset_nts()
 

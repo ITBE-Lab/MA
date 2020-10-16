@@ -28,6 +28,7 @@ def setup(self):
         self.db_pool = PoolContainer(self.params.get_num_threads() + 1, dataset_name)
         
         self.calls_from_db = SvCallsFromDb(self.db_conn)
+        self.count_calls_from_db = SvCallsFromDb(self.db_conn)
         self.calls_from_db_gt = SvCallsFromDb(self.db_conn)
 
         # chromosome lines

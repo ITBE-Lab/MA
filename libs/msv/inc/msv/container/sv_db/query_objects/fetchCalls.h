@@ -48,7 +48,7 @@ template <typename DBCon> class SvCallsFromDb
     std::unique_ptr<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, NucSeqSql,
                              uint32_t, uint32_t>>
         pQuery = nullptr;
-    std::unique_ptr<SQLQuery<DBCon, PriKeyDefaultType, uint32_t>> pQueryCount = nullptr;
+    std::unique_ptr<SQLQuery<DBCon, uint32_t>> pQueryCount = nullptr;
 
     void initQuery( Helper xNew )
     {
@@ -122,7 +122,7 @@ template <typename DBCon> class SvCallsFromDb
                         ") " );
 
             if( xHelper.bJustCount )
-                pQueryCount = std::make_unique<SQLQuery<DBCon, PriKeyDefaultType, uint32_t>>(
+                pQueryCount = std::make_unique<SQLQuery<DBCon, uint32_t>>(
                     pConnection, std::string( "SELECT COUNT(*) " ) + sQueryText );
             else
                 pQuery = std::make_unique<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t,
@@ -254,14 +254,17 @@ template <typename DBCon> class SvCallsFromDb
         return !pQuery->eof( );
     } // method
 
-    std::pair<std::vector<uint32_t>, uint32_t> count( int64_t iSvCallerIdA, int64_t iSvCallerIdB,
-                                                      bool bWithIntersection, bool bOverlapping, int64_t iAllowedDist,
-                                                      double dMinScore, double dMaxScore, double dStep )
+    // pair(list(tuple(x, calls with score > x, true positives with score > x)), |gt|)
+    std::pair<std::vector<std::tuple<double, uint32_t, uint32_t>>, uint32_t>
+    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, double dMinScore, double dMaxScore,
+           double dStep )
     {
-        std::vector<uint32_t> vRet;
-        initQuery( Helper{ false, bOverlapping, bWithIntersection, bWithIntersection, true, true, true } );
+        std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
+        initQuery( Helper{ false, true, true, true, true, true, false, false, true } );
         for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
-            vRet.push_back(
+            vRet.emplace_back(
+                dCurr,
+                pSvCallTable->numCalls( iSvCallerIdA, dCurr ),
                 pQueryCount->scalar( iSvCallerIdA, dStep, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist ) );
         return std::make_pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
     }

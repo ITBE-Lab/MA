@@ -4,6 +4,7 @@ using namespace libMSV;
 
 #ifdef WITH_PYTHON
 
+#include <pybind11/stl.h>
 #include "ms/container/sv_db/py_db_conf.h"
 void exportCallsFromDb( libMS::SubmoduleOrganizer& xOrganizer )
 {
@@ -25,6 +26,7 @@ void exportCallsFromDb( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "init", ( void ( SvCallsFromDb<DBConSingle>::* )( int64_t, int64_t, int64_t, int64_t, int64_t ) ) &
                           SvCallsFromDb<DBConSingle>::initFetchQuery )
         .def( "next", &SvCallsFromDb<DBConSingle>::next )
+        .def( "count", &SvCallsFromDb<DBConSingle>::count )
         .def( "hasNext", &SvCallsFromDb<DBConSingle>::hasNext );
 } // function
 

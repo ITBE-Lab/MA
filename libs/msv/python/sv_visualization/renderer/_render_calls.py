@@ -65,6 +65,33 @@ def render_calls(self, render_all=False):
     }
     desc_table = CallDescTable(self.db_conn_2)
     jump_list = []
+    stats_data = None
+    if self.read_plot.recalc_stat and self.get_run_id() != -1 and self.get_gt_id() != -1:
+        self.read_plot.recalc_stat = False
+        with self.measure("count - SvCallFromDb(run_id)"):
+            stats_data = {"l":[], "x":[], "y":[], "c":[]}
+            stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
+                                                            self.widgets.get_blur(),
+                                                            self.get_min_score(), self.get_max_score(),
+                                                            max(1, self.get_max_score() - self.get_min_score()))
+            stats_data["l"].append("Ground Truth")
+            stats_data["x"].append([self.get_min_score(), self.get_max_score()])
+            stats_data["y"].append([gt_total, gt_total])
+            stats_data["c"].append("black")
+            stats_data["l"].append("Calls")
+            stats_data["x"].append([])
+            stats_data["y"].append([])
+            stats_data["c"].append("blue")
+            stats_data["l"].append("true-positives")
+            stats_data["x"].append([])
+            stats_data["y"].append([])
+            stats_data["c"].append("green")
+            for x, num_calls, num_tp in stats:
+                for n in [-1, -2]:
+                    stats_data["x"][n].append(x)
+                stats_data["x"][-1].append(num_tp)
+                stats_data["x"][-2].append(num_calls)
+
     with self.measure("SvCallFromDb(run_id)"):
         default_args = [self.get_run_id(),
                         int(self.xs - self.w),
@@ -162,6 +189,8 @@ def render_calls(self, render_all=False):
         self.main_plot.call_x.data = accepted_plus_data
         self.main_plot.ground_truth_quad.data = ground_boxes_data
         self.main_plot.ground_truth_x.data = ground_plus_data
+        if not stats_data is None:
+            self.read_plot.stat_lines.data = stats_data
     self.do_callback(callback)
 
     with self.measure("render_jumps"):

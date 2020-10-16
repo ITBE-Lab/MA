@@ -56,6 +56,7 @@ class Renderer():
         self.cv2 = Condition()
         self.num_renders_queue = 0
         self.calls_from_db = None
+        self.count_calls_from_db = None
         self.calls_from_db_gt = None
 
     def get_run_id(self):
