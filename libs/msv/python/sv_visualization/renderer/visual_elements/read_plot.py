@@ -195,7 +195,5 @@ class ReadPlot:
     def reset_cds(self, renderer):
         self.ambiguity_rect.data = {"l":[], "b":[], "r":[], "t":[], "c":[]}
         self.seeds.data = {"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]}
-        self.stat_lines.data = {"l":[], "x":[], "y":[], "c":[]}
-        self.recalc_stat = True
         #self.nuc_plot.reset_nts()
 

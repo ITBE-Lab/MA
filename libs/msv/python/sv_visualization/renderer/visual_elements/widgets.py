@@ -48,7 +48,7 @@ class Widgets:
                                                           "Render true-positives", "Render true-negatives"],
                                                           active=[0, 1, 2, 3])
         self.subset_buttons.on_click(lambda x: self.forced_read_ids_change(renderer))
-        self.blur_slider = Slider(start=0, end=100, value=10, step=1, callback_policy='mouseup',
+        self.blur_slider = Slider(start=0, end=500, value=10, step=1, callback_policy='mouseup',
                                         title="Blur")
         self.blur_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
 
