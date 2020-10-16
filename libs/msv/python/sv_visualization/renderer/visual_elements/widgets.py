@@ -47,7 +47,7 @@ class Widgets:
         self.subset_buttons = CheckboxButtonGroup(labels=["Render false-positives", "Render false-negatives",
                                                           "Render true-positives", "Render true-negatives"],
                                                           active=[0, 1, 2, 3])
-        self.subset_buttons.on_click(lambda x: self.slider_change(renderer))
+        self.subset_buttons.on_click(lambda x: self.forced_read_ids_change(renderer))
         self.blur_slider = Slider(start=0, end=100, value=10, step=1, callback_policy='mouseup',
                                         title="Blur")
         self.blur_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
@@ -65,7 +65,7 @@ class Widgets:
 
     def run_id_change(self, renderer):
         with self.condition:
-            renderer.read_plot.recalc_stats = True
+            renderer.read_plot.recalc_stat = True
             print("new run_id:", self.run_id_dropdown.value)
             renderer.cached_global_overview = None
             run_table = SvCallerRunTable(renderer.db_conn)
@@ -80,7 +80,7 @@ class Widgets:
 
     def ground_id_change(self, renderer):
         with self.condition:
-            renderer.read_plot.recalc_stats = True
+            renderer.read_plot.recalc_stat = True
             run_table = SvCallerRunTable(renderer.db_conn)
             self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
                                                     run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
@@ -88,7 +88,7 @@ class Widgets:
             renderer.render(ignorable=False)
 
     def slider_change(self, renderer):
-        renderer.read_plot.recalc_stats = True
+        renderer.read_plot.recalc_stat = True
         renderer.render(ignorable=False)
 
     def forced_read_ids_change(self, renderer):

@@ -73,7 +73,7 @@ def render_calls(self, render_all=False):
             stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
                                                             self.widgets.get_blur(),
                                                             self.get_min_score(), self.get_max_score(),
-                                                            max(1, self.get_max_score() - self.get_min_score()))
+                                                            max(1, (self.get_max_score() - self.get_min_score()) / 50))
             stats_data["l"].append("Ground Truth")
             stats_data["x"].append([self.get_min_score(), self.get_max_score()])
             stats_data["y"].append([gt_total, gt_total])
@@ -89,8 +89,8 @@ def render_calls(self, render_all=False):
             for x, num_calls, num_tp in stats:
                 for n in [-1, -2]:
                     stats_data["x"][n].append(x)
-                stats_data["x"][-1].append(num_tp)
-                stats_data["x"][-2].append(num_calls)
+                stats_data["y"][-1].append(num_tp)
+                stats_data["y"][-2].append(num_calls)
 
     with self.measure("SvCallFromDb(run_id)"):
         default_args = [self.get_run_id(),

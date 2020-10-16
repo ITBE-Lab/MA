@@ -202,6 +202,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         this->addIndex(
             json{ { INDEX_NAME, "rectangle" }, { INDEX_COLUMNS, "rectangle" }, { INDEX_TYPE, "SPATIAL" } } );
 
+        this->addIndex( json{ { INDEX_NAME, "runId_rectangle" },
+                              { INDEX_COLUMNS, "sv_caller_run_id, rectangle" },
+                              { INDEX_TYPE, "SPATIAL" } } );
+
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
         this->addIndex( json{ { INDEX_NAME, "runId_score" }, { INDEX_COLUMNS, "sv_caller_run_id, score" } } );
@@ -210,6 +214,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline void dropIndices( int64_t iCallerRunId )
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
+        this->dropIndex( json{ { INDEX_NAME, "runId_rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
     } // method
 

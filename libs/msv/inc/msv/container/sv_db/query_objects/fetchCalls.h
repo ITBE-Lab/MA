@@ -262,10 +262,12 @@ template <typename DBCon> class SvCallsFromDb
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
         initQuery( Helper{ false, true, true, true, true, true, false, false, true } );
         for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
+        {
             vRet.emplace_back(
                 dCurr,
                 pSvCallTable->numCalls( iSvCallerIdA, dCurr ),
-                pQueryCount->scalar( iSvCallerIdA, dStep, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist ) );
+                pQueryCount->scalar( iSvCallerIdA, dCurr, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist ) );
+        }
         return std::make_pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
     }
 }; // namespace libMSV
