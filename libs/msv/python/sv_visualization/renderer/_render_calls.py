@@ -66,21 +66,17 @@ def render_calls(self, render_all=False):
     desc_table = CallDescTable(self.db_conn_2)
     jump_list = []
     with self.measure("SvCallFromDb(run_id)"):
-        default_args = [self.params,
-                        self.db_conn,
-                        self.get_run_id(),
+        default_args = [self.get_run_id(),
                         int(self.xs - self.w),
                         int(self.ys - self.h),
                         self.w*3,
                         self.h*3]
         if self.widgets.get_render_t_p() and self.widgets.get_render_f_p():
-            calls_from_db = SvCallsFromDb(*default_args,
+            self.calls_from_db.init(*default_args,
                                         self.get_min_score(),
                                         self.get_max_score())
-        elif not self.widgets.get_render_t_p() and not self.widgets.get_render_f_p():
-            calls_from_db = None
-        else:
-            calls_from_db = SvCallsFromDb(*default_args,
+        elif self.widgets.get_render_t_p() or self.widgets.get_render_f_p():
+            self.calls_from_db.init(*default_args,
                                         self.get_gt_id(),
                                         self.widgets.get_render_t_p(),
                                         self.widgets.get_blur(),
@@ -88,8 +84,8 @@ def render_calls(self, render_all=False):
                                         self.get_max_score())
 
     with self.measure("SvCallFromDb(run_id) extract"):
-        while not calls_from_db is None and calls_from_db.hasNext():
-            call = calls_from_db.next(self.do_render_call_jumps_only)
+        while (self.widgets.get_render_t_p() or self.widgets.get_render_f_p()) and self.calls_from_db.hasNext():
+            call = self.calls_from_db.next(self.do_render_call_jumps_only)
             if self.do_render_call_jumps_only:
                 for idx in range(len(call.supporing_jump_ids)):
                     jump_list.append(call.get_jump(idx))
@@ -119,25 +115,23 @@ def render_calls(self, render_all=False):
             accepted_plus_data["s"].append(str(call.get_score()))
             accepted_plus_data["desc"].append(desc_table.get_desc(call.id))
     with self.measure("SvCallFromDb(gt_id)"):
-        default_args = [self.params,
-                        self.db_conn,
-                        self.get_gt_id(),
+        default_args = [self.get_gt_id(),
                         int(self.xs - self.w),
                         int(self.ys - self.h),
                         self.w*3,
                         self.h*3]
         if self.widgets.get_render_t_n() and self.widgets.get_render_f_n():
-            calls_from_db_gt = SvCallsFromDb(*default_args)
-        elif not self.widgets.get_render_t_n() and not self.widgets.get_render_f_n():
-            calls_from_db_gt = None
-        else:
-            calls_from_db_gt = SvCallsFromDb(*default_args,
-                                            self.get_run_id(),
-                                            self.widgets.get_render_t_n(),
-                                            self.widgets.get_blur())
+            self.calls_from_db_gt.init(*default_args)
+        elif self.widgets.get_render_t_n() or self.widgets.get_render_f_n():
+            self.calls_from_db_gt.init(self.get_min_score(),
+                                        self.get_max_score(),
+                                        *default_args,
+                                        self.get_run_id(),
+                                        self.widgets.get_render_t_n(),
+                                        self.widgets.get_blur())
     with self.measure("SvCallFromDb(gt_id) extract"):
-        while not calls_from_db_gt is None and calls_from_db_gt.hasNext():
-            call = calls_from_db_gt.next(False)
+        while (self.widgets.get_render_t_n() or self.widgets.get_render_f_n()) and self.calls_from_db_gt.hasNext():
+            call = self.calls_from_db_gt.next(False)
             if call.x.size == 0 and call.y.size == 0:
                 ground_plus_data["x"].append(call.x.start + 0.5)
                 ground_plus_data["y"].append(call.y.start + 0.5)

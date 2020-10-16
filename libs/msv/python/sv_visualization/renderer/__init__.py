@@ -55,6 +55,8 @@ class Renderer():
         self.cv = Condition()
         self.cv2 = Condition()
         self.num_renders_queue = 0
+        self.calls_from_db = None
+        self.calls_from_db_gt = None
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:

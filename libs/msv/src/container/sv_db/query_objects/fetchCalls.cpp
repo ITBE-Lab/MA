@@ -8,24 +8,24 @@ using namespace libMSV;
 void exportCallsFromDb( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SvCallsFromDb class
-    py::class_<SvCallsFromDb<DBConSingle, false>>( xOrganizer.util( ), "SvCallsFromDb" )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, double>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, bool, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, bool, int64_t,
-                       double, double>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, int64_t,
-                       int64_t, int64_t, bool, int64_t, double, double>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, int64_t,
-                       int64_t, int64_t, bool, int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, int64_t,
-                       int64_t>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, int64_t,
-                       int64_t, double, double>( ) )
-        .def( py::init<const ParameterSetManager&, std::shared_ptr<DBConSingle>, int64_t, int64_t, int64_t, int64_t,
-                       int64_t>( ) )
-        .def( "next", &SvCallsFromDb<DBConSingle, false>::next )
-        .def( "hasNext", &SvCallsFromDb<DBConSingle, false>::hasNext );
+    py::class_<SvCallsFromDb<DBConSingle>>( xOrganizer.util( ), "SvCallsFromDb" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "init", ( void ( SvCallsFromDb<DBConSingle>::* )( int64_t, int64_t, int64_t, int64_t, int64_t, int64_t,
+                                                                bool, int64_t, double, double ) ) &
+                          SvCallsFromDb<DBConSingle>::initFetchQuery )
+        .def( "init", ( void ( SvCallsFromDb<DBConSingle>::* )( double, double, int64_t, int64_t, int64_t, int64_t,
+                                                                int64_t, int64_t, bool, int64_t ) ) &
+                          SvCallsFromDb<DBConSingle>::initFetchQuery )
+        .def( "init", ( void ( SvCallsFromDb<DBConSingle>::* )( int64_t, int64_t, int64_t, int64_t, int64_t, int64_t,
+                                                                bool, int64_t ) ) &
+                          SvCallsFromDb<DBConSingle>::initFetchQuery )
+        .def( "init", ( void ( SvCallsFromDb<DBConSingle>::* )( int64_t, int64_t, int64_t, int64_t, int64_t, double,
+                                                                double ) ) &
+                          SvCallsFromDb<DBConSingle>::initFetchQuery )
+        .def( "init", ( void ( SvCallsFromDb<DBConSingle>::* )( int64_t, int64_t, int64_t, int64_t, int64_t ) ) &
+                          SvCallsFromDb<DBConSingle>::initFetchQuery )
+        .def( "next", &SvCallsFromDb<DBConSingle>::next )
+        .def( "hasNext", &SvCallsFromDb<DBConSingle>::hasNext );
 } // function
 
 #endif

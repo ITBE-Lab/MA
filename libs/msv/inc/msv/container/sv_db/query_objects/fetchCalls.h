@@ -39,6 +39,8 @@ template <typename DBCon> class SvCallsFromDb
         bool bWithSelfIntersection;
         bool bWithMinScore;
         bool bWithMaxScore;
+        bool bWithMinScoreGT;
+        bool bWithMaxScoreGT;
         bool bJustCount;
     }; // class
 
@@ -50,44 +52,58 @@ template <typename DBCon> class SvCallsFromDb
 
     void initQuery( Helper xNew )
     {
-        bool bInitQuery = pQuery == nullptr || //
+        bool bInitQuery = ( xNew.bJustCount && pQueryCount == nullptr ) || //
+                          ( !xNew.bJustCount && pQuery == nullptr ) || //
                           xHelper.bInArea != xNew.bInArea || //
                           xHelper.bOverlapping != xNew.bOverlapping || //
                           xHelper.bWithIntersection != xNew.bWithIntersection || //
                           xHelper.bWithSelfIntersection != xNew.bWithSelfIntersection || //
                           xHelper.bWithMinScore != xNew.bWithMinScore || //
                           xHelper.bWithMaxScore != xNew.bWithMaxScore || //
+                          xHelper.bWithMinScoreGT != xNew.bWithMinScoreGT || //
+                          xHelper.bWithMaxScoreGT != xNew.bWithMaxScoreGT || //
                           xHelper.bJustCount != xNew.bJustCount;
         if( bInitQuery )
         {
+            while( pQueryCount != nullptr && !pQueryCount->eof( ) )
+                pQueryCount->next( );
+            pQueryCount = nullptr;
+            while( pQuery != nullptr && !pQuery->eof( ) )
+                pQuery->next( );
+            pQuery = nullptr;
             xHelper.bInArea = xNew.bInArea;
             xHelper.bOverlapping = xNew.bOverlapping;
             xHelper.bWithIntersection = xNew.bWithIntersection;
             xHelper.bWithSelfIntersection = xNew.bWithSelfIntersection;
             xHelper.bWithMinScore = xNew.bWithMinScore;
             xHelper.bWithMaxScore = xNew.bWithMaxScore;
+            xHelper.bWithMinScoreGT = xNew.bWithMinScoreGT;
+            xHelper.bWithMaxScoreGT = xNew.bWithMaxScoreGT;
             xHelper.bJustCount = xNew.bJustCount;
 
             std::string sQueryText =
-                "FROM sv_call_table AS inner_table "
-                "WHERE sv_caller_run_id = ? " +
+                std::string( "FROM sv_call_table AS inner_table "
+                             "WHERE sv_caller_run_id = ? " ) +
                 ( !xHelper.bInArea ? "" : "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) " ) + //
                 ( !xHelper.bWithMinScore ? "" : "AND score >= ? " ) + //
                 ( !xHelper.bWithMaxScore ? "" : "AND score < ? " ) + //
-                ( !xHelper.bWithIntersection ? ""
-                                             : "AND " + ( xHelper.bOverlapping ? "" : "NOT " ) +
-                                                   // make sure that inner_table overlaps the outer_table:
-                                                   "EXISTS( "
-                                                   "     SELECT outer_table.id "
-                                                   "     FROM sv_call_table AS outer_table "
-                                                   "     WHERE outer_table.sv_caller_run_id = ? "
-                                                   // Returns true if the geometries are within the specified
-                                                   // distance of one another makes use of indices
-                                                   "     AND ST_DWithin(outer_table.rectangle::geometry, "
-                                                   "                    inner_table.rectangle::geometry, ?) "
-                                                   "     AND outer_table.from_forward = inner_table.from_forward "
-                                                   "     AND outer_table.to_forward = inner_table.to_forward "
-                                                   ") " ) +
+                ( !xHelper.bWithIntersection
+                      ? ""
+                      : std::string( "AND " ) + ( xHelper.bOverlapping ? "" : "NOT " ) +
+                            // make sure that inner_table overlaps the outer_table:
+                            "EXISTS( "
+                            "     SELECT outer_table.id "
+                            "     FROM sv_call_table AS outer_table "
+                            "     WHERE outer_table.sv_caller_run_id = ? " +
+                            ( !xHelper.bWithMinScoreGT ? "" : "AND outer_table.score >= ? " ) + //
+                            ( !xHelper.bWithMaxScoreGT ? "" : "AND outer_table.score < ? " ) +
+                            // Returns true if the geometries are within the specified
+                            // distance of one another makes use of indices
+                            "     AND ST_DWithin(outer_table.rectangle::geometry, "
+                            "                    inner_table.rectangle::geometry, ?) "
+                            "     AND outer_table.from_forward = inner_table.from_forward "
+                            "     AND outer_table.to_forward = inner_table.to_forward "
+                            ") " ) +
                 ( !xHelper.bWithSelfIntersection
                       ? ""
                       : "AND NOT EXISTS( "
@@ -118,18 +134,23 @@ template <typename DBCon> class SvCallsFromDb
         };
     } // method
 
-    template <typename... Types> void initFetchQuery( Helper xNew, Types... args )
+    template <typename... Types> void initFetchQuery_( Helper xNew, Types... args )
     {
-        if( !xHelper.bJustCount )
-            pQuery->execAndFetch( args... );
+        initQuery( xNew );
+        pQuery->execAndFetch( args... );
     } // method
 
   public:
     SvCallsFromDb( std::shared_ptr<DBCon> pConnection )
         : pConnection( pConnection ),
           pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pConnection ) ),
-          pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) )
-
+          pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
+          xQuerySupport( pConnection,
+                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
+                         "       num_supporting_nt, sv_jump_table.id, read_id "
+                         "FROM sv_call_support_table "
+                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+                         "WHERE sv_call_support_table.call_id = ? " )
     {}
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
@@ -137,8 +158,17 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initQuery( Helper{ true, bOverlapping, true, true, true, true, false }, //
-                   iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist );
+        initFetchQuery_( Helper{ true, bOverlapping, true, true, true, true, false, false, false }, //
+                         iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist );
+    }
+
+    void initFetchQuery( double dMinScoreGT, double dMaxScoreGT, int64_t iSvCallerIdA, int64_t iX, int64_t iY,
+                         int64_t iW, int64_t iH, int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
+    {
+        xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
+                                             std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
+        initFetchQuery_( Helper{ true, bOverlapping, true, true, false, false, true, true, false }, //
+                         iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist, iAllowedDist );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
@@ -146,8 +176,8 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initQuery( Helper{ true, bOverlapping, true, true, false, false, false }, //
-                   iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist );
+        initFetchQuery_( Helper{ true, bOverlapping, true, true, false, false, false, false, false }, //
+                         iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore,
@@ -155,168 +185,24 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initQuery( Helper{ true, false, false, false, true, true, false }, //
-                   iSvCallerIdA, xWkb, dMinScore, dMaxScore );
+        initFetchQuery_( Helper{ true, false, false, false, true, true, false, false, false }, //
+                         iSvCallerIdA, xWkb, dMinScore, dMaxScore );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH )
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initQuery( Helper{ true, false, false, false, false, false, false }, //
-                   iSvCallerIdA, xWkb );
+        initFetchQuery_( Helper{ true, false, false, false, false, false, false, false, false }, //
+                         iSvCallerIdA, xWkb );
     }
-
-    /**
-     * @brief fetches all calls of a specific caller id.
-     */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId )
-        : SvCallsFromDb( pConnection,
-
-                         "FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? ",
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? ",
-                         WKBUint64Rectangle( ) )
-    {
-        initQuery( iSvCallerId );
-    } // constructor
-
-    /**
-     * @brief fetches calls depending on two caller ID's
-     * @details
-     * this fetches all calls with run id == iSvCallerIdA that:
-     *  - bOverlapping==true: overlap with at least one call from iSvCallerIdB
-     *  - bOverlapping==false: overlap with no call from iSvCallerIdB
-     *  - do not overlap with a call form iSvCallerIdA with higher score
-     * calls that are no further than iAllowedDist from each other are considered overlapping
-     */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerIdA,
-                   int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB, bool bOverlapping,
-                   int64_t iAllowedDist, double dMinScore, double dMaxScore )
-        : SvCallsFromDb(
-              pConnection,
-              std::string( "FROM sv_call_table AS inner_table "
-                           "WHERE sv_caller_run_id = ? " ) +
-                  ( iW == 0 && iH == 0 ? "" : "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) " ) +
-                  "AND score >= ? "
-                  "AND score < ? "
-                  "AND " +
-                  ( bOverlapping ? "" : "NOT " ) +
-                  // make sure that inner_table overlaps the outer_table:
-                  "EXISTS( "
-                  "     SELECT outer_table.id "
-                  "     FROM sv_call_table AS outer_table "
-                  "     WHERE outer_table.sv_caller_run_id = ? "
-                  // Returns true if the geometries are within the specified distance of one another
-                  // makes use of indices
-                  "     AND ST_DWithin(outer_table.rectangle::geometry, inner_table.rectangle::geometry, ?) "
-                  "     AND outer_table.from_forward = inner_table.from_forward "
-                  "     AND outer_table.to_forward = inner_table.to_forward "
-                  ") "
-                  // make sure that inner_table does not overlap with any other call with higher score
-                  "AND NOT EXISTS( "
-                  "     SELECT inner_table2.id "
-                  "     FROM sv_call_table AS inner_table2 "
-                  "     WHERE inner_table2.id != inner_table.id "
-                  "     AND inner_table2.score >= inner_table.score "
-                  "     AND inner_table2.sv_caller_run_id = inner_table.sv_caller_run_id "
-                  // Returns true if the geometries are within the specified distance of one another
-                  // makes use of indices
-                  "     AND ST_DWithin(inner_table2.rectangle::geometry, inner_table.rectangle::geometry, ?) "
-                  "     AND inner_table2.from_forward = inner_table.from_forward "
-                  "     AND inner_table2.to_forward = inner_table.to_forward "
-                  ") ",
-              "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
-              "       num_supporting_nt, sv_jump_table.id, read_id "
-              "FROM sv_call_support_table "
-              "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-              "WHERE sv_call_support_table.call_id = ? ",
-              geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
-                                            std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) ) )
-    {
-        if( iW == 0 && iH == 0 )
-            initQuery( iSvCallerIdA, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist );
-        else
-            initQuery( iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist );
-    } // constructor
-
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerIdA,
-                   int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist, double dMinScore, double dMaxScore )
-        // redirect to previous constructor
-        : SvCallsFromDb( rParameters, pConnection, iSvCallerIdA, 0, 0, 0, 0, iSvCallerIdB, bOverlapping, iAllowedDist,
-                         dMinScore, dMaxScore )
-    {} // constructor
-
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerIdA,
-                   int64_t iSvCallerIdB, bool bOverlapping, int64_t iAllowedDist )
-        // redirect to previous constructor
-        : SvCallsFromDb( rParameters, pConnection, iSvCallerIdA, iSvCallerIdB, bOverlapping, iAllowedDist, 0,
-                         std::numeric_limits<double>::max( ) )
-    {} // constructor
-
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
-                   int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB, bool bOverlapping,
-                   int64_t iAllowedDist )
-        // redirect to previous constructor
-        : SvCallsFromDb( rParameters, pConnection, iSvCallerId, iX, iY, iW, iH, iSvCallerIdB, bOverlapping,
-                         iAllowedDist, 0, std::numeric_limits<double>::max( ) )
-    {}
-
-    /**
-     * @brief fetches all calls of a specific caller id with a minimum score of dMinScore.
-     */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
-                   double dMinScore )
-        : SvCallsFromDb( pConnection,
-                         "FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? "
-                         "AND score >= ? ",
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? ",
-                         WKBUint64Rectangle( ) )
-    {
-        initQuery( iSvCallerId, dMinScore );
-    } // constructor
-
-    /**
-     * @brief fetches all calls of a specific caller id in the rectangle uiX,uiY,uiW,uiH with a score >= dMinScore.
-     */
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
-                   int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore, double dMaxScore )
-        : SvCallsFromDb( pConnection,
-                         "FROM sv_call_table "
-                         "WHERE sv_caller_run_id = ? "
-                         "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
-                         "AND score >= ? "
-                         "AND score < ? ",
-                         "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
-                         "       num_supporting_nt, sv_jump_table.id, read_id "
-                         "FROM sv_call_support_table "
-                         "JOIN sv_jump_table ON sv_call_support_table.jump_id = sv_jump_table.id "
-                         "WHERE sv_call_support_table.call_id = ? ",
-                         geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
-                                                       std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) ) )
-    {
-        xQuery.execAndFetch( iSvCallerId, xWkb, dMinScore, dMaxScore );
-    } // constructor
-
-    SvCallsFromDb( const ParameterSetManager& rParameters, std::shared_ptr<DBCon> pConnection, int64_t iSvCallerId,
-                   int64_t iX, int64_t iY, int64_t iW, int64_t iH )
-        // redirect to previous constructor
-        : SvCallsFromDb( rParameters, pConnection, iSvCallerId, iX, iY, iW, iH, 0, std::numeric_limits<double>::max( ) )
-    {}
 
     ~SvCallsFromDb( )
     {
-        while( hasNext( ) )
-            next( false );
+        while( pQueryCount != nullptr && !pQueryCount->eof( ) )
+            pQueryCount->next( );
+        while( pQuery != nullptr && !pQuery->eof( ) )
+            pQuery->next( );
     } // destructor
 
     /**
@@ -326,8 +212,8 @@ template <typename DBCon> class SvCallsFromDb
      */
     SvCall next( bool bWithSupport = true )
     {
-        assert( !COUNT );
-        auto xTup = xQuery.get( );
+        assert( pQuery != nullptr );
+        auto xTup = pQuery->get( );
         SvCall xRet( std::get<1>( xTup ), // uiFromStart
                      std::get<2>( xTup ), // uiToStart
                      std::get<3>( xTup ), // uiFromSize
@@ -355,7 +241,7 @@ template <typename DBCon> class SvCallsFromDb
             } // while
         } // if
 
-        xQuery.next( );
+        pQuery->next( );
         return xRet;
     } // method
 
@@ -364,16 +250,20 @@ template <typename DBCon> class SvCallsFromDb
      */
     bool hasNext( )
     {
-        // return !xTableIterator.eof( );
-        return !xQuery.eof( );
+        assert( pQuery != nullptr );
+        return !pQuery->eof( );
     } // method
 
-    uint32_t count( )
+    std::pair<std::vector<uint32_t>, uint32_t> count( int64_t iSvCallerIdA, int64_t iSvCallerIdB,
+                                                      bool bWithIntersection, bool bOverlapping, int64_t iAllowedDist,
+                                                      double dMinScore, double dMaxScore, double dStep )
     {
-        assert( COUNT );
-        auto xRet = xQueryCount.get( );
-        xQueryCount.next( );
-        return xRet;
+        std::vector<uint32_t> vRet;
+        initQuery( Helper{ false, bOverlapping, bWithIntersection, bWithIntersection, true, true, true } );
+        for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
+            vRet.push_back(
+                pQueryCount->scalar( iSvCallerIdA, dStep, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist ) );
+        return std::make_pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
     }
 }; // namespace libMSV
 
