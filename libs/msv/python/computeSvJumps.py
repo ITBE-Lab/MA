@@ -4,16 +4,12 @@ from MA import *
 import datetime
 
 def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_ids=0, runtime_file=None):
+    parameter_set_manager.set_selected("SV-PacBio")
+
     #parameter_set_manager.by_name("Number of Threads").set(1)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1
 
-    parameter_set_manager.by_name("Fixed SoC Width").set(100)
-    parameter_set_manager.by_name("Max Size Reseed").set(2000)
-    parameter_set_manager.by_name("Maximal Ambiguity").set(1)
-    parameter_set_manager.by_name("Min Size Edge").set(200) # runtime optimization...
-    parameter_set_manager.by_name("Min NT in SoC").set(25)
-    parameter_set_manager.by_name("Rectangular SoC").set(False)
     mm_index.set_max_occ(2)
     def scope():
         single_con = DbConn(dataset_name)
@@ -25,7 +21,7 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
         contig_filter = FilterContigBorder(parameter_set_manager)
         soc_module = StripOfConsiderationSeeds(parameter_set_manager)
         soc_filter = GetAllFeasibleSoCsAsSet(parameter_set_manager)
-        reseeding = RecursiveReseedingSoCs(parameter_set_manager, pack, 100)
+        reseeding = RecursiveReseedingSoCs(parameter_set_manager, pack)
         jumps_from_seeds = SvJumpsFromExtractedSeeds(parameter_set_manager, pack)
         #filter_by_ambiguity = FilterJumpsByRefAmbiguity(parameter_set_manager)
         get_jump_inserter = GetJumpInserter(parameter_set_manager, single_con, "MS-SV",

@@ -703,11 +703,11 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
     const size_t uiSoCHeight;
 
   public:
-    RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq, nucSeqIndex uiMinNt )
+    RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
         : xJumpsFromSeeds( rParameters, pRefSeq ),
           xDupRem( rParameters ),
           xFilter( rParameters ),
-          uiMinNt( uiMinNt ),
+          uiMinNt(  rParameters.getSelected( )->xMinNtAfterReseeding->get() ),
           uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ) // same as width
     {}
 

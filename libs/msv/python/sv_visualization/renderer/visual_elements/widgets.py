@@ -1,5 +1,5 @@
 from bokeh.plotting import figure
-from bokeh.models import Button, Slider
+from bokeh.models import Button, Slider, RangeSlider, CheckboxButtonGroup
 from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup, Div, TextInput
 from bokeh.events import ButtonClick
 from ..util import *
@@ -19,11 +19,12 @@ class Widgets:
             self.file_input.menu.append(dataset_name)
         self.run_id_dropdown = Dropdown(label="select run id here", menu=[])
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
-        self.score_slider = Slider(start=0, end=1, value=0, step=.1, callback_policy='mouseup', title="min score")
+        self.score_slider = RangeSlider(start=0, end=1, value=(0, 1), step=.1, callback_policy='mouseup',
+                                        title="score range")
         self.max_elements_slider = Slider(start=1000, end=100000, value=25000, step=1000,
                                           callback_policy='mouseup', title="max render")
         self.range_link_radio = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"],
-                                           active=0)
+                                           active=0, orientation="horizontal")
         self.full_render_button = Button(label="render without limit")
         self.render_mems_button = Button(label="render MEMs")
         self.delete_button = Button(label="Delete Dataset")
@@ -42,6 +43,14 @@ class Widgets:
 
         self.spinner_div = Div(text=html_file("spinner"), sizing_mode="scale_both", visible=False)
         self.condition = threading.Condition()
+
+        self.subset_buttons = CheckboxButtonGroup(labels=["Render false-positives", "Render false-negatives",
+                                                          "Render true-positives", "Render true-negatives"],
+                                                          active=[0, 1, 2, 3])
+        self.subset_buttons.on_click(lambda x: self.slider_change(renderer))
+        self.blur_slider = Slider(start=0, end=100, value=10, step=1, callback_policy='mouseup',
+                                        title="Blur")
+        self.blur_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
 
     def show_spinner(self, renderer):
         self.spinner_div.visible = True
@@ -65,7 +74,8 @@ class Widgets:
             self.score_slider.end = 0
             if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
                 self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
-            renderer.render()
+                self.score_slider.value = (0, self.score_slider.end)
+            renderer.render(ignorable=False)
 
     def ground_id_change(self, renderer):
         with self.condition:
@@ -73,16 +83,30 @@ class Widgets:
             self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
                                                     run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
                                                     " - " + self.ground_truth_id_dropdown.value
-            renderer.render()
+            renderer.render(ignorable=False)
 
     def slider_change(self, renderer):
-        renderer.render()
+        renderer.render(ignorable=False)
 
     def forced_read_ids_change(self, renderer):
-        renderer.render()
+        renderer.render(ignorable=False)
 
     def full_render(self, renderer):
-        renderer.render(render_all=True)
+        renderer.render(render_all=True, ignorable=False)
+
+    def get_blur(self):
+        return self.blur_slider.value
+    def get_render_f_p(self):
+        return 0 in self.subset_buttons.active
+
+    def get_render_f_n(self):
+        return 1 in self.subset_buttons.active
+
+    def get_render_t_p(self):
+        return 2 in self.subset_buttons.active
+
+    def get_render_t_n(self):
+        return 3 in self.subset_buttons.active
 
     def get_forced_read_ids(self, renderer):
         if len(self.force_read_id.value) == 0:

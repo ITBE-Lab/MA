@@ -3,7 +3,7 @@ from MSV import *
 from threading import Thread
 from bokeh.models.tickers import FixedTicker
 
-def render(self, render_all=False):
+def render(self, render_all=False, ignorable=True):
     self.widgets.show_spinner(self)
     self.reset_runtimes()
     self.reset_cds()

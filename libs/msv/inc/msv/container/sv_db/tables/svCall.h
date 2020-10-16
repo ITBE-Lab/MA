@@ -310,8 +310,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     /** @brief returns call id, jump start pos, next context, inserted sequence, jump end position, one_sided_mate_id
      *  @details helper function for reconstructSequencedGenome */
     inline std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, int64_t, bool>
-    getNextCall( int64_t iCallerRun, //
-                 uint32_t uiFrom, //
+    getNextCall( uint32_t uiFrom, //
                  bool bForwardContext,
                  NextCallType& xNextCallForwardContext,
                  NextCallSlaveType& xNextCallBackwardContext )
@@ -382,16 +381,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     template <typename Func_t, typename Func2_t>
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsHelper( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
-                        Func_t&& getNextStart,
+    callsToSeedsHelper( std::shared_ptr<Pack> pRef, bool bWithInsertions, Func_t&& getNextStart,
                         // std::vector<std::tuple<bool, std::string, bool, std::string>> vStarts,
                         NextCallType& xNextCallForwardContext, NextCallSlaveType& xNextCallBackwardContext,
                         Func2_t&& deleteEntries )
     {
-        auto uiNumCalls = SQLQuery<DBCon, uint64_t>( this->pConnection,
-                                                     "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
-                              .scalar( iCallerRun ) *
-                          2;
+        auto uiNumCalls =
+            SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
 #if 0
         std::cout << "num calls: " << uiNumCalls << std::endl;
 #endif
@@ -427,7 +423,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 uint32_t uiIntermediatePos = uiCurrPos;
                 // search for the next call that we have not visited yet...
                 metaMeasureAndLogDuration<false>( "SQL", [ & ]( ) {
-                    tNextCall = this->getNextCall( iCallerRun, uiIntermediatePos, bForwContext, xNextCallForwardContext,
+                    tNextCall = this->getNextCall( uiIntermediatePos, bForwContext, xNextCallForwardContext,
                                                    xNextCallBackwardContext );
                 } );
 #if DEBUG_LEVEL > 0
@@ -557,7 +553,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     }
 
     inline std::shared_ptr<SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool, int64_t, bool>>
-    createReconstructionTable( PriKeyDefaultType iCallerRun, nucSeqIndex uiMinEntrySize )
+    createReconstructionTable( std::vector<PriKeyDefaultType> vCallerRuns, nucSeqIndex uiMinEntrySize )
     {
         auto pReconstructionTable = std::make_shared<
             SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool, int64_t, bool>>(
@@ -602,8 +598,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "OR from_forward != to_forward ) " );
 
         metaMeasureAndLogDuration<false>( "fill reconstruction table", [ & ]( ) {
-            xInsert.exec( iCallerRun, uiMinEntrySize );
-            xInsert2.exec( iCallerRun, uiMinEntrySize );
+            for( auto iCallerRun : vCallerRuns )
+            {
+                xInsert.exec( iCallerRun, uiMinEntrySize );
+                xInsert2.exec( iCallerRun, uiMinEntrySize );
+            } // for
         } );
 
 
@@ -617,11 +616,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     }
 
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeeds( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
+    callsToSeeds( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns, bool bWithInsertions,
                   nucSeqIndex uiMinEntrySize, std::vector<std::tuple<std::string, bool, std::string>> vStarts )
     {
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        auto pReconstructionTable = createReconstructionTable( iCallerRun, uiMinEntrySize );
+        auto pReconstructionTable = createReconstructionTable( vCallerRuns, uiMinEntrySize );
 
         NextCallType xNextCallForwardContext(
             this->pConnection,
@@ -674,17 +673,17 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             } // else
         };
 
-        return callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, getNextStart, xNextCallForwardContext,
+        return callsToSeedsHelper( pRef, bWithInsertions, getNextStart, xNextCallForwardContext,
                                    xNextCallBackwardContext, fDeleteEntries );
     } // method
 
     template <typename Func_t>
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsByIdHelper( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
-                            nucSeqIndex uiMinEntrySize, Func_t&& getNextStart )
+    callsToSeedsByIdHelper( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
+                            bool bWithInsertions, nucSeqIndex uiMinEntrySize, Func_t&& getNextStart )
     {
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        auto pReconstructionTable = createReconstructionTable( iCallerRun, uiMinEntrySize );
+        auto pReconstructionTable = createReconstructionTable( vCallerRuns, uiMinEntrySize );
 
         NextCallType xNextCallForwardContext(
             this->pConnection,
@@ -753,22 +752,26 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); }; // lambda function
 #endif
 
-        auto xRet = callsToSeedsHelper( pRef, iCallerRun, bWithInsertions, getNextStart, xNextCallForwardContext,
+        auto xRet = callsToSeedsHelper( pRef, bWithInsertions, getNextStart, xNextCallForwardContext,
                                         xNextCallBackwardContext, fDeleteEntries );
 #if DEBUG_LEVEL > 0 || 1
         if( uiNumPassedEntries > 0 )
         {
-            auto uiNumCalls = SQLQuery<DBCon, uint64_t>(
-                                  this->pConnection, "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" )
-                                  .scalar( iCallerRun );
+            auto uiNumCalls = 0;
+
+            SQLQuery<DBCon, uint64_t> xCount( this->pConnection,
+                                              "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" );
+            for( auto iCallerRun : vCallerRuns )
+                uiNumCalls += xCount.scalar( iCallerRun );
             std::cout << "Passed over a total of " << uiNumPassedEntries << " entries, thats "
                       << 100.0 * ( (double)uiNumPassedEntries ) / ( (double)uiNumCalls ) << "%." << std::endl;
         } // if
 #endif
         return xRet;
     } // method
+
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsById( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
+    callsToSeedsById( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns, bool bWithInsertions,
                       nucSeqIndex uiMinEntrySize, std::vector<std::tuple<std::string, bool, std::string>> vStarts )
     {
         size_t uiStartCnt = 0;
@@ -786,12 +789,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             } // else
         };
 
-        return callsToSeedsByIdHelper( pRef, iCallerRun, bWithInsertions, uiMinEntrySize, getNextStart );
+        return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
     } // method
 
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsByIdAutoStart( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun, bool bWithInsertions,
-                               nucSeqIndex uiMinEntrySize )
+    callsToSeedsByIdAutoStart( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
+                               bool bWithInsertions, nucSeqIndex uiMinEntrySize )
     {
         size_t uiStartCnt = 1;
         auto getNextStart = [ & ]( ) {
@@ -830,7 +833,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             } // else
         };
 
-        return callsToSeedsByIdHelper( pRef, iCallerRun, bWithInsertions, uiMinEntrySize, getNextStart );
+        return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
     } // method
 
     inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
@@ -876,10 +879,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
      *  one by one until the sequenced genome is reconstructed
      */
     inline std::shared_ptr<Pack>
-    reconstructSequencedGenome( std::shared_ptr<Pack> pRef, PriKeyDefaultType iCallerRun,
+    reconstructSequencedGenome( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
                                 std::vector<std::tuple<std::string, bool, std::string>> vStarts )
     {
-        auto xGenomeSeeds = callsToSeeds( pRef, iCallerRun, true, 0, vStarts );
+        auto xGenomeSeeds = callsToSeeds( pRef, vCallerRuns, true, 0, vStarts );
         return reconstructSequencedGenomeFromSeeds( xGenomeSeeds, pRef );
     } // method
 }; // namespace libMSV

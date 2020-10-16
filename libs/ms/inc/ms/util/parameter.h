@@ -586,6 +586,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxRefAmbiguityJump; // Max Ref Ambiguity Jump
     AlignerParameterPointer<int> xMMFilterMaxOcc; // xMMFilterMaxOcc
     AlignerParameterPointer<int> xMinNtInSoc; // Min NT in SoC
+    AlignerParameterPointer<int> xMinNtAfterReseeding; // Min NT after reseeding
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -781,6 +782,7 @@ class Presetting : public ParameterSetBase
           xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMMFilterMaxOcc( this, "Max Occ MM Filter", "@todo", SV_PARAMETERS, 200, checkPositiveValue ),
           xMinNtInSoc( this, "Min NT in SoC", "@todo", SV_PARAMETERS, 150, checkPositiveValue ),
+          xMinNtAfterReseeding( this, "Min NT after reseeding", "@todo", SV_PARAMETERS, 100, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -1070,18 +1072,13 @@ class ParameterSetManager
 
         // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?
 
-
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
-        // xParametersSets[ "sv-pacbio" ]->xJumpM->set( 0.25 );
-        // xParametersSets[ "sv-pacbio" ]->xMinDistDummy->set( 200 );
-        // xParametersSets[ "sv-pacbio" ]->xMaxFuzzinessFilter->set( 100 );
-        // xParametersSets[ "sv-pacbio" ]->xJumpH->set( 300 );
-        xParametersSets.emplace( "sv-ont", std::make_shared<Presetting>( "SV-ONT" ) );
-        // xParametersSets[ "sv-ont" ]->xJumpS->set( 250 );
-        // xParametersSets[ "sv-ont" ]->xJumpSNeg->set( 100 );
-        // xParametersSets[ "sv-ont" ]->xMinDistDummy->set( 300 );
-        // xParametersSets[ "sv-ont" ]->xMaxFuzzinessFilter->set( 150 );
-        // xParametersSets[ "sv-ont" ]->xJumpH->set( 600 );
+        xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 100 );
+        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 2000 );
+        xParametersSets[ "sv-pacbio" ]->xMaximalSeedAmbiguity->set( 1 );
+        xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
+        xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
+        xParametersSets[ "sv-pacbio" ]->xRectangularSoc->set( false );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "default" ];

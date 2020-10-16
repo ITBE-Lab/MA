@@ -343,7 +343,7 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumpsPy );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
-    exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>, nucSeqIndex>(
+    exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>>(
         xOrganizer, "RecursiveReseedingSoCs",
         []( auto&& x ) { x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py ); } );
     exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );

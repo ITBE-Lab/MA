@@ -20,14 +20,14 @@ using SvCallerRunTableType = SQLTableWithAutoPriKey<DBCon,
                                                     >;
 
 const json jSvCallerRunTableDef = {
-    {TABLE_NAME, "sv_caller_run_table"},
-    {TABLE_COLUMNS,
-     {{{COLUMN_NAME, "_name_"}},
-      {{COLUMN_NAME, "_desc_"}}, // The column name was originally "desc", which is a keyword in MySQL
-      {{COLUMN_NAME, "time_stamp"}},
-      {{COLUMN_NAME, "sv_jump_run_id"}}}}
+    { TABLE_NAME, "sv_caller_run_table" },
+    { TABLE_COLUMNS,
+      { { { COLUMN_NAME, "_name_" } },
+        { { COLUMN_NAME, "_desc_" } }, // The column name was originally "desc", which is a keyword in MySQL
+        { { COLUMN_NAME, "time_stamp" } },
+        { { COLUMN_NAME, "sv_jump_run_id" } } } }
     // @todo ask arne about inserting NULL
-    /*,{FOREIGN_KEY, {{COLUMN_NAME, "sv_jump_run_id"}, {REFERENCES, "sv_jump_run_table(id)"}}}*/};
+    /*,{FOREIGN_KEY, {{COLUMN_NAME, "sv_jump_run_id"}, {REFERENCES, "sv_jump_run_table(id)"}}}*/ };
 
 template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<DBCon>
 {
@@ -50,7 +50,9 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
           xDelete( pDB, "DELETE FROM sv_caller_run_table WHERE _name_ = ?" ),
           xGetId( pDB, "SELECT id FROM sv_caller_run_table WHERE _name_ = ? ORDER BY time_stamp ASC LIMIT 1" ),
           xGetIds( pDB, "SELECT id FROM sv_caller_run_table" ),
-          xGetName( pDB, "SELECT _name_, _desc_, time_stamp, sv_jump_run_id FROM sv_caller_run_table WHERE id = ?" ),
+          xGetName( pDB, "SELECT _name_, _desc_, time_stamp, "
+                         "CASE WHEN sv_jump_run_id is NULL THEN -1 ELSE sv_jump_run_id END AS v1 "
+                         "FROM sv_caller_run_table WHERE id = ?" ),
           xNum( pDB, "SELECT COUNT(*) FROM sv_caller_run_table " ),
           xExists( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE id = ?" ),
           xNameExists( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE _name_ = ?" ),

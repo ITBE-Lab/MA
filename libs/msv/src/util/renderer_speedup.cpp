@@ -188,7 +188,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                 for( size_t uiJ = uiI; uiJ < vReadIds.size( ); uiJ += rParameters.getNumThreads( ) )
                 {
                     // modules not threadsave if HelperRetVal is given
-                    RecursiveReseedingSoCs xReseeding( rParameters, pPack, 100 );
+                    RecursiveReseedingSoCs xReseeding( rParameters, pPack );
                     SvJumpsFromSeeds xJumpsFromSeeds( rParameters, pPack );
                     auto iReadId = vReadIds[ uiJ ];
                     int64_t uiSeqId = pReadTable->getSeqId( iReadId );
