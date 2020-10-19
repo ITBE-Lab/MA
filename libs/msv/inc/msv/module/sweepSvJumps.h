@@ -55,9 +55,9 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
         // setFinished( );
         // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
-        auto pRet = std::make_shared<GenomeSection>( ( iCurrStart / 4 ) * iSectionSize +
-                                                         ( iCurrStart % 4 ) *
-                                                             ( std::numeric_limits<int64_t>::max( ) / (int64_t)4 ),
+        auto pRet = std::make_shared<GenomeSection>( ( iCurrStart / 5 ) * iSectionSize +
+                                                         ( iCurrStart % 5 ) *
+                                                             ( std::numeric_limits<int64_t>::max( ) / (int64_t)8 ),
                                                      iSectionSize );
 
         iCurrStart++;
@@ -130,9 +130,9 @@ class CompleteBipartiteSubgraphSweep
 
                 // bring section start and end back to genome
                 nucSeqIndex uiForwStrandStart =
-                    ( nucSeqIndex )( pSection->start( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)4 ) );
+                    ( nucSeqIndex )( pSection->start( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)8 ) );
                 nucSeqIndex uiForwStrandEnd =
-                    ( nucSeqIndex )( pSection->end( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)4 ) );
+                    ( nucSeqIndex )( pSection->end( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)8 ) );
 
                 // @todo we only need a positively squeezed vector now so this is overkill...
                 SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,

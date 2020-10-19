@@ -74,15 +74,6 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices )
         .def( "insert_call", &SvCallTable<DBConSingle>::insertCall );
 
-#if 0
-    using X = SvCallTableAnalyzer<DBCon, false>;
-    py::class_<X, std::shared_ptr<X>>( xOrganizer.util( ), "SvCallTableAnalyzer" )
-        .def( py::init<std::shared_ptr<PoolContainer<DBCon>>>( ) )
-        .def( "num_overlaps", &X::numOverlaps )
-        .def( "num_invalid_calls", &X::numInvalidCalls )
-        .def( "blur_on_overlaps", &X::blurOnOverlaps );
-#endif
-
     py::class_<OneSidedCallsTable<DBConSingle>, std::shared_ptr<OneSidedCallsTable<DBConSingle>>>(
         xOrganizer.util( ), "OneSidedCallsTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
