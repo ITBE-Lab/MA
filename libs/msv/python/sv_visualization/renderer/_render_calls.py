@@ -147,17 +147,17 @@ def render_calls(self, render_all=False):
                         int(self.ys - self.h),
                         self.w*3,
                         self.h*3]
-        if self.widgets.get_render_t_n() and self.widgets.get_render_f_n():
+        if self.widgets.get_render_t_p() and self.widgets.get_render_f_n():
             self.calls_from_db_gt.init(*default_args)
-        elif self.widgets.get_render_t_n() or self.widgets.get_render_f_n():
+        elif self.widgets.get_render_t_p() or self.widgets.get_render_f_n():
             self.calls_from_db_gt.init(self.get_min_score(),
                                         self.get_max_score(),
                                         *default_args,
                                         self.get_run_id(),
-                                        self.widgets.get_render_t_n(),
+                                        self.widgets.get_render_t_p(),
                                         self.widgets.get_blur())
     with self.measure("SvCallFromDb(gt_id) extract"):
-        while (self.widgets.get_render_t_n() or self.widgets.get_render_f_n()) and self.calls_from_db_gt.hasNext():
+        while (self.widgets.get_render_t_p() or self.widgets.get_render_f_n()) and self.calls_from_db_gt.hasNext():
             call = self.calls_from_db_gt.next(False)
             if call.x.size == 0 and call.y.size == 0:
                 ground_plus_data["x"].append(call.x.start + 0.5)

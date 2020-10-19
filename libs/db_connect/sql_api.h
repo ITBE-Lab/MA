@@ -685,8 +685,11 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 #ifndef POSTGRESQL // MySQL
                                 sIndexType +
 #endif
-                                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName + sIndexMethod + "(" +
-                                sCols + ")";
+                                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName +
+#ifdef POSTGRESQL
+                                sIndexMethod +
+#endif
+                                "(" + sCols + ")";
 
             // WHERE is not supported by MySQL
             if( jIndexDef.count( WHERE ) )
@@ -1090,7 +1093,37 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         }; // struct
 
         /** @brief Translate C++ types to SQL types via the Functor */
-        static inline std::vector<std::string> getSQLColTypes( )
+        static inline std::vector<std::string> getSQLInsertTypes( )
+        {
+            std::vector<std::string> vColsSQLTypeNames;
+            TranslateTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vColsSQLTypeNames );
+            return vColsSQLTypeNames;
+        } // method
+
+        // column iteration: recursive case
+        template <size_t N, typename TypeCurrCol, typename... TypesRemainCols> struct TranslateColumnTypes
+        {
+            static void iterate( std::vector<std::string>& rvDBColTypes )
+            {
+                // With respect to the Translator::template:
+                // https://stackoverflow.com/questions/2105901/how-to-fix-expected-primary-expression-before-error-in-c-template-code
+                rvDBColTypes.push_back( Translator::template getSQLColumnTypeName<TypeCurrCol>( ) );
+                // recursive call
+                TranslateTypes<N - 1, TypesRemainCols...>::iterate( rvDBColTypes );
+            } // method
+        }; // struct
+
+        // column iteration: base case (via partial specialization)
+        template <typename TypeCurrCol> struct TranslateColumnTypes<1, TypeCurrCol>
+        {
+            static void iterate( std::vector<std::string>& rvDBColTypes )
+            {
+                rvDBColTypes.push_back( Translator::template getSQLColumnTypeName<TypeCurrCol>( ) );
+            } // method
+        }; // struct
+
+        /** @brief Translate C++ types to SQL types via the Functor */
+        static inline std::vector<std::string> getSQLColumnTypes( )
         {
             std::vector<std::string> vColsSQLTypeNames;
             TranslateTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vColsSQLTypeNames );
@@ -1131,7 +1164,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         /** @brief Dump the SQL column types to cout. */
         static void dumpSQLColTypes( )
         {
-            auto vColNames = getSQLColTypes( );
+            auto vColNames = getSQLColumnTypes( );
             for( auto s : vColNames )
                 std::cout << s << " ";
             std::cout << std::endl;
@@ -1570,7 +1603,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         : pDB( pDB ),
           jTableDef( rjTableDef ), // deep copy
           rjTableCols( getTableCols( ) ),
-          vSQLColumnTypes( CollTypeTranslation::getSQLColTypes( ) ),
+          vSQLColumnTypes( CollTypeTranslation::getSQLColumnTypes( ) ),
           vUseColumnTypeInCreateStatement( CollTypeTranslation::getUsedColTypes( ) ),
           bDropOnDestr( false )
 #if 0

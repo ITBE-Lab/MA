@@ -8,13 +8,15 @@ from .util import *
 
 def render_jumps(self, jump_list=[], render_all=False):
     with self.measure("get_num_jumps_in_area"):
-        if self.do_render_call_jumps_only:
-            num_jumps = len(jump_list)
-        else:
-            num_jumps = get_num_jumps_in_area(self.db_conn, self.pack,
-                                                SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
-                                                int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
-                                                self.get_max_num_ele())
+        num_jumps = 0
+        if True:
+            if self.do_render_call_jumps_only:
+                num_jumps = len(jump_list)
+            else:
+                num_jumps = get_num_jumps_in_area(self.db_conn, self.pack,
+                                                    SvCallerRunTable(self.db_conn).jump_run_id(self.get_run_id()),
+                                                    int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3,
+                                                    self.get_max_num_ele())
     self.read_ids = set()
     if num_jumps < self.get_max_num_ele() or render_all:
         out_dicts = []

@@ -84,7 +84,8 @@ template <typename DBCon> class SvCallsFromDb
             std::string sQueryText =
                 std::string( "FROM sv_call_table AS inner_table "
                              "WHERE sv_caller_run_id = ? " ) +
-                ( !xHelper.bInArea ? "" : "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) " ) + //
+                ( !xHelper.bInArea ? ""
+                                   : "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
                 ( !xHelper.bWithMinScore ? "" : "AND score >= ? " ) + //
                 ( !xHelper.bWithMaxScore ? "" : "AND score < ? " ) + //
                 ( !xHelper.bWithIntersection

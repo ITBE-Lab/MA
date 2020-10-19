@@ -27,13 +27,16 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
     uint32_t uiY = 0;
     if( iY > 0 )
         uiY = (uint32_t)iY;
+
     if( uiX + uiW > pPack->uiUnpackedSizeForwardStrand )
         uiW = pPack->uiUnpackedSizeForwardStrand - uiX;
     if( uiY + uiH > pPack->uiUnpackedSizeForwardStrand )
         uiH = pPack->uiUnpackedSizeForwardStrand - uiY;
 
+    if( uiW == 0 && uiH == 0 )
+        return 0;
 
-    auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ) );
+    WKBUint64Rectangle xRectangle = geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH );
 
     SQLQuery<DBConSingle, uint64_t> xQuery( pConnection,
                                             "SELECT COUNT(*) FROM ( "
@@ -41,11 +44,12 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
                                             "   SELECT id "
                                             "   FROM sv_jump_table "
                                             "   WHERE sv_jump_run_id = ? "
-                                            "   AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
+                                            "   AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) "
                                             "   LIMIT ? "
                                             ") AS tmp_table " );
-    // FIXME: Don't use scalar anymore!
-    return xQuery.scalar( iRunId, xRectangle, uiLimit );
+
+    auto xRet = xQuery.scalar( iRunId, xRectangle, uiLimit );
+    return xRet;
 } // function
 
 
@@ -70,12 +74,14 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices )
         .def( "insert_call", &SvCallTable<DBConSingle>::insertCall );
 
+#if 0
     using X = SvCallTableAnalyzer<DBCon, false>;
     py::class_<X, std::shared_ptr<X>>( xOrganizer.util( ), "SvCallTableAnalyzer" )
         .def( py::init<std::shared_ptr<PoolContainer<DBCon>>>( ) )
         .def( "num_overlaps", &X::numOverlaps )
         .def( "num_invalid_calls", &X::numInvalidCalls )
         .def( "blur_on_overlaps", &X::blurOnOverlaps );
+#endif
 
     py::class_<OneSidedCallsTable<DBConSingle>, std::shared_ptr<OneSidedCallsTable<DBConSingle>>>(
         xOrganizer.util( ), "OneSidedCallsTable" )
@@ -131,8 +137,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "drop_indices", &ReadRangeTable<DBConSingle>::dropIndices )
         .def( "gen_indices", &ReadRangeTable<DBConSingle>::genIndices );
 
-    py::class_<ReadSelectionTable<DBConSingle>, std::shared_ptr<ReadSelectionTable<DBConSingle>>>( xOrganizer.util( ),
-                                                                                           "ReadSelectionTable" )
+    py::class_<ReadSelectionTable<DBConSingle>, std::shared_ptr<ReadSelectionTable<DBConSingle>>>(
+        xOrganizer.util( ), "ReadSelectionTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "insert_by_name", &ReadSelectionTable<DBConSingle>::insertReadByName );
 

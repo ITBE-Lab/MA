@@ -300,6 +300,6 @@ inline std::ostream& operator<<( std::ostream& xOS, const WKBUint64Rectangle& xR
     xOS << "WKBPolygon: ";
     for( auto uiI : xRectWKB.aData )
         xOS << std::hex << (int)uiI << " ";
-    xOS << std::endl;
+    xOS << std::dec << std::endl;
     return xOS;
 } // operator

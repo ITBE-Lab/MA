@@ -560,6 +560,11 @@ class PostgreSQLDBCon
             return getSQLTypeName( identity<Type>( ) );
         } // method
 
+        template <typename Type> static inline std::string getSQLColumnTypeName( )
+        {
+            return getSQLTypeName( identity<Type>( ) );
+        } // method
+
         /** @brief Delivers the appropriate string for placeholder in prepared statement (as e.g. INSERT statement).
          * In most cases this is simply a '?'. But for some types, as e.g. spatial types, an additional wrapping is
          * required for indicating the precise kind of data-representation passed to the MySQL client. In such cases an

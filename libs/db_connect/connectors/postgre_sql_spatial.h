@@ -20,6 +20,11 @@ template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<W
     return "bytea"; // WKB data are passed as BLOB
 } // specialized method
 
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLColumnTypeName<WKBUint64Rectangle>( )
+{
+    return "geometry"; // WKB data are passed as BLOB
+} // specialized method
+
 // Part1b : Spatial types require an indication that the argument passed at a placeholder's
 //          position has the format 'WKB'.
 //          https://postgis.net/docs/ST_GeomFromWKB.html
@@ -64,7 +69,12 @@ struct /* MySQLConDB:: */ PGRowCell<WKBUint64Rectangle> : public /* MySQLConDB::
 // Part1 : Specify the corresponding MySQL-type for your blob.
 template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBPoint>( )
 {
-    return "POINT"; // WKB data are passed as BLOB
+    return "bytea"; // WKB data are passed as BLOB
+} // specialized method
+
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLColumnTypeName<WKBPoint>( )
+{
+    return "geometry"; // WKB data are passed as BLOB
 } // specialized method
 
 // Part1b : Spatial types require an indication that the argument passed at a placeholder's
@@ -72,7 +82,7 @@ template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<W
 template <>
 inline std::string PostgreSQLDBCon::TypeTranslator::getPlaceholderForType<WKBPoint>( const std::string& rsInsertedText )
 {
-    return "ST_PointFromWKB(" + rsInsertedText + ", 0)";
+    return "ST_GeomFromWKB(" + rsInsertedText + ", 0)";
 } // specialized method
 
 // Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.

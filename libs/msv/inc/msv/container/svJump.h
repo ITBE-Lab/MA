@@ -95,7 +95,7 @@ class SvJump : public libMS::Container
     {
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
-        assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
+        assert( uiFrom * 8 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
     } // constructor
 
     SvJump( const nucSeqIndex uiFrom_,
@@ -121,7 +121,7 @@ class SvJump : public libMS::Container
     {
         assert( uiQueryFrom <= uiQueryTo );
         // necessary for mapping switch strand jumps rightwards
-        assert( uiFrom * 4 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
+        assert( uiFrom * 8 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
 
         assert( ( (uint32_t)uiFrom ) != std::numeric_limits<uint32_t>::max( ) ||
                 ( (uint32_t)uiTo ) != std::numeric_limits<uint32_t>::max( ) );
@@ -169,14 +169,14 @@ class SvJump : public libMS::Container
      */
     SvJump( const Seed& rA, const nucSeqIndex qLen, const bool bFirstSeed, int64_t iReadId, nucSeqIndex uiMaxJumpLen )
         : SvJump( /* uiFrom = */
-                  bFirstSeed
+                  bFirstSeed == rA.bOnForwStrand
                       // if we jump to the start of the first seed we don't know where we are coming from
                       ? std::numeric_limits<uint32_t>::max( )
                       : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
                                            // @note rA's direction is mirrored on reference if rA is on rev comp strand
                                            : 1 + rA.start_ref( ) - rA.size( ) ),
                   /* uiTo = */
-                  !bFirstSeed
+                  bFirstSeed != rA.bOnForwStrand
                       // if we jump from the end of the last seed we don't know where we are going to
                       ? std::numeric_limits<uint32_t>::max( )
                       : rA.start_ref( ),
@@ -217,6 +217,11 @@ class SvJump : public libMS::Container
     bool switch_strand_known( ) const
     {
         return from_known( ) && to_known( );
+    } // method
+
+    bool is_dummy( ) const
+    {
+        return !from_known( ) || !to_known( );
     } // method
 
     bool from_fuzziness_is_rightwards( ) const
@@ -278,11 +283,16 @@ class SvJump : public libMS::Container
     int64_t from_start( ) const
     {
         auto iRet = from_start_same_strand( );
-        // separate the 4 different types on the x axis
+        // separate the 5 different types on the x axis
+        // for that we separate the dataspace into 8 sections:
+        // | 0               | 1               | 2               | 3               | 4     | 5      | 6      | 7      |
+        // | forward-forward | forward-reverse | reverse-forward | reverse-reverse | dummy | unused | unused | unused |
+        if( is_dummy( ) )
+            return iRet + std::numeric_limits<int64_t>::max( ) / (int64_t)2;
         if( !bFromForward )
-            iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)2;
-        if( !bToForward )
             iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)4;
+        if( !bToForward )
+            iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)8;
         return iRet;
     } // method
 
@@ -444,11 +454,24 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     int64_t iId;
     int64_t iOrderID = -1;
     bool bMirrored = false;
+    bool bDummy = false;
 #if 0
     Regex xRegex;
 #endif
     size_t uiOpenEdges = 0;
+    /**
+     * @brief used for statistical position estimation of SV calls
+     * @details
+     * Contains the horizontal component for two-sided calls
+     * and the minimum compunent for one-sided calls.
+     */
     std::vector<nucSeqIndex> vHorizontal;
+    /**
+     * @brief used for statistical position estimation of SV calls
+     * @details
+     * Contains the vertical component for two-sided calls
+     * and the maximum compunent for one-sided calls.
+     */
     std::vector<nucSeqIndex> vVertical;
 
     // these can be empty
@@ -464,6 +487,9 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
           uiReferenceAmbiguity( rOther.uiReferenceAmbiguity ),
           vSupportingJumpIds( rOther.vSupportingJumpIds ),
           iId( rOther.iId ),
+          iOrderID( rOther.iOrderID ),
+          bMirrored( rOther.bMirrored ),
+          bDummy( rOther.bDummy ),
           uiOpenEdges( rOther.uiOpenEdges ),
           vHorizontal( rOther.vHorizontal ),
           vVertical( rOther.vVertical ),
@@ -482,8 +508,10 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
             bool bFromForward,
             bool bToForward,
             nucSeqIndex uiNumSuppReads,
-            std::vector<int64_t> vSupportingJumpIds = {},
-            int64_t iId = -1 /* -1 == no id obtained */
+            std::vector<int64_t> vSupportingJumpIds = { },
+            int64_t iId = -1, /* -1 == no id obtained */
+            bool bMirrored = false,
+            bool bDummy = false
 #if 0
             , Regex xRegex = Regex( "", 0 )
 #endif
@@ -494,7 +522,9 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
           uiNumSuppReads( uiNumSuppReads ),
           uiReferenceAmbiguity( 1 ),
           vSupportingJumpIds( vSupportingJumpIds ),
-          iId( iId )
+          iId( iId ),
+          bMirrored( bMirrored ),
+          bDummy( bDummy )
 #if 0
           ,
           xRegex( xRegex )
@@ -522,7 +552,10 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
                   pJump->bFromForward,
                   pJump->bToForward,
                   1,
-                  std::vector<int64_t>{pJump->iId} )
+                  std::vector<int64_t>{ pJump->iId },
+                  -1,
+                  pJump->bWasMirrored,
+                  !pJump->from_known( ) || !pJump->to_known( ) )
     {
         if( bRememberJump )
             vSupportingJumps.push_back( pJump );
@@ -538,21 +571,19 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 
     inline void addJumpToEstimateClusterSize( std::shared_ptr<SvJump> pJump )
     {
-        nucSeqIndex uiF = pJump->uiFrom;
-        nucSeqIndex uiT = pJump->uiTo;
         if( !pJump->from_known( ) )
-        {
-            uiF = uiT;
-            ++uiT;
-        } // if
+            // if the from position of a jump is unknown it indicates the maximal position of a one-sided call.
+            vVertical.push_back( pJump->uiTo );
         else if( !pJump->to_known( ) )
+            // if the to position of a jump is unknown it indicates the minimal position of a one-sided call.
+            vHorizontal.push_back( pJump->uiFrom );
+        else
         {
-            uiT = uiF;
-            --uiF;
-        } // else if
-
-        vHorizontal.push_back( uiF );
-        vVertical.push_back( uiT );
+            // if both positions are known, we have a two-sided call, where the from pos indicates the horizontal
+            // position and the to pos the vertical one
+            vHorizontal.push_back( pJump->uiFrom );
+            vVertical.push_back( pJump->uiTo );
+        } // else
     } // method
 
     inline double getScore( ) const
@@ -608,6 +639,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 
     void add_jump( std::shared_ptr<SvJump> pJmp )
     {
+        assert( ( !pJump->from_known( ) || !pJump->to_known( ) ) == this->bDummy );
         vSupportingJumpIds.push_back( pJmp->iId );
         vSupportingJumps.push_back( pJmp );
     } // method
@@ -623,9 +655,30 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         std::sort( vHorizontal.begin( ), vHorizontal.end( ) );
         std::sort( vVertical.begin( ), vVertical.end( ) );
 
+        if( bDummy )
+        {
+            nucSeqIndex uiMin = 1;
+            nucSeqIndex uiMax = 0;
+            size_t uiI = 0;
+            size_t uiJ = vVertical.size( );
+            while( uiMin > uiMax && uiI < vHorizontal.size( ) && uiJ > 0 )
+            {
+                uiMin = vHorizontal[ uiI ];
+                uiMax = vVertical[ uiJ - 1 ];
+                uiI++;
+                uiJ--;
+            } // while
+            nucSeqIndex uiPos = ( uiMin + uiMax ) / 2;
+            this->xXAxis.start( uiPos );
+            this->xYAxis.start( uiPos );
+        } // if
+        else
+        {
+            this->xXAxis.start( vHorizontal[ vHorizontal.size( ) * ( bFromForward ? 0.95 : 0.05 ) ] );
+            this->xYAxis.start( vVertical[ vVertical.size( ) * ( bToForward ? 0.05 : 0.95 ) ] );
+        } // else
 
-        this->xXAxis.start( vHorizontal[ ( (size_t)vHorizontal.size( ) * ( bFromForward ? 0.95 : 0.05 ) ) ] );
-        this->xYAxis.start( vVertical[ ( (size_t)vVertical.size( ) * ( bToForward ? 0.05 : 0.95 ) ) ] );
+
         this->xXAxis.size( 1 );
         this->xYAxis.size( 1 );
     } // method
@@ -651,8 +704,9 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
      */
     void join( SvCall& rOther )
     {
-        assert( this->bFromForward == rOther.bFromForward );
-        assert( this->bToForward == rOther.bToForward );
+        assert( this->bDummy == rOther.bDummy );
+        assert( this->bDummy || this->bFromForward == rOther.bFromForward );
+        assert( this->bDummy || this->bToForward == rOther.bToForward );
         nucSeqIndex uiFromEnd = std::max( this->xXAxis.end( ), rOther.xXAxis.end( ) );
         nucSeqIndex uiToEnd = std::max( this->xYAxis.end( ), rOther.xYAxis.end( ) );
         this->xXAxis.start( std::min( this->xXAxis.start( ), rOther.xXAxis.start( ) ) );

@@ -45,8 +45,8 @@ class Widgets:
         self.condition = threading.Condition()
 
         self.subset_buttons = CheckboxButtonGroup(labels=["Render false-positives", "Render false-negatives",
-                                                          "Render true-positives", "Render true-negatives"],
-                                                          active=[0, 1, 2, 3])
+                                                          "Render true-positives"],
+                                                          active=[0, 1, 2])
         self.subset_buttons.on_click(lambda x: self.forced_read_ids_change(renderer))
         self.blur_slider = Slider(start=0, end=500, value=10, step=1, callback_policy='mouseup',
                                         title="Blur")
@@ -107,9 +107,6 @@ class Widgets:
 
     def get_render_t_p(self):
         return 2 in self.subset_buttons.active
-
-    def get_render_t_n(self):
-        return 3 in self.subset_buttons.active
 
     def get_forced_read_ids(self, renderer):
         if len(self.force_read_id.value) == 0:

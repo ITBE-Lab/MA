@@ -176,7 +176,7 @@ template <typename DBCon> class SvJumpFromSql
                   "       was_mirrored, num_supporting_nt, id, read_id "
                   "FROM sv_jump_table "
                   "WHERE sv_jump_run_id = ? "
-                  "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) " )
+                  "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) " )
     {
         auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( iX, iY, uiW, uiH ) );
         xQuery.execAndFetch( iSvCallerRunId, xRectangle );
@@ -191,7 +191,7 @@ template <typename DBCon> class SvJumpFromSql
                   "       was_mirrored, num_supporting_nt, id, read_id "
                   "FROM sv_jump_table "
                   "WHERE sv_jump_run_id = ? "
-                  "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
+                  "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) "
                   "LIMIT ? " )
     {
         auto xRectangle = WKBUint64Rectangle( geom::Rectangle<nucSeqIndex>( iX, iY, uiW, uiH ) );

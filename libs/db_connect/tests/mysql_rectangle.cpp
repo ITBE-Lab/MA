@@ -60,7 +60,7 @@ int main( void )
 #ifdef POSTGRESQL
                 // Regarding the explicit type cast '::geometry'
                 // See:
-                pDatabase, "SELECT ST_AsBinary(rectangle::geometry) FROM rectangle_test WHERE id = $1" );
+                pDatabase, "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = $1" );
 #else // MySQL
                 pDatabase, "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = ?" );
 #endif

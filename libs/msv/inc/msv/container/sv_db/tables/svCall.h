@@ -115,6 +115,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
     SQLStatement<DBCon> xFilterCallsWithHighScore;
+    SQLStatement<DBCon> xEnableExtension;
 
   public:
     // Consider: Place the table on global level
@@ -139,7 +140,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 { { COLUMN_NAME, "rectangle" }, { CONSTRAINTS, "NOT NULL" } } } },
             { GENERATED_COLUMNS,
               { { { COLUMN_NAME, "score" },
-                  { TYPE, DBCon::TypeTranslator::template getSQLTypeName<double>( ) },
+                  { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<double>( ) },
                   { AS, "( supporting_reads * 1.0 ) / reference_ambiguity" } } } },
         };
     }; // method
@@ -188,23 +189,24 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    reference_ambiguity = ?, "
                        "    order_id = ?, "
                        "    mirrored = ?, "
-                       "    rectangle = ST_PolyFromWKB(?, 0) "
+                       "    rectangle = ST_GeomFromWKB(?, 0) "
                        "WHERE id = ? " ),
           xFilterCallsWithHighScore( pConnection,
                                      "DELETE FROM sv_call_table "
                                      "WHERE sv_caller_run_id = ? "
                                      // filters out ?% of the calls with the highest scores in sv_call_table
-                                     "AND score >= ? " )
+                                     "AND score >= ? " ),
+          xEnableExtension( pConnection, "CREATE EXTENSION IF NOT EXISTS btree_gist" )
     {} // default constructor
 
     inline void genIndices( int64_t iCallerRunId )
     {
-        this->addIndex(
-            json{ { INDEX_NAME, "rectangle" }, { INDEX_COLUMNS, "rectangle" }, { INDEX_TYPE, "SPATIAL" } } );
+        xEnableExtension.exec( );
+        this->addIndex( json{ { INDEX_NAME, "rectangle" },
+                              { INDEX_COLUMNS, "rectangle" },
+                              { INDEX_TYPE, "SPATIAL" },
+                              { INDEX_METHOD, "GIST" } } );
 
-        this->addIndex( json{ { INDEX_NAME, "runId_rectangle" },
-                              { INDEX_COLUMNS, "sv_caller_run_id, rectangle" },
-                              { INDEX_TYPE, "SPATIAL" } } );
 
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
@@ -214,7 +216,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline void dropIndices( int64_t iCallerRunId )
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
-        this->dropIndex( json{ { INDEX_NAME, "runId_rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
     } // method
 
@@ -892,7 +893,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     } // method
 }; // namespace libMSV
 
-
+#if 0
 /** @brief provides queries that can analyze the accuracy of a sv-caller
  * @details
  * uses a connection pool for multiprocessing.
@@ -932,7 +933,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                          "SELECT COUNT(*) "
                                          "FROM sv_call_table "
                                          "WHERE sv_caller_run_id = ? "
-                                         "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
+                                         "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) "
                                          "AND from_forward = ? "
                                          "AND to_forward = ? "
                                          "AND (score, id) > (?, ?) "
@@ -950,7 +951,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
                                                    "SELECT ST_AsBinary(rectangle) "
                                                    "FROM sv_call_table "
                                                    "WHERE sv_caller_run_id = ? "
-                                                   "AND " ST_INTERSCTS "(rectangle, ST_PolyFromWKB(?, 0)) "
+                                                   "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) "
                                                    "AND from_forward = ? "
                                                    "AND to_forward = ? "
                                                    // ST_Envelope returns MBR of rectangle
@@ -1163,6 +1164,7 @@ template <typename DBCon, bool bLog> class SvCallTableAnalyzer
         return uiRet;
     } // method
 }; // class
+#endif
 
 template <typename DBCon>
 using CallDescTable_t = SQLTable<DBCon,
