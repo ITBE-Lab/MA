@@ -24,12 +24,15 @@ def setup(self):
         self.mm_index.set_max_occ(2)
         self.db_conn = DbConn(dataset_name)
         self.db_conn_2 = DbConn(dataset_name)
+        self.db_conn_3 = DbConn(dataset_name)
+        self.db_conn_4 = DbConn(dataset_name)
+        self.db_conn_5 = DbConn(dataset_name)
         print("NUM THREADS", self.params.get_num_threads())
         self.db_pool = PoolContainer(self.params.get_num_threads() + 1, dataset_name)
         
-        self.calls_from_db = SvCallsFromDb(self.db_conn)
-        self.count_calls_from_db = SvCallsFromDb(self.db_conn)
-        self.calls_from_db_gt = SvCallsFromDb(self.db_conn)
+        self.calls_from_db = SvCallsFromDb(self.db_conn_3)
+        self.count_calls_from_db = SvCallsFromDb(self.db_conn_4)
+        self.calls_from_db_gt = SvCallsFromDb(self.db_conn_5)
 
         # chromosome lines
         xs = [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand]

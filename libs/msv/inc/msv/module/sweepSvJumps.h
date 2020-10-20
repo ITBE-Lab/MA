@@ -55,13 +55,14 @@ class GenomeSectionFactory : public Module<GenomeSection, true>
         // setFinished( );
         // return std::make_shared<GenomeSection>( 0, std::numeric_limits<int64_t>::max( ) - 10000 );
 
-        auto pRet = std::make_shared<GenomeSection>( ( iCurrStart / 5 ) * iSectionSize +
-                                                         ( iCurrStart % 5 ) *
-                                                             ( std::numeric_limits<int64_t>::max( ) / (int64_t)8 ),
-                                                     iSectionSize );
+        auto pRet = std::make_shared<GenomeSection>(
+            ( iCurrStart / SvJump::FROM_POS_NUM_USED_SECTIONS ) * iSectionSize +
+                ( iCurrStart % SvJump::FROM_POS_NUM_USED_SECTIONS ) *
+                    ( std::numeric_limits<int64_t>::max( ) / SvJump::FROM_POS_NUM_SECTIONS ),
+            iSectionSize );
 
         iCurrStart++;
-        if( ( iCurrStart / 4 ) * iSectionSize >= iRefSize )
+        if( ( iCurrStart / SvJump::FROM_POS_NUM_USED_SECTIONS ) * iSectionSize >= iRefSize )
             return nullptr;
         return pRet;
     } // method
@@ -114,7 +115,7 @@ class CompleteBipartiteSubgraphSweep
                  std::shared_ptr<Pack> pPack )
     {
         return pPool->xPool.run(
-            [this]( auto pConnection, std::shared_ptr<GenomeSection> pSection, std::shared_ptr<Pack> pPack ) {
+            [ this ]( auto pConnection, std::shared_ptr<GenomeSection> pSection, std::shared_ptr<Pack> pPack ) {
                 nucSeqIndex uiGenomeSize = pPack->uiStartOfReverseStrand( );
 
                 auto xInitStart = std::chrono::high_resolution_clock::now( );
@@ -129,10 +130,10 @@ class CompleteBipartiteSubgraphSweep
                 // std::cout << "sweep (" << pSection->iStart << ")" << std::endl;
 
                 // bring section start and end back to genome
-                nucSeqIndex uiForwStrandStart =
-                    ( nucSeqIndex )( pSection->start( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)8 ) );
-                nucSeqIndex uiForwStrandEnd =
-                    ( nucSeqIndex )( pSection->end( ) % ( std::numeric_limits<int64_t>::max( ) / (int64_t)8 ) );
+                nucSeqIndex uiForwStrandStart = ( nucSeqIndex )(
+                    pSection->start( ) % ( std::numeric_limits<int64_t>::max( ) / SvJump::FROM_POS_NUM_SECTIONS ) );
+                nucSeqIndex uiForwStrandEnd = ( nucSeqIndex )(
+                    pSection->end( ) % ( std::numeric_limits<int64_t>::max( ) / SvJump::FROM_POS_NUM_SECTIONS ) );
 
                 // @todo we only need a positively squeezed vector now so this is overkill...
                 SqueezedVector<std::shared_ptr<SvCall>> xPointerVec( uiGenomeSize, uiSqueezeFactor, uiCenterStripUp,
@@ -183,7 +184,7 @@ class CompleteBipartiteSubgraphSweep
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                                 assert( pLastJoined->uiOpenEdges > 0 );
                                 xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                                       [&]( auto pX ) { return pX == pLastJoined; } ),
+                                                                       [ & ]( auto pX ) { return pX == pLastJoined; } ),
                                                        xActiveClusters.end( ) );
 #endif
                                 pNewCluster->join( *pLastJoined );
@@ -235,7 +236,7 @@ class CompleteBipartiteSubgraphSweep
 
 #if DEBUG_LEVEL > 0 && ADDITIONAL_DEBUG > 0
                             xActiveClusters.erase( std::remove_if( xActiveClusters.begin( ), xActiveClusters.end( ),
-                                                                   [&]( auto pX ) { return pX == pCluster; } ),
+                                                                   [ & ]( auto pX ) { return pX == pCluster; } ),
                                                    xActiveClusters.end( ) );
 #endif
                             if( pCluster->xXAxis.start( ) < uiForwStrandEnd &&

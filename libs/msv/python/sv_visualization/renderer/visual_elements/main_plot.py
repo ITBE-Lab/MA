@@ -66,6 +66,14 @@ class MainPlot:
         self.plot.circle(x="x", y="y", size=20, line_width=3, line_alpha=0.5, line_color="col", fill_alpha=0,
                          source=self.ground_truth_x, name="ground_truth_x")
 
+        self.plot.add_tools(HoverTool(tooltips=[("GT Call", ""),
+                                                ("supp. reads", "@n"),
+                                                ("ambiguity", "@c"),
+                                                ("score", "@s"),
+                                                ("id", "@idx"),
+                                                ("desc", "@desc")],
+                                      names=["ground_truth_x"],
+                                      name="Hover GT"))
         self.plot.add_tools(HoverTool(tooltips=[("supp. reads", "@n"),
                                                 ("ambiguity", "@c"),
                                                 ("score", "@s"),

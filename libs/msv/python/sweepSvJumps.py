@@ -63,8 +63,8 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
             #### FILTERS ####
 
-            filter1_pledge = promise_me(filter1, sweep2_pledge)
-            analyze.register("FilterLowSupportShortCalls", filter1_pledge, True)
+            #filter1_pledge = promise_me(filter1, sweep2_pledge)
+            #analyze.register("FilterLowSupportShortCalls", filter1_pledge, True)
             
             #filter2_pledge = promise_me(filter2, filter1_pledge)
             #analyze.register("FilterFuzzyCalls", filter2_pledge, True)
@@ -76,17 +76,17 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             #filter3_pledge = promise_me(filter5, filter2_pledge)
             #analyze.register("FilterDiagonalLineCalls", filter3_pledge, True)
 
-            call_ambiguity_pledge = promise_me(call_ambiguity, filter1_pledge, pack_pledge)
+            call_ambiguity_pledge = promise_me(call_ambiguity, sweep2_pledge, pack_pledge)
             analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge, True)
 
-            filter6_pledge = promise_me(filter6, call_ambiguity_pledge)
-            analyze.register("FilterLowScoreCalls", filter6_pledge, True)
+            #filter6_pledge = promise_me(filter6, call_ambiguity_pledge)
+            #analyze.register("FilterLowScoreCalls", filter6_pledge, True)
 
             call_inserter = promise_me(get_call_inserter, pool_pledge)
             inserter_vec.append(call_inserter)
 
             # filter6_pledge
-            write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, filter6_pledge)
+            write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, call_ambiguity_pledge)
             analyze.register("CallInserterModule", write_to_db_pledge, True)
 
             unlock_pledge = promise_me(UnLock(parameter_set_manager, section_pledge), write_to_db_pledge)

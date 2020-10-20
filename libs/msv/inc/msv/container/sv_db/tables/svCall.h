@@ -121,28 +121,29 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     // Consider: Place the table on global level
     json jSvCallTableDef( )
     {
-        return json{
-            { TABLE_NAME, "sv_call_table" },
-            { TABLE_COLUMNS,
-              { { { COLUMN_NAME, "sv_caller_run_id" } },
-                { { COLUMN_NAME, "from_pos" } },
-                { { COLUMN_NAME, "to_pos" } },
-                { { COLUMN_NAME, "from_size" } },
-                { { COLUMN_NAME, "to_size" } },
-                { { COLUMN_NAME, "from_forward" } },
-                { { COLUMN_NAME, "to_forward" } },
-                { { COLUMN_NAME, "inserted_sequence" } },
-                { { COLUMN_NAME, "inserted_sequence_size" } },
-                { { COLUMN_NAME, "supporting_reads" } },
-                { { COLUMN_NAME, "reference_ambiguity" } },
-                { { COLUMN_NAME, "order_id" } },
-                { { COLUMN_NAME, "mirrored" } },
-                { { COLUMN_NAME, "rectangle" }, { CONSTRAINTS, "NOT NULL" } } } },
-            { GENERATED_COLUMNS,
-              { { { COLUMN_NAME, "score" },
-                  { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<double>( ) },
-                  { AS, "( supporting_reads * 1.0 ) / reference_ambiguity" } } } },
-        };
+        return json{ { TABLE_NAME, "sv_call_table" },
+                     { TABLE_COLUMNS,
+                       { { { COLUMN_NAME, "sv_caller_run_id" } },
+                         { { COLUMN_NAME, "from_pos" } },
+                         { { COLUMN_NAME, "to_pos" } },
+                         { { COLUMN_NAME, "from_size" } },
+                         { { COLUMN_NAME, "to_size" } },
+                         { { COLUMN_NAME, "from_forward" } },
+                         { { COLUMN_NAME, "to_forward" } },
+                         { { COLUMN_NAME, "inserted_sequence" } },
+                         { { COLUMN_NAME, "inserted_sequence_size" } },
+                         { { COLUMN_NAME, "supporting_reads" } },
+                         { { COLUMN_NAME, "reference_ambiguity" } },
+                         { { COLUMN_NAME, "order_id" } },
+                         { { COLUMN_NAME, "mirrored" } },
+                         { { COLUMN_NAME, "rectangle" }, { CONSTRAINTS, "NOT NULL" } } } },
+                     { GENERATED_COLUMNS,
+                       { { { COLUMN_NAME, "score" },
+                           { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<double>( ) },
+                           { AS, "( supporting_reads * 1.0 ) / reference_ambiguity" } },
+                         { { COLUMN_NAME, "flipped_rectangle" },
+                           { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<WKBUint64Rectangle>( ) },
+                           { AS, "ST_FlipCoordinates(rectangle::geometry)" } } } } };
     }; // method
 
     SvCallTable( std::shared_ptr<DBCon> pConnection )
@@ -206,6 +207,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                               { INDEX_COLUMNS, "rectangle" },
                               { INDEX_TYPE, "SPATIAL" },
                               { INDEX_METHOD, "GIST" } } );
+        this->addIndex( json{ { INDEX_NAME, "flipped_rectangle" },
+                              { INDEX_COLUMNS, "flipped_rectangle" },
+                              { INDEX_TYPE, "SPATIAL" },
+                              { INDEX_METHOD, "GIST" } } );
 
 
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
@@ -216,6 +221,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline void dropIndices( int64_t iCallerRunId )
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
+        this->dropIndex( json{ { INDEX_NAME, "flipped_rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
     } // method
 

@@ -33,10 +33,16 @@ template <typename DBCon> class SvCallsFromDb
     struct Helper
     {
       public:
+        /// @brief only fetch calls in specific area
         bool bInArea;
+        /// @brief only fetch calls that overlap/do not overlap calls from different run (ground truth run)
         bool bOverlapping;
+        /// @brief true: fetch overlapping calls; false: fetch non overlapping calls
         bool bWithIntersection;
+        /// @brief true: do not fetch calls that are overlapped by higher scoring calls from same run
         bool bWithSelfIntersection;
+        /// @brief true: ignore ground truth run calls that are overlapped by higher scoring calls
+        bool bWithOtherIntersection;
         bool bWithMinScore;
         bool bWithMaxScore;
         bool bWithMinScoreGT;
@@ -50,6 +56,42 @@ template <typename DBCon> class SvCallsFromDb
         pQuery = nullptr;
     std::unique_ptr<SQLQuery<DBCon, uint32_t>> pQueryCount = nullptr;
 
+    std::string rectanglesOverlapSQL( std::string sFromTable, std::string sToTable )
+    {
+        // clang-format off
+        // ST_DWithin returns true if the geometries are within the specified distance of one another
+        // makes use of indices
+        return  std::string("     AND ( (ST_DWithin(") + sToTable + ".rectangle::geometry, "
+                            "                       " + sFromTable + ".rectangle::geometry, ?) "
+                            "           AND " + sToTable + ".from_forward = " + sFromTable + ".from_forward "
+                            "           AND " + sToTable + ".to_forward = " + sFromTable + ".to_forward) "
+                            // this considers reverse complemented calls
+                            // Note: we need to mirror the rectangle on the matrix diagonal
+                            //       and invert the strand information
+                            "       OR (ST_DWithin(" + sToTable + ".rectangle::geometry, "
+                            "                      " + sFromTable + ".flipped_rectangle::geometry, ?) "
+                            "           AND " + sToTable + ".from_forward != " + sFromTable + ".to_forward "
+                            "           AND " + sToTable + ".to_forward != " + sFromTable + ".from_forward)"
+                            "     )";
+        // clang-format on
+    }
+    std::string selfIntersectionSQL( std::string sFromTable, std::string sToTable )
+    {
+        // clang-format off
+        return std::string("AND NOT EXISTS( "
+                        // make sure that inner_table does not overlap with any other call with higher score
+                        "     SELECT " ) + sToTable + ".id "
+                        "     FROM sv_call_table AS " + sToTable +
+                        "     WHERE " + sToTable + ".id != " + sFromTable + ".id "
+                        "     AND " + sToTable + ".score >= " + sFromTable + ".score "
+                        "     AND " + sToTable + ".sv_caller_run_id = " + sFromTable + ".sv_caller_run_id "
+                        // Returns true if the geometries are within the specified distance of one another
+                        // makes use of indices
+                        + rectanglesOverlapSQL(sFromTable, sToTable) +
+                        ") ";
+        // clang-format on
+    }
+
     void initQuery( Helper xNew )
     {
         bool bInitQuery = ( xNew.bJustCount && pQueryCount == nullptr ) || //
@@ -58,6 +100,7 @@ template <typename DBCon> class SvCallsFromDb
                           xHelper.bOverlapping != xNew.bOverlapping || //
                           xHelper.bWithIntersection != xNew.bWithIntersection || //
                           xHelper.bWithSelfIntersection != xNew.bWithSelfIntersection || //
+                          xHelper.bWithOtherIntersection != xNew.bWithOtherIntersection || //
                           xHelper.bWithMinScore != xNew.bWithMinScore || //
                           xHelper.bWithMaxScore != xNew.bWithMaxScore || //
                           xHelper.bWithMinScoreGT != xNew.bWithMinScoreGT || //
@@ -75,6 +118,7 @@ template <typename DBCon> class SvCallsFromDb
             xHelper.bOverlapping = xNew.bOverlapping;
             xHelper.bWithIntersection = xNew.bWithIntersection;
             xHelper.bWithSelfIntersection = xNew.bWithSelfIntersection;
+            xHelper.bWithOtherIntersection = xNew.bWithOtherIntersection;
             xHelper.bWithMinScore = xNew.bWithMinScore;
             xHelper.bWithMaxScore = xNew.bWithMaxScore;
             xHelper.bWithMinScoreGT = xNew.bWithMinScoreGT;
@@ -84,8 +128,7 @@ template <typename DBCon> class SvCallsFromDb
             std::string sQueryText =
                 std::string( "FROM sv_call_table AS inner_table "
                              "WHERE sv_caller_run_id = ? " ) +
-                ( !xHelper.bInArea ? ""
-                                   : "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
+                ( !xHelper.bInArea ? "" : "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
                 ( !xHelper.bWithMinScore ? "" : "AND score >= ? " ) + //
                 ( !xHelper.bWithMaxScore ? "" : "AND score < ? " ) + //
                 ( !xHelper.bWithIntersection
@@ -98,29 +141,11 @@ template <typename DBCon> class SvCallsFromDb
                             "     WHERE outer_table.sv_caller_run_id = ? " +
                             ( !xHelper.bWithMinScoreGT ? "" : "AND outer_table.score >= ? " ) + //
                             ( !xHelper.bWithMaxScoreGT ? "" : "AND outer_table.score < ? " ) +
-                            // Returns true if the geometries are within the specified
-                            // distance of one another makes use of indices
-                            "     AND ST_DWithin(outer_table.rectangle::geometry, "
-                            "                    inner_table.rectangle::geometry, ?) "
-                            "     AND outer_table.from_forward = inner_table.from_forward "
-                            "     AND outer_table.to_forward = inner_table.to_forward "
+                            rectanglesOverlapSQL( "outer_table", "inner_table" ) +
+                            ( !xHelper.bWithOtherIntersection ? ""
+                                                              : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
                             ") " ) +
-                ( !xHelper.bWithSelfIntersection
-                      ? ""
-                      : "AND NOT EXISTS( "
-                        // make sure that inner_table does not overlap with any other call with higher score
-                        "     SELECT inner_table2.id "
-                        "     FROM sv_call_table AS inner_table2 "
-                        "     WHERE inner_table2.id != inner_table.id "
-                        "     AND inner_table2.score >= inner_table.score "
-                        "     AND inner_table2.sv_caller_run_id = inner_table.sv_caller_run_id "
-                        // Returns true if the geometries are within the specified distance of one another
-                        // makes use of indices
-                        "     AND ST_DWithin(inner_table2.rectangle::geometry, "
-                        "                    inner_table.rectangle::geometry, ?) "
-                        "     AND inner_table2.from_forward = inner_table.from_forward "
-                        "     AND inner_table2.to_forward = inner_table.to_forward "
-                        ") " );
+                ( !xHelper.bWithSelfIntersection ? "" : selfIntersectionSQL( "inner_table", "inner_table2" ) );
 
             if( xHelper.bJustCount )
                 pQueryCount = std::make_unique<SQLQuery<DBCon, uint32_t>>(
@@ -159,8 +184,18 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ true, bOverlapping, true, true, true, true, false, false, false }, //
-                         iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist );
+        initFetchQuery_( Helper{ .bInArea = true,
+                                 .bOverlapping = bOverlapping,
+                                 .bWithIntersection = true,
+                                 .bWithSelfIntersection = true,
+                                 .bWithOtherIntersection = false,
+                                 .bWithMinScore = true,
+                                 .bWithMaxScore = true,
+                                 .bWithMinScoreGT = false,
+                                 .bWithMaxScoreGT = false,
+                                 .bJustCount = false }, //
+                         iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist,
+                         iAllowedDist, iAllowedDist );
     }
 
     void initFetchQuery( double dMinScoreGT, double dMaxScoreGT, int64_t iSvCallerIdA, int64_t iX, int64_t iY,
@@ -168,8 +203,18 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ true, bOverlapping, true, true, false, false, true, true, false }, //
-                         iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist, iAllowedDist );
+        initFetchQuery_( Helper{ .bInArea = true,
+                                 .bOverlapping = bOverlapping,
+                                 .bWithIntersection = true,
+                                 .bWithSelfIntersection = false,
+                                 .bWithOtherIntersection = true,
+                                 .bWithMinScore = false,
+                                 .bWithMaxScore = false,
+                                 .bWithMinScoreGT = true,
+                                 .bWithMaxScoreGT = true,
+                                 .bJustCount = false }, //
+                         iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist, iAllowedDist,
+                         iAllowedDist, iAllowedDist );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
@@ -177,8 +222,17 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ true, bOverlapping, true, true, false, false, false, false, false }, //
-                         iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist );
+        initFetchQuery_( Helper{ .bInArea = true,
+                                 .bOverlapping = bOverlapping,
+                                 .bWithIntersection = true,
+                                 .bWithSelfIntersection = true,
+                                 .bWithOtherIntersection = false,
+                                 .bWithMinScore = false,
+                                 .bWithMaxScore = false,
+                                 .bWithMinScoreGT = false,
+                                 .bWithMaxScoreGT = false,
+                                 .bJustCount = false }, //
+                         iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore,
@@ -186,7 +240,16 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ true, false, false, false, true, true, false, false, false }, //
+        initFetchQuery_( Helper{ .bInArea = true,
+                                 .bOverlapping = false,
+                                 .bWithIntersection = false,
+                                 .bWithSelfIntersection = false,
+                                 .bWithOtherIntersection = false,
+                                 .bWithMinScore = true,
+                                 .bWithMaxScore = true,
+                                 .bWithMinScoreGT = false,
+                                 .bWithMaxScoreGT = false,
+                                 .bJustCount = false }, //
                          iSvCallerIdA, xWkb, dMinScore, dMaxScore );
     }
 
@@ -194,7 +257,16 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ true, false, false, false, false, false, false, false, false }, //
+        initFetchQuery_( Helper{ .bInArea = true,
+                                 .bOverlapping = false,
+                                 .bWithIntersection = false,
+                                 .bWithSelfIntersection = false,
+                                 .bWithOtherIntersection = false,
+                                 .bWithMinScore = false,
+                                 .bWithMaxScore = false,
+                                 .bWithMinScoreGT = false,
+                                 .bWithMaxScoreGT = false,
+                                 .bJustCount = false }, //
                          iSvCallerIdA, xWkb );
     }
 
@@ -261,13 +333,13 @@ template <typename DBCon> class SvCallsFromDb
            double dStep )
     {
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
-        initQuery( Helper{ false, true, true, true, true, true, false, false, true } );
+        initQuery( Helper{ false, true, true, true, false, true, true, false, false, true } );
         for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
         {
-            vRet.emplace_back(
-                dCurr,
-                pSvCallTable->numCalls( iSvCallerIdA, dCurr ),
-                pQueryCount->scalar( iSvCallerIdA, dCurr, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist ) );
+            vRet.emplace_back( dCurr,
+                               pSvCallTable->numCalls( iSvCallerIdA, dCurr ),
+                               pQueryCount->scalar( iSvCallerIdA, dCurr, dMaxScore, iSvCallerIdB, iAllowedDist,
+                                                    iAllowedDist, iAllowedDist, iAllowedDist ) );
         }
         return std::make_pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
     }

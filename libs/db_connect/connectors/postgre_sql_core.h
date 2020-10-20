@@ -562,7 +562,8 @@ class PostgreSQLDBCon
 
         template <typename Type> static inline std::string getSQLColumnTypeName( )
         {
-            return getSQLTypeName( identity<Type>( ) );
+            // default redirects to the getSQLTypeName function above
+            return getSQLTypeName<Type>();
         } // method
 
         /** @brief Delivers the appropriate string for placeholder in prepared statement (as e.g. INSERT statement).

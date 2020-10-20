@@ -280,6 +280,8 @@ class SvJump : public libMS::Container
         return std::max( (int64_t)0, ( (int64_t)uiFrom ) - ( (int64_t)fuzziness( ) ) );
     } // method
 
+    static const int64_t FROM_POS_NUM_SECTIONS = 8;
+    static const int64_t FROM_POS_NUM_USED_SECTIONS = 8;
     int64_t from_start( ) const
     {
         auto iRet = from_start_same_strand( );
@@ -288,11 +290,11 @@ class SvJump : public libMS::Container
         // | 0               | 1               | 2               | 3               | 4     | 5      | 6      | 7      |
         // | forward-forward | forward-reverse | reverse-forward | reverse-reverse | dummy | unused | unused | unused |
         if( is_dummy( ) )
-            return iRet + std::numeric_limits<int64_t>::max( ) / (int64_t)2;
+            return iRet + std::numeric_limits<int64_t>::max( ) / ( FROM_POS_NUM_SECTIONS / 4 );
         if( !bFromForward )
-            iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)4;
+            iRet += std::numeric_limits<int64_t>::max( ) / ( FROM_POS_NUM_SECTIONS / 2 );
         if( !bToForward )
-            iRet += std::numeric_limits<int64_t>::max( ) / (int64_t)8;
+            iRet += std::numeric_limits<int64_t>::max( ) / FROM_POS_NUM_SECTIONS;
         return iRet;
     } // method
 
@@ -668,7 +670,16 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
                 uiI++;
                 uiJ--;
             } // while
-            nucSeqIndex uiPos = ( uiMin + uiMax ) / 2;
+            nucSeqIndex uiPos;
+            if( uiI == vHorizontal.size( ) || uiJ == 0 )
+            {
+                if( uiI == vHorizontal.size( ) )
+                    uiPos = vVertical[ vVertical.size( ) * 0.05 ];
+                else
+                    uiPos = vHorizontal[ vHorizontal.size( ) * 0.95 ];
+            } // if
+            else
+                uiPos = ( uiMin + uiMax ) / 2;
             this->xXAxis.start( uiPos );
             this->xYAxis.start( uiPos );
         } // if

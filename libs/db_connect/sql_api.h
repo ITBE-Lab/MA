@@ -1109,7 +1109,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                 // https://stackoverflow.com/questions/2105901/how-to-fix-expected-primary-expression-before-error-in-c-template-code
                 rvDBColTypes.push_back( Translator::template getSQLColumnTypeName<TypeCurrCol>( ) );
                 // recursive call
-                TranslateTypes<N - 1, TypesRemainCols...>::iterate( rvDBColTypes );
+                TranslateColumnTypes<N - 1, TypesRemainCols...>::iterate( rvDBColTypes );
             } // method
         }; // struct
 
@@ -1126,7 +1126,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         static inline std::vector<std::string> getSQLColumnTypes( )
         {
             std::vector<std::string> vColsSQLTypeNames;
-            TranslateTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vColsSQLTypeNames );
+            TranslateColumnTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vColsSQLTypeNames );
             return vColsSQLTypeNames;
         } // method
 

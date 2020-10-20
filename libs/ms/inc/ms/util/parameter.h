@@ -990,7 +990,7 @@ class GlobalParameter : public ParameterSetBase
         : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 200 ),
           xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 200 ),
           xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 1000 ),
+          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 25 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           // DP:
           iMatch( this, "Match Score",
