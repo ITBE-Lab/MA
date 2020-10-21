@@ -107,10 +107,14 @@ def render_calls(self, render_all=False):
             for x, y in blur_stats:
                 stats_data_2["x"][-1].append(x)
                 stats_data_2["y"][-1].append(y)
-            tp_bars, fn_bars, bar_width = self.count_by_supp_nt.count(self.get_run_id(), self.get_gt_id(),
+            tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
+                                                            self.get_gt_id(),
                                                             self.widgets.get_blur(), 50,
-                                                            self.get_min_score(), self.get_max_score())
-            for legend, color, bar in [("true-positive", "green", tp_bars), ("false-negative", "red", fn_bars)]:
+                                                            self.get_min_score(), self.get_max_score(),
+                                                            100)
+            for legend, color, bar in [("false-positive", "red", fp_bars),
+                                       ("true-positive", "green", tp_bars),
+                                       ("false-negative", "orange", fn_bars)]:
                 for c, t in bar:
                     stats_data_3["x"].append(c)
                     stats_data_3["w"].append(bar_width)
@@ -218,7 +222,7 @@ def render_calls(self, render_all=False):
         if not stats_data_1 is None:
             self.read_plot.stat_lines_1.data = stats_data_1
             self.read_plot.stat_lines_2.data = stats_data_2
-            self.read_plot.stats_data_3.data = stats_data_3
+            self.read_plot.stat_lines_3.data = stats_data_3
     self.do_callback(callback)
 
     with self.measure("render_jumps"):

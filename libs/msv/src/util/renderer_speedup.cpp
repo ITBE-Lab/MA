@@ -231,7 +231,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     HelperRetVal xReseedOutExtraInfo;
                     auto pReseeded = xReseeding.execute_helper( pFilteredSeeds, pPack, pRead, &xReseedOutExtraInfo );
 
-                    auto xHelperRet = xJumpsFromSeeds.execute_helper_py2( pReseeded, pPack, pRead );
+                    auto xHelperRet = xJumpsFromSeeds.execute_helper_py3( pReseeded, pPack, pRead );
 
                     // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read,
                     // bInSocReseed

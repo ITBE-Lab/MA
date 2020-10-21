@@ -396,12 +396,11 @@ template <typename DBCon> class SvCallsFromDb
         return std::make_tuple( vRet, vRet2, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
     } // method
 
-    std::tuple<std::vector<std::pair<double, uint32_t>>, std::vector<std::pair<double, uint32_t>>, double>
+    std::tuple<std::vector<std::pair<double, uint32_t>>, std::vector<std::pair<double, uint32_t>>,
+               std::vector<std::pair<double, uint32_t>>, double>
     count_by_supp_nt( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, size_t uiNumSteps,
-                      double dMinScore, double dMaxScore )
+                      double dMinScore, double dMaxScore, double dMaxAvgSupp )
     {
-        double dMaxAvgSupp =
-            std::max( pSvCallTable->maxAvSuppNt( iSvCallerIdA ), pSvCallTable->maxAvSuppNt( iSvCallerIdB ) );
         double dStep = dMaxAvgSupp / uiNumSteps;
 
         std::vector<std::pair<double, uint32_t>> vTruePositives;
@@ -425,6 +424,27 @@ template <typename DBCon> class SvCallsFromDb
                                                               iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
                                                               iAllowedDist ) );
         } // for
+        std::vector<std::pair<double, uint32_t>> vFalsePositives;
+        initQuery( Helper{ .bInArea = false,
+                           .bOverlapping = false,
+                           .bWithIntersection = true,
+                           .bWithSelfIntersection = true,
+                           .bWithOtherIntersection = false,
+                           .bWithMinScore = true,
+                           .bWithMaxScore = true,
+                           .bWithMinScoreGT = false,
+                           .bWithMaxScoreGT = false,
+                           .bJustCount = true,
+                           .bWithAvgSuppNtRange = true,
+                           .bWithAvgSuppNtRangeGT = false } );
+        for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
+        {
+            double dEnd = dStart + dStep;
+            vFalsePositives.emplace_back( dStart + dStep / 2,
+                                          pQueryCount->scalar( iSvCallerIdA, dMinScore, dMaxScore, dStart, dEnd,
+                                                               iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
+                                                               iAllowedDist ) );
+        } // for
         std::vector<std::pair<double, uint32_t>> vFalseNegatives;
         initQuery( Helper{ .bInArea = false,
                            .bOverlapping = false,
@@ -447,7 +467,7 @@ template <typename DBCon> class SvCallsFromDb
                                                                iAllowedDist ) );
         } // for
 
-        return std::make_tuple( vTruePositives, vFalseNegatives, dStep );
+        return std::make_tuple( vTruePositives, vFalsePositives, vFalseNegatives, dStep );
     } // method
 }; // namespace libMSV
 

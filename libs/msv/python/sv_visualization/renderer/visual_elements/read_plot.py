@@ -161,7 +161,7 @@ class ReadPlot:
         stat_plot3.xaxis.axis_label = "supporting NT in SoC"
         self.stat_lines_3 = ColumnDataSource({"x":[], "w":[], "t":[], "c":[], "l":[]})
         stat_plot3.vbar(x="x", width="w", top="t", bottom=0, color="c", source=self.stat_lines_3,
-                        legend_field="l")
+                        legend_field="l", fill_alpha=0.5)
         tab3 = Panel(child=stat_plot3, title="SoC support")
 
 

@@ -503,8 +503,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -628,8 +628,9 @@ class SvJumpsFromExtractedSeeds : public libMS::Module<libMS::ContainerVector<Sv
     virtual std::shared_ptr<libMS::ContainerVector<SvJump>>
     execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
     {
-        return xJumpsFromSeeds.computeJumps( xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr ), pQuery,
-                                             pRefSeq, nullptr );
+        return xJumpsFromSeeds.computeJumps( pSeeds, pQuery, pRefSeq, nullptr );
+        // return xJumpsFromSeeds.computeJumps( xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, nullptr ), pQuery,
+        //                                     pRefSeq, nullptr );
     }
 }; // class
 
@@ -859,8 +860,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>>
-    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
+                                                             std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );
