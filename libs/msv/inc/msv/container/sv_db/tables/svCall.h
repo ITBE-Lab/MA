@@ -97,6 +97,7 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                   std::shared_ptr<CompressedNucSeq>, // inserted_sequence
                                                   uint32_t, // inserted_sequence_size
                                                   uint32_t, // supporting_reads
+                                                  uint32_t, // supporting_nt
                                                   uint32_t, // reference_ambiguity
                                                   int64_t, // order_id
                                                   bool, // mirrored
@@ -111,6 +112,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLQuery<DBCon, int64_t> xCallArea;
     SQLQuery<DBCon, double> xMaxScore;
     SQLQuery<DBCon, double> xMinScore;
+    SQLQuery<DBCon, double> xMaxAvSuppNt;
     SQLStatement<DBCon> xSetCoverageForCall;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
@@ -133,6 +135,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                          { { COLUMN_NAME, "inserted_sequence" } },
                          { { COLUMN_NAME, "inserted_sequence_size" } },
                          { { COLUMN_NAME, "supporting_reads" } },
+                         { { COLUMN_NAME, "supporting_nt" } },
                          { { COLUMN_NAME, "reference_ambiguity" } },
                          { { COLUMN_NAME, "order_id" } },
                          { { COLUMN_NAME, "mirrored" } },
@@ -143,8 +146,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                            { AS, "( supporting_reads * 1.0 ) / reference_ambiguity" } },
                          { { COLUMN_NAME, "flipped_rectangle" },
                            { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<WKBUint64Rectangle>( ) },
-                           { AS, "ST_FlipCoordinates(rectangle::geometry)" } } } } };
-    }; // method
+                           { AS, "ST_FlipCoordinates(rectangle::geometry)" } },
+                         { { COLUMN_NAME, "avg_supporting_nt" },
+                           { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<double>( ) },
+                           { AS, "( supporting_nt * 1.0 ) / GREATEST(supporting_reads * 1.0, 1.0)" } } } } };
+    }; // namespace libMSV
 
     SvCallTable( std::shared_ptr<DBCon> pConnection )
         : SvCallTableType<DBCon>( pConnection, // the database where the table resides
@@ -169,6 +175,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                      " FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
                      "ORDER BY score ASC LIMIT 1 " ),
+          xMaxAvSuppNt( pConnection,
+                     "SELECT avg_supporting_nt "
+                     " FROM sv_call_table "
+                     "WHERE sv_caller_run_id = ? "
+                     "ORDER BY avg_supporting_nt DESC LIMIT 1 " ),
           xSetCoverageForCall( pConnection,
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
@@ -187,6 +198,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    inserted_sequence = ?, "
                        "    inserted_sequence_size = ?, "
                        "    supporting_reads = ?, "
+                       "    supporting_nt = ?, "
                        "    reference_ambiguity = ?, "
                        "    order_id = ?, "
                        "    mirrored = ?, "
@@ -257,18 +269,19 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId = this->insert( iSvCallerRunId, //
-                                        (uint32_t)rCall.xXAxis.start( ), //
-                                        (uint32_t)rCall.xYAxis.start( ), //
-                                        (uint32_t)rCall.xXAxis.size( ), //
-                                        (uint32_t)rCall.xYAxis.size( ), //
-                                        rCall.bFromForward, //
-                                        rCall.bToForward,
-                                        // can deal with nullpointers
-                                        makeSharedCompNucSeq( rCall.pInsertedSequence ), //
-                                        rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
-                                        (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiReferenceAmbiguity,
-                                        rCall.iOrderID, rCall.bMirrored, xRectangle );
+        int64_t iCallId =
+            this->insert( iSvCallerRunId, //
+                          (uint32_t)rCall.xXAxis.start( ), //
+                          (uint32_t)rCall.xYAxis.start( ), //
+                          (uint32_t)rCall.xXAxis.size( ), //
+                          (uint32_t)rCall.xYAxis.size( ), //
+                          rCall.bFromForward, //
+                          rCall.bToForward,
+                          // can deal with nullpointers
+                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
+                          rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
+                          (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiSuppNt,
+                          (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.bMirrored, xRectangle );
         rCall.iId = iCallId;
 
         return iCallId;
@@ -300,6 +313,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline double minScore( int64_t iCallerRunId )
     {
         return xMinScore.scalar( iCallerRunId );
+    } // method
+
+    inline double maxAvSuppNt( int64_t iCallerRunId )
+    {
+        return xMaxAvSuppNt.scalar( iCallerRunId );
     } // method
 
     inline int64_t filterCallsWithHighScore( int64_t iCallerRunId, double dPercentToFilter )

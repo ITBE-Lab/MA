@@ -21,7 +21,7 @@ class Widgets:
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
         self.score_slider = RangeSlider(start=0, end=1, value=(0, 1), step=.1, callback_policy='mouseup',
                                         title="score range")
-        self.max_elements_slider = Slider(start=1000, end=100000, value=25000, step=1000,
+        self.max_elements_slider = Slider(start=1000, end=100000, value=10000, step=1000,
                                           callback_policy='mouseup', title="max render")
         self.range_link_radio = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"],
                                            active=0, orientation="horizontal")
@@ -48,7 +48,7 @@ class Widgets:
                                                           "Render true-positives"],
                                                           active=[0, 1, 2])
         self.subset_buttons.on_click(lambda x: self.forced_read_ids_change(renderer))
-        self.blur_slider = Slider(start=0, end=500, value=10, step=1, callback_policy='mouseup',
+        self.blur_slider = Slider(start=0, end=500, value=80, step=1, callback_policy='mouseup',
                                         title="Blur")
         self.blur_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
 

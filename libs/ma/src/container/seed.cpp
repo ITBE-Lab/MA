@@ -112,6 +112,7 @@ void exportSeed( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "start", &Seed::iStart )
         .def_readwrite( "size", &Seed::iSize )
         .def_readwrite( "delta", &Seed::uiDelta )
+        .def_readwrite( "soc_nt", &Seed::uiSoCNt )
         .def_readwrite( "start_ref", &Seed::uiPosOnReference )
         .def_readwrite( "on_forward_strand", &Seed::bOnForwStrand )
 #if DEBUG_LEVEL > 0

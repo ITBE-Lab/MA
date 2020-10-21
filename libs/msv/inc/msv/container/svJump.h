@@ -147,7 +147,7 @@ class SvJump : public libMS::Container
               std::max( rA.end( ) - 1, rB.start( ) ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
-              /* uiNumSupportingNt = */ rA.size( ) + rB.size( ),
+              /* uiNumSupportingNt = */ std::min(rA.uiSoCNt,rB.uiSoCNt),
               /* iID */ -1,
               /* iReadId */ iReadId )
     {
@@ -186,7 +186,7 @@ class SvJump : public libMS::Container
                   !bFirstSeed ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen - 1 ) : rA.start( ),
                   /* bFromForward = */ true,
                   /* bToForward = */ true,
-                  /* uiNumSupportingNt = */ rA.size( ),
+                  /* uiNumSupportingNt = */ rA.uiSoCNt,
                   /* iID */ -1,
                   /* iReadId */ iReadId )
     {
@@ -451,6 +451,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     bool bFromForward;
     bool bToForward;
     nucSeqIndex uiNumSuppReads;
+    nucSeqIndex uiSuppNt;
     nucSeqIndex uiReferenceAmbiguity;
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
@@ -486,6 +487,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
           bFromForward( rOther.bFromForward ),
           bToForward( rOther.bToForward ),
           uiNumSuppReads( rOther.uiNumSuppReads ),
+          uiSuppNt( rOther.uiSuppNt ),
           uiReferenceAmbiguity( rOther.uiReferenceAmbiguity ),
           vSupportingJumpIds( rOther.vSupportingJumpIds ),
           iId( rOther.iId ),
@@ -510,6 +512,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
             bool bFromForward,
             bool bToForward,
             nucSeqIndex uiNumSuppReads,
+            nucSeqIndex uiSuppNt,
             std::vector<int64_t> vSupportingJumpIds = { },
             int64_t iId = -1, /* -1 == no id obtained */
             bool bMirrored = false,
@@ -522,6 +525,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
           bFromForward( bFromForward ),
           bToForward( bToForward ),
           uiNumSuppReads( uiNumSuppReads ),
+          uiSuppNt( uiSuppNt ),
           uiReferenceAmbiguity( 1 ),
           vSupportingJumpIds( vSupportingJumpIds ),
           iId( iId ),
@@ -540,8 +544,9 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
             bool bFromForward,
             bool bToForward,
             nucSeqIndex uiNumSuppReads,
+            nucSeqIndex uiSuppNt,
             uint32_t uiReferenceAmbiguity )
-        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bFromForward, bToForward, uiNumSuppReads )
+        : SvCall( uiFromStart, uiToStart, uiFromSize, uiToSize, bFromForward, bToForward, uiNumSuppReads, uiSuppNt )
     {
         this->uiReferenceAmbiguity = uiReferenceAmbiguity;
     } // constructor
@@ -554,6 +559,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
                   pJump->bFromForward,
                   pJump->bToForward,
                   1,
+                  pJump->uiNumSupportingNt,
                   std::vector<int64_t>{ pJump->iId },
                   -1,
                   pJump->bWasMirrored,
@@ -641,9 +647,10 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
 
     void add_jump( std::shared_ptr<SvJump> pJmp )
     {
-        assert( ( !pJump->from_known( ) || !pJump->to_known( ) ) == this->bDummy );
+        assert( ( !pJmp->from_known( ) || !pJmp->to_known( ) ) == this->bDummy );
         vSupportingJumpIds.push_back( pJmp->iId );
         vSupportingJumps.push_back( pJmp );
+        uiSuppNt += pJmp->uiNumSupportingNt;
     } // method
 
     inline size_t estimateCoverage( )
@@ -727,6 +734,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         this->vSupportingJumpIds.insert( this->vSupportingJumpIds.end( ), rOther.vSupportingJumpIds.begin( ),
                                          rOther.vSupportingJumpIds.end( ) );
         this->uiNumSuppReads += rOther.uiNumSuppReads;
+        this->uiSuppNt += rOther.uiSuppNt;
         this->uiReferenceAmbiguity = std::max( rOther.uiReferenceAmbiguity, this->uiReferenceAmbiguity );
         this->vSupportingJumps.insert( this->vSupportingJumps.end( ), rOther.vSupportingJumps.begin( ),
                                        rOther.vSupportingJumps.end( ) );

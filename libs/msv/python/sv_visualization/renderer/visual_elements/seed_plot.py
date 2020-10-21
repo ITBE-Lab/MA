@@ -56,16 +56,18 @@ class SeedPlot:
         self.bottom_plot.add_tools(hover_ambiguous_regions)
 
         # seeds
-        self.seeds = ColumnDataSource({"category":[0], "center":[0], "size":[10], "c":["white"], "x":[0], "y":[0]})
+        self.seeds = ColumnDataSource({"category":[0], "center":[0], "size":[10], "c":["white"], "oc":["white"],
+                                       "x":[0], "y":[0]})
         self.left_plot.rect(x="category", y="center", width=1, height="size",
-                            fill_color="c", line_color="c", line_width=1, source=self.seeds, name="seeds")
+                            fill_color="c", line_color="oc", line_width=1, source=self.seeds, name="seeds")
         self.bottom_plot.rect(y="category", x="center", height=1, width="size",
-                              fill_color="c", line_color="c", line_width=1, source=self.seeds, name="seeds")
+                              fill_color="c", line_color="oc", line_width=1, source=self.seeds, name="seeds")
 
         hover_seeds = HoverTool(tooltips=[("read id", "@r_id"),
                                           ("read name", "@r_name"),
                                           ("q, r, l", "@q, @r, @l"),
                                           ("index", "@idx"),
+                                          ("soc", "id:@soc_id, nt: @soc_nt"),
                                           ("reseeding", "layer:@layer, in_soc: @in_soc_reseed"),
                                           ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
                                           ("read MM count", "min: @min_filter, max: @max_filter")],
@@ -160,4 +162,4 @@ class SeedPlot:
 
     def reset_cds(self, renderer):
         self.ambiguous_regions.data = {"l":[0], "b":[0], "r":[0], "t":[0]}
-        self.seeds.data = {"category":[0], "center":[0], "size":[10], "c":["white"], "x":[0], "y":[0]}
+        self.seeds.data = {"category":[0], "center":[0], "size":[10], "c":["white"], "oc":["white"], "x":[0], "y":[0]}

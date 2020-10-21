@@ -128,23 +128,23 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     if not silent:
         print("done computing index")
 
-        print("high score filter...")
-    start = datetime.datetime.now()
-    call_table.filter_calls_with_high_score(sv_caller_run_id, 0.1)
-    end = datetime.datetime.now()
-    delta = end - start
-    analyze.register("high_score_filter", delta.total_seconds(), False, lambda x: x)
-    if not silent:
-        print("done high score filter")
+        #print("high score filter...")
+    #start = datetime.datetime.now()
+    #call_table.filter_calls_with_high_score(sv_caller_run_id, 0.1)
+    #end = datetime.datetime.now()
+    #delta = end - start
+    #analyze.register("high_score_filter", delta.total_seconds(), False, lambda x: x)
+    #if not silent:
+    #    #print("done high score filter")
 
-        print("overlapping...")
-    start = datetime.datetime.now()
-    num_combined = 0 #combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
-    end = datetime.datetime.now()
-    delta = end - start
-    analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
+    #    #print("overlapping...")
+    #start = datetime.datetime.now()
+    #num_combined = 0 #combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
+    #end = datetime.datetime.now()
+    #delta = end - start
+    #analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
     if not silent:
-        print("done overlapping; combined", num_combined, "calls")
+        #print("done overlapping; combined", num_combined, "calls")
         analyze.analyze(out_file)
         if not out_file is None:
             out_file.write("run_id is " + str(sv_caller_run_id) + "\n")

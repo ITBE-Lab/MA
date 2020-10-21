@@ -48,11 +48,13 @@ template <typename DBCon> class SvCallsFromDb
         bool bWithMinScoreGT;
         bool bWithMaxScoreGT;
         bool bJustCount;
+        bool bWithAvgSuppNtRange;
+        bool bWithAvgSuppNtRangeGT;
     }; // class
 
     Helper xHelper;
     std::unique_ptr<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, NucSeqSql,
-                             uint32_t, uint32_t>>
+                             uint32_t, uint32_t, uint32_t>>
         pQuery = nullptr;
     std::unique_ptr<SQLQuery<DBCon, uint32_t>> pQueryCount = nullptr;
 
@@ -105,6 +107,8 @@ template <typename DBCon> class SvCallsFromDb
                           xHelper.bWithMaxScore != xNew.bWithMaxScore || //
                           xHelper.bWithMinScoreGT != xNew.bWithMinScoreGT || //
                           xHelper.bWithMaxScoreGT != xNew.bWithMaxScoreGT || //
+                          xHelper.bWithAvgSuppNtRange != xNew.bWithAvgSuppNtRange || //
+                          xHelper.bWithAvgSuppNtRangeGT != xNew.bWithAvgSuppNtRangeGT || //
                           xHelper.bJustCount != xNew.bJustCount;
         if( bInitQuery )
         {
@@ -123,6 +127,8 @@ template <typename DBCon> class SvCallsFromDb
             xHelper.bWithMaxScore = xNew.bWithMaxScore;
             xHelper.bWithMinScoreGT = xNew.bWithMinScoreGT;
             xHelper.bWithMaxScoreGT = xNew.bWithMaxScoreGT;
+            xHelper.bWithAvgSuppNtRange = xNew.bWithAvgSuppNtRange;
+            xHelper.bWithAvgSuppNtRangeGT = xNew.bWithAvgSuppNtRangeGT;
             xHelper.bJustCount = xNew.bJustCount;
 
             std::string sQueryText =
@@ -131,6 +137,8 @@ template <typename DBCon> class SvCallsFromDb
                 ( !xHelper.bInArea ? "" : "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
                 ( !xHelper.bWithMinScore ? "" : "AND score >= ? " ) + //
                 ( !xHelper.bWithMaxScore ? "" : "AND score < ? " ) + //
+                ( !xHelper.bWithAvgSuppNtRange ? "" : "AND avg_supporting_nt >= ? " ) + //
+                ( !xHelper.bWithAvgSuppNtRange ? "" : "AND avg_supporting_nt < ? " ) + //
                 ( !xHelper.bWithIntersection
                       ? ""
                       : std::string( "AND " ) + ( xHelper.bOverlapping ? "" : "NOT " ) +
@@ -140,7 +148,9 @@ template <typename DBCon> class SvCallsFromDb
                             "     FROM sv_call_table AS outer_table "
                             "     WHERE outer_table.sv_caller_run_id = ? " +
                             ( !xHelper.bWithMinScoreGT ? "" : "AND outer_table.score >= ? " ) + //
-                            ( !xHelper.bWithMaxScoreGT ? "" : "AND outer_table.score < ? " ) +
+                            ( !xHelper.bWithMaxScoreGT ? "" : "AND outer_table.score < ? " ) + //
+                            ( !xHelper.bWithAvgSuppNtRangeGT ? "" : "AND outer_table.avg_supporting_nt >= ? " ) + //
+                            ( !xHelper.bWithAvgSuppNtRangeGT ? "" : "AND outer_table.avg_supporting_nt < ? " ) + //
                             rectanglesOverlapSQL( "outer_table", "inner_table" ) +
                             ( !xHelper.bWithOtherIntersection ? ""
                                                               : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
@@ -152,10 +162,10 @@ template <typename DBCon> class SvCallsFromDb
                     pConnection, std::string( "SELECT COUNT(*) " ) + sQueryText );
             else
                 pQuery = std::make_unique<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t,
-                                                   bool, bool, NucSeqSql, uint32_t, uint32_t>>(
+                                                   bool, bool, NucSeqSql, uint32_t, uint32_t, uint32_t>>(
                     pConnection,
                     std::string( "SELECT id, from_pos, to_pos, from_size, to_size, from_forward, to_forward, "
-                                 "       inserted_sequence, supporting_reads, reference_ambiguity " ) +
+                                 "       inserted_sequence, supporting_reads, reference_ambiguity, supporting_nt " ) +
                         sQueryText );
         };
     } // method
@@ -193,7 +203,9 @@ template <typename DBCon> class SvCallsFromDb
                                  .bWithMaxScore = true,
                                  .bWithMinScoreGT = false,
                                  .bWithMaxScoreGT = false,
-                                 .bJustCount = false }, //
+                                 .bJustCount = false,
+                                 .bWithAvgSuppNtRange = false,
+                                 .bWithAvgSuppNtRangeGT = false }, //
                          iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist,
                          iAllowedDist, iAllowedDist );
     }
@@ -212,7 +224,9 @@ template <typename DBCon> class SvCallsFromDb
                                  .bWithMaxScore = false,
                                  .bWithMinScoreGT = true,
                                  .bWithMaxScoreGT = true,
-                                 .bJustCount = false }, //
+                                 .bJustCount = false,
+                                 .bWithAvgSuppNtRange = false,
+                                 .bWithAvgSuppNtRangeGT = false }, //
                          iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist, iAllowedDist,
                          iAllowedDist, iAllowedDist );
     }
@@ -231,7 +245,9 @@ template <typename DBCon> class SvCallsFromDb
                                  .bWithMaxScore = false,
                                  .bWithMinScoreGT = false,
                                  .bWithMaxScoreGT = false,
-                                 .bJustCount = false }, //
+                                 .bJustCount = false,
+                                 .bWithAvgSuppNtRange = false,
+                                 .bWithAvgSuppNtRangeGT = false }, //
                          iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist );
     }
 
@@ -249,7 +265,9 @@ template <typename DBCon> class SvCallsFromDb
                                  .bWithMaxScore = true,
                                  .bWithMinScoreGT = false,
                                  .bWithMaxScoreGT = false,
-                                 .bJustCount = false }, //
+                                 .bJustCount = false,
+                                 .bWithAvgSuppNtRange = false,
+                                 .bWithAvgSuppNtRangeGT = false }, //
                          iSvCallerIdA, xWkb, dMinScore, dMaxScore );
     }
 
@@ -266,7 +284,9 @@ template <typename DBCon> class SvCallsFromDb
                                  .bWithMaxScore = false,
                                  .bWithMinScoreGT = false,
                                  .bWithMaxScoreGT = false,
-                                 .bJustCount = false }, //
+                                 .bJustCount = false,
+                                 .bWithAvgSuppNtRange = false,
+                                 .bWithAvgSuppNtRangeGT = false }, //
                          iSvCallerIdA, xWkb );
     }
 
@@ -293,7 +313,8 @@ template <typename DBCon> class SvCallsFromDb
                      std::get<4>( xTup ), // uiToSize
                      std::get<5>( xTup ), // from_forward
                      std::get<6>( xTup ), // to_forward
-                     std::get<8>( xTup ) // supporting_reads
+                     std::get<8>( xTup ), // supporting_reads
+                     std::get<10>( xTup ) // supporting_nt
         );
         xRet.uiReferenceAmbiguity = std::get<9>( xTup );
         xRet.pInsertedSequence = std::get<7>( xTup ).pNucSeq;
@@ -328,21 +349,106 @@ template <typename DBCon> class SvCallsFromDb
     } // method
 
     // pair(list(tuple(x, calls with score > x, true positives with score > x)), |gt|)
-    std::pair<std::vector<std::tuple<double, uint32_t, uint32_t>>, uint32_t>
-    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, double dMinScore, double dMaxScore,
-           double dStep )
+    std::tuple<std::vector<std::tuple<double, uint32_t, uint32_t>>, std::vector<std::pair<uint32_t, uint32_t>>,
+               uint32_t>
+    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, int64_t iAllowedDistMin,
+           int64_t iAllowedDistMax, int64_t iAllowedDistStep, double dMinScore, double dMaxScore, double dStep )
     {
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
-        initQuery( Helper{ false, true, true, true, false, true, true, false, false, true } );
+        initQuery( Helper{ .bInArea = false,
+                           .bOverlapping = true,
+                           .bWithIntersection = true,
+                           .bWithSelfIntersection = true,
+                           .bWithOtherIntersection = false,
+                           .bWithMinScore = true,
+                           .bWithMaxScore = true,
+                           .bWithMinScoreGT = false,
+                           .bWithMaxScoreGT = false,
+                           .bJustCount = true,
+                           .bWithAvgSuppNtRange = false,
+                           .bWithAvgSuppNtRangeGT = false } );
         for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
         {
             vRet.emplace_back( dCurr,
                                pSvCallTable->numCalls( iSvCallerIdA, dCurr ),
                                pQueryCount->scalar( iSvCallerIdA, dCurr, dMaxScore, iSvCallerIdB, iAllowedDist,
                                                     iAllowedDist, iAllowedDist, iAllowedDist ) );
-        }
-        return std::make_pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
-    }
+        } // for
+        std::vector<std::pair<uint32_t, uint32_t>> vRet2;
+        initQuery( Helper{ .bInArea = false,
+                           .bOverlapping = true,
+                           .bWithIntersection = true,
+                           .bWithSelfIntersection = true,
+                           .bWithOtherIntersection = false,
+                           .bWithMinScore = true,
+                           .bWithMaxScore = true,
+                           .bWithMinScoreGT = false,
+                           .bWithMaxScoreGT = false,
+                           .bJustCount = true,
+                           .bWithAvgSuppNtRange = false,
+                           .bWithAvgSuppNtRangeGT = false } );
+        for( int64_t iAllowedDist = iAllowedDistMin; iAllowedDist < iAllowedDistMax; iAllowedDist += iAllowedDistStep )
+        {
+            vRet2.emplace_back( iAllowedDist,
+                                pQueryCount->scalar( iSvCallerIdA, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist,
+                                                     iAllowedDist, iAllowedDist, iAllowedDist ) );
+        } // for
+        return std::make_tuple( vRet, vRet2, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
+    } // method
+
+    std::tuple<std::vector<std::pair<double, uint32_t>>, std::vector<std::pair<double, uint32_t>>, double>
+    count_by_supp_nt( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, size_t uiNumSteps,
+                      double dMinScore, double dMaxScore )
+    {
+        double dMaxAvgSupp =
+            std::max( pSvCallTable->maxAvSuppNt( iSvCallerIdA ), pSvCallTable->maxAvSuppNt( iSvCallerIdB ) );
+        double dStep = dMaxAvgSupp / uiNumSteps;
+
+        std::vector<std::pair<double, uint32_t>> vTruePositives;
+        initQuery( Helper{ .bInArea = false,
+                           .bOverlapping = true,
+                           .bWithIntersection = true,
+                           .bWithSelfIntersection = true,
+                           .bWithOtherIntersection = false,
+                           .bWithMinScore = true,
+                           .bWithMaxScore = true,
+                           .bWithMinScoreGT = false,
+                           .bWithMaxScoreGT = false,
+                           .bJustCount = true,
+                           .bWithAvgSuppNtRange = true,
+                           .bWithAvgSuppNtRangeGT = false } );
+        for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
+        {
+            double dEnd = dStart + dStep;
+            vTruePositives.emplace_back( dStart + dStep / 2,
+                                         pQueryCount->scalar( iSvCallerIdA, dMinScore, dMaxScore, dStart, dEnd,
+                                                              iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
+                                                              iAllowedDist ) );
+        } // for
+        std::vector<std::pair<double, uint32_t>> vFalseNegatives;
+        initQuery( Helper{ .bInArea = false,
+                           .bOverlapping = false,
+                           .bWithIntersection = true,
+                           .bWithSelfIntersection = false,
+                           .bWithOtherIntersection = true,
+                           .bWithMinScore = false,
+                           .bWithMaxScore = false,
+                           .bWithMinScoreGT = true,
+                           .bWithMaxScoreGT = true,
+                           .bJustCount = true,
+                           .bWithAvgSuppNtRange = true,
+                           .bWithAvgSuppNtRangeGT = false } );
+        for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
+        {
+            double dEnd = dStart + dStep;
+            vFalseNegatives.emplace_back( dStart + dStep / 2,
+                                          pQueryCount->scalar( iSvCallerIdB, dStart, dEnd, iSvCallerIdA, dMinScore,
+                                                               dMaxScore, iAllowedDist, iAllowedDist, iAllowedDist,
+                                                               iAllowedDist ) );
+        } // for
+
+        return std::make_tuple( vTruePositives, vFalseNegatives, dStep );
+    } // method
 }; // namespace libMSV
 
 } // namespace libMSV

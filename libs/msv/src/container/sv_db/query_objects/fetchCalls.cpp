@@ -27,6 +27,7 @@ void exportCallsFromDb( libMS::SubmoduleOrganizer& xOrganizer )
                           SvCallsFromDb<DBConSingle>::initFetchQuery )
         .def( "next", &SvCallsFromDb<DBConSingle>::next )
         .def( "count", &SvCallsFromDb<DBConSingle>::count )
+        .def( "count_by_supp_nt", &SvCallsFromDb<DBConSingle>::count_by_supp_nt )
         .def( "hasNext", &SvCallsFromDb<DBConSingle>::hasNext );
 } // function
 

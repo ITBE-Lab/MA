@@ -83,6 +83,7 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
             makeSharedCompNucSeq( rCall.pInsertedSequence ), //
             rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ), //
             (uint32_t)rCall.uiNumSuppReads, //
+            (uint32_t)rCall.uiSuppNt, //
             (uint32_t)rCall.uiReferenceAmbiguity, //
             rCall.iOrderID, // order_id
             rCall.bMirrored, // mirrored

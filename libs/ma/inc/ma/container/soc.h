@@ -270,6 +270,7 @@ class SoCPriorityQueue : public libMS::Container
             pRet->xStats.num_seeds_in_strip++;
             assert( xCollect2->start( ) <= xCollect2->end( ) );
             // if the iterator is still within the strip add the seed and increment the iterator
+            xCollect2->uiSoCNt = std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
             pRet->push_back( *( xCollect2++ ) );
         } // while
 

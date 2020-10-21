@@ -37,6 +37,6 @@ curdoc().add_root(row(
                  [None,                                  renderer.read_plot.nuc_plot.bottom_plot]]),
             renderer.widgets.subset_buttons,
             renderer.widgets.blur_slider,
-            renderer.read_plot.stat_plot ),
+            renderer.read_plot.stats_tabs ),
     renderer.widgets.spinner_div
 ))

@@ -4,7 +4,7 @@ from MSV import *
 
 
 def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_queue_2=None,
-                 runtime_file=None):
+                 runtime_file=None, coverage=50):
     #parameter_set.by_name("Number of Threads").set(16)
     #parameter_set.by_name("Use all Processor Cores").set(False)
     #assert parameter_set.get_num_threads() == 16
@@ -100,14 +100,14 @@ def insert_reads(parameter_set, dataset_name, sequencer_name, file_queue, file_q
     for inserter in inserter_vec:
         inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
 
-    HashFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, hash_counter_container, 50)
+    HashFilterTable(single_con).insert_counter_set(get_read_inserter.cpp_module.id, hash_counter_container, coverage)
 
     analyze.analyze(runtime_file)
 
     return get_read_inserter.cpp_module.id
 
 def insert_reads_path_string_vec(parameter_set, dataset_name, sequencer_name, string_vec, string_vec_2=None,
-                                 runtime_file=None):
+                                 runtime_file=None, coverage=50):
     def to_file_queue(string_vec):
         if string_vec is None:
             return None
@@ -117,7 +117,7 @@ def insert_reads_path_string_vec(parameter_set, dataset_name, sequencer_name, st
         return file_queue
 
     return insert_reads(parameter_set, dataset_name, sequencer_name, to_file_queue(string_vec),
-                        to_file_queue(string_vec_2), runtime_file)
+                        to_file_queue(string_vec_2), runtime_file, coverage)
 
 def write_used_reads_to_file(dataset_name, file_name):
     reads = ReadTable(DbConn(dataset_name)).get_used_reads()

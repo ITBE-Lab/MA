@@ -1,7 +1,7 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
-from bokeh.models import BasicTickFormatter
+from bokeh.models import BasicTickFormatter, Tabs, Panel
 from bokeh.palettes import Plasma256
 from bokeh.events import Tap
 import math
@@ -92,13 +92,14 @@ class ReadPlot:
                                      name="Hover ambiguity rects"))
 
         # the seeds
-        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]})
+        self.seeds = ColumnDataSource({"category":[], "center":[], "size":[], "x":[], "y":[], "c":[], "oc":[]})
         self.plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.seeds, name="seeds")
 
         self.plot.add_tools(HoverTool(tooltips=[("read id", "@r_id"),
                                                 ("read name", "@r_name"),
                                                 ("q, r, l", "@q, @r, @l"),
                                                 ("index", "@idx"),
+                                                ("soc", "id:@soc_id, nt: @soc_nt"),
                                                 ("reseeding", "layer:@layer, in_soc: @in_soc_reseed"),
                                                 ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
                                                 ("read MM count", "min: @min_filter, max: @max_filter")
@@ -115,18 +116,56 @@ class ReadPlot:
         self.plot.on_event(Tap, lambda tap: self.seed_tap(renderer, tap.x, tap.y))
 
         self.recalc_stat = True
-        self.stat_plot = figure(
-            width=self.plot.width,
-            height=200,
+        stat_plot1 = figure(
+            width=900,
+            height=250,
             tools=[
                 "pan", "box_zoom",
                 "wheel_zoom", "reset"
             ],
             active_scroll="wheel_zoom"
         )
-        self.stat_lines = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
-        self.stat_plot.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines,
+        stat_plot1.yaxis.axis_label = "Num Calls"
+        stat_plot1.xaxis.axis_label = "Min Score"
+        self.stat_lines_1 = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
+        stat_plot1.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines_1,
                                   legend_field="l")
+        tab1 = Panel(child=stat_plot1, title="Min Score")
+
+        stat_plot2 = figure(
+            width=900,
+            height=stat_plot1.height,
+            tools=[
+                "pan", "box_zoom",
+                "wheel_zoom", "reset"
+            ],
+            active_scroll="wheel_zoom"
+        )
+        stat_plot2.yaxis.axis_label = "Num Calls"
+        stat_plot2.xaxis.axis_label = "Blur"
+        self.stat_lines_2 = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
+        stat_plot2.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines_2,
+                                  legend_field="l")
+        tab2 = Panel(child=stat_plot2, title="Blur")
+
+        stat_plot3 = figure(
+            width=900,
+            height=stat_plot1.height,
+            tools=[
+                "pan", "box_zoom",
+                "wheel_zoom", "reset"
+            ],
+            active_scroll="wheel_zoom"
+        )
+        stat_plot3.yaxis.axis_label = "Num Calls"
+        stat_plot3.xaxis.axis_label = "supporting NT in SoC"
+        self.stat_lines_3 = ColumnDataSource({"x":[], "w":[], "t":[], "c":[], "l":[]})
+        stat_plot3.vbar(x="x", width="w", top="t", bottom=0, color="c", source=self.stat_lines_3,
+                        legend_field="l")
+        tab3 = Panel(child=stat_plot3, title="SoC support")
+
+
+        self.stats_tabs = Tabs(tabs=[tab1, tab2, tab3], width=900)
 
     def auto_adjust_y_range(self, renderer):
         if renderer.widgets.range_link_radio.active == 0:
@@ -194,6 +233,6 @@ class ReadPlot:
 
     def reset_cds(self, renderer):
         self.ambiguity_rect.data = {"l":[], "b":[], "r":[], "t":[], "c":[]}
-        self.seeds.data = {"category":[], "center":[], "size":[], "x":[], "y":[], "c":[]}
+        self.seeds.data = {"category":[], "center":[], "size":[], "x":[], "y":[], "c":[], "oc":[]}
         #self.nuc_plot.reset_nts()
 
