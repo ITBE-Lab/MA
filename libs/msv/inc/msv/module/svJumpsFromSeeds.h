@@ -286,8 +286,10 @@ class SvJumpsFromSeeds
         pRet->append( pSeeds );
         // push original seeds
         std::set<Seed, SeedCmp> xOutExtraDup;
+        size_t uiOutExtraSeedsBefore = 0;
         if( pOutExtra != nullptr )
         {
+            uiOutExtraSeedsBefore = pOutExtra->pSeeds->size( );
             for( auto& rSeed : *pSeeds )
             {
                 if( xOutExtraDup.count( rSeed ) > 0 )
@@ -388,8 +390,18 @@ class SvJumpsFromSeeds
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
         auto pFilteredRet = xFilterOverlapping.execute( xToSMEM.execute( pRet ) );
 
+        nucSeqIndex uiNumNtTotal = 0;
+        for( auto& rSeed : *pFilteredRet )
+            uiNumNtTotal += rSeed.size( );
+        for( auto& rSeed : *pFilteredRet )
+            rSeed.uiSoCNt = uiNumNtTotal;
         if( pOutExtra != nullptr )
+        {
             pOutExtra->computeOverlappingSeedsVector( pFilteredRet );
+            for( size_t uiJ = uiOutExtraSeedsBefore; uiJ < pOutExtra->pSeeds->size( ); uiJ++ )
+                ( *pOutExtra->pSeeds )[ uiJ ].uiSoCNt = uiNumNtTotal;
+        } // if
+
         return pFilteredRet;
     } // mehtod
 
@@ -503,8 +515,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -726,9 +738,19 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
                                                    std::shared_ptr<NucSeq> pQuery, HelperRetVal* pOutExtra )
     {
         auto pRet = std::make_shared<Seeds>( );
+        nucSeqIndex uiNumNtLast = 0;
+        nucSeqIndex uiSizeLastSoC = 0;
+        size_t uiOutExtraSeedsBefore = 0;
+        // lambda function used later (used twice avoiding duplicate code)
+        auto fSoCInsertedPost = [ & ]( ) {
+            // last SoC had to little NT in it
+            if( uiNumNtLast < uiMinNt || uiNumNtLast == 0 )
+                pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+            uiNumNtLast = 0;
+            uiSizeLastSoC = 0;
+        };
         for( auto pSeeds : pSeedsSet->xContent )
         {
-            size_t uiOutExtraSeedsBefore = 0;
             if( pOutExtra != nullptr )
             {
                 pOutExtra->uiCurrSocID += 1;
@@ -737,35 +759,20 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
             auto pR = xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, pOutExtra );
             std::sort( pR->begin( ), pR->end( ),
                        []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
-            nucSeqIndex uiNumNtLast = 0;
             nucSeqIndex uiMaxQ = 0;
-            nucSeqIndex uiSizeLastSoC = 0;
+            uiNumNtLast = 0;
+            uiSizeLastSoC = 0;
             for( Seed& xSeed : *pR )
             {
+                // break the SoC since there is a gap in it (seeds too far from each other on query)
                 if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
-                {
-                    // last SoC had to little NT in it
-                    if( uiNumNtLast < uiMinNt || uiNumNtLast == 0 )
-                        pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
-                    else
-                    {
-                        for( size_t uiJ = pRet->size( ) - uiSizeLastSoC; uiJ < pRet->size( ); uiJ++ )
-                            ( *pRet )[ uiJ ].uiSoCNt = uiNumNtLast;
-                        if( pOutExtra != nullptr )
-                            for( size_t uiJ = uiOutExtraSeedsBefore; uiJ < pOutExtra->pSeeds->size( ); uiJ++ )
-                                ( *pOutExtra->pSeeds )[ uiJ ].uiSoCNt = uiNumNtLast;
-                    } // for
-                    uiNumNtLast = 0;
-                    uiSizeLastSoC = 0;
-                } // if
+                    fSoCInsertedPost( );
                 uiNumNtLast += xSeed.size( );
                 uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
                 pRet->push_back( xSeed );
                 uiSizeLastSoC++;
             } // for
-            // very last SoC had to little NT in it
-            if( uiNumNtLast < uiMinNt )
-                pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+            fSoCInsertedPost( );
         } // for
         if( pOutExtra != nullptr )
             pOutExtra->uiCurrSocID = 0;
@@ -860,8 +867,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

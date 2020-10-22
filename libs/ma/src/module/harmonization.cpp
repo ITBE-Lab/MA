@@ -279,7 +279,7 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
          * remove outliers
          */
         pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ),
-                                         [&]( const Seed& rS ) {
+                                         [ & ]( const Seed& rS ) {
                                              return deltaDistance( rS, xSlopeIntercept.first,
                                                                    (int64_t)xSlopeIntercept.second ) > fMAD;
                                          } ),
@@ -559,7 +559,9 @@ Harmonization::execute( std::shared_ptr<SoCPriorityQueue> pSoCIn, std::shared_pt
 void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer )
 {
 
-    exportModule<SeedLumping>( xOrganizer, "SeedLumping", []( auto&& x ) { x.def( "lump", &SeedLumping::lump ); } );
+    exportModule<SeedLumping>( xOrganizer, "SeedLumping", []( auto&& x ) {
+        x.def( "lump", &SeedLumping::lump ).def( "execute_py", &SeedLumping::execute_py );
+    } );
     exportModule<SeedExtender>( xOrganizer, "SeedExtender",
                                 []( auto&& x ) { x.def( "extend", &SeedExtender::extend ); } );
     exportModule<MaxExtendedToSMEM>( xOrganizer, "MaxExtendedToSMEM",

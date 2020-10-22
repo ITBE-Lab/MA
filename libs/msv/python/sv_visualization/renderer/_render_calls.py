@@ -66,7 +66,8 @@ def render_calls(self, render_all=False):
     desc_table = CallDescTable(self.db_conn_2)
     jump_list = []
     stats_data_1 = None
-    if self.read_plot.recalc_stat and self.get_run_id() != -1 and self.get_gt_id() != -1:
+    if self.widgets.compute_stats() and self.read_plot.recalc_stat and self.get_run_id() != -1 and \
+                    self.get_gt_id() != -1:
         self.read_plot.recalc_stat = False
         with self.measure("count - SvCallFromDb(run_id)"):
             min_blur = 0
@@ -109,9 +110,9 @@ def render_calls(self, render_all=False):
                 stats_data_2["y"][-1].append(y)
             tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
                                                             self.get_gt_id(),
-                                                            self.widgets.get_blur(), 50,
+                                                            self.widgets.get_blur(), 1000,
                                                             self.get_min_score(), self.get_max_score(),
-                                                            100)
+                                                            10000)
             for legend, color, bar in [("false-positive", "red", fp_bars),
                                        ("true-positive", "green", tp_bars),
                                        ("false-negative", "orange", fn_bars)]:

@@ -45,7 +45,7 @@ class Widgets:
         self.condition = threading.Condition()
 
         self.subset_buttons = CheckboxButtonGroup(labels=["Render false-positives", "Render false-negatives",
-                                                          "Render true-positives"],
+                                                          "Render true-positives", "Compute Stats"],
                                                           active=[0, 1, 2])
         self.subset_buttons.on_click(lambda x: self.forced_read_ids_change(renderer))
         self.blur_slider = Slider(start=0, end=500, value=80, step=1, callback_policy='mouseup',
@@ -108,6 +108,9 @@ class Widgets:
     def get_render_t_p(self):
         return 2 in self.subset_buttons.active
 
+    def compute_stats(self):
+        return 3 in self.subset_buttons.active
+
     def get_forced_read_ids(self, renderer):
         if len(self.force_read_id.value) == 0:
             return []
@@ -129,30 +132,20 @@ class Widgets:
         if not renderer.selected_read_id is None:
             read = ReadTable(renderer.db_conn).get_read(renderer.selected_read_id)
 
-            seed_plot_y_s = max(renderer.read_plot.plot.y_range.start, 0)
-            seed_plot_y_e = min(renderer.read_plot.plot.y_range.end, len(read))
-            seed_plot_x_s = max(renderer.read_plot.plot.x_range.start, 0)
-            seed_plot_x_e = min(renderer.read_plot.plot.x_range.end, renderer.pack.unpacked_size_single_strand)
+            seed_plot_y_s = int(max(renderer.read_plot.plot.y_range.start, 0))
+            seed_plot_y_e = int(min(renderer.read_plot.plot.y_range.end, len(read)))
+            seed_plot_x_s = int(max(renderer.read_plot.plot.x_range.start, 0))
+            seed_plot_x_e = int(min(renderer.read_plot.plot.x_range.end, renderer.pack.unpacked_size_single_strand))
 
-            hash_map_seeder = HashMapSeeding(renderer.params)
-            hash_map_seeder.cpp_module.seed_size = 9
-            query_section = NucSeq(str(read)[int(seed_plot_y_s):int(seed_plot_y_e)])
-            ref_section = renderer.pack.extract_from_to(int(seed_plot_x_s), int(seed_plot_x_e))
-            all_k_mers = hash_map_seeder.execute(query_section, ref_section)
-            all_mems = SeedLumping(renderer.params).execute(all_k_mers)
-            filter_module = FilterToUnique(renderer.params)
-            filter_module.cpp_module.num_mm = 0
-            #filtered_mems = filter_module.execute(all_mems, query_section, ref_section)
-            filtered_mems = all_mems
+            filtered_mems = compute_seeds_area(renderer.params, seed_plot_x_s,
+                                               seed_plot_y_s, seed_plot_x_e-seed_plot_x_s,
+                                               seed_plot_y_e-seed_plot_y_s, read, renderer.pack)
             seed_data_new = dict((key, []) for key in renderer.read_plot.seeds.data.keys())
             if len(filtered_mems) > 0:
                 max_seed_size = max( seed.size for seed in filtered_mems )
                 for idx in range(len(filtered_mems)):
-                    filtered_mems[idx].start += int(seed_plot_y_s)
-                    filtered_mems[idx].start_ref += int(seed_plot_x_s)
-
                     add_seed(filtered_mems[idx], seed_data_new, max_seed_size, [], [],
-                                0, False, -1, renderer.selected_read_id, idx)
+                                0, False, -1, renderer.selected_read_id, idx, read.name)
             renderer.read_plot.seeds.data = seed_data_new
 
     def delete_button_event(self, renderer):

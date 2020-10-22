@@ -309,6 +309,13 @@ SvJumpsFromSeeds::computeSeeds( std::pair<geom::Rectangle<nucSeqIndex>, geom::Re
 
 
 #ifdef WITH_PYTHON
+std::shared_ptr<Seeds> computeSeeds( const ParameterSetManager& rParameters, uint32_t uiX, uint32_t uiY, uint32_t uiW,
+                                     uint32_t uiH, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRefSeq )
+{
+    return SvJumpsFromSeeds( rParameters, pRefSeq )
+        .computeSeeds( geom::Rectangle<nucSeqIndex>( uiX, uiY, uiW, uiH ), pQuery, pRefSeq, nullptr );
+} // method
+
 void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
 {
     py::class_<geom::Interval<nucSeqIndex>>( xOrganizer.util( ), "nucSeqInterval" )
@@ -343,9 +350,9 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
         x.def( "compute_jumps", &SvJumpsFromSeeds::computeJumpsPy );
     } );
     exportModule<RecursiveReseeding, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseeding" );
-    exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>>(
-        xOrganizer, "RecursiveReseedingSoCs",
-        []( auto&& x ) { x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py ); } );
+    exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSoCs", []( auto&& x ) {
+        x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py );
+    } );
     exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );
     exportModule<ExtractSeedsFilter, std::shared_ptr<Pack>, nucSeqIndex, nucSeqIndex>( xOrganizer,
                                                                                        "ExtractSeedsFilter" );
@@ -353,5 +360,7 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<FilterJumpsByRegion, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegion" );
     exportModule<FilterJumpsByRegionSquare, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegionSquare" );
     exportModule<FilterJumpsByRefAmbiguity>( xOrganizer, "FilterJumpsByRefAmbiguity" );
+
+    xOrganizer.util().def("compute_seeds_area", &computeSeeds);
 } // function
 #endif

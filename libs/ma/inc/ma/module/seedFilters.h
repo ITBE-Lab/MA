@@ -64,23 +64,23 @@ class SeedExtender : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
     {
         auto uiContigID = pRef->uiSequenceIdForPosition( rSeed.start_ref( ) );
         extendSeedHelper(
-            rSeed, [&]( size_t uiI ) { return pQuery->pxSequenceRef[ uiI ]; },
-            [&]( size_t uiI ) { return pRef->vExtract( uiI ); }, pQuery->length( ),
+            rSeed, [ & ]( size_t uiI ) { return pQuery->pxSequenceRef[ uiI ]; },
+            [ & ]( size_t uiI ) { return pRef->vExtract( uiI ); }, pQuery->length( ),
             pRef->startOfSequenceWithId( uiContigID ), pRef->endOfSequenceWithId( uiContigID ) );
     }
 
     static void extendSeed( Seed& rSeed, std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
     {
         extendSeedHelper(
-            rSeed, [&]( size_t uiI ) { return pQ1->pxSequenceRef[ uiI ]; },
-            [&]( size_t uiI ) { return pQ2->pxSequenceRef[ uiI ]; }, pQ1->length( ), 0, pQ2->length( ) );
+            rSeed, [ & ]( size_t uiI ) { return pQ1->pxSequenceRef[ uiI ]; },
+            [ & ]( size_t uiI ) { return pQ2->pxSequenceRef[ uiI ]; }, pQ1->length( ), 0, pQ2->length( ) );
     }
 
     static void extendSeed( Seed& rSeed, NucSeq& rQ1, NucSeq& rQ2 )
     {
         extendSeedHelper(
-            rSeed, [&]( size_t uiI ) { return rQ1.pxSequenceRef[ uiI ]; },
-            [&]( size_t uiI ) { return rQ2.pxSequenceRef[ uiI ]; }, rQ1.length( ), 0, rQ2.length( ) );
+            rSeed, [ & ]( size_t uiI ) { return rQ1.pxSequenceRef[ uiI ]; },
+            [ & ]( size_t uiI ) { return rQ2.pxSequenceRef[ uiI ]; }, rQ1.length( ), 0, rQ2.length( ) );
     }
 
     // overload
@@ -150,7 +150,7 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
         std::sort( //
             vSortedSeeds.begin( ),
             vSortedSeeds.end( ),
-            [&]( const std::pair<Seed*, int64_t>& rA, const std::pair<Seed*, int64_t>& rB ) //
+            [ & ]( const std::pair<Seed*, int64_t>& rA, const std::pair<Seed*, int64_t>& rB ) //
             { //
                 if( rA.first->bOnForwStrand != rB.first->bOnForwStrand )
                     return rA.first->bOnForwStrand;
@@ -210,8 +210,8 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
         execute( std::shared_ptr<Seeds> pIn, std::shared_ptr<NucSeq> pQuery, std::shared_ptr<Pack> pRef )
     {
         auto pRet = execute_helper(
-            pIn, [&]( Seed& rSeed ) { SeedExtender::extendSeed( rSeed, pQuery, pRef ); },
-            [&]( Seed& rLast, Seed& rSeed ) {
+            pIn, [ & ]( Seed& rSeed ) { SeedExtender::extendSeed( rSeed, pQuery, pRef ); },
+            [ & ]( Seed& rLast, Seed& rSeed ) {
                 auto uiContigID = pRef->uiSequenceIdForPosition( rLast.start_ref( ) );
 
                 size_t uiBackw = 0;
@@ -236,8 +236,8 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
     virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Seeds> pIn, NucSeq& rQ1, NucSeq& rQ2 )
     {
         return execute_helper(
-            pIn, [&]( Seed& rSeed ) { SeedExtender::extendSeed( rSeed, rQ1, rQ2 ); },
-            [&]( Seed& rLast, Seed& rSeed ) {
+            pIn, [ & ]( Seed& rSeed ) { SeedExtender::extendSeed( rSeed, rQ1, rQ2 ); },
+            [ & ]( Seed& rLast, Seed& rSeed ) {
                 size_t uiBackw = 0;
                 if( rLast.bOnForwStrand )
                     while( rLast.end( ) + uiBackw < rSeed.start( ) &&
@@ -256,6 +256,13 @@ class SeedLumping : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
     // overload
     virtual std::shared_ptr<Seeds> DLL_PORT( MA )
         execute( std::shared_ptr<Seeds> pIn, std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
+    {
+        return execute( pIn, *pQ1, *pQ2 );
+    } // method
+
+    // overload
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA )
+        execute_py( std::shared_ptr<Seeds> pIn, std::shared_ptr<NucSeq> pQ1, std::shared_ptr<NucSeq> pQ2 )
     {
         return execute( pIn, *pQ1, *pQ2 );
     } // method
@@ -478,7 +485,7 @@ class MinLength : public libMS::Module<Seeds, false, Seeds>
     virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Seeds> pSeeds )
     {
         pSeeds->erase( std::remove_if( pSeeds->begin( ), pSeeds->end( ),
-                                       [&]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
+                                       [ & ]( const Seed& rSeed ) { return rSeed.size( ) < uiMinLen; } ),
                        pSeeds->end( ) );
         // std::cout << pSeeds->size( ) << std::endl;
         return pSeeds;
@@ -538,10 +545,10 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
         while( true )
         {
             std::vector<Seed*> vOverlaps;
-            xTree.visit_overlapping( uiX, uiX,
-                                     [&]( const interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval& rInterval ) {
-                                         vOverlaps.push_back( rInterval.value );
-                                     } ); // visit_overlapping call
+            xTree.visit_overlapping(
+                uiX, uiX, [ & ]( const interval_tree::IntervalTree<nucSeqIndex, Seed*>::interval& rInterval ) {
+                    vOverlaps.push_back( rInterval.value );
+                } ); // visit_overlapping call
             if( vOverlaps.size( ) == 0 )
             {
                 // check for non overlapping seed to the right
@@ -594,6 +601,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 {
     nucSeqIndex uiFuzz = 5;
     double fMaxOverlap = .25; // seed can maximally overlap for 25% of it's length
+    nucSeqIndex uiMinNtNonOverlap = 20; // or if there are 20 non overlapping NT
 
   public:
     FilterOverlappingSeeds( const ParameterSetManager& rParameters )
@@ -647,7 +655,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
                 uiJ++;
             } // while
 
-            if( uiNumOverlap / rS.size( ) <= fMaxOverlap )
+            if( uiNumOverlap / rS.size( ) <= fMaxOverlap || rS.size( ) - uiNumOverlap >= uiMinNtNonOverlap )
                 pRet->push_back( rS );
         } // for
 
@@ -884,7 +892,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
                           << xForwStartIt->start_ref( ) << "," << xForwStartIt->size( ) << std::endl;
 #endif
                 assert( xIntervals.find( &*xForwStartIt ) == xIntervals.end( ) );
-                xIntervals[&*xForwStartIt ] = true; // insert
+                xIntervals[ &*xForwStartIt ] = true; // insert
                 xHeap.push_back( &*xForwStartIt );
                 std::push_heap( xHeap.begin( ), xHeap.end( ), &seedIsSmallerHeap );
                 xForwStartIt++;

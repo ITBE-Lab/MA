@@ -147,7 +147,7 @@ class SvJump : public libMS::Container
               std::max( rA.end( ) - 1, rB.start( ) ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
-              /* uiNumSupportingNt = */ std::min(rA.uiSoCNt,rB.uiSoCNt),
+              /* uiNumSupportingNt = */ std::min(rA.uiSoCNt, rB.uiSoCNt),
               /* iID */ -1,
               /* iReadId */ iReadId )
     {

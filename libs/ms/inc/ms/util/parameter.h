@@ -1074,10 +1074,11 @@ class ParameterSetManager
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
         xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 100 );
-        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 2000 );
+        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 500 );
         xParametersSets[ "sv-pacbio" ]->xMaximalSeedAmbiguity->set( 1 );
         xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
         xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
+        xParametersSets[ "sv-pacbio" ]->xMinNtAfterReseeding->set( 600 );
         xParametersSets[ "sv-pacbio" ]->xRectangularSoc->set( false );
 
         // Initially select Illumina
