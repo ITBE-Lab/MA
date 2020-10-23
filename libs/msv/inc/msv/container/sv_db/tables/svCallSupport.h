@@ -6,9 +6,9 @@
  */
 #pragma once
 
+#include "msv/container/svJump.h"
 #include <db_base.h>
 #include <sql_api.h>
-#include "msv/container/svJump.h"
 
 namespace libMSV
 {
@@ -18,15 +18,15 @@ using SvCallSupportTableType = SQLTable<DBCon,
                                         PriKeyDefaultType>; // jump_id (foreign key)
 
 const json jSvCallSupportTableDef = {
-    {TABLE_NAME, "sv_call_support_table"},
-    {TABLE_COLUMNS,
-     {
-         {{COLUMN_NAME, "call_id"}},
-         {{COLUMN_NAME, "jump_id"}},
-     }},
+    { TABLE_NAME, "sv_call_support_table" },
+    { TABLE_COLUMNS,
+      {
+          { { COLUMN_NAME, "call_id" } },
+          { { COLUMN_NAME, "jump_id" } },
+      } },
     //{FOREIGN_KEY, {{COLUMN_NAME, "call_id"}, {REFERENCES, "sv_call_table(id) ON DELETE CASCADE"}}},
     //{FOREIGN_KEY, {{COLUMN_NAME, "jump_id"}, {REFERENCES, "sv_jump_table(id) ON DELETE CASCADE"}}}
-    };
+};
 
 
 template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableType<DBCon>
@@ -34,9 +34,10 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
     std::shared_ptr<DBCon> pDatabase;
     SQLStatement<DBCon> xDeleteRun;
     SQLStatement<DBCon> xDeleteCall;
+    SQLStatement<DBCon> xRedirect;
 
   public:
-#if DEBUG_LEVEL == 0 
+#if DEBUG_LEVEL == 0
     // increase the bulk inserter size on this table
     using uiBulkInsertSize = std::integral_constant<size_t, 5000>;
 #endif
@@ -50,9 +51,12 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
                                  "sv_caller_run_table WHERE name = ?))" ),
           xDeleteCall( pDatabase,
                        "DELETE FROM sv_call_support_table "
-                       "WHERE call_id = ? " )
-    {
-    } // default constructor
+                       "WHERE call_id = ? " ),
+          xRedirect( pDatabase,
+                     "UPDATE sv_call_support_table "
+                     "SET call_id = ? "
+                     "WHERE call_id = ? " )
+    {} // default constructor
 
     inline void deleteRun( std::string& rS )
     {
@@ -64,19 +68,29 @@ template <typename DBCon> class SvCallSupportTable : public SvCallSupportTableTy
         xDeleteCall.exec( iCallId );
     } // method
 
-    inline void addIndices()
+    inline void redirectJumps( int64_t iCallIdFrom, int64_t iCallIdTo )
     {
-        this->addIndex( json{{"INDEX_NAME", "call_to_jump"}, {"INDEX_COLUMNS", "call_id, jump_id"}} );
+        xRedirect.exec( iCallIdTo, iCallIdFrom );
     } // method
 
-    inline void dropIndices()
+    inline void addIndices( )
     {
-        this->dropIndex( json{{"INDEX_NAME", "call_to_jump"}} );
+        this->addIndex( json{ { "INDEX_NAME", "call_to_jump" }, { "INDEX_COLUMNS", "call_id, jump_id" } } );
+    } // method
+
+    inline void dropIndices( )
+    {
+        this->dropIndex( json{ { "INDEX_NAME", "call_to_jump" } } );
     } // method
 
     inline void deleteCall( SvCall& rCall )
     {
         deleteCall( rCall.iId );
+    } // method
+
+    inline void redirectJumps( SvCall& rCallFrom, SvCall& rCallTo )
+    {
+        redirectJumps( rCallFrom.iId, rCallTo.iId );
     } // method
 }; // class
 

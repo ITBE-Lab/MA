@@ -162,6 +162,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     xOrganizer.util( ).def( "get_call_overview_area", &getCallOverviewArea<DBConSingle> );
 
     xOrganizer.util( ).def( "combine_overlapping_calls", &combineOverlappingCalls<DBCon> );
+    xOrganizer.util( ).def( "merge_dummy_calls", &mergeDummyCalls<DBCon> );
 
     py::class_<SQLDBInformer<DBConSingle>, std::shared_ptr<SQLDBInformer<DBConSingle>>>( xOrganizer.util( ),
                                                                                          "SQLDBInformer" )

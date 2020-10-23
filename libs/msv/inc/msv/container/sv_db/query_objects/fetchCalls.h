@@ -30,29 +30,34 @@ template <typename DBCon> class SvCallsFromDb
              PriKeyDefaultType, PriKeyDefaultType>
         xQuerySupport;
 
-    struct Helper
+    enum ConfigFlags
     {
-      public:
         /// @brief only fetch calls in specific area
-        bool bInArea;
+        InArea,
         /// @brief only fetch calls that overlap/do not overlap calls from different run (ground truth run)
-        bool bOverlapping;
+        Overlapping,
         /// @brief true: fetch overlapping calls; false: fetch non overlapping calls
-        bool bWithIntersection;
+        WithIntersection,
         /// @brief true: do not fetch calls that are overlapped by higher scoring calls from same run
-        bool bWithSelfIntersection;
+        WithSelfIntersection,
         /// @brief true: ignore ground truth run calls that are overlapped by higher scoring calls
-        bool bWithOtherIntersection;
-        bool bWithMinScore;
-        bool bWithMaxScore;
-        bool bWithMinScoreGT;
-        bool bWithMaxScoreGT;
-        bool bJustCount;
-        bool bWithAvgSuppNtRange;
-        bool bWithAvgSuppNtRangeGT;
-    }; // class
+        WithOtherIntersection,
+        WithMinScore,
+        WithMaxScore,
+        WithMinScoreGT,
+        WithMaxScoreGT,
+        JustCount,
+        WithAvgSuppNtRange,
+        WithAvgSuppNtRangeGT,
+        OrderByScore,
+        Limit,
+        ExcludeSpecificID,
+        OnlyWithDummyJumps,
+        WithoutDummyJumps,
+        DUMMY_FOR_COUNT // must be last
+    };
+    std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfiguration;
 
-    Helper xHelper;
     std::unique_ptr<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, NucSeqSql,
                              uint32_t, uint32_t, uint32_t>>
         pQuery = nullptr;
@@ -94,23 +99,10 @@ template <typename DBCon> class SvCallsFromDb
         // clang-format on
     }
 
-    void initQuery( Helper xNew )
+    void initQuery( std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xNewConfig )
     {
-        bool bInitQuery = ( xNew.bJustCount && pQueryCount == nullptr ) || //
-                          ( !xNew.bJustCount && pQuery == nullptr ) || //
-                          xHelper.bInArea != xNew.bInArea || //
-                          xHelper.bOverlapping != xNew.bOverlapping || //
-                          xHelper.bWithIntersection != xNew.bWithIntersection || //
-                          xHelper.bWithSelfIntersection != xNew.bWithSelfIntersection || //
-                          xHelper.bWithOtherIntersection != xNew.bWithOtherIntersection || //
-                          xHelper.bWithMinScore != xNew.bWithMinScore || //
-                          xHelper.bWithMaxScore != xNew.bWithMaxScore || //
-                          xHelper.bWithMinScoreGT != xNew.bWithMinScoreGT || //
-                          xHelper.bWithMaxScoreGT != xNew.bWithMaxScoreGT || //
-                          xHelper.bWithAvgSuppNtRange != xNew.bWithAvgSuppNtRange || //
-                          xHelper.bWithAvgSuppNtRangeGT != xNew.bWithAvgSuppNtRangeGT || //
-                          xHelper.bJustCount != xNew.bJustCount;
-        if( bInitQuery )
+        if( xNewConfig != xConfiguration || ( xNewConfig[ ConfigFlags::JustCount ] && pQueryCount == nullptr ) ||
+            ( !xNewConfig[ ConfigFlags::JustCount ] && pQuery == nullptr ) )
         {
             while( pQueryCount != nullptr && !pQueryCount->eof( ) )
                 pQueryCount->next( );
@@ -118,46 +110,58 @@ template <typename DBCon> class SvCallsFromDb
             while( pQuery != nullptr && !pQuery->eof( ) )
                 pQuery->next( );
             pQuery = nullptr;
-            xHelper.bInArea = xNew.bInArea;
-            xHelper.bOverlapping = xNew.bOverlapping;
-            xHelper.bWithIntersection = xNew.bWithIntersection;
-            xHelper.bWithSelfIntersection = xNew.bWithSelfIntersection;
-            xHelper.bWithOtherIntersection = xNew.bWithOtherIntersection;
-            xHelper.bWithMinScore = xNew.bWithMinScore;
-            xHelper.bWithMaxScore = xNew.bWithMaxScore;
-            xHelper.bWithMinScoreGT = xNew.bWithMinScoreGT;
-            xHelper.bWithMaxScoreGT = xNew.bWithMaxScoreGT;
-            xHelper.bWithAvgSuppNtRange = xNew.bWithAvgSuppNtRange;
-            xHelper.bWithAvgSuppNtRangeGT = xNew.bWithAvgSuppNtRangeGT;
-            xHelper.bJustCount = xNew.bJustCount;
+            xConfiguration = xNewConfig;
 
             std::string sQueryText =
                 std::string( "FROM sv_call_table AS inner_table "
                              "WHERE sv_caller_run_id = ? " ) +
-                ( !xHelper.bInArea ? "" : "AND " ST_INTERSCTS "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
-                ( !xHelper.bWithMinScore ? "" : "AND score >= ? " ) + //
-                ( !xHelper.bWithMaxScore ? "" : "AND score < ? " ) + //
-                ( !xHelper.bWithAvgSuppNtRange ? "" : "AND avg_supporting_nt >= ? " ) + //
-                ( !xHelper.bWithAvgSuppNtRange ? "" : "AND avg_supporting_nt < ? " ) + //
-                ( !xHelper.bWithIntersection
+                ( !xConfiguration[ ConfigFlags::ExcludeSpecificID ] ? "" : "AND id != ? " ) + //
+                ( !xConfiguration[ ConfigFlags::InArea ] ? ""
+                                                         : "AND " ST_INTERSCTS
+                                                           "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
+                ( !xConfiguration[ ConfigFlags::WithMinScore ] ? "" : "AND score >= ? " ) + //
+                ( !xConfiguration[ ConfigFlags::WithMaxScore ] ? "" : "AND score < ? " ) + //
+                ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRange ] ? "" : "AND avg_supporting_nt >= ? " ) + //
+                ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRange ] ? "" : "AND avg_supporting_nt < ? " ) + //
+                ( ( !xConfiguration[ ConfigFlags::OnlyWithDummyJumps ] &&
+                    !xConfiguration[ ConfigFlags::WithoutDummyJumps ] )
                       ? ""
-                      : std::string( "AND " ) + ( xHelper.bOverlapping ? "" : "NOT " ) +
+                      : std::string( "AND " ) + ( xConfiguration[ ConfigFlags::WithoutDummyJumps ] ? "NOT " : "" ) +
+                            "EXISTS( "
+                            "           SELECT sv_jump_table.id "
+                            "           FROM sv_jump_table "
+                            "           JOIN sv_call_support_table on sv_jump_table.id = sv_call_support_table.jump_id "
+                            "           WHERE sv_call_support_table.call_id = inner_table.id "
+                            "           AND (sv_jump_table.from_pos = ? OR sv_jump_table.to_pos = ?) "
+                            "           ) " ) + //
+                ( !xConfiguration[ ConfigFlags::WithIntersection ]
+                      ? ""
+                      : std::string( "AND " ) + ( xConfiguration[ ConfigFlags::Overlapping ] ? "" : "NOT " ) +
                             // make sure that inner_table overlaps the outer_table:
                             "EXISTS( "
                             "     SELECT outer_table.id "
                             "     FROM sv_call_table AS outer_table "
                             "     WHERE outer_table.sv_caller_run_id = ? " +
-                            ( !xHelper.bWithMinScoreGT ? "" : "AND outer_table.score >= ? " ) + //
-                            ( !xHelper.bWithMaxScoreGT ? "" : "AND outer_table.score < ? " ) + //
-                            ( !xHelper.bWithAvgSuppNtRangeGT ? "" : "AND outer_table.avg_supporting_nt >= ? " ) + //
-                            ( !xHelper.bWithAvgSuppNtRangeGT ? "" : "AND outer_table.avg_supporting_nt < ? " ) + //
+                            ( !xConfiguration[ ConfigFlags::WithMinScoreGT ] ? "" : "AND outer_table.score >= ? " ) + //
+                            ( !xConfiguration[ ConfigFlags::WithMaxScoreGT ] ? "" : "AND outer_table.score < ? " ) + //
+                            ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRangeGT ]
+                                  ? ""
+                                  : "AND outer_table.avg_supporting_nt >= ? " ) + //
+                            ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRangeGT ]
+                                  ? ""
+                                  : "AND outer_table.avg_supporting_nt < ? " ) + //
                             rectanglesOverlapSQL( "outer_table", "inner_table" ) +
-                            ( !xHelper.bWithOtherIntersection ? ""
-                                                              : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
+                            ( !xConfiguration[ ConfigFlags::WithOtherIntersection ]
+                                  ? ""
+                                  : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
                             ") " ) +
-                ( !xHelper.bWithSelfIntersection ? "" : selfIntersectionSQL( "inner_table", "inner_table2" ) );
+                ( !xConfiguration[ ConfigFlags::WithSelfIntersection ]
+                      ? ""
+                      : selfIntersectionSQL( "inner_table", "inner_table2" ) ) +
+                ( !xConfiguration[ ConfigFlags::OrderByScore ] ? "" : "ORDER BY score DESC " ) +
+                ( !xConfiguration[ ConfigFlags::Limit ] ? "" : "LIMIT ? " );
 
-            if( xHelper.bJustCount )
+            if( xConfiguration[ ConfigFlags::JustCount ] )
                 pQueryCount = std::make_unique<SQLQuery<DBCon, uint32_t>>(
                     pConnection, std::string( "SELECT COUNT(*) " ) + sQueryText );
             else
@@ -170,9 +174,10 @@ template <typename DBCon> class SvCallsFromDb
         };
     } // method
 
-    template <typename... Types> void initFetchQuery_( Helper xNew, Types... args )
+    template <typename... Types>
+    void initFetchQuery_( std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xNewConfig, Types... args )
     {
-        initQuery( xNew );
+        initQuery( xNewConfig );
         pQuery->execAndFetch( args... );
     } // method
 
@@ -189,24 +194,41 @@ template <typename DBCon> class SvCallsFromDb
                          "WHERE sv_call_support_table.call_id = ? " )
     {}
 
+    void initFetchQuery( int64_t iSvCallerIdA, int64_t iCallId, int64_t iX, int64_t iY, int64_t iW, int64_t iH )
+    {
+        xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
+                                             std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::InArea );
+        xConfig.set( ConfigFlags::OrderByScore );
+        xConfig.set( ConfigFlags::Limit );
+        xConfig.set( ConfigFlags::ExcludeSpecificID );
+        xConfig.set( ConfigFlags::WithoutDummyJumps );
+        initFetchQuery_( xConfig, iSvCallerIdA, iCallId, xWkb, SvJump::DUMMY_LOCATION, SvJump::DUMMY_LOCATION, 1 );
+    }
+
+    void initFetchDummiesQuery( int64_t iSvCallerIdA )
+    {
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::OnlyWithDummyJumps );
+        initFetchQuery_( xConfig, iSvCallerIdA, SvJump::DUMMY_LOCATION, SvJump::DUMMY_LOCATION );
+    }
+
+    // @todo continue here: one of these queries has the wrong settings
+
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
                          bool bOverlapping, int64_t iAllowedDist, double dMinScore, double dMaxScore )
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ .bInArea = true,
-                                 .bOverlapping = bOverlapping,
-                                 .bWithIntersection = true,
-                                 .bWithSelfIntersection = true,
-                                 .bWithOtherIntersection = false,
-                                 .bWithMinScore = true,
-                                 .bWithMaxScore = true,
-                                 .bWithMinScoreGT = false,
-                                 .bWithMaxScoreGT = false,
-                                 .bJustCount = false,
-                                 .bWithAvgSuppNtRange = false,
-                                 .bWithAvgSuppNtRangeGT = false }, //
-                         iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist,
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::InArea );
+        xConfig.set( ConfigFlags::Overlapping, bOverlapping );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithSelfIntersection );
+        xConfig.set( ConfigFlags::WithMinScore );
+        xConfig.set( ConfigFlags::WithMaxScore );
+        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist,
                          iAllowedDist, iAllowedDist );
     }
 
@@ -215,20 +237,15 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ .bInArea = true,
-                                 .bOverlapping = bOverlapping,
-                                 .bWithIntersection = true,
-                                 .bWithSelfIntersection = false,
-                                 .bWithOtherIntersection = true,
-                                 .bWithMinScore = false,
-                                 .bWithMaxScore = false,
-                                 .bWithMinScoreGT = true,
-                                 .bWithMaxScoreGT = true,
-                                 .bJustCount = false,
-                                 .bWithAvgSuppNtRange = false,
-                                 .bWithAvgSuppNtRangeGT = false }, //
-                         iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist, iAllowedDist,
-                         iAllowedDist, iAllowedDist );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::InArea );
+        xConfig.set( ConfigFlags::Overlapping, bOverlapping );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithOtherIntersection );
+        xConfig.set( ConfigFlags::WithMinScoreGT );
+        xConfig.set( ConfigFlags::WithMaxScoreGT );
+        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist,
+                         iAllowedDist, iAllowedDist, iAllowedDist );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
@@ -236,19 +253,13 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ .bInArea = true,
-                                 .bOverlapping = bOverlapping,
-                                 .bWithIntersection = true,
-                                 .bWithSelfIntersection = true,
-                                 .bWithOtherIntersection = false,
-                                 .bWithMinScore = false,
-                                 .bWithMaxScore = false,
-                                 .bWithMinScoreGT = false,
-                                 .bWithMaxScoreGT = false,
-                                 .bJustCount = false,
-                                 .bWithAvgSuppNtRange = false,
-                                 .bWithAvgSuppNtRangeGT = false }, //
-                         iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist, iAllowedDist );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::InArea );
+        xConfig.set( ConfigFlags::Overlapping, bOverlapping );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithSelfIntersection );
+        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
+                         iAllowedDist );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore,
@@ -256,38 +267,20 @@ template <typename DBCon> class SvCallsFromDb
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ .bInArea = true,
-                                 .bOverlapping = false,
-                                 .bWithIntersection = false,
-                                 .bWithSelfIntersection = false,
-                                 .bWithOtherIntersection = false,
-                                 .bWithMinScore = true,
-                                 .bWithMaxScore = true,
-                                 .bWithMinScoreGT = false,
-                                 .bWithMaxScoreGT = false,
-                                 .bJustCount = false,
-                                 .bWithAvgSuppNtRange = false,
-                                 .bWithAvgSuppNtRangeGT = false }, //
-                         iSvCallerIdA, xWkb, dMinScore, dMaxScore );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::InArea );
+        xConfig.set( ConfigFlags::WithMinScore );
+        xConfig.set( ConfigFlags::WithMaxScore );
+        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, dMinScore, dMaxScore );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH )
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
-        initFetchQuery_( Helper{ .bInArea = true,
-                                 .bOverlapping = false,
-                                 .bWithIntersection = false,
-                                 .bWithSelfIntersection = false,
-                                 .bWithOtherIntersection = false,
-                                 .bWithMinScore = false,
-                                 .bWithMaxScore = false,
-                                 .bWithMinScoreGT = false,
-                                 .bWithMaxScoreGT = false,
-                                 .bJustCount = false,
-                                 .bWithAvgSuppNtRange = false,
-                                 .bWithAvgSuppNtRangeGT = false }, //
-                         iSvCallerIdA, xWkb );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::InArea );
+        initFetchQuery_( xConfig, iSvCallerIdA, xWkb );
     }
 
     ~SvCallsFromDb( )
@@ -355,18 +348,14 @@ template <typename DBCon> class SvCallsFromDb
            int64_t iAllowedDistMax, int64_t iAllowedDistStep, double dMinScore, double dMaxScore, double dStep )
     {
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
-        initQuery( Helper{ .bInArea = false,
-                           .bOverlapping = true,
-                           .bWithIntersection = true,
-                           .bWithSelfIntersection = true,
-                           .bWithOtherIntersection = false,
-                           .bWithMinScore = true,
-                           .bWithMaxScore = true,
-                           .bWithMinScoreGT = false,
-                           .bWithMaxScoreGT = false,
-                           .bJustCount = true,
-                           .bWithAvgSuppNtRange = false,
-                           .bWithAvgSuppNtRangeGT = false } );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::Overlapping );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithSelfIntersection );
+        xConfig.set( ConfigFlags::WithMinScore );
+        xConfig.set( ConfigFlags::WithMaxScore );
+        xConfig.set( ConfigFlags::JustCount );
+        initQuery( xConfig );
         for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
         {
             vRet.emplace_back( dCurr,
@@ -375,18 +364,6 @@ template <typename DBCon> class SvCallsFromDb
                                                     iAllowedDist, iAllowedDist, iAllowedDist ) );
         } // for
         std::vector<std::pair<uint32_t, uint32_t>> vRet2;
-        initQuery( Helper{ .bInArea = false,
-                           .bOverlapping = true,
-                           .bWithIntersection = true,
-                           .bWithSelfIntersection = true,
-                           .bWithOtherIntersection = false,
-                           .bWithMinScore = true,
-                           .bWithMaxScore = true,
-                           .bWithMinScoreGT = false,
-                           .bWithMaxScoreGT = false,
-                           .bJustCount = true,
-                           .bWithAvgSuppNtRange = false,
-                           .bWithAvgSuppNtRangeGT = false } );
         for( int64_t iAllowedDist = iAllowedDistMin; iAllowedDist < iAllowedDistMax; iAllowedDist += iAllowedDistStep )
         {
             vRet2.emplace_back( iAllowedDist,
@@ -404,18 +381,15 @@ template <typename DBCon> class SvCallsFromDb
         double dStep = dMaxAvgSupp / uiNumSteps;
 
         std::vector<std::pair<double, uint32_t>> vTruePositives;
-        initQuery( Helper{ .bInArea = false,
-                           .bOverlapping = true,
-                           .bWithIntersection = true,
-                           .bWithSelfIntersection = true,
-                           .bWithOtherIntersection = false,
-                           .bWithMinScore = true,
-                           .bWithMaxScore = true,
-                           .bWithMinScoreGT = false,
-                           .bWithMaxScoreGT = false,
-                           .bJustCount = true,
-                           .bWithAvgSuppNtRange = true,
-                           .bWithAvgSuppNtRangeGT = false } );
+        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
+        xConfig.set( ConfigFlags::Overlapping );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithSelfIntersection );
+        xConfig.set( ConfigFlags::WithMinScore );
+        xConfig.set( ConfigFlags::WithMaxScore );
+        xConfig.set( ConfigFlags::JustCount );
+        xConfig.set( ConfigFlags::WithAvgSuppNtRange );
+        initQuery( xConfig );
         for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
         {
             double dEnd = dStart + dStep;
@@ -425,18 +399,14 @@ template <typename DBCon> class SvCallsFromDb
                                                               iAllowedDist ) );
         } // for
         std::vector<std::pair<double, uint32_t>> vFalsePositives;
-        initQuery( Helper{ .bInArea = false,
-                           .bOverlapping = false,
-                           .bWithIntersection = true,
-                           .bWithSelfIntersection = true,
-                           .bWithOtherIntersection = false,
-                           .bWithMinScore = true,
-                           .bWithMaxScore = true,
-                           .bWithMinScoreGT = false,
-                           .bWithMaxScoreGT = false,
-                           .bJustCount = true,
-                           .bWithAvgSuppNtRange = true,
-                           .bWithAvgSuppNtRangeGT = false } );
+        xConfig.reset( );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithSelfIntersection );
+        xConfig.set( ConfigFlags::WithMinScore );
+        xConfig.set( ConfigFlags::WithMaxScore );
+        xConfig.set( ConfigFlags::JustCount );
+        xConfig.set( ConfigFlags::WithAvgSuppNtRange );
+        initQuery( xConfig );
         for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
         {
             double dEnd = dStart + dStep;
@@ -446,18 +416,14 @@ template <typename DBCon> class SvCallsFromDb
                                                                iAllowedDist ) );
         } // for
         std::vector<std::pair<double, uint32_t>> vFalseNegatives;
-        initQuery( Helper{ .bInArea = false,
-                           .bOverlapping = false,
-                           .bWithIntersection = true,
-                           .bWithSelfIntersection = false,
-                           .bWithOtherIntersection = true,
-                           .bWithMinScore = false,
-                           .bWithMaxScore = false,
-                           .bWithMinScoreGT = true,
-                           .bWithMaxScoreGT = true,
-                           .bJustCount = true,
-                           .bWithAvgSuppNtRange = true,
-                           .bWithAvgSuppNtRangeGT = false } );
+        xConfig.reset( );
+        xConfig.set( ConfigFlags::WithIntersection );
+        xConfig.set( ConfigFlags::WithOtherIntersection );
+        xConfig.set( ConfigFlags::WithMinScoreGT );
+        xConfig.set( ConfigFlags::WithMaxScoreGT );
+        xConfig.set( ConfigFlags::JustCount );
+        xConfig.set( ConfigFlags::WithAvgSuppNtRange );
+        initQuery( xConfig );
         for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
         {
             double dEnd = dStart + dStep;

@@ -137,6 +137,14 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     #if not silent:
     #    #print("done high score filter")
 
+    if not silent:
+        print("merging dummy calls...")
+    start = datetime.datetime.now()
+    num_merged = merge_dummy_calls(parameter_set_manager, pool, sv_caller_run_id, 80, 5.0)
+    end = datetime.datetime.now()
+    delta = end - start
+    analyze.register("merging_dummy_calls", delta.total_seconds(), False, lambda x: x)
+
     #    #print("overlapping...")
     #start = datetime.datetime.now()
     #num_combined = 0 #combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
@@ -144,7 +152,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     #delta = end - start
     #analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
     if not silent:
-        #print("done overlapping; combined", num_combined, "calls")
+        print("done merging dummy calls; combined", num_merged, "calls")
         analyze.analyze(out_file)
         if not out_file is None:
             out_file.write("run_id is " + str(sv_caller_run_id) + "\n")

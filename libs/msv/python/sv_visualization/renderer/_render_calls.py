@@ -76,10 +76,12 @@ def render_calls(self, render_all=False):
             stats_data_1 = {"l":[], "x":[], "y":[], "c":[]}
             stats_data_2 = {"l":[], "x":[], "y":[], "c":[]}
             stats_data_3 = {"x":[], "w":[], "t":[], "c":[], "l":[]}
+            print("computing stats 1...")
             stats, blur_stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
                                                             self.widgets.get_blur(), min_blur, max_blur, blur_step,
                                                             self.get_min_score(), self.get_max_score(),
                                                             max(1, (self.get_max_score() - self.get_min_score()) / 50))
+            print("done")
             stats_data_1["l"].append("Ground Truth")
             stats_data_1["x"].append([self.get_min_score(), self.get_max_score()])
             stats_data_1["y"].append([gt_total, gt_total])
@@ -108,11 +110,13 @@ def render_calls(self, render_all=False):
             for x, y in blur_stats:
                 stats_data_2["x"][-1].append(x)
                 stats_data_2["y"][-1].append(y)
+            print("computing stats 2...")
             tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
                                                             self.get_gt_id(),
-                                                            self.widgets.get_blur(), 1000,
+                                                            self.widgets.get_blur(), 100,
                                                             self.get_min_score(), self.get_max_score(),
-                                                            10000)
+                                                            1000)
+            print("done")
             for legend, color, bar in [("false-positive", "red", fp_bars),
                                        ("true-positive", "green", tp_bars),
                                        ("false-negative", "orange", fn_bars)]:

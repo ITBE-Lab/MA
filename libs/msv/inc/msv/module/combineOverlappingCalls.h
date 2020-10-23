@@ -1,6 +1,7 @@
 #pragma once
 #include "ms/container/sv_db/pool_container.h"
 #include "msv/container/sv_db/query_objects/callInserter.h"
+#include "msv/container/sv_db/query_objects/fetchCalls.h"
 
 namespace libMSV
 {
@@ -52,6 +53,75 @@ fetchCall( SQLQuery<DBCon, int64_t, uint32_t, uint32_t, uint32_t, uint32_t, bool
     } // while
     xRet.second /= xRet.first.vSupportingJumps.size( );
     return xRet;
+} // function
+
+/** @brief merge dummy calls into proper calls if they exist
+ * @details
+ * Combines all calls that rectangles are overlapping.
+ * Multithreads the initial detection of overlapping calls.
+ * The actual combination of overlapping calls is single threaded though.
+ */
+template <typename DBCon>
+size_t mergeDummyCalls( const ParameterSetManager& rParameters, std::shared_ptr<libMS::PoolContainer<DBCon>> pConPool,
+                        int64_t iSvCallerId, uint32_t uiBlur, double dMinScore )
+{
+    size_t uiNumMerged = 0;
+    pConPool->xPool.run( [ & ]( std::shared_ptr<DBCon> pOuterConnection ) {
+        SvCallsFromDb xFetchDummies( pOuterConnection );
+        pConPool->xPool.run( [ & ]( std::shared_ptr<DBCon> pInnerConnection ) {
+            SvCallsFromDb xFetchCalls( pInnerConnection );
+            SvCallTable xCalls( pInnerConnection );
+            SvCallSupportTable xCallSupport( pInnerConnection );
+            xFetchDummies.initFetchDummiesQuery( iSvCallerId );
+            while( xFetchDummies.hasNext( ) )
+            {
+                auto xDummy = xFetchDummies.next( );
+
+                // make call with no data (will be overwritten anyways)
+                SvCall xBestMatch( 0, 0, 0, 0, false, false, 0, 0, 0 );
+                bool bHaveOne = false;
+                bool bHorizontalMatch = false;
+                xFetchCalls.initFetchQuery( iSvCallerId, xDummy.iId, xDummy.xXAxis.start( ) - uiBlur / 2, 0, uiBlur,
+                                            std::numeric_limits<uint32_t>::max( ) );
+                if( xFetchCalls.hasNext( ) )
+                {
+                    xBestMatch = xFetchCalls.next( );
+                    bHaveOne = true;
+                    bHorizontalMatch = false;
+                } // if
+                xFetchCalls.initFetchQuery( iSvCallerId, xDummy.iId, 0, xDummy.xYAxis.start( ) - uiBlur / 2,
+                                            std::numeric_limits<uint32_t>::max( ), uiBlur );
+                if( xFetchCalls.hasNext( ) )
+                {
+                    auto xCurr = xFetchCalls.next( );
+                    if( !bHaveOne || xCurr.getScore( ) > xBestMatch.getScore( ) )
+                    {
+                        xBestMatch = xCurr;
+                        bHorizontalMatch = true;
+                    } // if
+                    bHaveOne = true;
+                } // if
+
+                if( bHaveOne && xBestMatch.getScore( ) > dMinScore )
+                {
+                    uiNumMerged++;
+                    // found a two sided call that matches this one sided call
+                    xDummy.bDummy = false; // avoid triggering the assertions
+                    xDummy.bFromForward = xBestMatch.bFromForward; // avoid triggering the assertions
+                    xDummy.bToForward = xBestMatch.bToForward; // avoid triggering the assertions
+                    xBestMatch.join( xDummy );
+                    if( bHorizontalMatch )
+                        xBestMatch.xXAxis.start( ( xDummy.xXAxis.start( ) + xBestMatch.xXAxis.start( ) ) / 2 );
+                    else
+                        xBestMatch.xYAxis.start( ( xDummy.xYAxis.start( ) + xBestMatch.xYAxis.start( ) ) / 2 );
+                    xCalls.updateCall( iSvCallerId, xBestMatch );
+                    xCallSupport.redirectJumps( xDummy, xBestMatch );
+                    xCalls.deleteCall( xDummy );
+                } // if
+            } // while
+        } ); // xPool.run
+    } ); // xPool.run
+    return uiNumMerged;
 } // function
 
 /** @brief combine overlapping calls

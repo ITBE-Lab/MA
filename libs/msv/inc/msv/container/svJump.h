@@ -38,6 +38,8 @@ class SvJump : public libMS::Container
         return false;
     } // method
 
+    static const uint32_t DUMMY_LOCATION = std::numeric_limits<uint32_t>::max( );
+
     /*const*/ bool bWasMirrored; // this should be called was_mirrored
     /*const*/ nucSeqIndex uiFrom; // inclusive
     /*const*/ nucSeqIndex uiTo; // inclusive
@@ -108,7 +110,7 @@ class SvJump : public libMS::Container
             int64_t iId,
             int64_t iReadId )
         : bWasMirrored( ( uiTo_ < uiFrom_ || ( uiTo_ == uiFrom_ && !bFromForward && bToForward ) ) &&
-                        uiFrom_ != std::numeric_limits<uint32_t>::max( ) ),
+                        uiFrom_ != DUMMY_LOCATION ),
           uiFrom( bWasMirrored ? uiTo_ : uiFrom_ ),
           uiTo( bWasMirrored ? uiFrom_ : uiTo_ ),
           uiQueryFrom( uiQueryFrom ),
@@ -123,8 +125,8 @@ class SvJump : public libMS::Container
         // necessary for mapping switch strand jumps rightwards
         assert( uiFrom * 8 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
 
-        assert( ( (uint32_t)uiFrom ) != std::numeric_limits<uint32_t>::max( ) ||
-                ( (uint32_t)uiTo ) != std::numeric_limits<uint32_t>::max( ) );
+        assert( ( (uint32_t)uiFrom ) != DUMMY_LOCATION ||
+                ( (uint32_t)uiTo ) != DUMMY_LOCATION );
     } // constructor
 
 
@@ -171,14 +173,14 @@ class SvJump : public libMS::Container
         : SvJump( /* uiFrom = */
                   bFirstSeed == rA.bOnForwStrand
                       // if we jump to the start of the first seed we don't know where we are coming from
-                      ? std::numeric_limits<uint32_t>::max( )
+                      ? DUMMY_LOCATION
                       : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
                                            // @note rA's direction is mirrored on reference if rA is on rev comp strand
                                            : 1 + rA.start_ref( ) - rA.size( ) ),
                   /* uiTo = */
                   bFirstSeed != rA.bOnForwStrand
                       // if we jump from the end of the last seed we don't know where we are going to
-                      ? std::numeric_limits<uint32_t>::max( )
+                      ? DUMMY_LOCATION
                       : rA.start_ref( ),
                   /* uiQueryFrom = */
                   bFirstSeed ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
@@ -195,8 +197,8 @@ class SvJump : public libMS::Container
         uiSeedBId = rA.uiId;
 #endif
 
-        assert( ( (uint32_t)uiFrom ) != std::numeric_limits<uint32_t>::max( ) ||
-                ( (uint32_t)uiTo ) != std::numeric_limits<uint32_t>::max( ) );
+        assert( ( (uint32_t)uiFrom ) != DUMMY_LOCATION ||
+                ( (uint32_t)uiTo ) != DUMMY_LOCATION );
     } // constructor
 
     bool does_switch_strand( ) const
@@ -206,12 +208,12 @@ class SvJump : public libMS::Container
 
     bool from_known( ) const
     {
-        return uiFrom != std::numeric_limits<uint32_t>::max( );
+        return uiFrom != DUMMY_LOCATION;
     } // method
 
     bool to_known( ) const
     {
-        return uiTo != std::numeric_limits<uint32_t>::max( );
+        return uiTo != DUMMY_LOCATION;
     } // method
 
     bool switch_strand_known( ) const
@@ -668,19 +670,19 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         {
             nucSeqIndex uiMin = 1;
             nucSeqIndex uiMax = 0;
-            size_t uiI = 0;
-            size_t uiJ = vVertical.size( );
-            while( uiMin > uiMax && uiI < vHorizontal.size( ) && uiJ > 0 )
+            size_t uiI = vHorizontal.size();
+            size_t uiJ = 0;
+            while( uiMin > uiMax && uiI > 0 && uiJ < vVertical.size( ) )
             {
-                uiMin = vHorizontal[ uiI ];
-                uiMax = vVertical[ uiJ - 1 ];
-                uiI++;
-                uiJ--;
+                uiMin = vHorizontal[ uiI - 1 ];
+                uiMax = vVertical[ uiJ ];
+                uiI--;
+                uiJ++;
             } // while
             nucSeqIndex uiPos;
-            if( uiI == vHorizontal.size( ) || uiJ == 0 )
+            if( uiI == 0 || uiJ == vVertical.size( ) )
             {
-                if( uiI == vHorizontal.size( ) )
+                if( uiI == 0 )
                     uiPos = vVertical[ vVertical.size( ) * 0.05 ];
                 else
                     uiPos = vHorizontal[ vHorizontal.size( ) * 0.95 ];
