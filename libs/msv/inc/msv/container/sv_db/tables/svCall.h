@@ -176,10 +176,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                      "WHERE sv_caller_run_id = ? "
                      "ORDER BY score ASC LIMIT 1 " ),
           xMaxAvSuppNt( pConnection,
-                     "SELECT avg_supporting_nt "
-                     " FROM sv_call_table "
-                     "WHERE sv_caller_run_id = ? "
-                     "ORDER BY avg_supporting_nt DESC LIMIT 1 " ),
+                        "SELECT avg_supporting_nt "
+                        " FROM sv_call_table "
+                        "WHERE sv_caller_run_id = ? "
+                        "ORDER BY avg_supporting_nt DESC LIMIT 1 " ),
           xSetCoverageForCall( pConnection,
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
@@ -296,7 +296,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             // can deal with nullpointers
             makeSharedCompNucSeq( rCall.pInsertedSequence ),
             rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ), (uint32_t)rCall.uiNumSuppReads,
-            (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.bMirrored, xRectangle, rCall.iId );
+            (uint32_t)rCall.uiSuppNt, (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.bMirrored, xRectangle,
+            rCall.iId );
         return rCall.iId;
     } // method
 

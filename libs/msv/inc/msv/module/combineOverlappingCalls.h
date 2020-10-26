@@ -67,12 +67,12 @@ size_t mergeDummyCalls( const ParameterSetManager& rParameters, std::shared_ptr<
 {
     size_t uiNumMerged = 0;
     pConPool->xPool.run( [ & ]( std::shared_ptr<DBCon> pOuterConnection ) {
-        SvCallsFromDb xFetchDummies( pOuterConnection );
+        SvCallsFromDb<DBCon> xFetchDummies( pOuterConnection );
+        xFetchDummies.initFetchDummiesQuery( iSvCallerId );
         pConPool->xPool.run( [ & ]( std::shared_ptr<DBCon> pInnerConnection ) {
-            SvCallsFromDb xFetchCalls( pInnerConnection );
-            SvCallTable xCalls( pInnerConnection );
-            SvCallSupportTable xCallSupport( pInnerConnection );
-            xFetchDummies.initFetchDummiesQuery( iSvCallerId );
+            SvCallsFromDb<DBCon> xFetchCalls( pInnerConnection );
+            SvCallTable<DBCon> xCalls( pInnerConnection );
+            SvCallSupportTable<DBCon> xCallSupport( pInnerConnection );
             while( xFetchDummies.hasNext( ) )
             {
                 auto xDummy = xFetchDummies.next( );
@@ -109,11 +109,17 @@ size_t mergeDummyCalls( const ParameterSetManager& rParameters, std::shared_ptr<
                     xDummy.bDummy = false; // avoid triggering the assertions
                     xDummy.bFromForward = xBestMatch.bFromForward; // avoid triggering the assertions
                     xDummy.bToForward = xBestMatch.bToForward; // avoid triggering the assertions
-                    xBestMatch.join( xDummy );
+                    nucSeqIndex uiXPos = xBestMatch.xXAxis.start( );
+                    nucSeqIndex uiYPos = xBestMatch.xYAxis.start( );
                     if( bHorizontalMatch )
-                        xBestMatch.xXAxis.start( ( xDummy.xXAxis.start( ) + xBestMatch.xXAxis.start( ) ) / 2 );
+                        uiYPos = ( xDummy.xYAxis.start( ) + xBestMatch.xYAxis.start( ) ) / 2;
                     else
-                        xBestMatch.xYAxis.start( ( xDummy.xYAxis.start( ) + xBestMatch.xYAxis.start( ) ) / 2 );
+                        uiXPos = ( xDummy.xXAxis.start( ) + xBestMatch.xXAxis.start( ) ) / 2;
+                    xBestMatch.join( xDummy );
+                    xBestMatch.xXAxis.iSize = 1;
+                    xBestMatch.xXAxis.iStart = uiXPos;
+                    xBestMatch.xYAxis.iSize = 1;
+                    xBestMatch.xYAxis.iStart = uiYPos;
                     xCalls.updateCall( iSvCallerId, xBestMatch );
                     xCallSupport.redirectJumps( xDummy, xBestMatch );
                     xCalls.deleteCall( xDummy );

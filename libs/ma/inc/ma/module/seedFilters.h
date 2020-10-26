@@ -402,7 +402,8 @@ class FilterContigBorder : public libMS::Module<Seeds, false, Seeds, Pack>
             auto uiEnd = rSeed.bOnForwStrand ? rSeed.end_ref( ) : rSeed.start_ref( ) - 1;
             auto uiIdx = pPack->uiSequenceIdForPosition( uiStart );
             // sanity check
-            assert( uiIdx == pPack->uiSequenceIdForPosition( uiEnd ) );
+            if( pPack->uiSequenceIdForPosition( uiEnd ) != uiIdx )
+                continue;
             if( pPack->startOfSequenceWithId( uiIdx ) + uiMaxDist >= uiStart )
                 continue;
             if( pPack->endOfSequenceWithId( uiIdx ) <= uiEnd + uiMaxDist )

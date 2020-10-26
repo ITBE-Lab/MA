@@ -8,6 +8,7 @@
 #include "ms/util/parameter.h"
 #include "msv/container/sv_db/tables/svCall.h"
 #include "msv/container/sv_db/tables/svCallSupport.h"
+#include <bitset>
 
 namespace libMSV
 {
@@ -186,7 +187,7 @@ template <typename DBCon> class SvCallsFromDb
         : pConnection( pConnection ),
           pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pConnection ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
-          xQuerySupport( pConnection,
+          xQuerySupport( pConnection->getSlave(),
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
@@ -213,8 +214,6 @@ template <typename DBCon> class SvCallsFromDb
         xConfig.set( ConfigFlags::OnlyWithDummyJumps );
         initFetchQuery_( xConfig, iSvCallerIdA, SvJump::DUMMY_LOCATION, SvJump::DUMMY_LOCATION );
     }
-
-    // @todo continue here: one of these queries has the wrong settings
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
                          bool bOverlapping, int64_t iAllowedDist, double dMinScore, double dMaxScore )
