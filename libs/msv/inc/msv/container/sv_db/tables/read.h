@@ -206,6 +206,7 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
     ReadTable<DBCon> xReads;
     SQLQuery<DBCon, uint32_t> xGetCoverage;
     SQLQuery<DBCon, uint32_t> xGetPrimCoverage;
+    SQLQuery<DBCon, uint32_t> xGetPrimCoverage2;
     SQLStatement<DBCon> xEnableExtension;
 
   public:
@@ -225,6 +226,13 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
                                 "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
                                 "AND sequencer_id = ? "
                                 "AND mapping_quality >= ? "
+                                "AND primary_alignment = ? " ) +
+                       ( bWithSelection ? "AND read_id IN (SELECT read_id FROM read_selection_table) " : "" ) ),
+          xGetPrimCoverage2(
+              pDB, std::string( "SELECT COUNT(*) "
+                                "FROM read_range_table "
+                                "WHERE int8range(?,?) <@ read_range " // checks if alignment encloses given range
+                                "AND sequencer_id = ? "
                                 "AND primary_alignment = ? " ) +
                        ( bWithSelection ? "AND read_id IN (SELECT read_id FROM read_selection_table) " : "" ) ),
           xEnableExtension( pDB, "CREATE EXTENSION IF NOT EXISTS btree_gist" )
@@ -262,7 +270,7 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
                               { INDEX_COLUMNS, "sequencer_id, read_range, mapping_quality" },
                               { INDEX_METHOD, "GIST" } } );
         this->addIndex( json{ { INDEX_NAME, "range_index2" },
-                              { INDEX_COLUMNS, "sequencer_id, primary_alignment, read_range, mapping_quality" },
+                              { INDEX_COLUMNS, "sequencer_id, primary_alignment, read_range" },
                               { INDEX_METHOD, "GIST" } } );
     } // method
 
@@ -276,6 +284,11 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
     {
         return bOnlyPrimary ? xGetPrimCoverage.scalar( from, to, iSeqId, fMinMapQ, 1 )
                             : xGetCoverage.scalar( from, to, iSeqId, fMinMapQ );
+    }
+
+    inline uint32_t coveragePrim( int64_t from, int64_t to, int64_t iSeqId, bool bOnlyPrimary )
+    {
+        return xGetPrimCoverage2.scalar( from, to, iSeqId, bOnlyPrimary ? 1 : 0 );
     }
 }; // class
 

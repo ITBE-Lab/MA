@@ -127,6 +127,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignmentId )
         .def( "insert_range", &ReadRangeTable<DBConSingle>::insertRange )
         .def( "coverage", &ReadRangeTable<DBConSingle>::coverage )
+        .def( "coverage", &ReadRangeTable<DBConSingle>::coveragePrim )
         .def( "drop_indices", &ReadRangeTable<DBConSingle>::dropIndices )
         .def( "gen_indices", &ReadRangeTable<DBConSingle>::genIndices );
 
