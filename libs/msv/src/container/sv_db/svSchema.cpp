@@ -116,6 +116,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "get_read", &ReadTable<DBConSingle>::getRead )
         .def( "get_read_id", &ReadTable<DBConSingle>::getReadId )
         .def( "get_seq_id", &ReadTable<DBConSingle>::getSeqId )
+        .def( "read_name", &ReadTable<DBConSingle>::readName )
         .def( "get_used_reads", &ReadTable<DBConSingle>::getUsedReads );
 
     py::class_<ReadRangeTable<DBConSingle>, std::shared_ptr<ReadRangeTable<DBConSingle>>>( xOrganizer.util( ),
@@ -124,6 +125,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( py::init<std::shared_ptr<DBConSingle>, bool>( ) )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignment )
         .def( "insert", &ReadRangeTable<DBConSingle>::insertAlignmentId )
+        .def( "insert_range", &ReadRangeTable<DBConSingle>::insertRange )
         .def( "coverage", &ReadRangeTable<DBConSingle>::coverage )
         .def( "drop_indices", &ReadRangeTable<DBConSingle>::dropIndices )
         .def( "gen_indices", &ReadRangeTable<DBConSingle>::genIndices );

@@ -37,6 +37,7 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
     SQLQuery<DBCon, uint64_t> xGetNumMatchingReads;
     SQLQuery<DBCon, std::shared_ptr<CompressedNucSeq>, std::string> xGetRead;
     SQLQuery<DBCon, PriKeyDefaultType> xGetSeqId;
+    SQLQuery<DBCon, std::string> xGetReadName;
 
     ReadTable( std::shared_ptr<DBCon> pDB )
         : ReadTableType<DBCon>( pDB, jReadTableDef ),
@@ -45,7 +46,8 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
           xGetReadId( pDB, "SELECT id FROM read_table WHERE sequencer_id = ? AND _name_ = ? " ),
           xGetNumMatchingReads( pDB, "SELECT COUNT(*) FROM read_table WHERE sequencer_id = ? AND _name_ = ? " ),
           xGetRead( pDB, "SELECT sequence, _name_ FROM read_table WHERE id = ? " ),
-          xGetSeqId( pDB, "SELECT sequencer_id FROM read_table WHERE id = ? " )
+          xGetSeqId( pDB, "SELECT sequencer_id FROM read_table WHERE id = ? " ),
+          xGetReadName( pDB, "SELECT _name_ FROM read_table WHERE id = ? " )
     {} // default constructor
 
 
@@ -69,6 +71,11 @@ template <typename DBCon> class ReadTable : public ReadTableType<DBCon>
     inline int64_t getSeqId( int64_t iReadId )
     {
         return xGetSeqId.scalar( iReadId );
+    } // method
+
+    inline std::string readName( int64_t iReadId )
+    {
+        return xGetReadName.scalar( iReadId );
     } // method
 
     inline int64_t getReadId( int64_t iSeqId, std::string sName )
@@ -238,6 +245,14 @@ template <typename DBCon> class ReadRangeTable : public ReadRangeTableType<DBCon
     inline void insertAlignment( std::shared_ptr<NucSeq> pRead, std::shared_ptr<Alignment> pAlignment )
     {
         insertAlignmentId( pRead->iId, pAlignment );
+    } // method
+
+    inline void insertRange( std::shared_ptr<NucSeq> pRead, nucSeqIndex uiFrom, nucSeqIndex uiTo,
+                             double fMappingQuality, bool bPrimary )
+    {
+        auto iSeqId = xReads.getSeqId( pRead->iId );
+        ReadRangeTable<DBCon>::insert( pRead->iId, iSeqId, RangeStartInt64_t{ (int64_t)uiFrom },
+                                       RangeEndInt64_t{ (int64_t)uiTo }, bPrimary ? 1 : 0, fMappingQuality );
     } // method
 
     inline void genIndices( )
