@@ -11,6 +11,56 @@
 namespace libMA
 {
 
+
+struct SeedCmp
+{
+    bool operator( )( const Seed& rA, const Seed& rB ) const
+    {
+        if( rA.start( ) != rB.start( ) )
+            return rA.start( ) < rB.start( );
+
+        if( rA.start_ref( ) != rB.start_ref( ) )
+            return rA.start_ref( ) < rB.start_ref( );
+
+        if( rA.bOnForwStrand != rB.bOnForwStrand )
+            return rA.bOnForwStrand;
+
+        return rA.size( ) < rB.size( );
+    }
+}; // struct
+
+/// @brief this class exists mereley to expose the return value of execute_helper_py to python
+class HelperRetVal
+{
+  public:
+    std::shared_ptr<Seeds> pSeeds;
+    std::shared_ptr<Seeds> pRemovedSeeds;
+    std::vector<size_t> vLayerOfSeeds;
+    std::vector<bool> vParlindromeSeed;
+    std::vector<bool> vOverlappingSeed;
+    size_t uiCurrSocID = 0;
+    std::vector<size_t> vSocIds;
+    std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
+    std::vector<size_t> vRectangleLayers;
+    std::vector<double> vRectangleFillPercentage;
+    std::vector<size_t> vRectangleReferenceAmbiguity;
+    std::vector<size_t> vRectangleKMerSize;
+    std::vector<bool> vRectangleUsedDp;
+    std::vector<std::pair<Seed, Seed>> vJumpSeeds;
+
+    HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ), pRemovedSeeds( std::make_shared<Seeds>( ) ){ };
+
+    inline void computeOverlappingSeedsVector( std::shared_ptr<Seeds> pFilteredRet )
+    {
+        this->vOverlappingSeed.clear( );
+        SeedCmp xSort;
+        std::sort( pFilteredRet->begin( ), pFilteredRet->end( ), xSort );
+        for( auto& rSeed : *this->pSeeds )
+            this->vOverlappingSeed.push_back(
+                !std::binary_search( pFilteredRet->begin( ), pFilteredRet->end( ), rSeed, xSort ) );
+    } // method
+}; // class
+
 #if 1
 /**
  * @brief Extends seeds at the end to create maximally extened seeds
@@ -609,7 +659,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
     {} // default constructor
 
     // overload
-    virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Seeds> pSeeds )
+    std::shared_ptr<Seeds> execute_helper( std::shared_ptr<Seeds> pSeeds, HelperRetVal* pOutExtra )
     {
         std::sort( pSeeds->begin( ), pSeeds->end( ),
                    []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
@@ -658,9 +708,15 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 
             if( uiNumOverlap / rS.size( ) <= fMaxOverlap || rS.size( ) - uiNumOverlap >= uiMinNtNonOverlap )
                 pRet->push_back( rS );
+            else if(pOutExtra != nullptr)
+                pOutExtra->pRemovedSeeds->push_back( rS );
         } // for
 
         return pRet;
+    } // method
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<Seeds> pSeeds )
+    {
+        return execute_helper( pSeeds, nullptr );
     } // method
 
     virtual std::vector<std::shared_ptr<libMA::Seeds>> filter( std::vector<std::shared_ptr<libMA::Seeds>> vIn )
@@ -792,6 +848,8 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
     {
         if( pParlindromes == nullptr )
             pParlindromes = std::make_shared<Seeds>( );
+        else
+            pParlindromes->clear();
     } // method
 
 /**

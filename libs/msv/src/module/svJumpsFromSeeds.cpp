@@ -324,18 +324,19 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<geom::Rectangle<nucSeqIndex>>( xOrganizer.util( ), "nucSeqRectangle" )
         .def_readwrite( "x_axis", &geom::Rectangle<nucSeqIndex>::xXAxis )
         .def_readwrite( "y_axis", &geom::Rectangle<nucSeqIndex>::xYAxis );
-    py::class_<libMSV::HelperRetVal>( xOrganizer._util( ), "SvJumpsFromSeedsHelperRetVal" )
-        .def_readwrite( "layer_of_seeds", &libMSV::HelperRetVal::vLayerOfSeeds )
-        .def_readwrite( "seeds", &libMSV::HelperRetVal::pSeeds )
-        .def_readwrite( "rectangles", &libMSV::HelperRetVal::vRectangles )
-        .def_readwrite( "rectangle_layers", &libMSV::HelperRetVal::vRectangleLayers )
-        .def_readwrite( "parlindrome", &libMSV::HelperRetVal::vParlindromeSeed )
-        .def_readwrite( "overlapping", &libMSV::HelperRetVal::vOverlappingSeed )
-        .def_readwrite( "rectangles_fill", &libMSV::HelperRetVal::vRectangleFillPercentage )
-        .def_readwrite( "rectangle_ambiguity", &libMSV::HelperRetVal::vRectangleReferenceAmbiguity )
-        .def_readwrite( "rectangle_k_mer_size", &libMSV::HelperRetVal::vRectangleKMerSize )
-        .def_readwrite( "rectangle_used_dp", &libMSV::HelperRetVal::vRectangleUsedDp )
-        .def_readwrite( "jump_seeds", &libMSV::HelperRetVal::vJumpSeeds );
+    py::class_<libMA::HelperRetVal>( xOrganizer._util( ), "SvJumpsFromSeedsHelperRetVal" )
+        .def_readwrite( "layer_of_seeds", &libMA::HelperRetVal::vLayerOfSeeds )
+        .def_readwrite( "seeds", &libMA::HelperRetVal::pSeeds )
+        .def_readwrite( "seed_removed", &libMA::HelperRetVal::pRemovedSeeds )
+        .def_readwrite( "rectangles", &libMA::HelperRetVal::vRectangles )
+        .def_readwrite( "rectangle_layers", &libMA::HelperRetVal::vRectangleLayers )
+        .def_readwrite( "parlindrome", &libMA::HelperRetVal::vParlindromeSeed )
+        .def_readwrite( "overlapping", &libMA::HelperRetVal::vOverlappingSeed )
+        .def_readwrite( "rectangles_fill", &libMA::HelperRetVal::vRectangleFillPercentage )
+        .def_readwrite( "rectangle_ambiguity", &libMA::HelperRetVal::vRectangleReferenceAmbiguity )
+        .def_readwrite( "rectangle_k_mer_size", &libMA::HelperRetVal::vRectangleKMerSize )
+        .def_readwrite( "rectangle_used_dp", &libMA::HelperRetVal::vRectangleUsedDp )
+        .def_readwrite( "jump_seeds", &libMA::HelperRetVal::vJumpSeeds );
     py::bind_vector<std::vector<geom::Rectangle<nucSeqIndex>>>( xOrganizer.util( ), "RectangleVector", "" );
     py::bind_vector<std::vector<double>>( xOrganizer._util( ), "DoubleVector", "" );
     py::bind_vector<std::vector<bool>>( xOrganizer._util( ), "BoolVector", "" );

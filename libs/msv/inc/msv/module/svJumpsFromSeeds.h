@@ -57,53 +57,6 @@ struct RectComp
 
 #define SV_JUMP_FROM_SEED_DEBUG_PRINT 0
 
-struct SeedCmp
-{
-    bool operator( )( const Seed& rA, const Seed& rB ) const
-    {
-        if( rA.start( ) != rB.start( ) )
-            return rA.start( ) < rB.start( );
-
-        if( rA.start_ref( ) != rB.start_ref( ) )
-            return rA.start_ref( ) < rB.start_ref( );
-
-        if( rA.bOnForwStrand != rB.bOnForwStrand )
-            return rA.bOnForwStrand;
-
-        return rA.size( ) < rB.size( );
-    }
-}; // struct
-
-/// @brief this class exists mereley to expose the return value of execute_helper_py to python
-class HelperRetVal
-{
-  public:
-    std::shared_ptr<Seeds> pSeeds;
-    std::vector<size_t> vLayerOfSeeds;
-    std::vector<bool> vParlindromeSeed;
-    std::vector<bool> vOverlappingSeed;
-    size_t uiCurrSocID = 0;
-    std::vector<size_t> vSocIds;
-    std::vector<geom::Rectangle<nucSeqIndex>> vRectangles;
-    std::vector<size_t> vRectangleLayers;
-    std::vector<double> vRectangleFillPercentage;
-    std::vector<size_t> vRectangleReferenceAmbiguity;
-    std::vector<size_t> vRectangleKMerSize;
-    std::vector<bool> vRectangleUsedDp;
-    std::vector<std::pair<Seed, Seed>> vJumpSeeds;
-
-    HelperRetVal( ) : pSeeds( std::make_shared<Seeds>( ) ){ };
-
-    inline void computeOverlappingSeedsVector( std::shared_ptr<Seeds> pFilteredRet )
-    {
-        this->vOverlappingSeed.clear( );
-        SeedCmp xSort;
-        std::sort( pFilteredRet->begin( ), pFilteredRet->end( ), xSort );
-        for( auto& rSeed : *this->pSeeds )
-            this->vOverlappingSeed.push_back(
-                !std::binary_search( pFilteredRet->begin( ), pFilteredRet->end( ), rSeed, xSort ) );
-    } // method
-}; // class
 /**
  * @brief Computes Sv-Jumps from a given seed set
  * @note WARNING: DO USE EACH INSTANCE OF THIS MODULE ONLY ONCE IN THE COMPUTATIONAL GRAPH
@@ -227,16 +180,22 @@ class SvJumpsFromSeeds
                             std::function<void( RectPair )>
                                 fOut )
     {
+        // first seed must be first due to the sorting
+        // just skip over "deleted" (size 0) seeds here
         auto xItFirst = pSeeds->begin( );
         while( xItFirst != pSeeds->end( ) && xItFirst->size( ) == 0 )
             xItFirst++;
         if( xItFirst != pSeeds->end( ) )
             fOut( getPositionsForSeeds( xDummySeed, *xItFirst, 0, pQuery->length( ), pRefSeq ) );
-        auto xItLast = pSeeds->rbegin( );
-        while( xItLast != pSeeds->rend( ) && xItLast->size( ) == 0 )
-            xItLast++;
-        if( xItLast != pSeeds->rend( ) )
-            fOut( getPositionsForSeeds( *xItLast, xDummySeed, 0, pQuery->length( ), pRefSeq ) );
+        
+        // have to look through all seeds here: with the sorting there is no guarantee where the last seed is
+        // @todo this should be fixed (interval sorting?)...
+        auto pLast = &pSeeds->front( );
+        for( auto& rSeed : *pSeeds )
+            if( rSeed.size( ) != 0 && rSeed.end( ) > pLast->end( ) )
+                pLast = &rSeed;
+        if( pLast->size( ) != 0 )
+            fOut( getPositionsForSeeds( *pLast, xDummySeed, 0, pQuery->length( ), pRefSeq ) );
 
         forMatchingSeeds( pSeeds, [ & ]( Seed& rA, Seed& rB ) {
 #if SV_JUMP_FROM_SEED_DEBUG_PRINT
@@ -303,7 +262,8 @@ class SvJumpsFromSeeds
         } // if
 
         size_t uiLayer = 1;
-        while( uiLayer <= 100 ) // @todo emergency limit -> adjust seed sizes and rectangle size...
+        const size_t uiLayerLimit = 1000;
+        while( uiLayer < uiLayerLimit ) // @todo emergency limit -> adjust seed sizes and rectangle size...
         {
 #if SV_JUMP_FROM_SEED_DEBUG_PRINT
             std::cout << " --- Layer " << uiLayer << " --- " << std::endl;
@@ -386,6 +346,8 @@ class SvJumpsFromSeeds
             } // for
             uiLayer++;
         } // while
+        if( uiLayer == uiLayerLimit )
+            std::cerr << "WARNING hit reseeding layer limit" << std::endl;
 
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
         auto pFilteredRet = xFilterOverlapping.execute( xToSMEM.execute( pRet ) );
@@ -598,12 +560,13 @@ class SvJumpsFromSeeds
         execute_helper( pSegments, pRefSeq, pFM_index, pQuery, &xRet );
         return xRet;
     } // method
-    inline HelperRetVal execute_helper_py2( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq,
-                                            std::shared_ptr<NucSeq> pQuery )
+    inline std::pair<HelperRetVal, std::shared_ptr<Seeds>>
+    execute_helper_py2( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
-        computeJumps( reseed( pSeeds, pQuery, pRefSeq, &xRet ), pQuery, pRefSeq, &xRet );
-        return xRet;
+        auto pReseeded = reseed( pSeeds, pQuery, pRefSeq, &xRet );
+        computeJumps( pReseeded, pQuery, pRefSeq, &xRet );
+        return std::make_pair( xRet, pReseeded );
     } // method
 
     inline HelperRetVal execute_helper_py3( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<Pack> pRefSeq,
@@ -745,7 +708,11 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
         auto fSoCInsertedPost = [ & ]( ) {
             // last SoC had to little NT in it
             if( uiNumNtLast < uiMinNt || uiNumNtLast == 0 )
+            {
+                if( pOutExtra != nullptr )
+                    pOutExtra->pRemovedSeeds->append( vSoCs.back( ) );
                 vSoCs.pop_back( );
+            } // if
             // pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
             vSoCs.push_back( std::make_shared<Seeds>( ) );
             uiNumNtLast = 0;
@@ -790,21 +757,23 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
                     pRet->push_back( rSeed );
                 uiMaxEnd = pSoC->back( ).end( );
             } // if
+            else if( pOutExtra != nullptr )
+                pOutExtra->pRemovedSeeds->append( pSoC );
         } // for
         // return pRet;
-        auto pFiltered = xFilter.execute( xDupRem.execute( pRet ) );
+        auto pFiltered = xFilter.execute_helper( xDupRem.execute( pRet ), pOutExtra );
 
         if( pOutExtra != nullptr )
             pOutExtra->computeOverlappingSeedsVector( pFiltered );
 
         return pFiltered;
     }
-    inline HelperRetVal execute_helper_py( std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq,
-                                           std::shared_ptr<NucSeq> pQuery )
+    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py( std::shared_ptr<SeedsSet> pSeedsSet,
+                                                                              std::shared_ptr<Pack> pRefSeq,
+                                                                              std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
-        execute_helper( pSeedsSet, pRefSeq, pQuery, &xRet );
-        return xRet;
+        return std::make_pair( execute_helper( pSeedsSet, pRefSeq, pQuery, &xRet ), xRet );
     } // method
 
     virtual std::shared_ptr<Seeds> execute( std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq,
