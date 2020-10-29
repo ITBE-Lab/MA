@@ -190,16 +190,28 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
     auto pRefRevComp = pRefSeq->vExtract( xArea.xXAxis.start( ), xArea.xXAxis.end( ) );
     pRefRevComp->vReverseAll( );
     pRefRevComp->vSwitchAllBasePairsToComplement( );
+    // @todo this is inefficient:
+    auto pQuerySegment = std::make_shared<NucSeq>( pQuery->fromTo( xArea.xYAxis.start( ), xArea.xYAxis.end( ) ) );
+    auto pRevCompQuerySegment = std::make_shared<NucSeq>( *pQuerySegment );
+    pRevCompQuerySegment->vReverseAll( );
+    pRevCompQuerySegment->vSwitchAllBasePairsToComplement( );
     /*
      * In order to kill random seeds:
      * sample the k-mer size of forward and reverse strand together
+     * do query as well as reference
      */
-    auto uiSampledAmbiguity = sampleSequenceAmbiguity( *pRef, *pRefRevComp, this->dProbabilityForRandomMatch );
+    auto uiSampledAmbiguity =
+        std::max( std::max( sampleSequenceAmbiguity( *pRef, *pRef, this->dProbabilityForRandomMatch ),
+                            sampleSequenceAmbiguity( *pRef, *pRefRevComp, this->dProbabilityForRandomMatch ) ),
+                  std::max( sampleSequenceAmbiguity( *pQuerySegment, *pQuerySegment, this->dProbabilityForRandomMatch ),
+                            sampleSequenceAmbiguity( *pQuerySegment, *pRevCompQuerySegment,
+                                                     this->dProbabilityForRandomMatch ) ) );
     if( pOutExtra != nullptr )
         pOutExtra->vRectangleReferenceAmbiguity.push_back( uiSampledAmbiguity );
     if( uiSampledAmbiguity <= xArea.xXAxis.size( ) * ( 1 + dMaxSequenceSimilarity ) )
     {
         HashMapSeeding xHashMapSeeder;
+        // purely statistics; i.e. does not look at the sequence at all here
         xHashMapSeeder.uiSeedSize = getKMerSizeForRectangle( xArea, this->dProbabilityForRandomMatch );
         if( pOutExtra != nullptr )
         {
@@ -209,8 +221,6 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
         if( xHashMapSeeder.uiSeedSize > xArea.xXAxis.size( ) || xHashMapSeeder.uiSeedSize > xArea.xYAxis.size( ) )
             return;
 
-        // @todo this is inefficient:
-        auto pQuerySegment = std::make_shared<NucSeq>( pQuery->fromTo( xArea.xYAxis.start( ), xArea.xYAxis.end( ) ) );
         auto pSeeds = xHashMapSeeder.execute( pQuerySegment, pRef );
 
         auto pSeedsRev = xHashMapSeeder.execute( pQuerySegment, pRefRevComp );
@@ -248,6 +258,7 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
             pOutExtra->vRectangleUsedDp.push_back( true );
             pOutExtra->vRectangleKMerSize.push_back( 0 );
         } // if
+        return;
         auto pFAlignment = std::make_shared<Alignment>( xArea.xXAxis.start( ), xArea.xYAxis.start( ) );
         AlignedMemoryManager xMemoryManager; // @todo this causes frequent (de-)&allocations; move this outwards
         xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pFAlignment,
@@ -362,6 +373,6 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<FilterJumpsByRegionSquare, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegionSquare" );
     exportModule<FilterJumpsByRefAmbiguity>( xOrganizer, "FilterJumpsByRefAmbiguity" );
 
-    xOrganizer.util().def("compute_seeds_area", &computeSeeds);
+    xOrganizer.util( ).def( "compute_seeds_area", &computeSeeds );
 } // function
 #endif

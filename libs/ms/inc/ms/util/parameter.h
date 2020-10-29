@@ -1074,7 +1074,7 @@ class ParameterSetManager
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
         xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 300 );
-        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 750 );
+        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 1000 );
         xParametersSets[ "sv-pacbio" ]->xMaximalSeedAmbiguity->set( 1 );
         xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
         xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
