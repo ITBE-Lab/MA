@@ -650,7 +650,6 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
  */
 class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 {
-    //nucSeqIndex uiFuzz = 5;
     double fMaxOverlap = .25; // seed can maximally overlap for 25% of it's length
     nucSeqIndex uiMinNtNonOverlap = 20; // or if there are 20 non overlapping NT
 
@@ -661,30 +660,27 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
     // overload
     std::shared_ptr<Seeds> execute_helper( std::shared_ptr<Seeds> pSeeds, HelperRetVal* pOutExtra )
     {
-        std::sort( pSeeds->begin( ), pSeeds->end( ),
-                   []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
+        std::sort( pSeeds->begin( ), pSeeds->end( ), []( const Seed& rA, const Seed& rB ) {
+            if( rA.start( ) == rB.start( ) )
+                return rA.size( ) > rB.size( );
+            return rA.start( ) < rB.start( );
+        } );
 
-        //                     q_start      end         largest_seed
-        std::vector<std::tuple<nucSeqIndex, nucSeqIndex, nucSeqIndex>> vOverlapAreas;
+        //                     q_start      end        
+        std::vector<std::tuple<nucSeqIndex, nucSeqIndex>> vOverlapAreas;
         vOverlapAreas.reserve( pSeeds->size( ) ); // allocate all space at once
 
+        nucSeqIndex uiMax = 0;
         for( auto& rS : *pSeeds )
         {
-            if( vOverlapAreas.empty( ) || std::get<1>( vOverlapAreas.back( ) ) <= rS.start( ) )
-                vOverlapAreas.emplace_back( rS.start( ), rS.end( ), rS.size( ) );
-            else if( std::get<2>( vOverlapAreas.back( ) ) == rS.size( ) ) // both seeds have equal size
-                std::get<1>( vOverlapAreas.back( ) ) = std::max( rS.end( ), std::get<1>( vOverlapAreas.back( ) ) );
-            else if( std::get<2>( vOverlapAreas.back( ) ) > rS.size( ) ) // other seed is larger
+            if( rS.start( ) < uiMax )
             {
-                if( std::get<1>( vOverlapAreas.back( ) ) < rS.end( ) ) // does this seed at least cover some new area?
-                    vOverlapAreas.emplace_back( std::get<1>( vOverlapAreas.back( ) ), rS.end( ), rS.size( ) );
-            } // else if
-            else // this seed is larger
-            {
-                std::get<1>( vOverlapAreas.back( ) ) = rS.start( ) - 1; // make old area shorter
-                // add new area
-                vOverlapAreas.emplace_back( rS.start( ), rS.end( ), rS.size( ) );
-            } // else
+                if( vOverlapAreas.empty( ) || std::get<1>( vOverlapAreas.back( ) ) < rS.start( ) )
+                    vOverlapAreas.emplace_back( rS.start( ), uiMax );
+                else
+                    std::get<1>( vOverlapAreas.back( ) ) = std::max( std::get<1>( vOverlapAreas.back( ) ), uiMax );
+            } // if
+            uiMax = std::max( uiMax, rS.end( ) );
         } // for
 
         auto pRet = std::make_shared<Seeds>( );
@@ -693,23 +689,20 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
         size_t uiIdx = 0;
         for( auto& rS : *pSeeds )
         {
-            while( uiIdx < vOverlapAreas.size( ) && std::get<1>( vOverlapAreas[ uiIdx ] ) < rS.start( ) )
+            while( uiIdx < vOverlapAreas.size( ) && std::get<1>( vOverlapAreas[ uiIdx ] ) <= rS.start( ) )
                 uiIdx++;
             nucSeqIndex uiNumOverlap = 0;
             size_t uiJ = uiIdx;
             while( uiJ < vOverlapAreas.size( ) && std::get<0>( vOverlapAreas[ uiJ ] ) < rS.end( ) )
             {
-                if( std::get<2>( vOverlapAreas[ uiJ ] ) > rS.size( ) )
-                {
-                    auto uiStart = std::max( rS.start( ), std::get<0>( vOverlapAreas[ uiJ ] ) );
-                    auto uiEnd = std::min( rS.end( ), std::get<1>( vOverlapAreas[ uiJ ] ) );
-                    if( uiEnd > uiStart )
-                        uiNumOverlap += uiEnd - uiStart;
-                } // if
+                auto uiStart = std::max( rS.start( ), std::get<0>( vOverlapAreas[ uiJ ] ) );
+                auto uiEnd = std::min( rS.end( ), std::get<1>( vOverlapAreas[ uiJ ] ) );
+                if( uiEnd > uiStart )
+                    uiNumOverlap += uiEnd - uiStart;
                 uiJ++;
             } // while
 
-            if( uiNumOverlap / rS.size( ) <= fMaxOverlap || rS.size( ) - uiNumOverlap >= uiMinNtNonOverlap )
+            if( uiNumOverlap / rS.size( ) <= fMaxOverlap || rS.size( ) >= uiMinNtNonOverlap + uiNumOverlap )
                 pRet->push_back( rS );
             else if( pOutExtra != nullptr )
                 pOutExtra->pRemovedSeeds->push_back( rS );
