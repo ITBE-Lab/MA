@@ -81,16 +81,18 @@ size_t mergeDummyCalls( const ParameterSetManager& rParameters, std::shared_ptr<
                 SvCall xBestMatch( 0, 0, 0, 0, false, false, 0, 0, 0 );
                 bool bHaveOne = false;
                 bool bHorizontalMatch = false;
-                xFetchCalls.initFetchQuery( iSvCallerId, xDummy.iId, xDummy.xXAxis.start( ) - uiBlur / 2, 0, uiBlur,
-                                            std::numeric_limits<uint32_t>::max( ) );
+                xFetchCalls.initFetchQuery( iSvCallerId, xDummy.xXAxis.start( ) - uiBlur / 2, 0, uiBlur,
+                                            std::numeric_limits<uint32_t>::max( ),
+                                            rParameters.getSelected( )->xMinNtAfterReseeding->get( ) );
                 if( xFetchCalls.hasNext( ) )
                 {
                     xBestMatch = xFetchCalls.next( );
                     bHaveOne = true;
                     bHorizontalMatch = false;
                 } // if
-                xFetchCalls.initFetchQuery( iSvCallerId, xDummy.iId, 0, xDummy.xYAxis.start( ) - uiBlur / 2,
-                                            std::numeric_limits<uint32_t>::max( ), uiBlur );
+                xFetchCalls.initFetchQuery( iSvCallerId, 0, xDummy.xYAxis.start( ) - uiBlur / 2,
+                                            std::numeric_limits<uint32_t>::max( ), uiBlur,
+                                            rParameters.getSelected( )->xMinNtAfterReseeding->get( ) );
                 if( xFetchCalls.hasNext( ) )
                 {
                     auto xCurr = xFetchCalls.next( );

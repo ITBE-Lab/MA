@@ -651,7 +651,7 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
 class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
 {
     double fMaxOverlap = .25; // seed can maximally overlap for 25% of it's length
-    nucSeqIndex uiMinNtNonOverlap = 20; // or if there are 20 non overlapping NT
+    nucSeqIndex uiMinNtNonOverlap = 16; // or if there are 16 non overlapping NT
 
   public:
     FilterOverlappingSeeds( const ParameterSetManager& rParameters )
@@ -675,7 +675,8 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
         {
             if( rS.start( ) < uiMax )
             {
-                if( vOverlapAreas.empty( ) || std::get<1>( vOverlapAreas.back( ) ) < rS.start( ) )
+                // merge overlap areas that are less than uiMinNtNonOverlap nt apart
+                if( vOverlapAreas.empty( ) || std::get<1>( vOverlapAreas.back( ) ) + uiMinNtNonOverlap < rS.start( ) )
                     vOverlapAreas.emplace_back( rS.start( ), uiMax );
                 else
                     std::get<1>( vOverlapAreas.back( ) ) = std::max( std::get<1>( vOverlapAreas.back( ) ), uiMax );
@@ -702,7 +703,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
                 uiJ++;
             } // while
 
-            if( uiNumOverlap / rS.size( ) <= fMaxOverlap || rS.size( ) >= uiMinNtNonOverlap + uiNumOverlap )
+            if( uiNumOverlap / rS.size( ) <= fMaxOverlap || rS.size( ) <= uiMinNtNonOverlap + uiNumOverlap )
                 pRet->push_back( rS );
             else if( pOutExtra != nullptr )
                 pOutExtra->pRemovedSeeds->push_back( rS );

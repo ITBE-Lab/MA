@@ -208,7 +208,8 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
                                                      this->dProbabilityForRandomMatch ) ) );
     if( pOutExtra != nullptr )
         pOutExtra->vRectangleReferenceAmbiguity.push_back( uiSampledAmbiguity );
-    if( uiSampledAmbiguity <= xArea.xXAxis.size( ) * ( 1 + dMaxSequenceSimilarity ) )
+    // ignore reference ambiguity here
+    if( true || uiSampledAmbiguity <= xArea.xXAxis.size( ) * ( 1 + dMaxSequenceSimilarity ) )
     {
         HashMapSeeding xHashMapSeeder;
         // purely statistics; i.e. does not look at the sequence at all here

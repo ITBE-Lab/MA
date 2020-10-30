@@ -55,6 +55,7 @@ template <typename DBCon> class SvCallsFromDb
         ExcludeSpecificID,
         OnlyWithDummyJumps,
         WithoutDummyJumps,
+        MinQueryDist,
         DUMMY_FOR_COUNT // must be last
     };
     std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfiguration;
@@ -117,6 +118,13 @@ template <typename DBCon> class SvCallsFromDb
                 std::string( "FROM sv_call_table AS inner_table "
                              "WHERE sv_caller_run_id = ? " ) +
                 ( !xConfiguration[ ConfigFlags::ExcludeSpecificID ] ? "" : "AND id != ? " ) + //
+                ( !xConfiguration[ ConfigFlags::MinQueryDist ]
+                      ? ""
+                      : "AND ? <= (SELECT AVG(sv_jump_table.query_to - sv_jump_table.query_from) "
+                        "          FROM sv_jump_table "
+                        "          JOIN sv_call_support_table ON sv_call_support_table.jump_id = sv_jump_table.id "
+                        "          WHERE sv_call_support_table.call_id = inner_table.id "
+                        "          ) " ) + //
                 ( !xConfiguration[ ConfigFlags::InArea ] ? ""
                                                          : "AND " ST_INTERSCTS
                                                            "(rectangle, ST_GeomFromWKB(?, 0)) " ) + //
@@ -187,7 +195,7 @@ template <typename DBCon> class SvCallsFromDb
         : pConnection( pConnection ),
           pSvCallTable( std::make_shared<SvCallTable<DBCon>>( pConnection ) ),
           pSvCallSupportTable( std::make_shared<SvCallSupportTable<DBCon>>( pConnection ) ),
-          xQuerySupport( pConnection->getSlave(),
+          xQuerySupport( pConnection->getSlave( ),
                          "SELECT from_pos, to_pos, query_from, query_to, from_forward, to_forward, was_mirrored, "
                          "       num_supporting_nt, sv_jump_table.id, read_id "
                          "FROM sv_call_support_table "
@@ -195,7 +203,8 @@ template <typename DBCon> class SvCallsFromDb
                          "WHERE sv_call_support_table.call_id = ? " )
     {}
 
-    void initFetchQuery( int64_t iSvCallerIdA, int64_t iCallId, int64_t iX, int64_t iY, int64_t iW, int64_t iH )
+    void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH,
+                         nucSeqIndex uiMinQueryDist )
     {
         xWkb = geom::Rectangle<nucSeqIndex>( std::max( iX, (int64_t)0 ), std::max( iY, (int64_t)0 ),
                                              std::max( iW, (int64_t)0 ), std::max( iH, (int64_t)0 ) );
@@ -203,9 +212,10 @@ template <typename DBCon> class SvCallsFromDb
         xConfig.set( ConfigFlags::InArea );
         xConfig.set( ConfigFlags::OrderByScore );
         xConfig.set( ConfigFlags::Limit );
-        xConfig.set( ConfigFlags::ExcludeSpecificID );
         xConfig.set( ConfigFlags::WithoutDummyJumps );
-        initFetchQuery_( xConfig, iSvCallerIdA, iCallId, xWkb, SvJump::DUMMY_LOCATION, SvJump::DUMMY_LOCATION, 1 );
+        xConfig.set( ConfigFlags::MinQueryDist );
+        initFetchQuery_( xConfig, iSvCallerIdA, uiMinQueryDist, xWkb, SvJump::DUMMY_LOCATION, SvJump::DUMMY_LOCATION,
+                         1 );
     }
 
     void initFetchDummiesQuery( int64_t iSvCallerIdA )
