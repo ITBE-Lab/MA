@@ -187,7 +187,7 @@ class SvJumpsFromSeeds
             xItFirst++;
         if( xItFirst != pSeeds->end( ) )
             fOut( getPositionsForSeeds( xDummySeed, *xItFirst, 0, pQuery->length( ), pRefSeq ) );
-        
+
         // have to look through all seeds here: with the sorting there is no guarantee where the last seed is
         // @todo this should be fixed (interval sorting?)...
         auto pLast = &pSeeds->front( );
@@ -350,7 +350,7 @@ class SvJumpsFromSeeds
             std::cerr << "WARNING hit reseeding layer limit" << std::endl;
 
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
-        auto pFilteredRet = xFilterOverlapping.execute( xToSMEM.execute( pRet ) );
+        auto pFilteredRet = /*xFilterOverlapping.execute( xToSMEM.execute(*/ pRet /*) )*/;
 
         nucSeqIndex uiNumNtTotal = 0;
         for( auto& rSeed : *pFilteredRet )
@@ -359,7 +359,7 @@ class SvJumpsFromSeeds
             rSeed.uiSoCNt = uiNumNtTotal;
         if( pOutExtra != nullptr )
         {
-            pOutExtra->computeOverlappingSeedsVector( pFilteredRet );
+            // pOutExtra->computeOverlappingSeedsVector( pFilteredRet );
             for( size_t uiJ = uiOutExtraSeedsBefore; uiJ < pOutExtra->pSeeds->size( ); uiJ++ )
                 ( *pOutExtra->pSeeds )[ uiJ ].uiSoCNt = uiNumNtTotal;
         } // if
@@ -477,8 +477,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -713,7 +713,6 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
                     pOutExtra->pRemovedSeeds->append( vSoCs.back( ) );
                 vSoCs.pop_back( );
             } // if
-            // pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
             vSoCs.push_back( std::make_shared<Seeds>( ) );
             uiNumNtLast = 0;
             uiSizeLastSoC = 0;
@@ -747,30 +746,57 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
                    []( const auto& pA, const auto& pB ) { return pA->front( ).start( ) < pB->front( ).start( ); } );
 
         // remove all enclosed SoCs
-        nucSeqIndex uiMaxEnd = 0;
-        auto pRet = std::make_shared<Seeds>( );
+        // nucSeqIndex uiMaxEnd = 0;
+        auto pIntermediate = std::make_shared<Seeds>( );
         for( auto& pSoC : vSoCs )
         {
-            if( pSoC->back( ).end( ) > uiMaxEnd )
-            {
-                for( auto& rSeed : *pSoC )
-                    pRet->push_back( rSeed );
-                uiMaxEnd = pSoC->back( ).end( );
-            } // if
-            else if( pOutExtra != nullptr )
-                pOutExtra->pRemovedSeeds->append( pSoC );
+            // if( pSoC->back( ).end( ) > uiMaxEnd )
+            //{
+            for( auto& rSeed : *pSoC )
+                pIntermediate->push_back( rSeed );
+            //    uiMaxEnd = pSoC->back( ).end( );
+            //} // if
+            // else if( pOutExtra != nullptr )
+            //    pOutExtra->pRemovedSeeds->append( pSoC );
         } // for
         // return pRet;
-        auto pFiltered = xFilter.execute_helper( xDupRem.execute( pRet ), pOutExtra );
+        auto pFiltered = xFilter.execute_helper( xDupRem.execute( pIntermediate ), pOutExtra );
+
+        // extra step: separate by
+
+        auto pRet = std::make_shared<Seeds>( );
+
+        std::sort( pFiltered->begin( ), pFiltered->end( ),
+                   []( auto& xA, auto& xB ) { return xA.start( ) < xB.start( ); } );
+        uiNumNtLast = 0;
+        nucSeqIndex uiMaxQ = 0;
+        uiSizeLastSoC = 0;
+        for( Seed& xSeed : *pFiltered )
+        {
+            if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
+            {
+                // last SoC had to little NT in it
+                if( uiNumNtLast < uiMinNt )
+                    pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
+                uiNumNtLast = 0;
+                uiSizeLastSoC = 0;
+            } // if
+            uiNumNtLast += xSeed.size( );
+            uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
+            pRet->push_back( xSeed );
+            uiSizeLastSoC++;
+        } // for
+        // very last SoC had to little NT in it
+        if( uiNumNtLast < uiMinNt )
+            pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
 
         if( pOutExtra != nullptr )
-            pOutExtra->computeOverlappingSeedsVector( pFiltered );
+            pOutExtra->computeOverlappingSeedsVector( pRet );
 
-        return pFiltered;
+        return pRet;
     }
-    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py( std::shared_ptr<SeedsSet> pSeedsSet,
-                                                                              std::shared_ptr<Pack> pRefSeq,
-                                                                              std::shared_ptr<NucSeq> pQuery )
+    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py(
+        std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
         return std::make_pair( execute_helper( pSeedsSet, pRefSeq, pQuery, &xRet ), xRet );
@@ -851,8 +877,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

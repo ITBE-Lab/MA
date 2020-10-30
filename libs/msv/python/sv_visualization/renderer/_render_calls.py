@@ -113,9 +113,9 @@ def render_calls(self, render_all=False):
             print("computing stats 2...")
             tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
                                                             self.get_gt_id(),
-                                                            self.widgets.get_blur(), 100,
+                                                            self.widgets.get_blur(), 50,
                                                             self.get_min_score(), self.get_max_score(),
-                                                            1000)
+                                                            10000)
             print("done")
             for legend, color, bar in [("false-positive", "red", fp_bars),
                                        ("true-positive", "green", tp_bars),
