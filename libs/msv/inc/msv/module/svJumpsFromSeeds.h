@@ -719,7 +719,7 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
         } // for
         if( pOutExtra != nullptr )
             pOutExtra->uiCurrSocID = 0;
-        return /*xFilter2.execute_helper( xDupRem.execute(*/ pReseeded /*), pQuery, pRefSeq, pOutExtra )*/;
+        return xFilter2.execute_helper( xDupRem.execute( pReseeded ), pQuery, pRefSeq, pOutExtra );
     }
     inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py(
         std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )

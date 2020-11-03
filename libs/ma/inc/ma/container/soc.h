@@ -307,6 +307,21 @@ class SoCPriorityQueue : public libMS::Container
         return std::make_tuple( uiStart, uiEnd, uiScore );
     } // method
 
+    /// @brief see pop_info
+    inline std::tuple<nucSeqIndex, nucSeqIndex, uint32_t> peek_info( )
+    {
+        DEBUG( assert( !empty( ) ); assert( bInPriorityMode ); ) // DEBUG
+
+        // the information that shall be returned
+        auto xCollect = std::get<1>( vMaxima.front( ) );
+        auto xCollectEnd = std::get<2>( vMaxima.front( ) );
+        nucSeqIndex uiStart = xCollect->start_ref( );
+        nucSeqIndex uiEnd = ( xCollectEnd - 1 )->end_ref( );
+        uint32_t uiScore = (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
+
+        return std::make_tuple( uiStart, uiEnd, uiScore );
+    } // method
+
     inline uint32_t getScoreOfNextSoC( )
     {
         return (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;

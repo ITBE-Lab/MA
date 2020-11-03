@@ -764,11 +764,10 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
                     xSeed.iSize -= uiShortenBy;
                     xSeed.iStart += uiShortenBy;
                     if( xSeed.bOnForwStrand ) // take care of orientation of rev strand seeds
-                       xSeed.uiPosOnReference += uiShortenBy;
+                        xSeed.uiPosOnReference += uiShortenBy;
                     else
-                       xSeed.uiPosOnReference -= uiShortenBy;
-                    if( !xSeed.bOnForwStrand )
-                       libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
+                        xSeed.uiPosOnReference -= uiShortenBy;
+                    libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
                 } // else
             } // if
             // else do nothing (seed does not overlap region)
@@ -793,8 +792,7 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
                     }
                     assert( uiShortenBy < xSeed.iSize );
                     xSeed.iSize -= uiShortenBy;
-                    if( !xSeed.bOnForwStrand )
-                       libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
+                    libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
                 } // if
                 else
                 {
@@ -968,6 +966,15 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
 
             // combine output
             auto pRet = std::make_shared<Seeds>( );
+
+            //for( size_t uiI = 0; uiI < 5 && !pSoCQueue->empty( ); uiI++ )
+            //{
+            //    std::cout << "score: " << std::get<2>( pSoCQueue->peek_info( ) ) << std::endl;
+            //    pRet->append( pSoCQueue->pop( ) );
+            //} // for
+
+            // for( auto pSeeds : pSoCs->xContent )
+            //    pRet->append( pSeeds );
             for( auto xTuple : vSoCs )
                 pRet->append( std::get<2>( xTuple ) );
             if( pOutExtra != nullptr )
