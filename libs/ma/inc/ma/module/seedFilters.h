@@ -739,45 +739,82 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
     GetAllFeasibleSoCsAsSet xExtractSoCs;
 
     static void adjustSeed( nucSeqIndex uiFrom, nucSeqIndex uiTo, Seed& xSeed, std::shared_ptr<NucSeq> pQuerySeq,
-                            std::shared_ptr<Pack> pRefSeq )
+                            std::shared_ptr<Pack> pRefSeq, HelperRetVal* pOutExtra )
     {
-        if( xSeed.start( ) >= uiFrom && xSeed.end( ) <= uiTo )
-            // seed completely enclosed (this if is actually covered by the conditions below but code is easier to read
-            // if it stays )
-            xSeed.iSize = 0;
-        else if( xSeed.end( ) >= uiFrom && xSeed.start( ) <= uiFrom )
-            // seed's end overlaps region
-            xSeed.iSize -= xSeed.end( ) - uiFrom;
-        else if( xSeed.start( ) <= uiTo && xSeed.end( ) >= uiTo )
+        if( xSeed.start( ) >= uiFrom )
         {
-            // seed's start overlaps region
-            auto uiL = uiTo - xSeed.start( );
-            // adjust start pos of seed
-            xSeed.iSize -= uiL;
-            xSeed.iStart += uiL;
-            if( xSeed.bOnForwStrand ) // take care of orientation of rev strand seeds
-                xSeed.uiPosOnReference += uiL;
-            else
-                xSeed.uiPosOnReference -= uiL;
-            libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
+            if( xSeed.start( ) < uiTo )
+            {
+                // seed actually overlaps region
+                if( xSeed.end( ) <= uiTo )
+                {
+                    // seed completely enclosed
+                    if( pOutExtra != nullptr )
+                        pOutExtra->pRemovedSeeds->push_back( xSeed );
+                    xSeed.iSize = 0;
+                } // if
+                else
+                {
+                    // seed's start overlaps region
+                    auto uiShortenBy = uiTo - xSeed.start( );
+                    if( pOutExtra != nullptr )
+                        pOutExtra->pRemovedSeeds->emplace_back( xSeed.start( ), uiShortenBy, xSeed.uiPosOnReference,
+                                                                xSeed.bOnForwStrand );
+                    // adjust start pos of seed
+                    xSeed.iSize -= uiShortenBy;
+                    xSeed.iStart += uiShortenBy;
+                    if( xSeed.bOnForwStrand ) // take care of orientation of rev strand seeds
+                       xSeed.uiPosOnReference += uiShortenBy;
+                    else
+                       xSeed.uiPosOnReference -= uiShortenBy;
+                    if( !xSeed.bOnForwStrand )
+                       libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
+                } // else
+            } // if
+            // else do nothing (seed does not overlap region)
         } // if
         else
-            // region cuts seed in half...
-            xSeed.iSize = 0;
+        {
+            if( xSeed.end( ) > uiFrom )
+            {
+                // seed actually overlaps region
+                if( xSeed.end( ) <= uiTo )
+                {
+                    // seed's end overlaps region
+                    auto uiShortenBy = xSeed.end( ) - uiFrom;
+                    if( pOutExtra != nullptr )
+                    {
+                        auto uiR = xSeed.uiPosOnReference;
+                        if( xSeed.bOnForwStrand ) // take care of orientation of rev strand seeds
+                            uiR += uiFrom - xSeed.start( );
+                        else
+                            uiR -= uiFrom - xSeed.start( );
+                        pOutExtra->pRemovedSeeds->emplace_back( uiFrom, uiShortenBy, uiR, xSeed.bOnForwStrand );
+                    }
+                    assert( uiShortenBy < xSeed.iSize );
+                    xSeed.iSize -= uiShortenBy;
+                    if( !xSeed.bOnForwStrand )
+                       libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
+                } // if
+                else
+                {
+                    // region cuts seed in half (seed encloses region)
+                    if( pOutExtra != nullptr )
+                        pOutExtra->pRemovedSeeds->push_back( xSeed );
+                    xSeed.iSize = 0;
+                } // else
+            } // if
+            // else do noting (seed does not overlap region)
+        } // else
     } // method
 
     static void removeSeedsInRange( nucSeqIndex uiFrom, nucSeqIndex uiTo, std::shared_ptr<Seeds> pSeeds,
                                     HelperRetVal* pOutExtra, std::shared_ptr<NucSeq> pQuerySeq,
                                     std::shared_ptr<Pack> pRefSeq )
     {
-        if( pOutExtra != nullptr )
-            for( auto& rS : *pSeeds )
-                if( rS.end( ) > uiFrom && rS.start( ) < uiTo )
-                    pOutExtra->pRemovedSeeds->push_back( rS );
-
         // shorten overlapping seeds
         for( auto& rSeed : *pSeeds )
-            adjustSeed( uiFrom, uiTo, rSeed, pQuerySeq, pRefSeq );
+            adjustSeed( uiFrom, uiTo, rSeed, pQuerySeq, pRefSeq, pOutExtra );
         // remove seeds that became size 0
         pSeeds->erase(
             std::remove_if( pSeeds->begin( ), pSeeds->end( ), []( const auto& rS ) { return rS.size( ) == 0; } ),
@@ -803,11 +840,7 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
     static void removeSeedInRange( nucSeqIndex uiFrom, nucSeqIndex uiTo, Seed& xSeed, HelperRetVal* pOutExtra,
                                    std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
     {
-        if( pOutExtra != nullptr )
-            if( xSeed.end( ) > uiFrom && xSeed.start( ) < uiTo )
-                pOutExtra->pRemovedSeeds->push_back( xSeed );
-
-        adjustSeed( uiFrom, uiTo, xSeed, pQuerySeq, pRefSeq );
+        adjustSeed( uiFrom, uiTo, xSeed, pQuerySeq, pRefSeq, pOutExtra );
     } // method
 
     static void removeSeed( Seed& xSeed, HelperRetVal* pOutExtra )
@@ -937,6 +970,8 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
             auto pRet = std::make_shared<Seeds>( );
             for( auto xTuple : vSoCs )
                 pRet->append( std::get<2>( xTuple ) );
+            if( pOutExtra != nullptr )
+                pOutExtra->computeOverlappingSeedsVector( pRet );
             return pRet;
         } // if
         else
@@ -953,6 +988,8 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
             for( auto& xSeed : vSeeds )
                 if( std::get<2>( xSeed ).size( ) > 0 )
                     pRet->push_back( std::get<2>( xSeed ) );
+            if( pOutExtra != nullptr )
+                pOutExtra->computeOverlappingSeedsVector( pRet );
             return pRet;
         } // else
     } // method

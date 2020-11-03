@@ -238,13 +238,19 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string,
                                            std::shared_ptr<NucSeq>, bool, std::shared_ptr<HashCounter>, size_t>>
                         vSeedsNIndex;
-                    for( size_t uiK = 0; uiK < xReseedOutExtraInfo.pSeeds->size( ); uiK++ )
-                        if( !xReseedOutExtraInfo.vOverlappingSeed[ uiK ] )
-                            vSeedsNIndex.emplace_back(
-                                0, ( *xReseedOutExtraInfo.pSeeds )[ uiK ], xReseedOutExtraInfo.vLayerOfSeeds[ uiK ],
-                                xReseedOutExtraInfo.vParlindromeSeed[ uiK ],
-                                xReseedOutExtraInfo.vOverlappingSeed[ uiK ], iReadId, pRead->sName, pRead, true,
-                                pCounter, xReseedOutExtraInfo.vSocIds[ uiK ] );
+                    //for( size_t uiK = 0; uiK < xReseedOutExtraInfo.pSeeds->size( ); uiK++ )
+                    //    if( !xReseedOutExtraInfo.vOverlappingSeed[ uiK ] )
+                    //        vSeedsNIndex.emplace_back(
+                    //            0, ( *xReseedOutExtraInfo.pSeeds )[ uiK ], xReseedOutExtraInfo.vLayerOfSeeds[ uiK ],
+                    //            xReseedOutExtraInfo.vParlindromeSeed[ uiK ],
+                    //            xReseedOutExtraInfo.vOverlappingSeed[ uiK ], iReadId, pRead->sName, pRead, true,
+                    //            pCounter, xReseedOutExtraInfo.vSocIds[ uiK ] );
+                    for( auto& rSeed : *xReseedOutExtraInfo.pRemovedSeeds )
+                        vSeedsNIndex.emplace_back( 0, rSeed, 0, false, true, iReadId, pRead->sName, pRead, true,
+                                                   pCounter, 0 );
+                    for( auto& rSeed : *pReseeded )
+                        vSeedsNIndex.emplace_back( 0, rSeed, 0, false, false, iReadId, pRead->sName, pRead, true,
+                                                   pCounter, 0 );
                     for( size_t uiK = 0; uiK < xHelperRet.pSeeds->size( ); uiK++ )
                         // only use seeds that we do not get from xReseedOutExtraInfo already
                         if( xHelperRet.vLayerOfSeeds[ uiK ] > 0 )
