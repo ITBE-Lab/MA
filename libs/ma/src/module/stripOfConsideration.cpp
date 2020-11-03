@@ -9,8 +9,9 @@ using namespace libMA;
 using namespace libMS;
 
 
-std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
-    std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
+std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::shared_ptr<Seeds> pSeeds,
+                                                                      std::shared_ptr<NucSeq> pQuerySeq,
+                                                                      std::shared_ptr<Pack> pRefSeq )
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )
@@ -134,6 +135,9 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
         if( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
             pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, xStripStart->uiDelta,
                                          ( xStripEnd - 1 )->uiDelta );
+#if 0
+            pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, fMinLen );
+#endif
         // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         bool bLastOnForw = xStripStart->bOnForwStrand;
         xCurrScore -= *( xStripStart++ );

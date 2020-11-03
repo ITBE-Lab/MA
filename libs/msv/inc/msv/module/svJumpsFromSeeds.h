@@ -477,8 +477,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage(
-        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
+                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -681,17 +681,17 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
 {
     SvJumpsFromSeeds xJumpsFromSeeds;
     SortRemoveDuplicates xDupRem;
-    FilterOverlappingSeeds xFilter;
+    FilterOverlappingSoCs<false> xFilter1;
+    FilterOverlappingSoCs<true> xFilter2;
     nucSeqIndex uiMinNt;
-    const size_t uiSoCHeight;
 
   public:
     RecursiveReseedingSoCs( const ParameterSetManager& rParameters, std::shared_ptr<Pack> pRefSeq )
         : xJumpsFromSeeds( rParameters, pRefSeq ),
           xDupRem( rParameters ),
-          xFilter( rParameters ),
-          uiMinNt( rParameters.getSelected( )->xMinNtAfterReseeding->get( ) ),
-          uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ) // same as width
+          xFilter1( rParameters ),
+          xFilter2( rParameters ),
+          uiMinNt( rParameters.getSelected( )->xMinNtAfterReseeding->get( ) )
     {}
 
     /**
@@ -700,103 +700,30 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
     virtual std::shared_ptr<Seeds> execute_helper( std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq,
                                                    std::shared_ptr<NucSeq> pQuery, HelperRetVal* pOutExtra )
     {
-        std::vector<std::shared_ptr<Seeds>> vSoCs;
-        vSoCs.push_back( std::make_shared<Seeds>( ) );
-        nucSeqIndex uiNumNtLast = 0;
-        nucSeqIndex uiSizeLastSoC = 0;
-        // lambda function used later (used twice avoiding duplicate code)
-        auto fSoCInsertedPost = [ & ]( ) {
-            // last SoC had to little NT in it
-            if( uiNumNtLast < uiMinNt || uiNumNtLast == 0 )
-            {
-                if( pOutExtra != nullptr )
-                    pOutExtra->pRemovedSeeds->append( vSoCs.back( ) );
-                vSoCs.pop_back( );
-            } // if
-            vSoCs.push_back( std::make_shared<Seeds>( ) );
-            uiNumNtLast = 0;
-            uiSizeLastSoC = 0;
-        };
+        auto pReseeded = std::make_shared<Seeds>( );
         for( auto pSeeds : pSeedsSet->xContent )
         {
             if( pOutExtra != nullptr )
                 pOutExtra->uiCurrSocID += 1;
-            auto pR = xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, pOutExtra );
-            std::sort( pR->begin( ), pR->end( ),
-                       []( const Seed& rA, const Seed& rB ) { return rA.start( ) < rB.start( ); } );
-            nucSeqIndex uiMaxQ = 0;
-            uiNumNtLast = 0;
-            uiSizeLastSoC = 0;
+            auto pR = xFilter1.execute_helper(
+                xDupRem.execute( xJumpsFromSeeds.reseed( pSeeds, pQuery, pRefSeq, pOutExtra ) ), //
+                pQuery, pRefSeq, pOutExtra );
+            nucSeqIndex uiNumNt = 0;
             for( Seed& xSeed : *pR )
-            {
-                // break the SoC since there is a gap in it (seeds too far from each other on query)
-                if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
-                    fSoCInsertedPost( );
-                uiNumNtLast += xSeed.size( );
-                uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
-                vSoCs.back( )->push_back( xSeed );
-                uiSizeLastSoC++;
-            } // for
-            fSoCInsertedPost( );
+                uiNumNt += xSeed.size( );
+
+            if( uiNumNt >= uiMinNt )
+                pReseeded->append( pR );
+            else if( pOutExtra != nullptr )
+                pOutExtra->pRemovedSeeds->append( pR );
         } // for
-        vSoCs.pop_back( );
         if( pOutExtra != nullptr )
             pOutExtra->uiCurrSocID = 0;
-        std::sort( vSoCs.begin( ), vSoCs.end( ),
-                   []( const auto& pA, const auto& pB ) { return pA->front( ).start( ) < pB->front( ).start( ); } );
-
-        // remove all enclosed SoCs
-        // nucSeqIndex uiMaxEnd = 0;
-        auto pIntermediate = std::make_shared<Seeds>( );
-        for( auto& pSoC : vSoCs )
-        {
-            // if( pSoC->back( ).end( ) > uiMaxEnd )
-            //{
-            for( auto& rSeed : *pSoC )
-                pIntermediate->push_back( rSeed );
-            //    uiMaxEnd = pSoC->back( ).end( );
-            //} // if
-            // else if( pOutExtra != nullptr )
-            //    pOutExtra->pRemovedSeeds->append( pSoC );
-        } // for
-        // return pRet;
-        auto pFiltered = xFilter.execute_helper( xDupRem.execute( pIntermediate ), pOutExtra );
-
-        // extra step: separate by
-
-        auto pRet = std::make_shared<Seeds>( );
-
-        std::sort( pFiltered->begin( ), pFiltered->end( ),
-                   []( auto& xA, auto& xB ) { return xA.start( ) < xB.start( ); } );
-        uiNumNtLast = 0;
-        nucSeqIndex uiMaxQ = 0;
-        uiSizeLastSoC = 0;
-        for( Seed& xSeed : *pFiltered )
-        {
-            if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
-            {
-                // last SoC had to little NT in it
-                if( uiNumNtLast < uiMinNt )
-                    pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
-                uiNumNtLast = 0;
-                uiSizeLastSoC = 0;
-            } // if
-            uiNumNtLast += xSeed.size( );
-            uiMaxQ = std::max( uiMaxQ, xSeed.end( ) );
-            pRet->push_back( xSeed );
-            uiSizeLastSoC++;
-        } // for
-        // very last SoC had to little NT in it
-        if( uiNumNtLast < uiMinNt )
-            pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
-
-        if( pOutExtra != nullptr )
-            pOutExtra->computeOverlappingSeedsVector( pRet );
-
-        return pRet;
+        return xFilter2.execute_helper( xDupRem.execute( pReseeded ), pQuery, pRefSeq, pOutExtra );
     }
-    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py(
-        std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
+    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py( std::shared_ptr<SeedsSet> pSeedsSet,
+                                                                              std::shared_ptr<Pack> pRefSeq,
+                                                                              std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
         return std::make_pair( execute_helper( pSeedsSet, pRefSeq, pQuery, &xRet ), xRet );
@@ -877,8 +804,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>>
-    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
+                                                             std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

@@ -231,6 +231,7 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
             rSeed.uiPosOnReference += xArea.xXAxis.start( );
             rSeed.iStart += xArea.xYAxis.start( );
             assert( rSeed.end( ) <= pQuery->length( ) );
+            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, pQuery->length( ), *pRefSeq, true );
         } // for
         // fix seed positions on reverse strand
         for( Seed& rSeed : *pSeedsRev )
@@ -244,6 +245,7 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
             rSeed.uiPosOnReference = xArea.xXAxis.end( ) - rSeed.uiPosOnReference - 1;
             rSeed.iStart += xArea.xYAxis.start( );
             assert( rSeed.end( ) <= pQuery->length( ) );
+            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, pQuery->length( ), *pRefSeq, true );
         } // for
 
         pSeeds->confirmSeedPositions( pQuery, pRefSeq, false );
@@ -265,6 +267,8 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
         xNW.ksw( pQuery, pRef, xArea.xYAxis.start( ), xArea.xYAxis.end( ) - 1, 0, pRef->length( ) - 1, pFAlignment,
                  xMemoryManager );
         auto pForwSeeds = pFAlignment->toSeeds( pRefSeq );
+        for( Seed& rSeed : *pForwSeeds )
+            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, pQuery->length( ), *pRefSeq, true );
 
         // and now the reverse strand seeds
         auto pRAlignment = std::make_shared<Alignment>( );
@@ -282,6 +286,7 @@ void SvJumpsFromSeeds::computeSeeds( geom::Rectangle<nucSeqIndex>& xArea, std::s
             rSeed.uiPosOnReference = xArea.xXAxis.end( ) - rSeed.uiPosOnReference - 1;
             rSeed.iStart += xArea.xYAxis.start( );
             assert( rSeed.end( ) <= pQuery->length( ) );
+            libMA::ExtractSeeds::setDeltaOfSeed( rSeed, pQuery->length( ), *pRefSeq, true );
         } // for
         if( pFAlignment->score( ) >= pRAlignment->score( ) )
             rvRet->append( pForwSeeds );

@@ -297,7 +297,7 @@ class SoCPriorityQueue : public libMS::Container
         auto xCollect = std::get<1>( vMaxima.front( ) );
         auto xCollectEnd = std::get<2>( vMaxima.front( ) );
         nucSeqIndex uiStart = xCollect->start_ref( );
-        nucSeqIndex uiEnd = (xCollectEnd-1)->end_ref( );
+        nucSeqIndex uiEnd = ( xCollectEnd - 1 )->end_ref( );
         uint32_t uiScore = (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
 
         // move to the next strip
@@ -307,7 +307,7 @@ class SoCPriorityQueue : public libMS::Container
         return std::make_tuple( uiStart, uiEnd, uiScore );
     } // method
 
-    inline uint32_t getScoreOfNextSoC()
+    inline uint32_t getScoreOfNextSoC( )
     {
         return (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
     }
@@ -342,6 +342,64 @@ class SoCPriorityQueue : public libMS::Container
         } // if
         // else new and last SoC overlap and the new one has a lower score => ignore the new one
     } // method
+
+#if 0 
+    inline void push_back_no_overlap( const SoCOrder& rCurrScore, const std::vector<Seed>::iterator itStrip,
+                                      const std::vector<Seed>::iterator itStripEnd, const float fMinLen )
+    {
+        DEBUG( assert( !bInPriorityMode ); )
+
+        while( !vMaxima.empty( ) && ( std::get<2>( vMaxima.back( ) ) - 1 )->uiDelta >= itStrip->uiDelta )
+        {
+            // if we reach this point we have overlapping SoCs
+            if( std::get<0>( vMaxima.back( ) ) < rCurrScore )
+            {
+                // score of last is smaller than score of this one
+                SoCOrder xRemainingScoreLast;
+                auto xItLast = std::get<1>( vMaxima.back( ) );
+                while( xItLast < itStrip )
+                {
+                    xRemainingScoreLast += *xItLast;
+                    xItLast++;
+                } // while
+                if( xRemainingScoreLast.uiAccumulativeLength < fMinLen )
+                    // the new and the last SoC overlap and the new one has a higher score
+                    // so we want to replace the last SoC
+                    vMaxima.pop_back( );
+                    // if we reach this point we have to do another loop cause there might be two overlapping SoCs
+                else
+                {
+                    // last soc is worth keeping so just adjust it's end
+                    std::get<0>( vMaxima.back( ) ) = xRemainingScoreLast;
+                    std::get<2>( vMaxima.back( ) ) = itStrip;
+                    // we can saveley add the current SoC since the last one has been adjusted
+                    vMaxima.push_back( std::make_tuple( rCurrScore, itStrip, itStripEnd ) );
+                    return;
+                } // else
+            } // if
+            else
+            {
+                // score of last is larger
+                SoCOrder xScoreThis;
+                auto xItThis = std::get<2>( vMaxima.back( ) );
+                while( xItThis < itStripEnd )
+                {
+                    xScoreThis += *xItThis;
+                    xItThis++;
+                } // while
+                if( xScoreThis.uiAccumulativeLength >= fMinLen )
+                {
+                    // even cut down SoC is worth keeping: just adjust the score and size
+                    vMaxima.push_back( std::make_tuple( xScoreThis, std::get<2>( vMaxima.back( ) ), itStripEnd ) );
+                } // if
+                // else is implicit
+                // we either want to discard the current SoC or have pushed it back
+                return;
+            } // else
+        } // if
+        vMaxima.push_back( std::make_tuple( rCurrScore, itStrip, itStripEnd ) );
+    } // method
+#endif
 
     /**
      * @brief switch to second state (usable in first state only).

@@ -7,6 +7,7 @@
 
 
 #include "IntervalTree.h"
+#include "stripOfConsideration.h"
 
 namespace libMA
 {
@@ -645,7 +646,10 @@ class MaxExtendedToMaxSpanning : public libMS::Module<Seeds, false, Seeds>
 #endif
 
 /**
- * @brief Filters out seeds that are overlapping more than x nt (filters the smaller seed)
+ * @brief Filters out seeds that are overlapping
+ * @details
+ * shortens / removes seeds until no overlaps on query are remaining
+ * shortens / removes both overlapping seeds -> there will be gaps after this
  * @ingroup module
  */
 class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
@@ -701,7 +705,7 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
                 uiJ++;
             } // while
             // record seed as removed (even if it was just broken into segments)
-            //if( pOutExtra != nullptr && !( pRet->back( ) == ( *pSeeds )[ uiI ] ) )
+            // if( pOutExtra != nullptr && !( pRet->back( ) == ( *pSeeds )[ uiI ] ) )
             //    pOutExtra->pRemovedSeeds->push_back( ( *pSeeds )[ uiI ] );
 
             uiMax = std::max( uiMax, ( *pSeeds )[ uiI ].end( ) );
@@ -720,6 +724,243 @@ class FilterOverlappingSeeds : public libMS::Module<Seeds, false, Seeds>
         for( size_t uiI = 0; uiI < vIn.size( ); uiI++ )
             vRet.push_back( execute( vIn[ uiI ] ) );
         return vRet;
+    } // method
+}; // class
+
+/**
+ * @brief Filters out seeds that are overlapping via SoCs
+ * @ingroup module
+ */
+template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seeds, false, Seeds, NucSeq, Pack>
+{
+    nucSeqIndex uiMinNtNonOverlap = 16; // or if there are 16 non overlapping NT
+    float fValueFac = 2;
+    StripOfConsiderationSeeds xSoCs;
+    GetAllFeasibleSoCsAsSet xExtractSoCs;
+
+    static void adjustSeed( nucSeqIndex uiFrom, nucSeqIndex uiTo, Seed& xSeed, std::shared_ptr<NucSeq> pQuerySeq,
+                            std::shared_ptr<Pack> pRefSeq )
+    {
+        if( xSeed.start( ) >= uiFrom && xSeed.end( ) <= uiTo )
+            // seed completely enclosed (this if is actually covered by the conditions below but code is easier to read
+            // if it stays )
+            xSeed.iSize = 0;
+        else if( xSeed.end( ) >= uiFrom && xSeed.start( ) <= uiFrom )
+            // seed's end overlaps region
+            xSeed.iSize -= xSeed.end( ) - uiFrom;
+        else if( xSeed.start( ) <= uiTo && xSeed.end( ) >= uiTo )
+        {
+            // seed's start overlaps region
+            auto uiL = uiTo - xSeed.start( );
+            // adjust start pos of seed
+            xSeed.iSize -= uiL;
+            xSeed.iStart += uiL;
+            if( xSeed.bOnForwStrand ) // take care of orientation of rev strand seeds
+                xSeed.uiPosOnReference += uiL;
+            else
+                xSeed.uiPosOnReference -= uiL;
+            libMA::ExtractSeeds::setDeltaOfSeed( xSeed, pQuerySeq->length( ), *pRefSeq, true );
+        } // if
+        else
+            // region cuts seed in half...
+            xSeed.iSize = 0;
+    } // method
+
+    static void removeSeedsInRange( nucSeqIndex uiFrom, nucSeqIndex uiTo, std::shared_ptr<Seeds> pSeeds,
+                                    HelperRetVal* pOutExtra, std::shared_ptr<NucSeq> pQuerySeq,
+                                    std::shared_ptr<Pack> pRefSeq )
+    {
+        if( pOutExtra != nullptr )
+            for( auto& rS : *pSeeds )
+                if( rS.end( ) > uiFrom && rS.start( ) < uiTo )
+                    pOutExtra->pRemovedSeeds->push_back( rS );
+
+        // shorten overlapping seeds
+        for( auto& rSeed : *pSeeds )
+            adjustSeed( uiFrom, uiTo, rSeed, pQuerySeq, pRefSeq );
+        // remove seeds that became size 0
+        pSeeds->erase(
+            std::remove_if( pSeeds->begin( ), pSeeds->end( ), []( const auto& rS ) { return rS.size( ) == 0; } ),
+            pSeeds->end( ) );
+    } // method
+
+    static void removeSeeds( std::shared_ptr<Seeds> pSeeds, HelperRetVal* pOutExtra )
+    {
+        if( pOutExtra != nullptr )
+            pOutExtra->pRemovedSeeds->append( pSeeds );
+        pSeeds->clear( );
+    } // method
+
+    static nucSeqIndex valueInRangeSeeds( nucSeqIndex uiFrom, nucSeqIndex uiTo, std::shared_ptr<Seeds> pSeeds )
+    {
+        nucSeqIndex uiValue = 0;
+        for( auto& rS : *pSeeds )
+            if( rS.end( ) > uiFrom && rS.start( ) < uiTo )
+                uiValue += std::min( rS.end( ), uiTo ) - std::max( rS.start( ), uiFrom );
+        return uiValue;
+    } // method
+
+    static void removeSeedInRange( nucSeqIndex uiFrom, nucSeqIndex uiTo, Seed& xSeed, HelperRetVal* pOutExtra,
+                                   std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
+    {
+        if( pOutExtra != nullptr )
+            if( xSeed.end( ) > uiFrom && xSeed.start( ) < uiTo )
+                pOutExtra->pRemovedSeeds->push_back( xSeed );
+
+        adjustSeed( uiFrom, uiTo, xSeed, pQuerySeq, pRefSeq );
+    } // method
+
+    static void removeSeed( Seed& xSeed, HelperRetVal* pOutExtra )
+    {
+        if( pOutExtra != nullptr )
+            pOutExtra->pRemovedSeeds->push_back( xSeed );
+        xSeed.iSize = 0;
+    } // method
+
+    static nucSeqIndex valueInRangeSeed( nucSeqIndex uiFrom, nucSeqIndex uiTo, Seed& xSeed )
+    {
+        if( xSeed.end( ) > uiFrom && xSeed.start( ) < uiTo )
+            return std::min( xSeed.end( ), uiTo ) - std::max( xSeed.start( ), uiFrom );
+        return 0;
+    } // method
+
+
+  public:
+    FilterOverlappingSoCs( const ParameterSetManager& rParameters ) : xSoCs( rParameters ), xExtractSoCs( rParameters )
+    {
+        xSoCs.uiCurrHarmScoreMin = 1;
+        xSoCs.fGiveUp = 0;
+        xExtractSoCs.uiMinNt = 1; // get All SoCs
+    } // default constructor
+
+
+    template <typename LineSweepVec, typename RemoveSeedsInRange, typename RemoveSeeds, typename ValueInRange>
+    void core( LineSweepVec& vLineSweepVec, RemoveSeedsInRange&& fRemoveSeedsInRange, RemoveSeeds&& fRemoveSeeds,
+               HelperRetVal* pOutExtra, nucSeqIndex uiMinNtNonOverlap, ValueInRange&& fValueInRange,
+               std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
+    {
+        // sort by query start
+        std::sort( vLineSweepVec.begin( ), vLineSweepVec.end( ), []( const auto& rA, const auto& rB ) {
+            if( std::get<0>( rA ) == std::get<0>( rB ) )
+                return std::get<1>( rA ) > std::get<1>( rB );
+            return std::get<0>( rA ) < std::get<0>( rB );
+        } );
+
+        // line sweep
+        for( size_t uiI = 0; uiI < vLineSweepVec.size( ); uiI++ )
+        {
+            auto uiIStart = std::get<0>( vLineSweepVec[ uiI ] );
+            auto uiIEnd = std::get<1>( vLineSweepVec[ uiI ] );
+            size_t uiJ = uiI + 1;
+            while( uiJ < vLineSweepVec.size( ) && uiIEnd > std::get<0>( vLineSweepVec[ uiJ ] ) )
+            {
+                auto uiJStart = std::get<0>( vLineSweepVec[ uiJ ] );
+                auto uiJEnd = std::get<1>( vLineSweepVec[ uiJ ] );
+
+                bool bIStartsFirst = uiIStart + uiMinNtNonOverlap < uiJStart;
+                bool bIEndsLast = uiIEnd > uiJEnd + uiMinNtNonOverlap;
+                bool bJEndsLast = uiJEnd > uiIEnd + uiMinNtNonOverlap;
+
+                if( bIStartsFirst && bIEndsLast )
+                {
+                    auto uiIValue = fValueInRange( uiJStart, uiJEnd, std::get<2>( vLineSweepVec[ uiI ] ) );
+                    auto uiJValue = fValueInRange( uiJStart, uiJEnd, std::get<2>( vLineSweepVec[ uiJ ] ) );
+                    if( uiJValue > uiIValue * fValueFac )
+                        // j is enclosed by i (and more valuable than i) -> remove seeds in i that overlap j
+                        fRemoveSeedsInRange( uiJStart, uiJEnd, std::get<2>( vLineSweepVec[ uiI ] ), pOutExtra,
+                                             pQuerySeq, pRefSeq );
+                    else
+                        // j is enclosed by i (but less valuable than i) -> remove j completely
+                        fRemoveSeeds( std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra );
+                } // if
+                else if( bJEndsLast && bIStartsFirst )
+                {
+                    // both SoCs have unique regions
+                    // make a cut in the center of the overlapping region
+                    // and remove seed from one side of the cut in each SoC
+                    auto uiCenter = ( uiIEnd + uiJStart ) / 2;
+                    fRemoveSeedsInRange( uiCenter, uiIEnd + uiMinNtNonOverlap, std::get<2>( vLineSweepVec[ uiI ] ),
+                                         pOutExtra, pQuerySeq, pRefSeq );
+                    fRemoveSeedsInRange( uiJStart > uiMinNtNonOverlap ? uiJStart - uiMinNtNonOverlap : 0, uiCenter,
+                                         std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra, pQuerySeq, pRefSeq );
+                } // if
+                else
+                {
+                    // SoCs cover roughly the same area
+                    auto uiIValue = fValueInRange( uiIStart > uiMinNtNonOverlap ? uiIStart - uiMinNtNonOverlap : 0,
+                                                   uiIEnd + uiMinNtNonOverlap, std::get<2>( vLineSweepVec[ uiI ] ) );
+                    auto uiJValue = fValueInRange( uiJStart > uiMinNtNonOverlap ? uiJStart - uiMinNtNonOverlap : 0,
+                                                   uiJEnd + uiMinNtNonOverlap, std::get<2>( vLineSweepVec[ uiJ ] ) );
+                    // the SoCs are completely overlapping
+                    // eliminiate both or keep one if it's value is larger than the other by fValueFac
+                    if( uiIValue <= uiJValue * fValueFac )
+                        fRemoveSeeds( std::get<2>( vLineSweepVec[ uiI ] ), pOutExtra );
+                    if( uiJValue <= uiIValue * fValueFac )
+                        fRemoveSeeds( std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra );
+                } // else
+                uiJ += 1;
+            } // while
+        } // for
+    }
+
+    // overload
+    inline std::shared_ptr<Seeds> execute_helper( std::shared_ptr<Seeds> pSeeds,
+                                                  std::shared_ptr<NucSeq>
+                                                      pQuerySeq,
+                                                  std::shared_ptr<Pack>
+                                                      pRefSeq,
+                                                  HelperRetVal* pOutExtra )
+    {
+        if( WITH_SOC )
+        {
+            auto pSoCQueue = xSoCs.execute( pSeeds, pQuerySeq, pRefSeq );
+            auto pSoCs = xExtractSoCs.execute( pSoCQueue );
+
+            //                     query start, query end  , seeds in soc
+            std::vector<std::tuple<nucSeqIndex, nucSeqIndex, std::shared_ptr<Seeds>>> vSoCs;
+            for( auto pSeeds : pSoCs->xContent )
+            {
+                nucSeqIndex uiMin = std::numeric_limits<nucSeqIndex>::max( );
+                nucSeqIndex uiMax = 0;
+                for( auto& xSeed : *pSeeds )
+                {
+                    uiMin = std::min( uiMin, xSeed.start( ) );
+                    uiMax = std::max( uiMax, xSeed.end( ) );
+                } // for
+                vSoCs.emplace_back( uiMin, uiMax, pSeeds );
+            } // for
+
+            core( vSoCs, removeSeedsInRange, removeSeeds, pOutExtra, uiMinNtNonOverlap, valueInRangeSeeds, pQuerySeq,
+                  pRefSeq );
+
+            // combine output
+            auto pRet = std::make_shared<Seeds>( );
+            for( auto xTuple : vSoCs )
+                pRet->append( std::get<2>( xTuple ) );
+            return pRet;
+        } // if
+        else
+        {
+            //                     query start, query end  , seed
+            std::vector<std::tuple<nucSeqIndex, nucSeqIndex, Seed>> vSeeds;
+            for( auto& xSeed : *pSeeds )
+                vSeeds.emplace_back( xSeed.start( ), xSeed.end( ), xSeed );
+
+            core( vSeeds, removeSeedInRange, removeSeed, pOutExtra, 3, valueInRangeSeed, pQuerySeq, pRefSeq );
+
+            // combine output
+            auto pRet = std::make_shared<Seeds>( );
+            for( auto& xSeed : vSeeds )
+                if( std::get<2>( xSeed ).size( ) > 0 )
+                    pRet->push_back( std::get<2>( xSeed ) );
+            return pRet;
+        } // else
+    } // method
+
+    virtual std::shared_ptr<Seeds> DLL_PORT( MA )
+        execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
+    {
+        return execute_helper( pSeeds, pQuerySeq, pRefSeq, nullptr );
     } // method
 }; // class
 
