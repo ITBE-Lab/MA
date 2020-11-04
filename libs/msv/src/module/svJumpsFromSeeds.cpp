@@ -126,9 +126,9 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
         nucSeqIndex uiBottom = rLast.end( );
         nucSeqIndex uiTop = rNext.start( );
 
-        if( uiTop <= uiBottom )
-            return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
-                                   geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+        // if( uiTop <= uiBottom )
+        //    return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+        //                           geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
 
         nucSeqIndex uiLeft;
         if( rLast.bOnForwStrand )
@@ -146,17 +146,32 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
         // check if rectangle exists on reference
         if( uiRight >= uiLeft )
             // check if rectangle is small enough
-            if( (int64_t)std::max( uiTop - uiBottom, uiRight - uiLeft ) <= iMaxSizeReseed / 2 )
+            if( (int64_t)std::max( uiTop > uiBottom ? uiTop - uiBottom : 0, uiRight - uiLeft ) <= iMaxSizeReseed / 2 )
             {
                 // check if rectangle is not bridging
                 auto uiIDLeft = pRefSeq->uiSequenceIdForPosition( uiLeft );
                 auto uiIDRight = pRefSeq->uiSequenceIdForPosition( uiRight );
                 if( uiIDLeft == uiIDRight )
                 {
-                    // can return as a single rectangle
-                    return std::make_pair(
-                        geom::Rectangle<nucSeqIndex>( uiLeft, uiBottom, uiRight - uiLeft, uiTop - uiBottom ),
-                        geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+                    // check if rectangle is not proportional (too wide)
+                    if( uiRight - uiLeft > 2 * ( uiTop > uiBottom ? uiTop - uiBottom : 0 ) && uiRight - uiLeft > 20 )
+                    {
+                        // return two squares instead
+                        auto uiCenter = ( uiRight + uiLeft ) / 2;
+                        auto uiSize = uiCenter - uiLeft;
+                        return std::make_pair( geom::Rectangle<nucSeqIndex>( uiLeft, uiBottom, uiSize, uiSize ),
+                                               geom::Rectangle<nucSeqIndex>( uiCenter, uiBottom, uiSize, uiSize ) );
+                    } // if
+                    else if( uiTop <= uiBottom )
+                    {
+                        return std::make_pair( geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ),
+                                               geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
+                    } // else if
+                    else
+                        // can return as a single rectangle
+                        return std::make_pair(
+                            geom::Rectangle<nucSeqIndex>( uiLeft, uiBottom, uiRight - uiLeft, uiTop - uiBottom ),
+                            geom::Rectangle<nucSeqIndex>( 0, 0, 0, 0 ) );
                 } // if
                 // else triggers return at end of function
             } // if
