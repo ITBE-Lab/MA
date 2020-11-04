@@ -184,7 +184,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
 
     MMFilteredSeeding xSeeding( rParameters );
     SeedLumping xLumping( rParameters );
-    FilterContigBorder xCtgFilter( rParameters );
+    //FilterContigBorder xCtgFilter( rParameters );
     StripOfConsiderationSeeds xSoc( rParameters );
     GetAllFeasibleSoCsAsSet xSocFilter( rParameters );
 
@@ -225,8 +225,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     auto pRead = pReadTable->getRead( iReadId );
                     auto pMinimizers = xSeeding.execute( pMMIndex, pRead, pPack, pCounter );
                     auto pLumpedSeeds = xLumping.execute( pMinimizers, pRead, pPack );
-                    auto pCtgFilteredSeeds = xCtgFilter.execute( pLumpedSeeds, pPack );
-                    auto pSoCs = xSoc.execute( pCtgFilteredSeeds, pRead, pPack );
+                    //auto pCtgFilteredSeeds = xCtgFilter.execute( pLumpedSeeds, pPack );
+                    auto pSoCs = xSoc.execute( pLumpedSeeds, pRead, pPack );
                     auto pFilteredSeeds = xSocFilter.execute( pSoCs );
                     HelperRetVal xReseedOutExtraInfo;
                     auto pReseeded = xReseeding.execute_helper( pFilteredSeeds, pPack, pRead, &xReseedOutExtraInfo );

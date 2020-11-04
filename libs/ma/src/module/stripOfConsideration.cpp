@@ -135,9 +135,6 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::share
         if( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
             pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, xStripStart->uiDelta,
                                          ( xStripEnd - 1 )->uiDelta );
-#if 0
-            pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, fMinLen );
-#endif
         // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         bool bLastOnForw = xStripStart->bOnForwStrand;
         xCurrScore -= *( xStripStart++ );

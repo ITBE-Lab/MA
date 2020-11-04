@@ -1073,8 +1073,8 @@ class ParameterSetManager
         // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
-        xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 1000 );
-        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 1000 );
+        xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 3000 );
+        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 2000 );
         xParametersSets[ "sv-pacbio" ]->xMaximalSeedAmbiguity->set( 1 );
         xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
         xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
