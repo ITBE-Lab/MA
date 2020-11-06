@@ -33,6 +33,10 @@ class ReadPlotNucs:
         self.bottom_plot.xaxis.axis_label = "Reference Position"
         self.bottom_plot.xaxis.major_label_orientation = math.pi/4
 
+        # make the axis lables appear
+        self.bottom_plot.rect(x=0, y=0.5, width=1, height=1, color="white", alpha=0)
+        self.left_plot.rect(x=0.5, y=0, width=1, height=1, color="white", alpha=0)
+
         # the nucleotides from the read
         self.nucs_by_r_id = {} # dict of {"p": [], "c": [], "i": []}
         self.left_nucs = ColumnDataSource({"c":[], "p":[]})

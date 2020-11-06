@@ -130,11 +130,9 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::share
         // FILTER
         /*
          * if the SoC quality is lower than fGiveUp * uiQLen we do not consider this SoC at
-         * all fGiveUp = 0 disables this.
          */
-        if( fGiveUp == 0 || xCurrScore.uiAccumulativeLength >= fMinLen )
-            pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, xStripStart->uiDelta,
-                                         ( xStripEnd - 1 )->uiDelta );
+        if( xCurrScore.uiAccumulativeLength >= fMinLen )
+            pSoCs->push_back_no_overlap( xCurrScore, xStripStart, xStripEnd, (nucSeqIndex)fMinLen );
         // move xStripStart one to the right (this will cause xStripEnd to be adjusted)
         bool bLastOnForw = xStripStart->bOnForwStrand;
         xCurrScore -= *( xStripStart++ );

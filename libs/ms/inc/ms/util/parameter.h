@@ -454,7 +454,7 @@ class ParameterSetBase
         } // while
         for( auto& rPair : xpParametersByCategory )
             rPair.second.erase( std::remove_if( rPair.second.begin( ), rPair.second.end( ),
-                                                [&pParameter]( const std::shared_ptr<AlignerParameterBase> pX ) {
+                                                [ &pParameter ]( const std::shared_ptr<AlignerParameterBase> pX ) {
                                                     return ( pX == pParameter );
                                                 } ),
                                 rPair.second.end( ) );
@@ -677,7 +677,7 @@ class Presetting : public ParameterSetBase
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
                              AlignerParameterBase::ChoicesType{
-                                 {"maxSpan", "Maximally Spanning"}, {"SMEMs", "SMEMs"}, {"MEMs", "MEMs"}} ),
+                                 { "maxSpan", "Maximally Spanning" }, { "SMEMs", "SMEMs" }, { "MEMs", "MEMs" } } ),
           xMinSeedLength( this, "Minimal Seed Length", 'l',
                           "All seeds with size smaller than 'minimal seed length' are discarded.", SEEDING_PARAMETERS,
                           16, checkPositiveValue ),
@@ -851,10 +851,10 @@ class Presetting : public ParameterSetBase
           xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
           xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
     {
-        xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
+        xMeanPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xStdPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xPairedBonus->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xZDropInversion->fEnabled = [ this ]( void ) { return this->xSearchInversions->get( ) == true; };
     } // constructor
 
     Presetting( ) : Presetting( "Unnamed" )
@@ -912,9 +912,9 @@ class GeneralParameter : public ParameterSetBase
     /* Constructor */
     GeneralParameter( )
         : xSAMOutputTypeChoice( this, "SAM File output", "Select output type for sam file.", GENERAL_PARAMETER,
-                                AlignerParameterBase::ChoicesType{{"Read_Folder", "In Read Folder"},
-                                                                  {"Specified_Folder", "In Specified Folder"},
-                                                                  {"Specified_File", "As Specified File"}} ),
+                                AlignerParameterBase::ChoicesType{ { "Read_Folder", "In Read Folder" },
+                                                                   { "Specified_Folder", "In Specified Folder" },
+                                                                   { "Specified_File", "As Specified File" } } ),
           xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
@@ -931,9 +931,9 @@ class GeneralParameter : public ParameterSetBase
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
-        xSAMOutputPath->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
-        xSAMOutputFileName->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
-        piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
+        xSAMOutputPath->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
+        xSAMOutputFileName->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
+        piNumberOfThreads->fEnabled = [ this ]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
     /* Named copy Constructor */
@@ -1074,12 +1074,14 @@ class ParameterSetManager
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
         xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 3000 );
-        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 2000 );
+        xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 1000 );
         xParametersSets[ "sv-pacbio" ]->xMaximalSeedAmbiguity->set( 1 );
         xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
         xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
         xParametersSets[ "sv-pacbio" ]->xMinNtAfterReseeding->set( 600 );
         xParametersSets[ "sv-pacbio" ]->xRectangularSoc->set( false );
+        xParametersSets[ "sv-pacbio" ]->xHarmScoreMinRel->set( 0 );
+        xParametersSets[ "sv-pacbio" ]->xHarmScoreMin->set( xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->get( ) );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "default" ];

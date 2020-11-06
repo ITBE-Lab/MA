@@ -159,8 +159,13 @@ SvJumpsFromSeeds::getPositionsForSeeds( Seed& rLast, Seed& rNext, nucSeqIndex ui
                         // return two squares instead
                         auto uiCenter = ( uiRight + uiLeft ) / 2;
                         auto uiSize = uiCenter - uiLeft;
-                        return std::make_pair( geom::Rectangle<nucSeqIndex>( uiLeft, uiBottom, uiSize, uiSize ),
-                                               geom::Rectangle<nucSeqIndex>( uiCenter, uiBottom, uiSize, uiSize ) );
+                        return std::make_pair(
+                            geom::Rectangle<nucSeqIndex>(
+                                uiLeft, rLast.bOnForwStrand ? uiBottom : ( uiTop > uiSize ? uiTop - uiSize : 0 ),
+                                uiSize, uiSize ),
+                            geom::Rectangle<nucSeqIndex>(
+                                uiCenter, rLast.bOnForwStrand ? ( uiTop > uiSize ? uiTop - uiSize : 0 ) : uiBottom,
+                                uiSize, uiSize ) );
                     } // if
                     else if( uiTop <= uiBottom )
                     {
@@ -386,6 +391,7 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSoCs", []( auto&& x ) {
         x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py );
     } );
+    exportModule<JumpsFilterContigBorder>( xOrganizer, "JumpsFilterContigBorder" );
     exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );
     exportModule<ExtractSeedsFilter, std::shared_ptr<Pack>, nucSeqIndex, nucSeqIndex>( xOrganizer,
                                                                                        "ExtractSeedsFilter" );

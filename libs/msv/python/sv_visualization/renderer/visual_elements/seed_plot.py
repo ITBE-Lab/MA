@@ -35,6 +35,10 @@ class SeedPlot:
         self.bottom_plot.xaxis.axis_label = "Reference Position"
         self.bottom_plot.yaxis.axis_label = "Read Id"
         self.bottom_plot.xaxis.major_label_orientation = math.pi/4
+        
+        # make the axis lables appear
+        self.bottom_plot.rect(x=0, y=0, width=1, height=1, color="white", alpha=0)
+        self.left_plot.rect(x=0, y=0, width=1, height=1, color="white", alpha=0)
 
         # ambigious regions (red rectangles)
         self.ambiguous_regions = ColumnDataSource({"l":[0], "b":[0], "r":[0], "t":[0]})

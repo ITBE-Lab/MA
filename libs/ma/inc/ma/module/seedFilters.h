@@ -872,7 +872,7 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
     template <typename LineSweepVec, typename RemoveSeedsInRange, typename RemoveSeeds, typename ValueInRange>
     void core( LineSweepVec& vLineSweepVec, RemoveSeedsInRange&& fRemoveSeedsInRange, RemoveSeeds&& fRemoveSeeds,
                HelperRetVal* pOutExtra, ValueInRange&& fValueInRange, std::shared_ptr<NucSeq> pQuerySeq,
-               std::shared_ptr<Pack> pRefSeq )
+               std::shared_ptr<Pack> pRefSeq, bool bPairwiseOverlap )
     {
         // sort by query start
         std::sort( vLineSweepVec.begin( ), vLineSweepVec.end( ), []( const auto& rA, const auto& rB ) {
@@ -881,6 +881,8 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
             return std::get<0>( rA ) < std::get<0>( rB );
         } );
 
+        nucSeqIndex uiCurrQueryMax = 0;
+
         // line sweep
         for( size_t uiI = 0; uiI < vLineSweepVec.size( ); uiI++ )
         {
@@ -888,16 +890,22 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
             auto uiIEnd = std::get<1>( vLineSweepVec[ uiI ] );
             auto uiPercentageOfI = std::max( ( nucSeqIndex )( ( uiIEnd - uiIEnd ) * fMinNonOverlap ), uiMinNonOverlap );
             size_t uiJ = uiI + 1;
+            nucSeqIndex uiNumUncoveredNt = 0;
+            nucSeqIndex uiLocalQueryMax = std::max( uiCurrQueryMax, uiIStart );
             while( uiJ < vLineSweepVec.size( ) && uiIEnd > std::get<0>( vLineSweepVec[ uiJ ] ) )
             {
                 auto uiJStart = std::get<0>( vLineSweepVec[ uiJ ] );
+                if( uiJStart > uiLocalQueryMax )
+                    uiNumUncoveredNt += uiJStart - uiLocalQueryMax;
                 auto uiJEnd = std::get<1>( vLineSweepVec[ uiJ ] );
+                uiLocalQueryMax = std::max( uiLocalQueryMax, uiJEnd );
                 auto uiPercentageOfJ =
                     std::max( ( nucSeqIndex )( ( uiJEnd - uiJStart ) * fMinNonOverlap ), uiMinNonOverlap );
 
                 bool bStartOfIUncovered = uiIStart + uiPercentageOfI < uiJStart;
                 bool bEndOfIUncovered = uiJEnd + uiPercentageOfI < uiIEnd;
                 bool bEndOfJUncovered = uiIEnd + uiPercentageOfJ < uiJEnd;
+                bool bStartOfJUncovered = uiJStart + uiPercentageOfJ < uiIStart;
 
                 if( bStartOfIUncovered && bEndOfJUncovered )
                 {
@@ -910,7 +918,21 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
                     fRemoveSeedsInRange( uiJStart, uiCenter, std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra, pQuerySeq,
                                          pRefSeq );
                 } // if
-                else if( !bStartOfIUncovered && !bEndOfIUncovered && !bEndOfJUncovered )
+                else if( !bEndOfJUncovered && !bStartOfJUncovered )
+                {
+                    // I encloses J (we know this due to the sorting)
+                    auto uiIValue = fValueInRange( uiJStart, uiJEnd, vLineSweepVec[ uiI ] );
+                    auto uiJValue = fValueInRange( uiJStart, uiJEnd, vLineSweepVec[ uiJ ] );
+                    if( uiJValue > uiIValue * fValueFac )
+                        // j is enclosed by i (and more valuable than i) -> remove seeds in i that overlap j
+                        fRemoveSeedsInRange( uiJStart, uiJEnd, std::get<2>( vLineSweepVec[ uiI ] ), pOutExtra,
+                                             pQuerySeq, pRefSeq );
+                    else
+                        // j is enclosed by i (but less valuable than i) -> remove j completely
+                        fRemoveSeeds( std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra );
+                } // if
+                else if( !bStartOfIUncovered && !bEndOfIUncovered && !bEndOfJUncovered && !bStartOfJUncovered &&
+                         bPairwiseOverlap )
                 {
                     // SoCs cover roughly the same area
                     auto uiIValue = fValueInRange( std::max( uiIStart, uiJStart ), std::min( uiIEnd, uiJEnd ),
@@ -924,21 +946,17 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
                     if( uiJValue <= uiIValue * fValueFac )
                         fRemoveSeeds( std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra );
                 } // if
-                else
-                {
-                    // I encloses J (we know this due to the sorting)
-                    auto uiIValue = fValueInRange( uiJStart, uiJEnd, vLineSweepVec[ uiI ] );
-                    auto uiJValue = fValueInRange( uiJStart, uiJEnd, vLineSweepVec[ uiJ ] );
-                    if( uiJValue > uiIValue * fValueFac )
-                        // j is enclosed by i (and more valuable than i) -> remove seeds in i that overlap j
-                        fRemoveSeedsInRange( uiJStart, uiJEnd, std::get<2>( vLineSweepVec[ uiI ] ), pOutExtra,
-                                             pQuerySeq, pRefSeq );
-                    else
-                        // j is enclosed by i (but less valuable than i) -> remove j completely
-                        fRemoveSeeds( std::get<2>( vLineSweepVec[ uiJ ] ), pOutExtra );
-                } // if
                 uiJ += 1;
             } // while
+
+            if( uiIEnd > uiLocalQueryMax )
+                uiNumUncoveredNt += uiIEnd - uiLocalQueryMax;
+
+            if( uiNumUncoveredNt < uiPercentageOfI && !bPairwiseOverlap )
+                // this SoC / seed is overlapped by too many other SoCs
+                fRemoveSeeds( std::get<2>( vLineSweepVec[ uiI ] ), pOutExtra );
+
+            uiCurrQueryMax = std::max( uiCurrQueryMax, uiIEnd );
         } // for
     }
 
@@ -969,7 +987,7 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
                 vSoCs.emplace_back( uiMin, uiMax, pSeeds, pSeeds );
             } // for
 
-            core( vSoCs, removeSeedsInRange, removeSeeds, pOutExtra, valueInRangeSeeds, pQuerySeq, pRefSeq );
+            core( vSoCs, removeSeedsInRange, removeSeeds, pOutExtra, valueInRangeSeeds, pQuerySeq, pRefSeq, true );
 
             // combine output
             auto pRet = std::make_shared<Seeds>( );
@@ -987,7 +1005,7 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
             for( auto& xSeed : *pSeeds )
                 vSeeds.emplace_back( xSeed.start( ), xSeed.end( ), xSeed, xSeed );
 
-            core( vSeeds, removeSeedInRange, removeSeed, pOutExtra, valueInRangeSeed, pQuerySeq, pRefSeq );
+            core( vSeeds, removeSeedInRange, removeSeed, pOutExtra, valueInRangeSeed, pQuerySeq, pRefSeq, false );
 
             // combine output
             auto pRet = std::make_shared<Seeds>( );

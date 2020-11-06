@@ -184,7 +184,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
 
     MMFilteredSeeding xSeeding( rParameters );
     SeedLumping xLumping( rParameters );
-    //FilterContigBorder xCtgFilter( rParameters );
+    // JumpsFilterContigBorder xCtgFilter( rParameters );
     StripOfConsiderationSeeds xSoc( rParameters );
     GetAllFeasibleSoCsAsSet xSocFilter( rParameters );
 
@@ -225,39 +225,43 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     auto pRead = pReadTable->getRead( iReadId );
                     auto pMinimizers = xSeeding.execute( pMMIndex, pRead, pPack, pCounter );
                     auto pLumpedSeeds = xLumping.execute( pMinimizers, pRead, pPack );
-                    //auto pCtgFilteredSeeds = xCtgFilter.execute( pLumpedSeeds, pPack );
                     auto pSoCs = xSoc.execute( pLumpedSeeds, pRead, pPack );
                     auto pFilteredSeeds = xSocFilter.execute( pSoCs );
                     HelperRetVal xReseedOutExtraInfo;
                     auto pReseeded = xReseeding.execute_helper( pFilteredSeeds, pPack, pRead, &xReseedOutExtraInfo );
+                    // auto pCtgFilteredSeeds = xCtgFilter.execute( pReseeded, pPack );
 
-                    auto xHelperRet = xJumpsFromSeeds.execute_helper_py3( pReseeded, pPack, pRead );
+                    // auto xHelperRet = xJumpsFromSeeds.execute_helper_py3( pReseeded, pPack, pRead );
 
                     // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read,
                     // bInSocReseed
                     std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string,
                                            std::shared_ptr<NucSeq>, bool, std::shared_ptr<HashCounter>, size_t>>
                         vSeedsNIndex;
-                    //for( size_t uiK = 0; uiK < xReseedOutExtraInfo.pSeeds->size( ); uiK++ )
+                    // for( size_t uiK = 0; uiK < xReseedOutExtraInfo.pSeeds->size( ); uiK++ )
                     //    if( !xReseedOutExtraInfo.vOverlappingSeed[ uiK ] )
                     //        vSeedsNIndex.emplace_back(
                     //            0, ( *xReseedOutExtraInfo.pSeeds )[ uiK ], xReseedOutExtraInfo.vLayerOfSeeds[ uiK ],
                     //            xReseedOutExtraInfo.vParlindromeSeed[ uiK ],
                     //            xReseedOutExtraInfo.vOverlappingSeed[ uiK ], iReadId, pRead->sName, pRead, true,
                     //            pCounter, xReseedOutExtraInfo.vSocIds[ uiK ] );
+                    // for( auto& xSeeds : pFilteredSeeds->xContent )
+                    //    for( auto& rSeed : *xSeeds )
+                    //        vSeedsNIndex.emplace_back( 0, rSeed, 0, false, true, iReadId, pRead->sName, pRead, true,
+                    //                                   pCounter, 0 );
                     for( auto& rSeed : *xReseedOutExtraInfo.pRemovedSeeds )
                         vSeedsNIndex.emplace_back( 0, rSeed, 0, false, true, iReadId, pRead->sName, pRead, true,
                                                    pCounter, 0 );
                     for( auto& rSeed : *pReseeded )
                         vSeedsNIndex.emplace_back( 0, rSeed, 0, false, false, iReadId, pRead->sName, pRead, true,
                                                    pCounter, 0 );
-                    for( size_t uiK = 0; uiK < xHelperRet.pSeeds->size( ); uiK++ )
-                        // only use seeds that we do not get from xReseedOutExtraInfo already
-                        if( xHelperRet.vLayerOfSeeds[ uiK ] > 0 )
-                            vSeedsNIndex.emplace_back(
-                                0, ( *xHelperRet.pSeeds )[ uiK ], xHelperRet.vLayerOfSeeds[ uiK ],
-                                xHelperRet.vParlindromeSeed[ uiK ], xHelperRet.vOverlappingSeed[ uiK ], iReadId,
-                                pRead->sName, pRead, false, pCounter, xHelperRet.vSocIds[ uiK ] );
+                    // for( size_t uiK = 0; uiK < xHelperRet.pSeeds->size( ); uiK++ )
+                    //    // only use seeds that we do not get from xReseedOutExtraInfo already
+                    //    if( xHelperRet.vLayerOfSeeds[ uiK ] > 0 )
+                    //        vSeedsNIndex.emplace_back(
+                    //            0, ( *xHelperRet.pSeeds )[ uiK ], xHelperRet.vLayerOfSeeds[ uiK ],
+                    //            xHelperRet.vParlindromeSeed[ uiK ], xHelperRet.vOverlappingSeed[ uiK ], iReadId,
+                    //            pRead->sName, pRead, false, pCounter, xHelperRet.vSocIds[ uiK ] );
 
                     std::sort( vSeedsNIndex.begin( ), vSeedsNIndex.end( ), []( auto& xA, auto& xB ) {
                         return std::get<1>( xA ).start( ) < std::get<1>( xB ).start( );
@@ -272,7 +276,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                         if( bStop )
                             return;
                         vAllSeeds.insert( vAllSeeds.end( ), vSeedsNIndex.begin( ), vSeedsNIndex.end( ) );
-                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, 0, false );
+                        // addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId, 0, false );
                         addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId, 0, true );
                         vReads.push_back( pRead );
                     } // if
@@ -306,7 +310,8 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                                      std::get<10>( xTup ) );
                         vColIds.push_back( uiCategoryCounter + ( vEndColumn.size( ) - 1 ) / 2 );
 
-                        addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ), false );
+                        // addRectangle( vRectangles, xHelperRet, uiCategoryCounter, iReadId, vEndColumn.size( ), false
+                        // );
                         addRectangle( vRectangles, xReseedOutExtraInfo, uiCategoryCounter, iReadId, vEndColumn.size( ),
                                       true );
 
