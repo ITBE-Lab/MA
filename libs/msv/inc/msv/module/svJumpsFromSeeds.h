@@ -733,7 +733,7 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
           xFilter1( rParameters ),
           xFilter2( rParameters ),
           uiMinNt( rParameters.getSelected( )->xMinNtAfterReseeding->get( ) )
-    {}
+    {} // constructor
 
     /**
      * @note not threadsave if pOutExtra != nullptr

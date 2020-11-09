@@ -237,8 +237,10 @@ template <typename DBCon> class SvCallsFromDb
         xConfig.set( ConfigFlags::WithSelfIntersection );
         xConfig.set( ConfigFlags::WithMinScore );
         xConfig.set( ConfigFlags::WithMaxScore );
-        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist,
-                         iAllowedDist, iAllowedDist );
+        initFetchQuery_(
+            xConfig, iSvCallerIdA, xWkb, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist, iAllowedDist,
+            // self intersection must be x2 other intersection to properly cancel out double true positive calls
+            iAllowedDist * 2, iAllowedDist * 2 );
     }
 
     void initFetchQuery( double dMinScoreGT, double dMaxScoreGT, int64_t iSvCallerIdA, int64_t iX, int64_t iY,
@@ -253,8 +255,10 @@ template <typename DBCon> class SvCallsFromDb
         xConfig.set( ConfigFlags::WithOtherIntersection );
         xConfig.set( ConfigFlags::WithMinScoreGT );
         xConfig.set( ConfigFlags::WithMaxScoreGT );
-        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist,
-                         iAllowedDist, iAllowedDist, iAllowedDist );
+        initFetchQuery_(
+            xConfig, iSvCallerIdA, xWkb, iSvCallerIdB, dMinScoreGT, dMaxScoreGT, iAllowedDist, iAllowedDist,
+            // other intersection must be x2 other intersection to properly cancel out double true positive calls
+            iAllowedDist * 2, iAllowedDist * 2 );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, int64_t iSvCallerIdB,
@@ -267,8 +271,10 @@ template <typename DBCon> class SvCallsFromDb
         xConfig.set( ConfigFlags::Overlapping, bOverlapping );
         xConfig.set( ConfigFlags::WithIntersection );
         xConfig.set( ConfigFlags::WithSelfIntersection );
-        initFetchQuery_( xConfig, iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
-                         iAllowedDist );
+        initFetchQuery_(
+            xConfig, iSvCallerIdA, xWkb, iSvCallerIdB, iAllowedDist, iAllowedDist,
+            // self intersection must be x2 other intersection to properly cancel out double true positive calls
+            iAllowedDist * 2, iAllowedDist * 2 );
     }
 
     void initFetchQuery( int64_t iSvCallerIdA, int64_t iX, int64_t iY, int64_t iW, int64_t iH, double dMinScore,

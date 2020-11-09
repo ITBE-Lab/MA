@@ -888,7 +888,8 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
         {
             auto uiIStart = std::get<0>( vLineSweepVec[ uiI ] );
             auto uiIEnd = std::get<1>( vLineSweepVec[ uiI ] );
-            auto uiPercentageOfI = std::max( ( nucSeqIndex )( ( uiIEnd - uiIEnd ) * fMinNonOverlap ), uiMinNonOverlap );
+            auto uiPercentageOfI =
+                std::max( ( nucSeqIndex )( ( uiIEnd - uiIStart ) * fMinNonOverlap ), uiMinNonOverlap );
             size_t uiJ = uiI + 1;
             nucSeqIndex uiNumUncoveredNt = 0;
             nucSeqIndex uiLocalQueryMax = std::max( uiCurrQueryMax, uiIStart );

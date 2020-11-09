@@ -140,7 +140,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     if not silent:
         print("merging dummy calls...")
     start = datetime.datetime.now()
-    num_merged = merge_dummy_calls(parameter_set_manager, pool, sv_caller_run_id, 80, 5.0)
+    num_merged = merge_dummy_calls(parameter_set_manager, pool, sv_caller_run_id, 110, 5.0)
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("merging_dummy_calls", delta.total_seconds(), False, lambda x: x)
