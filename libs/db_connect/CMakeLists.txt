@@ -29,7 +29,7 @@ endif()
 
 # Define the target dbSQL
 add_library(dbSQL SHARED ${DB_CONNECT_SRC})
-target_compile_definitions( dbSQL PUBLIC DLL_PORT_util=dllexport )
+target_compile_definitions( dbSQL PUBLIC DLL_PORT_util=dllimport )
 
 # link to the fort object file
 target_link_libraries ( dbSQL PUBLIC Threads::Threads fort util contrib_CPP_header )
