@@ -231,6 +231,12 @@ class NucSeq : public libMS::Container
     NucSeq( const NucSeq& rOther, nucSeqIndex uiFrom, nucSeqIndex uiTo )
     {
         vResetProtectedAttributes( );
+        if( uiTo > rOther.length( ) )
+            throw std::runtime_error( "out of bounds: " + std::to_string( uiFrom ) + " " + std::to_string( uiTo ) +
+                                      " " + std::to_string( rOther.length( ) ) );
+        if( uiFrom > uiTo )
+            throw std::runtime_error( "out of bounds: " + std::to_string( uiFrom ) + " " + std::to_string( uiTo ) +
+                                      " " + std::to_string( rOther.length( ) ) );
         vAppend( rOther.pxSequenceRef + uiFrom, uiTo - uiFrom );
     } // constructor
 
@@ -775,8 +781,8 @@ class NucSeq : public libMS::Container
             if( pxSequenceRef[ i ] > 4 )
             {
                 // if was not allow print error and throw exception
-                std::cerr << "Having invalid character in string: '" << pxSequenceRef[ i ] << "' at position: " << i
-                          << " full fastaq: " << fastaq( ) << std::endl;
+                std::cerr << "Having invalid character in string: '" << (uint16_t)pxSequenceRef[ i ]
+                          << "' at position: " << i << " full fastaq: " << fastaq( ) << std::endl;
                 throw std::runtime_error( "Found invalid character in nucSeq." );
             } // if
         } // for
@@ -1274,14 +1280,15 @@ template <> struct PGRowCell<CompNucSeqSharedPtr> : public PGRowCellBase<CompNuc
     // Decompress the nucleotide sequence directly from the buffer.
     inline void store( const PGresult* pPGRes )
     {
-        // DEBUG: std::cout << buf_to_hex( this->pVarLenBuf.get( ), this->uiLength ) << std::endl;
-        if( !( this->isNull ) )
-        {
-            if( *pCellValue == nullptr )
-                *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
-            ( *pCellValue )
-                ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
-        } // if
+        if( *pCellValue == nullptr )
+            *pCellValue = std::make_shared<libMA::CompressedNucSeq>( );
+        ( *pCellValue )
+            ->decompress( reinterpret_cast<uint8_t*>( this->getValPtr( pPGRes ) ), this->getValLength( pPGRes ) );
+    } // method
+
+    inline void setNull( )
+    {
+        *pCellValue = nullptr; // read 'Null' table entry
     } // method
 }; // specialized class
 #endif
@@ -1413,9 +1420,13 @@ template <> struct PGRowCell<libMA::NucSeqSql> : public PGRowCellBase<libMA::Nuc
 
     inline void store( const PGresult* pPGRes )
     {
-        if( !( this->isNull ) )
-            pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->getValPtr( pPGRes ) ),
-                                  this->getValLength( pPGRes ) );
+        pCellValue->fromBlob( reinterpret_cast<unsigned char*>( this->getValPtr( pPGRes ) ),
+                              this->getValLength( pPGRes ) );
+    } // method
+
+    inline void setNull( )
+    {
+        pCellValue->pNucSeq = nullptr; // read 'Null' table entry
     } // method
 }; // specialized class
 #endif

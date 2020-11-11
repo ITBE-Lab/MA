@@ -1,5 +1,5 @@
 from bokeh.plotting import figure
-from bokeh.models import Button, Slider
+from bokeh.models import Button, Slider, RangeSlider, CheckboxButtonGroup
 from bokeh.models.widgets import Dropdown, TextInput, RadioGroup, CheckboxGroup, Div, TextInput
 from bokeh.events import ButtonClick
 from ..util import *
@@ -19,11 +19,12 @@ class Widgets:
             self.file_input.menu.append(dataset_name)
         self.run_id_dropdown = Dropdown(label="select run id here", menu=[])
         self.ground_truth_id_dropdown = Dropdown(label="select ground truth id here", menu=[])
-        self.score_slider = Slider(start=0, end=1, value=0, step=.1, callback_policy='mouseup', title="min score")
-        self.max_elements_slider = Slider(start=1000, end=100000, value=25000, step=1000,
+        self.score_slider = RangeSlider(start=0, end=1, value=(0, 1), step=.1, callback_policy='mouseup',
+                                        title="score range")
+        self.max_elements_slider = Slider(start=1000, end=100000, value=10000, step=1000,
                                           callback_policy='mouseup', title="max render")
         self.range_link_radio = RadioGroup(labels=["Link read plot to x-range", "Link read plot to y-range"],
-                                           active=0)
+                                           active=0, orientation="horizontal")
         self.full_render_button = Button(label="render without limit")
         self.render_mems_button = Button(label="render MEMs")
         self.delete_button = Button(label="Delete Dataset")
@@ -43,6 +44,14 @@ class Widgets:
         self.spinner_div = Div(text=html_file("spinner"), sizing_mode="scale_both", visible=False)
         self.condition = threading.Condition()
 
+        self.subset_buttons = CheckboxButtonGroup(labels=["Render false-positives", "Render false-negatives",
+                                                          "Render true-positives", "Compute Stats"],
+                                                          active=[0, 1, 2])
+        self.subset_buttons.on_click(lambda x: self.forced_read_ids_change(renderer))
+        self.blur_slider = Slider(start=0, end=500, value=110, step=1, callback_policy='mouseup',
+                                        title="Blur")
+        self.blur_slider.on_change("value_throttled", lambda x,y,z: self.slider_change(renderer))
+
     def show_spinner(self, renderer):
         self.spinner_div.visible = True
 
@@ -56,6 +65,7 @@ class Widgets:
 
     def run_id_change(self, renderer):
         with self.condition:
+            renderer.read_plot.recalc_stat = True
             print("new run_id:", self.run_id_dropdown.value)
             renderer.cached_global_overview = None
             run_table = SvCallerRunTable(renderer.db_conn)
@@ -64,25 +74,42 @@ class Widgets:
             call_table = SvCallTable(renderer.db_conn)
             self.score_slider.end = 0
             if call_table.num_calls(int(self.run_id_dropdown.value), 0) > 0:
-                self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value))
-            renderer.render()
+                self.score_slider.end = call_table.max_score(int(self.run_id_dropdown.value)) + 1
+                self.score_slider.value = (0, self.score_slider.end)
+            renderer.render(ignorable=False)
 
     def ground_id_change(self, renderer):
         with self.condition:
+            renderer.read_plot.recalc_stat = True
             run_table = SvCallerRunTable(renderer.db_conn)
             self.ground_truth_id_dropdown.label = "Selected ground truth: " + \
                                                     run_table.getName(int(self.ground_truth_id_dropdown.value)) + \
                                                     " - " + self.ground_truth_id_dropdown.value
-            renderer.render()
+            renderer.render(ignorable=False)
 
     def slider_change(self, renderer):
-        renderer.render()
+        renderer.read_plot.recalc_stat = True
+        renderer.render(ignorable=False)
 
     def forced_read_ids_change(self, renderer):
-        renderer.render()
+        renderer.render(ignorable=False)
 
     def full_render(self, renderer):
-        renderer.render(render_all=True)
+        renderer.render(render_all=True, ignorable=False)
+
+    def get_blur(self):
+        return self.blur_slider.value
+    def get_render_f_p(self):
+        return 0 in self.subset_buttons.active
+
+    def get_render_f_n(self):
+        return 1 in self.subset_buttons.active
+
+    def get_render_t_p(self):
+        return 2 in self.subset_buttons.active
+
+    def compute_stats(self):
+        return 3 in self.subset_buttons.active
 
     def get_forced_read_ids(self, renderer):
         if len(self.force_read_id.value) == 0:
@@ -105,30 +132,20 @@ class Widgets:
         if not renderer.selected_read_id is None:
             read = ReadTable(renderer.db_conn).get_read(renderer.selected_read_id)
 
-            seed_plot_y_s = max(renderer.read_plot.plot.y_range.start, 0)
-            seed_plot_y_e = min(renderer.read_plot.plot.y_range.end, len(read))
-            seed_plot_x_s = max(renderer.read_plot.plot.x_range.start, 0)
-            seed_plot_x_e = min(renderer.read_plot.plot.x_range.end, renderer.pack.unpacked_size_single_strand)
+            seed_plot_y_s = int(max(renderer.read_plot.plot.y_range.start, 0))
+            seed_plot_y_e = int(min(renderer.read_plot.plot.y_range.end, len(read)))
+            seed_plot_x_s = int(max(renderer.read_plot.plot.x_range.start, 0))
+            seed_plot_x_e = int(min(renderer.read_plot.plot.x_range.end, renderer.pack.unpacked_size_single_strand))
 
-            hash_map_seeder = HashMapSeeding(renderer.params)
-            hash_map_seeder.cpp_module.seed_size = 9
-            query_section = NucSeq(str(read)[int(seed_plot_y_s):int(seed_plot_y_e)])
-            ref_section = renderer.pack.extract_from_to(int(seed_plot_x_s), int(seed_plot_x_e))
-            all_k_mers = hash_map_seeder.execute(query_section, ref_section)
-            all_mems = SeedLumping(renderer.params).execute(all_k_mers)
-            filter_module = FilterToUnique(renderer.params)
-            filter_module.cpp_module.num_mm = 0
-            #filtered_mems = filter_module.execute(all_mems, query_section, ref_section)
-            filtered_mems = all_mems
+            filtered_mems = compute_seeds_area(renderer.params, seed_plot_x_s,
+                                               seed_plot_y_s, seed_plot_x_e-seed_plot_x_s,
+                                               seed_plot_y_e-seed_plot_y_s, read, renderer.pack)
             seed_data_new = dict((key, []) for key in renderer.read_plot.seeds.data.keys())
             if len(filtered_mems) > 0:
                 max_seed_size = max( seed.size for seed in filtered_mems )
                 for idx in range(len(filtered_mems)):
-                    filtered_mems[idx].start += int(seed_plot_y_s)
-                    filtered_mems[idx].start_ref += int(seed_plot_x_s)
-
                     add_seed(filtered_mems[idx], seed_data_new, max_seed_size, [], [],
-                                0, False, -1, renderer.selected_read_id, idx)
+                                0, False, -1, renderer.selected_read_id, idx, read.name)
             renderer.read_plot.seeds.data = seed_data_new
 
     def delete_button_event(self, renderer):

@@ -27,8 +27,8 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
      * Is multiplied by query length.
      * 0 = never abort.
      */
-    const double fGiveUp;
-    const size_t uiCurrHarmScoreMin;
+    double fGiveUp;
+    size_t uiCurrHarmScoreMin;
 
     /**
      * @brief disable fGiveUp and fRelMinSeedSizeAmount if genome is too short
@@ -43,7 +43,12 @@ class StripOfConsiderationSeeds : public libMS::Module<SoCPriorityQueue, false, 
     {
         auto uiRet = xS.start_ref( );
         if( bSplitStrands && !xS.bOnForwStrand )
-            uiRet = 2 * rxRefSequence.uiUnpackedSizeForwardStrand - ( xS.start_ref( ) - xS.size( ) );
+            // if strands are split reverse strand reads are sorted in reverse order so the position must be calculated
+            // from the back (back of genome is 2*|R|+(|Q|+1)*num_contigs so that no seed's land in between contigs is
+            // considered )
+            uiRet = 2 * ( rxRefSequence.uiUnpackedSizeForwardStrand +
+                          ( uiQueryLength + 1 ) * rxRefSequence.uiNumContigs( ) ) -
+                    ( xS.start_ref( ) - xS.size( ) );
         return uiRet + ( uiQueryLength - xS.start( ) );
     } // function
 
@@ -114,7 +119,7 @@ class ExtractSeeds : public libMS::Module<Seeds, false, SegmentVector, FMIndex, 
                                            Seeds& rvSeedVector, const nucSeqIndex uiQLen )
     {
         rSegmentVector.emplaceAllEachSeeds( rxFM_index, uiQLen, uiMaxAmbiguity, uiMinSeedSize, rvSeedVector,
-                                            [&]( ) {
+                                            [ & ]( ) {
                                                 setDeltaOfSeed( rvSeedVector.back( ), uiQLen, rxRefSequence,
                                                                 !bRectangular );
                                                 // returning true since we want to continue extracting seeds
@@ -180,9 +185,10 @@ class StripOfConsideration : public libMS::Module<SoCPriorityQueue, false, Segme
 class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
 {
     const size_t uiSoCHeight;
-    const nucSeqIndex uiMinNt;
 
   public:
+    const nucSeqIndex uiMinNt;
+
     GetAllFeasibleSoCs( const ParameterSetManager& rParameters )
         : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
           uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) )
@@ -228,9 +234,10 @@ class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
 class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorityQueue>
 {
     const size_t uiSoCHeight;
-    const nucSeqIndex uiMinNt;
 
   public:
+    nucSeqIndex uiMinNt;
+
     GetAllFeasibleSoCsAsSet( const ParameterSetManager& rParameters )
         : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
           uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) )
@@ -243,7 +250,7 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
 
         while( !pSoCs->empty( ) && pSoCs->getScoreOfNextSoC( ) >= uiMinNt )
         {
-#if 1 // turn on/off the splitting of SoCs on gaps
+#if 0 // turn on/off the splitting of SoCs on gaps
             auto pSeeds = pSoCs->pop( );
             pRet->xContent.push_back( pSeeds );
 #else

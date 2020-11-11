@@ -7,7 +7,7 @@ using namespace libMSV;
 void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the SvJump class
-    py::class_<SvJump, std::shared_ptr<SvJump>>( xOrganizer.util(), "SvJump" )
+    py::class_<SvJump, std::shared_ptr<SvJump>>( xOrganizer.util( ), "SvJump" )
         .def( py::init<const Seed&, const Seed&, int64_t>( ) )
         .def( py::init<const Seed&, nucSeqIndex, const bool, int64_t, nucSeqIndex>( ) )
         .def( "does_switch_strand", &SvJump::does_switch_strand )
@@ -34,16 +34,16 @@ void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readonly( "was_mirrored", &SvJump::bWasMirrored )
         .def_readonly( "from_pos", &SvJump::uiFrom )
         .def_readonly( "to_pos", &SvJump::uiTo )
-        .def_readonly( "query_from", &SvJump::uiQueryFrom )
-        .def_readonly( "query_to", &SvJump::uiQueryTo )
-        .def_readonly( "id", &SvJump::iId )
+        .def_readwrite( "query_from", &SvJump::uiQueryFrom )
+        .def_readwrite( "query_to", &SvJump::uiQueryTo )
+        .def_readwrite( "id", &SvJump::iId )
         .def_readonly( "read_id", &SvJump::iReadId );
 
     // export the SvCall class
-    py::bind_vector<std::vector<int64_t>>( xOrganizer._util(), "int64_tVector", "docstr" );
-    py::class_<SvCall, std::shared_ptr<SvCall>>( xOrganizer.util(), "SvCall" )
-        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, bool, uint32_t>( ) )
+    py::bind_vector<std::vector<int64_t>>( xOrganizer._util( ), "int64_tVector", "docstr" );
+    py::class_<SvCall, std::shared_ptr<SvCall>>( xOrganizer.util( ), "SvCall" )
         .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, bool, uint32_t, uint32_t>( ) )
+        .def( py::init<nucSeqIndex, nucSeqIndex, nucSeqIndex, nucSeqIndex, bool, bool, uint32_t, uint32_t, uint32_t>( ) )
         .def( py::init<std::shared_ptr<SvJump>>( ) )
         .def( "join", &SvCall::join )
         .def( "clear_jumps", &SvCall::clear_jumps )
@@ -51,6 +51,7 @@ void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "get_jump", &SvCall::get_jump )
         .def( "get_score", &SvCall::getScore )
         .def_readwrite( "num_supp_reads", &SvCall::uiNumSuppReads )
+        .def_readwrite( "num_supp_nt", &SvCall::uiSuppNt )
         .def_readwrite( "order_id", &SvCall::iOrderID )
         .def_readwrite( "mirrored", &SvCall::bMirrored )
         .def_readwrite( "reference_ambiguity", &SvCall::uiReferenceAmbiguity )

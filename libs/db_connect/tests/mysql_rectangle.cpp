@@ -60,14 +60,14 @@ int main( void )
 #ifdef POSTGRESQL
                 // Regarding the explicit type cast '::geometry'
                 // See:
-                pDatabase, "SELECT ST_AsBinary(rectangle::geometry) FROM rectangle_test WHERE id = $1" );
+                pDatabase, "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = $1" );
 #else // MySQL
                 pDatabase, "SELECT ST_AsBinary(rectangle) FROM rectangle_test WHERE id = ?" );
 #endif
 
             for( size_t uiI = 0; uiI < vxRectangles.size( ); uiI++ )
             {
-                auto xRect = xQuery.execAndGetNthCell<0>( vuiIds[ uiI ] ).getRect( );
+                /*auto xRect =*/ xQuery.execAndGetNthCell<0>( vuiIds[ uiI ] ).getRect( );
                 // std::cout << xRect << std::endl;
             } // for
         } // scope SQLQuery

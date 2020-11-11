@@ -186,8 +186,10 @@ class Index : public libMS::Container
         pData = mm_idx_str( xOptions.w, xOptions.k, xOptions.flag & MM_I_HPC, xOptions.bucket_bits,
                             (int)vContigs.size( ), &seq[ 0 ], &name[ 0 ] );
         initOptions( );
+#if DEBUG_LEVEL > 0
         mm_idx_stat( pData );
         std::cout << "max Occ:" << xMapOpt.mid_occ << std::endl;
+#endif
     } // constructor
 
     ~Index( )

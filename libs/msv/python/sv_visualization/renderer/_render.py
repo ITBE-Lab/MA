@@ -3,7 +3,7 @@ from MSV import *
 from threading import Thread
 from bokeh.models.tickers import FixedTicker
 
-def render(self, render_all=False):
+def render(self, render_all=False, ignorable=True):
     self.widgets.show_spinner(self)
     self.reset_runtimes()
     self.reset_cds()
@@ -13,17 +13,31 @@ def render(self, render_all=False):
         self.ys = 0
     if self.xe < 0:
         self.xe = 0
+    if self.xe > self.pack.unpacked_size_single_strand:
+        self.xe = self.pack.unpacked_size_single_strand
     if self.ye < 0:
         self.ye = 0
+    if self.ye > self.pack.unpacked_size_single_strand:
+        self.ye = self.pack.unpacked_size_single_strand
     self.w = int(self.xe - self.xs)
     self.h = int(self.ye - self.ys)
 
     s = max(min(self.xs - self.w, self.ys - self.h), 0)
     e = min(max(self.xe + self.w, self.ye + self.h), self.pack.unpacked_size_single_strand)
 
+    xs = [s, e]
+    ys = [s, e]
+
+    for p in [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand]:
+        if self.xs <= p and p <= self.xe:
+            xs.extend([float("NaN"), self.xs, self.xe])
+            ys.extend([float("NaN"), p, p])
+        if self.ys <= p and p <= self.ye:
+            xs.extend([float("NaN"), p, p])
+            ys.extend([float("NaN"), self.ys, self.ye])
 
     # plot diagonal; we need s and e since too large lines sometimes do not render...
-    self.main_plot.diagonal_line.data = {"xs":[s, e, float("NaN")], "ys":[s, e, float("NaN")]}
+    self.main_plot.diagonal_line.data = {"xs":xs, "ys":ys}
 
     def blocking_task():
         with self.cv2:

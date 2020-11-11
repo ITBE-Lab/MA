@@ -296,7 +296,7 @@ template <bool bExplain, typename DBConType> class _QueryExplainer
                      std::string sQueryName = "UnnamedQuery" )
         : sStmtText( rsStmtText ),
           sQueryName( sQueryName ),
-          pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText, json{} ) : nullptr ),
+          pExplainQuery( bExplain ? std::make_unique<ExplainQType>( pDB, "EXPLAIN " + rsStmtText, json{ } ) : nullptr ),
           bIsExplained( false )
     {} // constructor
 
@@ -425,10 +425,10 @@ template <typename DBConPtrType, typename... ColTypes> class _SQLQuery
      *  a JSON  passed via rjConfig.
      */
 #ifdef EXPLAINED_QUERY_IN_COMMON
-    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
+    _SQLQueryTmpl( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{ },
                    std::string sQueryName = "UnnamedQuery" )
 #else
-    _SQLQuery( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{},
+    _SQLQuery( DBConPtrType pDB, const std::string& rsStmtText, const json& rjConfig = json{ },
                std::string sQueryName = "UnnamedQuery" )
 #endif
         : pDB( pDB ),
@@ -629,6 +629,7 @@ const std::string REFERENCES = "REFERENCES";
 // Constants for index definitions via json
 const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_TYPE = "INDEX_TYPE";
+const std::string INDEX_METHOD = "INDEX_METHOD";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
 
@@ -684,12 +685,20 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             std::string sCols = jIndexDef[ INDEX_COLUMNS ];
 
             std::string sIndexType = jIndexDef.count( INDEX_TYPE ) == 0 ? "" : jIndexDef[ INDEX_TYPE ];
+            std::string sIndexMethod =
+                jIndexDef.count( INDEX_METHOD ) == 0
+                    ? ""
+                    : std::string( " USING " ) + jIndexDef[ INDEX_METHOD ].template get<std::string>( );
 
             std::string sStmt = std::string( "CREATE " ) +
 #ifndef POSTGRESQL // MySQL
                                 sIndexType +
 #endif
-                                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName + "(" + sCols + ")";
+                                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName +
+#ifdef POSTGRESQL
+                                sIndexMethod +
+#endif
+                                "(" + sCols + ")";
 
             // WHERE is not supported by MySQL
             if( jIndexDef.count( WHERE ) )
@@ -718,7 +727,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             pTable->pDB->execSQL( makeIndexCreateStmt( pTable->getTableName( ), sIdxName, "IF NOT EXISTS " ) );
 #else /* MySQL */
             // In a pooled environment the creation of indexes should be serialized.
-            pTable->pDB->doPoolSafe( [&] {
+            pTable->pDB->doPoolSafe( [ & ] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( !pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -773,7 +782,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             pTable->pDB->execSQL( makeIndexDropStmt( pTable->getTableName( ), sIdxName ) );
 #else /* MySQL */
             // In a pooled environment the creation of indexes should be serialized.
-            pTable->pDB->doPoolSafe( [&] {
+            pTable->pDB->doPoolSafe( [ & ] {
                 // When we check the existence of the index as well as during creation,
                 // we require an exclusive lock on the database connection.
                 if( pTable->pDB->indexExists( pTable->getTableName( ), sIdxName ) )
@@ -834,7 +843,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         template <typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
         auto cat_arr_of_tpl( const std::array<T, N>& a )
         {
-            return cat_arr_of_tpl_impl( a, Indices{} );
+            return cat_arr_of_tpl_impl( a, Indices{ } );
         } // meta
 
         /** @brief Inserts the buffer content into the table by executing a bulk insert statement.
@@ -850,7 +859,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // The lambda forwards the argument to bindAndExec via references for avoiding copies.
             // This statement creates trouble for some GCC compilers (template instantiation depth exceeds maximum)
             // ...
-            STD_APPLY( [&]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
+            STD_APPLY( [ & ]( auto&... args ) { pBulkInsertStmt->bindAndExec( args... ); }, tCatTpl );
         } // method
 #else // Iterating approach for parameter binding with bulk inserts. (Lacks beauty, but better manageable for compilers)
 
@@ -859,7 +868,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
          */
         template <int OFFSET, typename... Args> void doSingleBind( const std::tuple<Args...>& rTpl )
         {
-            STD_APPLY( [&]( auto&... args ) //
+            STD_APPLY( [ & ]( auto&... args ) //
                        { pBulkInsertStmt->template bind<OFFSET>( args... ); },
                        rTpl );
         } // method
@@ -884,7 +893,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         forAllDoBind( const std::array<T, N>& a )
         {
             for( size_t uiOffset = 0; uiOffset < N; uiOffset++ ) // the runtime bind loop
-                STD_APPLY( [&]( auto&... args ) //
+                STD_APPLY( [ & ]( auto&... args ) //
                            { pBulkInsertStmt->bindDynamic( (int)uiOffset, args... ); },
                            a[ uiOffset ] );
         } // meta
@@ -899,7 +908,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         typename std::enable_if</* condition -> */ ( N <= MAX_COMPILETIME_BIND_N ), /* return type -> */ void>::type
         forAllDoBind( const std::array<T, N>& a )
         {
-            forAllDoBindImpl( a, std::make_index_sequence<N>{} );
+            forAllDoBindImpl( a, std::make_index_sequence<N>{ } );
         } // method
 
 
@@ -1050,7 +1059,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             uiInsPos = 0; // reset insert position counter
             for( size_t uiCount = 0; uiCount < uiInsPosBackup; uiCount++ )
                 // Write the current tuple in the array to the DB
-                STD_APPLY( [&]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
+                STD_APPLY( [ & ]( auto&... args ) { pSingleInsertStmt->bindAndExec( args... ); }, aBuf[ uiCount ] );
         } // method
 
         /** @brief Destructor flushes the buffer. */
@@ -1058,7 +1067,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         {
             // Throwing an exception in a destructor results in undefined behavior.
             // Therefore, we swallow these exceptions and report them via std:cerr.
-            doNoExcept( [this] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
+            doNoExcept( [ this ] { this->flush( ); }, "Exception in ~SQLBulkInserter:" );
         } // destructor
     }; // class (SQLBulkInserter)
 
@@ -1093,17 +1102,78 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         }; // struct
 
         /** @brief Translate C++ types to SQL types via the Functor */
-        static inline std::vector<std::string> getSQLColTypes( )
+        static inline std::vector<std::string> getSQLInsertTypes( )
         {
             std::vector<std::string> vColsSQLTypeNames;
             TranslateTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vColsSQLTypeNames );
             return vColsSQLTypeNames;
         } // method
 
+        // column iteration: recursive case
+        template <size_t N, typename TypeCurrCol, typename... TypesRemainCols> struct TranslateColumnTypes
+        {
+            static void iterate( std::vector<std::string>& rvDBColTypes )
+            {
+                // With respect to the Translator::template:
+                // https://stackoverflow.com/questions/2105901/how-to-fix-expected-primary-expression-before-error-in-c-template-code
+                rvDBColTypes.push_back( Translator::template getSQLColumnTypeName<TypeCurrCol>( ) );
+                // recursive call
+                TranslateColumnTypes<N - 1, TypesRemainCols...>::iterate( rvDBColTypes );
+            } // method
+        }; // struct
+
+        // column iteration: base case (via partial specialization)
+        template <typename TypeCurrCol> struct TranslateColumnTypes<1, TypeCurrCol>
+        {
+            static void iterate( std::vector<std::string>& rvDBColTypes )
+            {
+                rvDBColTypes.push_back( Translator::template getSQLColumnTypeName<TypeCurrCol>( ) );
+            } // method
+        }; // struct
+
+        /** @brief Translate C++ types to SQL types via the Functor */
+        static inline std::vector<std::string> getSQLColumnTypes( )
+        {
+            std::vector<std::string> vColsSQLTypeNames;
+            TranslateColumnTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vColsSQLTypeNames );
+            return vColsSQLTypeNames;
+        } // method
+
+
+        // column iteration: recursive case
+        template <size_t N, typename TypeCurrCol, typename... TypesRemainCols> struct UsedTypes
+        {
+            static void iterate( std::vector<bool>& rvUsedCols )
+            {
+                // With respect to the Translator::template:
+                // https://stackoverflow.com/questions/2105901/how-to-fix-expected-primary-expression-before-error-in-c-template-code
+                rvUsedCols.push_back( Translator::template useInCreate<TypeCurrCol>( ) );
+                // recursive call
+                UsedTypes<N - 1, TypesRemainCols...>::iterate( rvUsedCols );
+            } // method
+        }; // struct
+
+        // column iteration: base case (via partial specialization)
+        template <typename TypeCurrCol> struct UsedTypes<1, TypeCurrCol>
+        {
+            static void iterate( std::vector<bool>& rvUsedCols )
+            {
+                rvUsedCols.push_back( Translator::template useInCreate<TypeCurrCol>( ) );
+            } // method
+        }; // struct
+
+        /** @brief Return which C++ types shall be translated to SQL types via the Functor */
+        static inline std::vector<bool> getUsedColTypes( )
+        {
+            std::vector<bool> vUsedCols;
+            UsedTypes<sizeof...( ColumnTypes ), ColumnTypes...>::iterate( vUsedCols );
+            return vUsedCols;
+        } // method
+
         /** @brief Dump the SQL column types to cout. */
         static void dumpSQLColTypes( )
         {
-            auto vColNames = getSQLColTypes( );
+            auto vColNames = getSQLColumnTypes( );
             for( auto s : vColNames )
                 std::cout << s << " ";
             std::cout << std::endl;
@@ -1116,6 +1186,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     const json jTableDef; // json table definition (jTableDef must stay due to references)
     const json& rjTableCols; // reference into jTableDef
     const std::vector<std::string> vSQLColumnTypes; // SQL types of the table columns as text
+    const std::vector<bool> vUseColumnTypeInCreateStatement; // see PostgreSQLDBCon::TypeTranslator::useInCreate
     bool bDropOnDestr; // if true, table gets dropped at object destruction
     std::unique_ptr<typename DBCon::DBImplForward::PreparedStmt> pInsertStmt; // pointer to prepared insert statement
 
@@ -1134,19 +1205,25 @@ template <typename DBCon, typename... ColTypes> class SQLTable
 #endif
                             + getTableName( ) + " (";
         // SQL code for regular columns
-        for( size_t iItr = 0; iItr < this->rjTableCols.size( ); )
+        auto uiLastUsed = this->rjTableCols.size( ) - 1;
+        while( !this->vUseColumnTypeInCreateStatement[ uiLastUsed ] && uiLastUsed > 0 )
+            uiLastUsed -= 1;
+        for( size_t iItr = 0; iItr <= uiLastUsed; iItr++ )
         {
-            auto& rjCol = this->rjTableCols[ iItr ]; // current column in jTableDef
-            sStmt
-                .append( std::string( rjCol[ COLUMN_NAME ] ) ) // column name
-                .append( " " )
-                .append( vSQLColumnTypes[ iItr ] ); // column type
-            if( rjCol.count( CONSTRAINTS ) )
-                // CONSTRAINTS must be plain text describing all constraints
-                sStmt.append( " " ).append( std::string( rjCol[ CONSTRAINTS ] ) );
-            // insert separating comma
-            if( ++iItr < this->rjTableCols.size( ) )
-                sStmt.append( ", " );
+            if( this->vUseColumnTypeInCreateStatement[ iItr ] )
+            {
+                auto& rjCol = this->rjTableCols[ iItr ]; // current column in jTableDef
+                sStmt
+                    .append( std::string( rjCol[ COLUMN_NAME ] ) ) // column name
+                    .append( " " )
+                    .append( vSQLColumnTypes[ iItr ] ); // column type
+                if( rjCol.count( CONSTRAINTS ) )
+                    // CONSTRAINTS must be plain text describing all constraints
+                    sStmt.append( " " ).append( std::string( rjCol[ CONSTRAINTS ] ) );
+                // insert separating comma
+                if( iItr < uiLastUsed )
+                    sStmt.append( ", " );
+            } // if
         } // for
 
         // SQL code for generated columns if there are any defined
@@ -1254,10 +1331,10 @@ template <typename DBCon, typename... ColTypes> class SQLTable
             // The first column is of type PGBigSerial (indicating a primary key column)
             // PG requires an injection of the keyword 'DEFAULT' for such columns.
             sStmtText.append( "DEFAULT," );
-            getValueStmtImpl_PG_<RemainCols...>( sStmtText, uiArgCount, std::index_sequence_for<RemainCols...>{} );
+            getValueStmtImpl_PG_<RemainCols...>( sStmtText, uiArgCount, std::index_sequence_for<RemainCols...>{ } );
         }
         else
-            getValueStmtImpl_PG_<ColTypes...>( sStmtText, uiArgCount, std::index_sequence_for<ColTypes...>{} );
+            getValueStmtImpl_PG_<ColTypes...>( sStmtText, uiArgCount, std::index_sequence_for<ColTypes...>{ } );
     } // method
 #else // MySQL
     /** @brief Implementation part of getValuesStmt */
@@ -1276,7 +1353,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         // Values for columns of type PGBigSerial are automatically inserted by PG
         getValueStmtImpl_PG<ColTypes...>( sStmtText, uiArgCount );
 #else // MySQL
-        getValueStmtImpl_MYSQL( sStmtText, std::index_sequence_for<ColTypes...>{} );
+        getValueStmtImpl_MYSQL( sStmtText, std::index_sequence_for<ColTypes...>{ } );
 
         // in MYSQL:
         // For INSERT, REPLACE, and UPDATE, if a generated column is inserted into, replaced, or updated
@@ -1388,7 +1465,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     void init( )
     {
         // Create table if not existing in DB guarantee
-        pDB->doPoolSafe( [&] {
+        pDB->doPoolSafe( [ & ] {
             try
             {
                 if( !pDB->tableExistsInDB( getTableName( ) ) )
@@ -1535,7 +1612,8 @@ template <typename DBCon, typename... ColTypes> class SQLTable
         : pDB( pDB ),
           jTableDef( rjTableDef ), // deep copy
           rjTableCols( getTableCols( ) ),
-          vSQLColumnTypes( CollTypeTranslation::getSQLColTypes( ) ),
+          vSQLColumnTypes( CollTypeTranslation::getSQLColumnTypes( ) ),
+          vUseColumnTypeInCreateStatement( CollTypeTranslation::getUsedColTypes( ) ),
           bDropOnDestr( false )
 #if 0
           , xAutoNullCols( xAutoNullCols )
@@ -1551,7 +1629,7 @@ template <typename DBCon, typename... ColTypes> class SQLTable
     /* Destructor */
     virtual ~SQLTable( )
     {
-        do_exception_safe( [&]( ) {
+        do_exception_safe( [ & ]( ) {
             if( pDB && bDropOnDestr )
                 this->drop( );
         } );
@@ -1734,9 +1812,9 @@ class SQLTableWithPriKey : public SQLTable<DBCon, PriKeyType, ColTypes...>
             jTableDef[ TABLE_COLUMNS ].insert(
                 jTableDef[ TABLE_COLUMNS ].begin( ),
                 json::object(
-                    {{COLUMN_NAME, "id"},
-                     {CONSTRAINTS, std::string( "NOT NULL " ) + ( autoIncrRequired ? " AUTO_INCREMENT " : "" ) +
-                                       " UNIQUE PRIMARY KEY"}} ) );
+                    { { COLUMN_NAME, "id" },
+                      { CONSTRAINTS, std::string( "NOT NULL " ) + ( autoIncrRequired ? " AUTO_INCREMENT " : "" ) +
+                                         " UNIQUE PRIMARY KEY" } } ) );
         return jTableDef;
     } // method
 
@@ -1974,13 +2052,13 @@ template <typename DBConType> class SQLDBInformer
     /** @brief Returns a vector of strings holding all schema-names */
     std::vector<std::string> getAllSchemas( )
     {
-        SQLQuery<DBConType, std::string> xQuery( pDBCon, 
+        SQLQuery<DBConType, std::string> xQuery( pDBCon,
 #ifdef POSTGRESQL
-        "SELECT schema_name FROM information_schema.schemata"
+                                                 "SELECT schema_name FROM information_schema.schemata"
 #else // MYSQL
-        "SHOW SCHEMAS"
+                                                 "SHOW SCHEMAS"
 #endif
-         );
+        );
         return xQuery.template executeAndStoreInVector<0>( );
     } // method
 }; // class SQLDBInformer
@@ -2097,7 +2175,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     std::mutex pGlobalInsertLock;
 #endif
 
-    SQLDB( const json& jDBConData = json{}, bool bIsSlave = false )
+    SQLDB( const json& jDBConData = json{ }, bool bIsSlave = false )
         : DBImpl( jDBConData ),
           pTombStone( std::make_shared<bool>( false ) ), // initialize tombstone
           sConId( intToHex( reinterpret_cast<uint64_t>( this ) ) ), // use the address for id creation
@@ -2116,22 +2194,22 @@ template <typename DBImpl> class SQLDB : public DBImpl
      *  @details This constructor is exported to python.
      */
     SQLDB( std::string sSchemaName )
-        : SQLDB( json{{SCHEMA, {{NAME, sSchemaName}}},
+        : SQLDB( json{ { SCHEMA, { { NAME, sSchemaName } } },
 #ifdef USE_PG
-                      { CONNECTION,
-                        { {HOSTNAME, "localhost"},
-                          {USER, "postgres"},
-                          {PASSWORD, "admin"},
-                          { PORT,
-                            0 } } }
+                       { CONNECTION,
+                         { { HOSTNAME, "localhost" },
+                           { USER, "postgres" },
+                           { PASSWORD, "admin" },
+                           { PORT,
+                             0 } } }
 #endif
 #ifdef USE_MSQL
-                      { CONNECTION,
-                        { {HOSTNAME, "localhost"},
-                          {USER, "root"},
-                          {PASSWORD, "admin"},
-                          { PORT,
-                            0 } } }
+                       { CONNECTION,
+                         { { HOSTNAME, "localhost" },
+                           { USER, "root" },
+                           { PASSWORD, "admin" },
+                           { PORT,
+                             0 } } }
 #endif
           } )
     {}
@@ -2140,7 +2218,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     ~SQLDB( )
     {
         // Throwing an exception in a destructor results in undefined behavior.
-        doNoExcept( [this] {
+        doNoExcept( [ this ] {
             // Unregister the schema in the global visor
             auto uiRemainCons = xSQLDBGlobalSync.unregisterSchema( sSchemaName );
 
@@ -2148,7 +2226,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
             // it is my job to do it now ...
             if( ( uiRemainCons == 0 ) && this->bDropOnClosure )
             {
-                xSQLDBGlobalSync.doSynchronized( [this] {
+                xSQLDBGlobalSync.doSynchronized( [ this ] {
                     // DEBUG: std::cout << "Do schema drop synchronized in Destructor" << std::endl;
                     this->dropSchema( this->sSchemaName );
                 } ); // doSynchronized
@@ -2210,7 +2288,7 @@ template <typename DBImpl> class SQLDB : public DBImpl
     virtual std::shared_ptr<SQLDB> getSlave( )
     {
         if( pSlave == nullptr )
-            pSlave = std::make_shared<SQLDB>( jDBConData, true);
+            pSlave = std::make_shared<SQLDB>( jDBConData, true );
         return pSlave;
     } // method
 }; // SQLDB

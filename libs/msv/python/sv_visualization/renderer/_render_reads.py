@@ -1,7 +1,7 @@
 from bokeh.plotting import figure, ColumnDataSource
 from bokeh.models import FuncTickFormatter, TapTool, OpenURL, LabelSet, FixedTicker
 from bokeh.models.callbacks import CustomJS
-from bokeh.palettes import Plasma, Plasma256
+from bokeh.palettes import Plasma, Plasma256, gray
 from MA import *
 from MSV import *
 import math
@@ -44,11 +44,14 @@ def render_reads(self, render_all=False):
         "l": [],
         "idx": [],
         "c": [],
+        "oc": [],
         "f": [],
         "layer": [],
         "parlindrome": [],
         "overlapping": [],
         "in_soc_reseed": [],
+        "soc_nt": [],
+        "soc_id": [],
         "max_filter": [],
         "min_filter": [],
         "x": [],
@@ -56,23 +59,6 @@ def render_reads(self, render_all=False):
         "category": []
     }
     # create a column data source for the read plot...
-    read_plot_dict = {
-        "center": [],
-        "r_id": [],
-        "r_name": [],
-        "size": [],
-        "q": [],
-        "r": [],
-        "l": [],
-        "idx": [],
-        "c": [],
-        "f": [],
-        "layer": [],
-        "parlindrome": [],
-        "x": [],
-        "y": [],
-        "category": []
-    }
     read_ambiguous_reg_dict = {
         "l": [],
         "r": [],
@@ -116,6 +102,8 @@ def render_reads(self, render_all=False):
                     read_dict["parlindrome"].append(seed_info.bParlindrome)
                     read_dict["overlapping"].append(seed_info.bOverlapping)
                     read_dict["in_soc_reseed"].append(seed_info.bInSocReseed)
+                    read_dict["soc_nt"].append(seed_info.soc_nt)
+                    read_dict["soc_id"].append(seed_info.soc_id)
                     read_dict["max_filter"].append(seed_info.uiMaxFilterCount)
                     read_dict["min_filter"].append(seed_info.uiMinFilterCount)
                     read_dict["f"].append(seed_info.bOnForward)
@@ -125,6 +113,7 @@ def render_reads(self, render_all=False):
                     read_dict["x"].append([*seed_info.xX])
                     read_dict["y"].append([*seed_info.xY])
                     read_dict["c"].append("lightgrey")
+                    read_dict["oc"].append(gray(6)[ (seed_info.soc_id % 5) + 1])
 
                 for read in info_ret.vReads:
                     self.read_plot.nuc_plot.nucs_by_r_id[read.id] = {"p": [], "c": [], "i": []}

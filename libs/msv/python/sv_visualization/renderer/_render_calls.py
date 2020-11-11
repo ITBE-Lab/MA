@@ -65,12 +65,89 @@ def render_calls(self, render_all=False):
     }
     desc_table = CallDescTable(self.db_conn_2)
     jump_list = []
+    stats_data_1 = None
+    if self.widgets.compute_stats() and self.read_plot.recalc_stat and self.get_run_id() != -1 and \
+                    self.get_gt_id() != -1:
+        self.read_plot.recalc_stat = False
+        with self.measure("count - SvCallFromDb(run_id)"):
+            min_blur = 0
+            max_blur = 500
+            blur_step = 10
+            stats_data_1 = {"l":[], "x":[], "y":[], "c":[]}
+            stats_data_2 = {"l":[], "x":[], "y":[], "c":[]}
+            stats_data_3 = {"x":[], "w":[], "t":[], "c":[], "l":[]}
+            print("computing stats 1...")
+            stats, blur_stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
+                                                            self.widgets.get_blur(), min_blur, max_blur, blur_step,
+                                                            self.get_min_score(), self.get_max_score(),
+                                                            max(1, (self.get_max_score() - self.get_min_score()) / 50))
+            print("done")
+            stats_data_1["l"].append("Ground Truth")
+            stats_data_1["x"].append([self.get_min_score(), self.get_max_score()])
+            stats_data_1["y"].append([gt_total, gt_total])
+            stats_data_1["c"].append("black")
+            stats_data_1["l"].append("Calls")
+            stats_data_1["x"].append([])
+            stats_data_1["y"].append([])
+            stats_data_1["c"].append("blue")
+            stats_data_1["l"].append("true-positives")
+            stats_data_1["x"].append([])
+            stats_data_1["y"].append([])
+            stats_data_1["c"].append("green")
+            for x, num_calls, num_tp in stats:
+                for n in [-1, -2]:
+                    stats_data_1["x"][n].append(x)
+                stats_data_1["y"][-1].append(num_tp)
+                stats_data_1["y"][-2].append(num_calls)
+            stats_data_2["l"].append("Ground Truth")
+            stats_data_2["x"].append([min_blur, max_blur])
+            stats_data_2["y"].append([gt_total, gt_total])
+            stats_data_2["c"].append("black")
+            stats_data_2["l"].append("true-positives")
+            stats_data_2["x"].append([])
+            stats_data_2["y"].append([])
+            stats_data_2["c"].append("green")
+            for x, y in blur_stats:
+                stats_data_2["x"][-1].append(x)
+                stats_data_2["y"][-1].append(y)
+            print("computing stats 2...")
+            tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
+                                                            self.get_gt_id(),
+                                                            self.widgets.get_blur(), 50,
+                                                            self.get_min_score(), self.get_max_score(),
+                                                            10000)
+            print("done")
+            for legend, color, bar in [("false-positive", "red", fp_bars),
+                                       ("true-positive", "green", tp_bars),
+                                       ("false-negative", "orange", fn_bars)]:
+                for c, t in bar:
+                    stats_data_3["x"].append(c)
+                    stats_data_3["w"].append(bar_width)
+                    stats_data_3["t"].append(t)
+                    stats_data_3["c"].append(color)
+                    stats_data_3["l"].append(legend)
+
     with self.measure("SvCallFromDb(run_id)"):
-        calls_from_db = SvCallsFromDb(self.params, self.db_conn, self.get_run_id(), int(self.xs - self.w),
-                                      int(self.ys - self.h), self.w*3, self.h*3, self.get_min_score())
+        default_args = [self.get_run_id(),
+                        int(self.xs - self.w),
+                        int(self.ys - self.h),
+                        self.w*3,
+                        self.h*3]
+        if self.widgets.get_render_t_p() and self.widgets.get_render_f_p():
+            self.calls_from_db.init(*default_args,
+                                        self.get_min_score(),
+                                        self.get_max_score())
+        elif self.widgets.get_render_t_p() or self.widgets.get_render_f_p():
+            self.calls_from_db.init(*default_args,
+                                        self.get_gt_id(),
+                                        self.widgets.get_render_t_p(),
+                                        self.widgets.get_blur(),
+                                        self.get_min_score(),
+                                        self.get_max_score())
+
     with self.measure("SvCallFromDb(run_id) extract"):
-        while calls_from_db.hasNext():
-            call = calls_from_db.next(self.do_render_call_jumps_only)
+        while (self.widgets.get_render_t_p() or self.widgets.get_render_f_p()) and self.calls_from_db.hasNext():
+            call = self.calls_from_db.next(self.do_render_call_jumps_only)
             if self.do_render_call_jumps_only:
                 for idx in range(len(call.supporing_jump_ids)):
                     jump_list.append(call.get_jump(idx))
@@ -100,11 +177,23 @@ def render_calls(self, render_all=False):
             accepted_plus_data["s"].append(str(call.get_score()))
             accepted_plus_data["desc"].append(desc_table.get_desc(call.id))
     with self.measure("SvCallFromDb(gt_id)"):
-        calls_from_db_gt = SvCallsFromDb(self.params, self.db_conn, self.get_gt_id(),
-                                    int(self.xs - self.w), int(self.ys - self.h), self.w*3, self.h*3, 0)
+        default_args = [self.get_gt_id(),
+                        int(self.xs - self.w),
+                        int(self.ys - self.h),
+                        self.w*3,
+                        self.h*3]
+        if self.widgets.get_render_t_p() and self.widgets.get_render_f_n():
+            self.calls_from_db_gt.init(*default_args)
+        elif self.widgets.get_render_t_p() or self.widgets.get_render_f_n():
+            self.calls_from_db_gt.init(self.get_min_score(),
+                                        self.get_max_score(),
+                                        *default_args,
+                                        self.get_run_id(),
+                                        self.widgets.get_render_t_p(),
+                                        self.widgets.get_blur())
     with self.measure("SvCallFromDb(gt_id) extract"):
-        while calls_from_db_gt.hasNext():
-            call = calls_from_db_gt.next(False)
+        while (self.widgets.get_render_t_p() or self.widgets.get_render_f_n()) and self.calls_from_db_gt.hasNext():
+            call = self.calls_from_db_gt.next(False)
             if call.x.size == 0 and call.y.size == 0:
                 ground_plus_data["x"].append(call.x.start + 0.5)
                 ground_plus_data["y"].append(call.y.start + 0.5)
@@ -135,6 +224,10 @@ def render_calls(self, render_all=False):
         self.main_plot.call_x.data = accepted_plus_data
         self.main_plot.ground_truth_quad.data = ground_boxes_data
         self.main_plot.ground_truth_x.data = ground_plus_data
+        if not stats_data_1 is None:
+            self.read_plot.stat_lines_1.data = stats_data_1
+            self.read_plot.stat_lines_2.data = stats_data_2
+            self.read_plot.stat_lines_3.data = stats_data_3
     self.do_callback(callback)
 
     with self.measure("render_jumps"):

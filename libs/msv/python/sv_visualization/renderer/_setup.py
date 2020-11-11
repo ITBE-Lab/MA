@@ -24,8 +24,15 @@ def setup(self):
         self.mm_index.set_max_occ(2)
         self.db_conn = DbConn(dataset_name)
         self.db_conn_2 = DbConn(dataset_name)
+        self.db_conn_3 = DbConn(dataset_name)
+        self.db_conn_4 = DbConn(dataset_name)
+        self.db_conn_5 = DbConn(dataset_name)
         print("NUM THREADS", self.params.get_num_threads())
         self.db_pool = PoolContainer(self.params.get_num_threads() + 1, dataset_name)
+        
+        self.calls_from_db = SvCallsFromDb(self.db_conn_3)
+        self.count_calls_from_db = SvCallsFromDb(self.db_conn_4)
+        self.calls_from_db_gt = SvCallsFromDb(self.db_conn_5)
 
         # chromosome lines
         xs = [*self.pack.contigStarts(), self.pack.unpacked_size_single_strand]
@@ -80,7 +87,7 @@ def setup(self):
             run_table = SvCallerRunTable(self.db_conn)
             for run_id in run_table.getIds():
                 text = run_table.getName(run_id) + " - " + run_table.getDate(run_id) + " - " + run_table.getDesc(run_id)
-                text += " - " + str(SvCallTable(self.db_conn).num_calls(run_id, self.widgets.score_slider.value))
+                text += " - " + str(SvCallTable(self.db_conn).num_calls(run_id, self.widgets.score_slider.value[0]))
                 menu.append((text, str(run_id)))
         self.widgets.run_id_dropdown.menu = menu
         self.widgets.ground_truth_id_dropdown.menu = menu

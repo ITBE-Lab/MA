@@ -63,8 +63,8 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
 
             #### FILTERS ####
 
-            filter1_pledge = promise_me(filter1, sweep2_pledge)
-            analyze.register("FilterLowSupportShortCalls", filter1_pledge, True)
+            #filter1_pledge = promise_me(filter1, sweep2_pledge)
+            #analyze.register("FilterLowSupportShortCalls", filter1_pledge, True)
             
             #filter2_pledge = promise_me(filter2, filter1_pledge)
             #analyze.register("FilterFuzzyCalls", filter2_pledge, True)
@@ -76,17 +76,17 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             #filter3_pledge = promise_me(filter5, filter2_pledge)
             #analyze.register("FilterDiagonalLineCalls", filter3_pledge, True)
 
-            call_ambiguity_pledge = promise_me(call_ambiguity, filter1_pledge, pack_pledge)
+            call_ambiguity_pledge = promise_me(call_ambiguity, sweep2_pledge, pack_pledge)
             analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge, True)
 
-            filter6_pledge = promise_me(filter6, call_ambiguity_pledge)
-            analyze.register("FilterLowScoreCalls", filter6_pledge, True)
+            #filter6_pledge = promise_me(filter6, call_ambiguity_pledge)
+            #analyze.register("FilterLowScoreCalls", filter6_pledge, True)
 
             call_inserter = promise_me(get_call_inserter, pool_pledge)
             inserter_vec.append(call_inserter)
 
             # filter6_pledge
-            write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, filter6_pledge)
+            write_to_db_pledge = promise_me(call_inserter_module, call_inserter, pool_pledge, call_ambiguity_pledge)
             analyze.register("CallInserterModule", write_to_db_pledge, True)
 
             unlock_pledge = promise_me(UnLock(parameter_set_manager, section_pledge), write_to_db_pledge)
@@ -128,23 +128,31 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
     if not silent:
         print("done computing index")
 
-        print("high score filter...")
-    start = datetime.datetime.now()
-    call_table.filter_calls_with_high_score(sv_caller_run_id, 0.1)
-    end = datetime.datetime.now()
-    delta = end - start
-    analyze.register("high_score_filter", delta.total_seconds(), False, lambda x: x)
-    if not silent:
-        print("done high score filter")
+        #print("high score filter...")
+    #start = datetime.datetime.now()
+    #call_table.filter_calls_with_high_score(sv_caller_run_id, 0.1)
+    #end = datetime.datetime.now()
+    #delta = end - start
+    #analyze.register("high_score_filter", delta.total_seconds(), False, lambda x: x)
+    #if not silent:
+    #    #print("done high score filter")
 
-        print("overlapping...")
+    if not silent:
+        print("merging dummy calls...")
     start = datetime.datetime.now()
-    num_combined = 0 #combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
+    num_merged = merge_dummy_calls(parameter_set_manager, pool, sv_caller_run_id, 110, 5.0)
     end = datetime.datetime.now()
     delta = end - start
-    analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
+    analyze.register("merging_dummy_calls", delta.total_seconds(), False, lambda x: x)
+
+    #    #print("overlapping...")
+    #start = datetime.datetime.now()
+    #num_combined = 0 #combine_overlapping_calls(parameter_set_manager, pool, sv_caller_run_id)
+    #end = datetime.datetime.now()
+    #delta = end - start
+    #analyze.register("combine_overlapping_calls", delta.total_seconds(), False, lambda x: x)
     if not silent:
-        print("done overlapping; combined", num_combined, "calls")
+        print("done merging dummy calls; combined", num_merged, "calls")
         analyze.analyze(out_file)
         if not out_file is None:
             out_file.write("run_id is " + str(sv_caller_run_id) + "\n")

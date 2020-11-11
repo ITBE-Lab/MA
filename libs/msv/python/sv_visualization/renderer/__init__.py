@@ -25,12 +25,7 @@ class Renderer():
         self.w = None
         self.h = None
         self.params = ParameterSetManager()
-        self.params.by_name("Min Size Edge").set(10)
-        self.params.by_name("Maximal Ambiguity SV").set(100)
-        self.params.by_name("Min NT in SoC").set(25)
-        self.params.by_name("Rectangular SoC").set(False)
-        self.params.by_name("Fixed SoC Width").set(1000)
-        self.params.by_name("Max Size Reseed").set(2000)
+        self.params.set_selected("SV-PacBio")
         self.quads = []
         self.read_ids = set() # @todo make two dicts? read ids new and read ids old?
         self.give_up_factor = 1000
@@ -60,6 +55,9 @@ class Renderer():
         self.cv = Condition()
         self.cv2 = Condition()
         self.num_renders_queue = 0
+        self.calls_from_db = None
+        self.count_calls_from_db = None
+        self.calls_from_db_gt = None
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:
@@ -72,7 +70,10 @@ class Renderer():
         return int(self.widgets.ground_truth_id_dropdown.value)
 
     def get_min_score(self):
-        return self.widgets.score_slider.value
+        return self.widgets.score_slider.value[0]
+
+    def get_max_score(self):
+        return self.widgets.score_slider.value[1]
 
     def get_max_num_ele(self):
         return self.widgets.max_elements_slider.value

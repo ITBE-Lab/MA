@@ -20,6 +20,11 @@ template <> static inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTyp
     return "bytea"; // WKB data are passed as BLOB
 } // specialized method
 
+template <> static inline std::string PostgreSQLDBCon::TypeTranslator::getSQLColumnTypeName<WKBUint64Rectangle>( )
+{
+    return "geometry"; // WKB data are passed as BLOB
+} // specialized method
+
 #ifdef _MSC_VER
 template <> static inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBUint64Rectangle &>()
 {
@@ -64,15 +69,19 @@ struct /* MySQLConDB:: */ PGRowCell<WKBUint64Rectangle> : public /* MySQLConDB::
 
     inline void store( const PGresult* pPGRes )
     {
-        if( !( this->isNull ) )
-            pCellValue->setData( this->getValPtr( pPGRes ) );
+        pCellValue->setData( this->getValPtr( pPGRes ) );
     } // method
 }; // specialized class
 
 // Part1 : Specify the corresponding MySQL-type for your blob.
 template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBPoint>( )
 {
-    return "POINT"; // WKB data are passed as BLOB
+    return "bytea"; // WKB data are passed as BLOB
+} // specialized method
+
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLColumnTypeName<WKBPoint>( )
+{
+    return "geometry"; // WKB data are passed as BLOB
 } // specialized method
 
 // Part1b : Spatial types require an indication that the argument passed at a placeholder's
@@ -80,7 +89,7 @@ template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<W
 template <>
 inline std::string PostgreSQLDBCon::TypeTranslator::getPlaceholderForType<WKBPoint>( const std::string& rsInsertedText )
 {
-    return "ST_PointFromWKB(" + rsInsertedText + ", 0)";
+    return "ST_GeomFromWKB(" + rsInsertedText + ", 0)";
 } // specialized method
 
 // Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
@@ -103,7 +112,6 @@ template <> struct /* PostgreSQLDBCon:: */ PGRowCell<WKBPoint> : public /* Postg
 
     inline void store( const PGresult* pPGRes )
     {
-        if( !( this->isNull ) )
-            pCellValue->setData( this->getValPtr( pPGRes ) );
+        pCellValue->setData( this->getValPtr( pPGRes ) );
     } // method
 }; // specialized class

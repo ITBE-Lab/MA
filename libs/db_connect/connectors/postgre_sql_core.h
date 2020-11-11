@@ -263,9 +263,7 @@ template <typename CellType> class PGRowCellBase
   public:
     CellType* pCellValue; // pointer to the actual cell value (this pointer refers into tCellValues)
     size_t uiColNum; // column number of cell in query
-    bool isNull = false; // if true, cell keeps a null value
-
-
+  public:
     /** @brief Initialization of a cell must be done via this init method. */
     inline void init( CellType* pCellValue, // pointer to actual cell value
                       size_t uiColNum ) // column number of cell in query outcome
@@ -292,6 +290,11 @@ template <typename CellType> class PGRowCellBase
     //     throw PostgreSQLError( std::string( "store in PGRowCellBase called for type: " ) + typeid( CellType ).name( )
     //     );
     // } // method
+
+    inline void setNull( )
+    {
+        throw PostgreSQLError( "setNull not implemented for this " );
+    } // method
 
     inline void checkOid( const PGresult* pPGRes, Oid xCppOid, const std::map<std::string, Oid>& xOidMap )
     {
@@ -351,8 +354,8 @@ template <> struct PGRowCell<bool> : public PGRowCellBase<bool>
 
     inline void store( const PGresult* pPGRes )
     {
-        *pCellValue = byteswap2<bool>( this->getValPtr( pPGRes ) );
-        this->isNull = false;
+        // no swapping required, just check for 0
+        *pCellValue = ( ( uint16_t ) * this->getValPtr( pPGRes ) ) != 0;
     } // method
 }; // specialized class
 
@@ -367,7 +370,6 @@ template <> struct PGRowCell<int32_t> : public PGRowCellBase<int32_t>
     inline void store( const PGresult* pPGRes )
     {
         *pCellValue = byteswap4<int32_t>( this->getValPtr( pPGRes ) );
-        this->isNull = false;
     } // method
 }; // specialized class
 
@@ -382,7 +384,6 @@ template <> struct PGRowCell<uint32_t> : public PGRowCellBase<uint32_t>
     inline void store( const PGresult* pPGRes )
     {
         *pCellValue = (uint32_t)byteswap8<int64_t>( this->getValPtr( pPGRes ) );
-        this->isNull = false;
     } // method
 }; // specialized class
 
@@ -397,7 +398,6 @@ template <> struct PGRowCell<int64_t> : public PGRowCellBase<int64_t>
     inline void store( const PGresult* pPGRes )
     {
         *pCellValue = byteswap8<int64_t>( this->getValPtr( pPGRes ) );
-        this->isNull = false;
     } // method
 }; // specialized class
 
@@ -412,7 +412,6 @@ template <> struct PGRowCell<uint64_t> : public PGRowCellBase<uint64_t>
     inline void store( const PGresult* pPGRes )
     {
         *pCellValue = (uint64_t)byteswap8<int64_t>( this->getValPtr( pPGRes ) );
-        this->isNull = false;
     } // method
 }; // specialized class
 
@@ -427,7 +426,6 @@ template <> struct PGRowCell<double> : public PGRowCellBase<double>
     inline void store( const PGresult* pPGRes )
     {
         *pCellValue = byteswap8<double>( this->getValPtr( pPGRes ) );
-        this->isNull = false;
     } // method
 }; // specialized class
 
@@ -577,6 +575,12 @@ class PostgreSQLDBCon
 
         } // method
 
+        template <typename Type> static inline std::string getSQLColumnTypeName( )
+        {
+            // default redirects to the getSQLTypeName function above
+            return getSQLTypeName<Type>();
+        } // method
+
         /** @brief Delivers the appropriate string for placeholder in prepared statement (as e.g. INSERT statement).
          * In most cases this is simply a '?'. But for some types, as e.g. spatial types, an additional wrapping is
          * required for indicating the precise kind of data-representation passed to the MySQL client. In such cases an
@@ -585,6 +589,21 @@ class PostgreSQLDBCon
         template <typename Type> static inline std::string getPlaceholderForType( const std::string& rsInsertedText )
         {
             return rsInsertedText;
+        } // method
+
+        /** @brief Do not include this cell in table creation statements
+         * @details
+         * Purpose:
+         * There are SQL-types that require two (or more) values in insert statements. E.g. the postgres range types.
+         * For these types we add two (or more) CellTypes:
+         * The first one uses it's type to initialize the column in the SQL-table.
+         * All following types return false in useInCreate and do not contribute SQL-columns themselves this way.
+         * In the insert statement these following columns can then be used to fill out the remaining values for the
+         * column.
+         */
+        template <typename Type> static inline bool useInCreate( )
+        {
+            return true;
         } // method
 
       private:
@@ -611,7 +630,7 @@ class PostgreSQLDBCon
 
         static inline std::string getSQLTypeName( identity<bool> )
         {
-            return "int2";
+            return "bool";
         } // private method
 
         static inline std::string getSQLTypeName( identity<int32_t> )
@@ -1213,7 +1232,7 @@ class PostgreSQLDBCon
                     // get the actual cell values
                     for_each_in_tuple( tCellWrappers, [ & ]( auto& rCell ) {
                         if( PQgetisnull( this->pPGRes, 0, (int)rCell.uiColNum ) )
-                            rCell.isNull = true;
+                            rCell.setNull( );
                         else
                             rCell.store( this->pPGRes /* PQgetvalue( this->pPGRes, 0, (int)rCell.uiColNum ) */ );
                     } ); // for each tuple
@@ -1279,7 +1298,7 @@ class PostgreSQLDBCon
     PGresult* pPGRes; //
     std::string sCurrSchema; //  name of current schema
     // Predefined table existence check
-    std::unique_ptr<PreparedQueryTmpl<PostgreSQLDBCon*, int32_t>> pTableExistStmt;
+    std::unique_ptr<PreparedQueryTmpl<PostgreSQLDBCon*, bool>> pTableExistStmt;
     std::shared_ptr<std::mutex> pConnMutex; // for exclusive connection access
 
   private:
@@ -1337,6 +1356,9 @@ class PostgreSQLDBCon
         // currently unsed: int iFields = PQnfields( this->pPGRes );
         for( int i = 0; i < PQntuples( this->pPGRes ); i++ )
             mOidMap.emplace( PQgetvalue( this->pPGRes, i, 0 ), std::stoi( PQgetvalue( this->pPGRes, i, 1 ) ) );
+
+        // insert dummy oid for range types
+        mOidMap.emplace( "int8range", mOidMap[ "int8" ] );
     } // method
 
     /** @brief Dumps all key-value in the OID map. */
@@ -1509,11 +1531,13 @@ class PostgreSQLDBCon
             // Check for the existence of the table in the db-description schema.
             // See: https://stackoverflow.com/questions/20582500/how-to-check-if-a-table-exists-in-a-given-schema
             if( this->pTableExistStmt == nullptr )
-                this->pTableExistStmt = std::make_unique<PreparedQueryTmpl<PostgreSQLDBCon*, int32_t>>(
-                    this, std::string( "SELECT to_regclass($1)" ) );
+                this->pTableExistStmt = std::make_unique<PreparedQueryTmpl<PostgreSQLDBCon*, bool>>(
+                    this, std::string( "SELECT CASE WHEN to_regclass($1) is NULL THEN false ELSE true END AS v1" ) );
 
-            pTableExistStmt->execBindFetch( std::string( this->sCurrSchema ) + "." + sTblName );
-            bTableExists = !( std::get<0>( this->pTableExistStmt->tCellWrappers ).isNull );
+            if( !pTableExistStmt->execBindFetch( std::string( this->sCurrSchema ) + "." + sTblName ) )
+                throw PostgreSQLError( "PostgreSQL: Logic error in method tableExistsInDB." );
+
+            bTableExists = std::get<0>( pTableExistStmt->getCellValues( ) );
             if( pTableExistStmt->fetchNextRow( ) )
                 throw PostgreSQLError( "PostgreSQL: Logic error in method tableExistsInDB." );
         } // do

@@ -37,6 +37,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
     ///@brief the beginning of the match on the reference
     nucSeqIndex uiPosOnReference = 0;
     unsigned int uiAmbiguity;
+    size_t uiSoCNt = 0;
     bool bOnForwStrand;
     nucSeqIndex uiDelta = 0;
 
@@ -52,6 +53,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
         : Interval( uiPosOnQuery, uiLength ),
           uiPosOnReference( uiPosOnReference ),
           uiAmbiguity( 0 ),
+          uiSoCNt( 0 ),
           bOnForwStrand( bOnForwStrand )
     {} // constructor
 
@@ -63,6 +65,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
         : Interval( uiPosOnQuery, uiLength ),
           uiPosOnReference( uiPosOnReference ),
           uiAmbiguity( uiAmbiguity ),
+          uiSoCNt( 0 ),
           bOnForwStrand( bOnForwStrand )
     {} // constructor
 
@@ -73,6 +76,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
         : Interval( rOther ),
           uiPosOnReference( rOther.uiPosOnReference ),
           uiAmbiguity( rOther.uiAmbiguity ),
+          uiSoCNt( rOther.uiSoCNt ),
           bOnForwStrand( rOther.bOnForwStrand ),
           uiDelta( rOther.uiDelta )
     {} // copy constructor
@@ -136,6 +140,7 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
     {
         Interval::operator=( rxOther );
         uiPosOnReference = rxOther.uiPosOnReference;
+        uiSoCNt = rxOther.uiSoCNt;
         uiAmbiguity = rxOther.uiAmbiguity;
         bOnForwStrand = rxOther.bOnForwStrand;
         uiDelta = rxOther.uiDelta;
@@ -169,9 +174,11 @@ class Seed : public libMS::Container, public geom::Interval<nucSeqIndex>
         if( bOnForwStrand != rxOther.bOnForwStrand )
             return bOnForwStrand;
         if( uiAmbiguity != rxOther.uiAmbiguity )
-            return uiAmbiguity;
+            return uiAmbiguity < rxOther.uiAmbiguity;
+        if( uiSoCNt != rxOther.uiSoCNt )
+            return uiSoCNt < rxOther.uiSoCNt;
         if( uiDelta != rxOther.uiDelta )
-            return uiDelta;
+            return uiDelta < rxOther.uiDelta;
         return false;
     } // operator
 

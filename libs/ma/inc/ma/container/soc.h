@@ -84,6 +84,7 @@ class SoCOrder
     inline void operator=( const SoCOrder& rOther )
     {
         uiAccumulativeLength = rOther.uiAccumulativeLength;
+        uiSeedAmount = rOther.uiSeedAmount;
         uiSeedAmbiguity = rOther.uiSeedAmbiguity;
     } // operator
 }; // class
@@ -270,6 +271,7 @@ class SoCPriorityQueue : public libMS::Container
             pRet->xStats.num_seeds_in_strip++;
             assert( xCollect2->start( ) <= xCollect2->end( ) );
             // if the iterator is still within the strip add the seed and increment the iterator
+            xCollect2->uiSoCNt = std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
             pRet->push_back( *( xCollect2++ ) );
         } // while
 
@@ -296,7 +298,7 @@ class SoCPriorityQueue : public libMS::Container
         auto xCollect = std::get<1>( vMaxima.front( ) );
         auto xCollectEnd = std::get<2>( vMaxima.front( ) );
         nucSeqIndex uiStart = xCollect->start_ref( );
-        nucSeqIndex uiEnd = (xCollectEnd-1)->end_ref( );
+        nucSeqIndex uiEnd = ( xCollectEnd - 1 )->end_ref( );
         uint32_t uiScore = (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
 
         // move to the next strip
@@ -306,10 +308,46 @@ class SoCPriorityQueue : public libMS::Container
         return std::make_tuple( uiStart, uiEnd, uiScore );
     } // method
 
-    inline uint32_t getScoreOfNextSoC()
+    /// @brief see pop_info
+    inline std::tuple<nucSeqIndex, nucSeqIndex, uint32_t> peek_info( )
+    {
+        DEBUG( assert( !empty( ) ); assert( bInPriorityMode ); ) // DEBUG
+
+        // the information that shall be returned
+        auto xCollect = std::get<1>( vMaxima.front( ) );
+        auto xCollectEnd = std::get<2>( vMaxima.front( ) );
+        nucSeqIndex uiStart = xCollect->start_ref( );
+        nucSeqIndex uiEnd = ( xCollectEnd - 1 )->end_ref( );
+        uint32_t uiScore = (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
+
+        return std::make_tuple( uiStart, uiEnd, uiScore );
+    } // method
+
+    inline uint32_t getScoreOfNextSoC( )
     {
         return (uint32_t)std::get<0>( vMaxima.front( ) ).uiAccumulativeLength;
     }
+
+    inline void adjustScore( SoCOrder& rScore, std::vector<Seed>::iterator xCutStart,
+                             std::vector<Seed>::iterator xCutEnd, std::vector<Seed>::iterator xCountStart,
+                             std::vector<Seed>::iterator xCountEnd )
+    {
+        // determine which score calculation is cheaper
+        if( xCutEnd - xCutStart <= xCountEnd - xCountStart )
+        {
+            // it is cheaper to substract the cut out region
+            for( auto xIt = xCutStart; xIt < xCutEnd; xIt++ )
+                rScore -= *xIt;
+        } // if
+        else
+        {
+            // it is cheaper to add up all seeds outside the cut off region
+            SoCOrder xNewScore;
+            for( auto xIt = xCountStart; xIt < xCountEnd; xIt++ )
+                xNewScore += *xIt;
+            rScore = xNewScore;
+        } // else
+    } // method
 
     /**
      * @brief Add a new SoC (usable in first state only).
@@ -321,25 +359,48 @@ class SoCPriorityQueue : public libMS::Container
      * Otherwise the new SoC is merely pushed onto the stack.
      * @note itStripEnd points to one element past end of the SoC.
      */
-    inline void push_back_no_overlap( const SoCOrder& rCurrScore, const std::vector<Seed>::iterator itStrip,
-                                      const std::vector<Seed>::iterator itStripEnd, const nucSeqIndex uiCurrStart,
-                                      const nucSeqIndex uiCurrEnd )
+    inline void push_back_no_overlap( SoCOrder rCurrScore, std::vector<Seed>::iterator itStrip,
+                                      std::vector<Seed>::iterator itStripEnd, nucSeqIndex uiMinScore )
     {
         DEBUG( assert( !bInPriorityMode ); )
-        if( vMaxima.empty( ) || uiLastEnd < uiCurrStart || std::get<0>( vMaxima.back( ) ) < rCurrScore )
+        // check if current and last SoC overlap
+        while( !vMaxima.empty( ) && std::get<2>( vMaxima.back( ) ) > itStrip )
         {
-            // if we reach this point we want to save the current SoC
-            if( !vMaxima.empty( ) && uiLastEnd >= uiCurrStart )
-                // the new and the last SoC overlap and the new one has a higher score
-                // so we want to replace the last SoC
-                vMaxima.pop_back( );
-            // else the new and the last SoC do not overlapp
-            // so we want to save the new SOC
-            vMaxima.push_back( std::make_tuple( rCurrScore, itStrip, itStripEnd ) );
-            // we need to remember the end position of the new SoC
-            uiLastEnd = uiCurrEnd;
-        } // if
-        // else new and last SoC overlap and the new one has a lower score => ignore the new one
+            // they do overlap
+            // make the higher value SoC vacuum up the seeds it shares with lower value one
+            if( std::get<0>( vMaxima.back( ) ) < rCurrScore )
+            {
+                // current SoC has a higher score
+                // remove seeds from last SoC
+                adjustScore( std::get<0>( vMaxima.back( ) ), itStrip, std::get<2>( vMaxima.back( ) ),
+                             std::get<1>( vMaxima.back( ) ), itStrip );
+                std::get<2>( vMaxima.back( ) ) = itStrip;
+
+                // check if last SoC now has less seeds that is worth keeping
+                if( std::get<0>( vMaxima.back( ) ).uiAccumulativeLength < uiMinScore ||
+                    std::get<0>( vMaxima.back( ) ).uiAccumulativeLength == 0 )
+                    vMaxima.pop_back( );
+                // else break; implicit
+
+                // process can continue iteratively
+            } // if
+            else
+            {
+                // current SoC has lower score
+                adjustScore( rCurrScore, itStrip, std::get<2>( vMaxima.back( ) ), std::get<2>( vMaxima.back( ) ),
+                             itStripEnd );
+                itStrip = std::get<2>( vMaxima.back( ) );
+
+                // check if this SoC now has less seeds that is worth keeping
+                if( rCurrScore.uiAccumulativeLength < uiMinScore || rCurrScore.uiAccumulativeLength == 0 )
+                    return;
+                // process will not continue iteratively; but this is already achieved by the condition in the while
+                // loop
+                // else break; implicit
+            } // else
+        } // while
+        // they do not overlap (anymore) and we want to keep the current SoC
+        vMaxima.push_back( std::make_tuple( rCurrScore, itStrip, itStripEnd ) );
     } // method
 
     /**

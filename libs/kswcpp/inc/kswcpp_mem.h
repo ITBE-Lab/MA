@@ -1,7 +1,12 @@
 #pragma once
+#include <cassert>
 #include <cstring>
+#include <fstream>
 #include <iostream>
+#include <list>
 #include <memory>
+#include <stdio.h>
+#include <unordered_set>
 
 #if defined( __GNUC__ )
 #include <stdlib.h>
@@ -203,6 +208,173 @@ class AlignedMemoryManager
         if( this->pMemH != NULL )
             free( this->pMemH );
     } // destructor
+}; // class
+
+
+template <typename TP_CONTENT> std::ofstream& operator<<( std::ofstream& xOut, std::vector<TP_CONTENT>& xA )
+{
+    xOut.write( (char*)xA.data( ), xA.size( ) * sizeof( TP_CONTENT ) );
+    return xOut;
+}
+
+template <typename TP_CONTENT> std::ifstream& operator>>( std::ifstream& xIn, std::vector<TP_CONTENT>& xA )
+{
+    xIn.read( (char*)xA.data( ), xA.size( ) * sizeof( TP_CONTENT ) );
+    return xIn;
+}
+
+/**
+ * Caches NUM_CACHED elements of TP_CONTENT in memory.
+ * Writes all further elements into files and loads & replaces the cached elements on access if necessary
+ * the chache buffer is simply determined by a modulo operation with NUM_CACHED.
+ * So, this assumes that access is mostly in sequential and not random.
+ */
+template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicFileCache
+{
+    std::string sPrefix;
+    std::array<std::tuple<bool, TP_KEY, TP_CONTENT>, NUM_CACHED> vContent;
+    std::unordered_set<TP_KEY> xInFile;
+    uint64_t uiCacheMisses = 0;
+    uint64_t uiCacheHits = 0;
+    std::function<void( TP_CONTENT& )> fInit = []( TP_CONTENT& ) {};
+
+  public:
+    CyclicFileCache( )
+    {}
+
+    void init( std::string sPrefix, std::function<void( TP_CONTENT& )> fInit )
+    {
+        this->sPrefix = sPrefix;
+        this->fInit = fInit;
+        for( auto iKey : xInFile )
+            remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
+        xInFile.clear( );
+        for( size_t uiI = 0; uiI < NUM_CACHED; uiI++ )
+            std::get<0>( vContent[ uiI ] ) = false;
+    }
+
+    TP_CONTENT& operator[]( TP_KEY iKey )
+    {
+        auto& rCurr = vContent[ iKey % NUM_CACHED ];
+        if( std::get<0>( rCurr ) && std::get<1>( rCurr ) == iKey )
+            uiCacheHits++;
+        else
+        {
+            // write old content to file (if there is some old content)
+            if( std::get<0>( rCurr ) )
+            {
+                std::ofstream xOut( ( sPrefix + std::to_string( std::get<1>( rCurr ) ) ).c_str( ),
+                                    std::ofstream::binary );
+                xOut << std::get<2>( rCurr );
+                xOut.close( );
+                xInFile.insert( std::get<1>( rCurr ) );
+            } // if
+            // (re)initialize buffer
+            fInit( std::get<2>( rCurr ) );
+            std::get<0>( rCurr ) = true;
+            std::get<1>( rCurr ) = iKey;
+            // load new content from file (if it was saved to file before)
+            if( xInFile.count( iKey ) > 0 )
+            {
+                uiCacheMisses++;
+                std::ifstream xIn( ( sPrefix + std::to_string( std::get<1>( rCurr ) ) ).c_str( ),
+                                   std::ifstream::binary );
+                xIn >> std::get<2>( rCurr );
+                xIn.close( );
+            } // if
+        } // else
+
+        return std::get<2>( rCurr );
+    } // method
+
+    ~CyclicFileCache( )
+    {
+        if( uiCacheHits + uiCacheMisses > 0 )
+            std::cout << "CyclicFileCache hits: " << uiCacheHits << " misses: " << uiCacheMisses << " = "
+                      << (100.0 * (double)uiCacheHits) / (double)( uiCacheHits + uiCacheMisses ) << "%" << std::endl;
+        for( auto iKey : xInFile )
+            remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
+    } // deconstructor
+
+}; // class
+
+template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_SIZE> class CIGARMemoryManager
+{
+    static const int64_t CHUNK_SIZE = ( CHUNK_SIZE_GB * 1073741824 ) / sizeof( TP_DIFF_VEC );
+    void* mem2 = nullptr;
+    TP_DIFF_VEC* p_pstruct = nullptr;
+    int64_t iPROffset = 0;
+    // eventhough we know the size of the vector in xCache during compiletime
+    // we cannot use a std::array; since that would drastically increase compile times
+    CyclicFileCache<int64_t, std::vector<TP_DIFF_VEC>, 10> xCache;
+
+  public:
+    CIGARMemoryManager( )
+    {} // constructor
+
+    void resize( size_t uiSize )
+    {
+        if( uiSize * sizeof( TP_DIFF_VEC ) <= HASH_TABLE_GB_MIN_SIZE * 1073741824 )
+        {
+            if( p_pstruct != nullptr ) // safety check
+                free( mem2 );
+            // std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE *
+            // 1073741824
+            //          << " bytes." << std::endl;
+            // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
+            // HASH_TABLE_GB_MIN_SIZE
+            //          << " gigabytes." << std::endl;
+            mem2 = malloc( uiSize * sizeof( TP_DIFF_VEC ) );
+            p_pstruct = (TP_DIFF_VEC*)( ( ( (size_t)mem2 + ( sizeof( TP_DIFF_VEC ) - 1 ) ) / sizeof( TP_DIFF_VEC ) ) *
+                                        sizeof( TP_DIFF_VEC ) );
+        } // if
+        else
+        {
+            std::cout << "using filesystem because: " << uiSize * sizeof( TP_DIFF_VEC ) << " / "
+                      << HASH_TABLE_GB_MIN_SIZE * 1073741824 << " bytes are required." << std::endl;
+            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << HASH_TABLE_GB_MIN_SIZE
+                      << " gigabytes." << std::endl;
+
+            // zero initialize zero value
+            xCache.init( "/tmp/.CIGARMemoryManager", []( std::vector<TP_DIFF_VEC>& rArr ) {
+                rArr.resize( CHUNK_SIZE );
+                for( size_t uiI = 0; uiI < CHUNK_SIZE; uiI++ )
+                    rArr[ uiI ].setzero( );
+            } );
+        } // else
+    } // method
+
+    void set( size_t iI, TP_DIFF_VEC xVal )
+    {
+        if( p_pstruct == nullptr )
+            xCache[ ( iPROffset + iI ) / CHUNK_SIZE ][ ( iPROffset + iI ) % CHUNK_SIZE ] = xVal;
+        else
+            p_pstruct[ iPROffset + iI ] = xVal;
+    }
+
+    void setPROffset( int64_t iI )
+    {
+        iPROffset = iI;
+    } // method
+
+    template <typename TP_RET_TYPE> TP_RET_TYPE accessAs( size_t uiIndex )
+    {
+        if( p_pstruct == nullptr )
+        {
+            assert( sizeof( TP_RET_TYPE ) <= sizeof( TP_DIFF_VEC ) );
+            size_t iI = uiIndex / ( sizeof( TP_DIFF_VEC ) / sizeof( TP_RET_TYPE ) );
+            size_t uiModulo = uiIndex % ( sizeof( TP_DIFF_VEC ) / sizeof( TP_RET_TYPE ) );
+            return ( (TP_RET_TYPE*)&xCache[ iI / CHUNK_SIZE ][ iI % CHUNK_SIZE ] )[ uiModulo ];
+        } // if
+        else
+            return ( (TP_RET_TYPE*)p_pstruct )[ uiIndex ];
+    }
+
+    ~CIGARMemoryManager( )
+    {
+        if( p_pstruct != nullptr )
+            free( mem2 );
+    }
 }; // class
 
 //// void ksw_extd2_old( void *km,

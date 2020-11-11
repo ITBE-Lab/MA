@@ -321,6 +321,7 @@ int64_t Alignment::reCalcScore( ) const
 
 
 #ifdef WITH_PYTHON
+#include <pybind11/stl.h>
 
 void exportAlignment( libMS::SubmoduleOrganizer& xOrganizer )
 {
