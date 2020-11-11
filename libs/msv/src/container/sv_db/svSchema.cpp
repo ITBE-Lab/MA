@@ -63,6 +63,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "calls_to_seeds", &SvCallTable<DBConSingle>::callsToSeeds )
         .def( "calls_to_seeds_by_id", &SvCallTable<DBConSingle>::callsToSeedsById )
         .def( "calls_to_seeds_by_id_auto", &SvCallTable<DBConSingle>::callsToSeedsByIdAutoStart )
+        .def( "calls_to_seeds_by_id_table", &SvCallTable<DBConSingle>::callsToSeedsByIdTableStart )
         .def( "reconstruct_sequenced_genome_from_seeds",
               &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
@@ -104,6 +105,10 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "insert", &CallDescTable<DBConSingle>::insert_py )
         .def( "gen_index", &CallDescTable<DBConSingle>::genIndex )
         .def( "get_desc", &CallDescTable<DBConSingle>::getDesc );
+    py::class_<FirstCallPerContigTable<DBConSingle>, std::shared_ptr<FirstCallPerContigTable<DBConSingle>>>(
+        xOrganizer.util( ), "FirstCallPerContigTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "insert", &FirstCallPerContigTable<DBConSingle>::insert_py );
 
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( xOrganizer.util( ), "SvJumpTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )

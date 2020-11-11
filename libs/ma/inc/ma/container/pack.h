@@ -585,7 +585,7 @@ class Pack : public libMS::Container
                                                    // and is not referred after method termination.)
     )
     {
-        metaMeasureAndLogDuration<false>( "vAppendSequence", [&]( ) {
+        metaMeasureAndLogDuration<false>( "vAppendSequence", [ & ]( ) {
             /* Skip empty sequences, because they may become troublemaker, particularly if the occur on
              * tail positions.
              */
@@ -1238,7 +1238,7 @@ class Pack : public libMS::Container
                                                    // an existing nucleotide sequence
     ) const
     {
-        metaMeasureAndLogDuration<false>( "vExtractSubsectionN", [&]( ) {
+        metaMeasureAndLogDuration<false>( "vExtractSubsectionN", [ & ]( ) {
             /* Prepare sequence
              */
             if( !bAppend )
@@ -1516,6 +1516,7 @@ class Pack : public libMS::Container
             // *2 since vExtractContig uses id system with forward and reverse contig ids...
             vRet.push_back( std::make_shared<NucSeq>( ) );
             vExtractContig( uiI * 2, *vRet.back( ), false );
+            vRet.back( )->sName = xVectorOfSequenceDescriptors[ uiI ].sName;
         } // for
         return vRet;
     } // method

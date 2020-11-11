@@ -23,6 +23,69 @@ namespace libMSV
 {
 
 template <typename DBCon>
+using FirstCallPerContigTable_t = SQLTable<DBCon,
+                                           int64_t, // call_id
+                                           std::string, // contig_name
+                                           bool // forward_context
+                                           >;
+const json jFirstCallPerContigTableDef = { { TABLE_NAME, "first_call_per_contig" },
+                                           { TABLE_COLUMNS,
+                                             { { { COLUMN_NAME, "call_id" } },
+                                               { { COLUMN_NAME, "contig_name" } },
+                                               { { COLUMN_NAME, "forward_context" } } } } };
+
+template <typename DBCon> class FirstCallPerContigTable : public FirstCallPerContigTable_t<DBCon>
+{
+  public:
+    SQLQuery<DBCon, int64_t, bool> xGetCallId;
+    SQLQuery<DBCon, int64_t, bool> xGetCallIds;
+    FirstCallPerContigTable( std::shared_ptr<DBCon> pDB )
+        : FirstCallPerContigTable_t<DBCon>( pDB, jFirstCallPerContigTableDef ),
+          xGetCallId( pDB, "SELECT call_id, forward_context "
+                           "FROM first_call_per_contig "
+                           "JOIN sv_call_table ON sv_call_table.id = first_call_per_contig.call_id "
+                           "WHERE contig_name = ? "
+                           "AND sv_call_table.sv_caller_run_id = ? " ),
+          xGetCallIds( pDB, "SELECT call_id, forward_context "
+                            "FROM first_call_per_contig "
+                            "JOIN sv_call_table ON sv_call_table.id = first_call_per_contig.call_id "
+                            "WHERE sv_call_table.sv_caller_run_id = ? "
+                            "ORDER BY contig_name " )
+    {} // default constructor
+
+    inline std::tuple<int64_t, bool> getCallId( std::string sName, int64_t iCallerRunId )
+    {
+        if( xGetCallId.execAndFetch( sName, iCallerRunId ) )
+        {
+            auto xRet = xGetCallId.get( );
+            xGetCallId.next( );
+            return xRet;
+        }
+        return std::make_tuple( -1, true );
+    } // method
+    inline std::tuple<int64_t, bool> getCallId( std::string sName, std::vector<PriKeyDefaultType> vCallerRunIds )
+    {
+        for( auto iKey : vCallerRunIds )
+        {
+            auto xId = getCallId( sName, iKey );
+            if( std::get<0>( xId ) != -1 )
+                return xId;
+        } // for
+        return std::make_tuple( -1, true );
+    } // method
+
+    inline std::vector<std::tuple<int64_t, bool>> getCallIds( int64_t iCallerRunId )
+    {
+        return xGetCallIds.executeAndStoreInVector( iCallerRunId );
+    } // method
+
+    void insert_py( int64_t iId, std::string sDesc, bool bContext )
+    {
+        this->insert( iId, sDesc, bContext );
+    }
+}; // class
+
+template <typename DBCon>
 using OneSidedCallsTableType = SQLTable<DBCon, // DB connector type
                                         PriKeyDefaultType, // call_id_from (foreign key)
                                         PriKeyDefaultType, // call_id_to (foreign key)
@@ -856,11 +919,49 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 auto uiStartPos = bForwContext ? pRef->startOfSequenceWithId( uiStartId )
                                                : pRef->endOfSequenceWithId( uiStartId ) - 1;
 #if 0
-                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << (bForwContext ? "true" : "false")
-                          << " uiStartPos: " << uiStartPos << std::endl;
+                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << ( bForwContext ? "true" : "false" )
+                          << " uiStartPos: " << uiStartPos << " startChr: " << pRef->nameOfSequenceWithId( uiStartId )
+                          << std::endl;
 #endif
                 return std::make_tuple( false, uiStartPos, bForwContext,
                                         std::string( "chr" ) + std::to_string( uiStartCnt++ ) );
+            } // else
+        };
+
+        return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
+    } // method
+
+    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+    callsToSeedsByIdTableStart( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
+                                bool bWithInsertions, nucSeqIndex uiMinEntrySize )
+    {
+        size_t uiStartCnt = 0;
+        FirstCallPerContigTable xGetCallNContext( this->pConnection );
+        SQLQuery<DBCon, uint64_t> xCallPos( this->pConnection,
+                                            "SELECT from_pos " // potentially reversed start of call
+                                            "FROM sv_call_table "
+                                            "WHERE id = ? " // do not accept mirrored calls here
+        );
+        auto getNextStart = [ & ]( ) {
+            if( uiStartCnt > pRef->uiNumContigs( ) )
+                return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
+            else
+            {
+                auto xCallNContext =
+                    xGetCallNContext.getCallId( pRef->nameOfSequenceWithId( uiStartCnt ), vCallerRuns );
+                auto uiCallPos = xCallPos.scalar( std::get<0>( xCallNContext ) );
+                auto uiStartId = pRef->uiSequenceIdForPosition( uiCallPos );
+                bool bForwContext = std::get<1>( xCallNContext );
+                // start pos depending on context and contig of lowest id call
+                auto uiStartPos = bForwContext ? pRef->startOfSequenceWithId( uiStartId )
+                                               : pRef->endOfSequenceWithId( uiStartId ) - 1;
+#if 1
+                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << ( bForwContext ? "true" : "false" )
+                          << " uiStartPos: " << uiStartPos << " startChr: " << pRef->nameOfSequenceWithId( uiStartId )
+                          << std::endl;
+#endif
+                return std::make_tuple( false, uiStartPos, bForwContext,
+                                        std::string( pRef->nameOfSequenceWithId( uiStartCnt++ ) ) );
             } // else
         };
 
@@ -952,5 +1053,6 @@ template <typename DBCon> class CallDescTable : public CallDescTable_t<DBCon>
         this->addIndex( json{ { INDEX_NAME, "call_desc_index" }, { INDEX_COLUMNS, "call_id" } } );
     }
 }; // class
+
 
 } // namespace libMSV
