@@ -516,7 +516,7 @@ class NucSeq : public libMS::Container
         /* Complements of nucleotides
          *                               0  1  2  3
          */
-        static const char chars[ 4 ] = {3, 2, 1, 0};
+        static const char chars[ 4 ] = { 3, 2, 1, 0 };
 
         return ( iNucleotide < 4 ) ? chars[ (int)iNucleotide ] : 5;
     } // static method
@@ -547,7 +547,7 @@ class NucSeq : public libMS::Container
      */
     static inline char translateACGTCodeToCharacter( uint8_t uiNucleotideCode )
     {
-        static const char chars[ 4 ] = {'A', 'C', 'G', 'T'};
+        static const char chars[ 4 ] = { 'A', 'C', 'G', 'T' };
         if( uiNucleotideCode < 4 )
         {
             return chars[ uiNucleotideCode ];
@@ -796,7 +796,7 @@ class NucSeq : public libMS::Container
         } // for
                      std::cout
                      << std::endl; ) // DEBUG
-        static const uint8_t aTranslate[ 4 ] = {1, 2, 4, 8};
+        static const uint8_t aTranslate[ 4 ] = { 1, 2, 4, 8 };
         std::vector<uint8_t> vRet( uiTo - uiFrom - 1 );
 
         for( size_t i = 0; i < vRet.size( ); i++ )
@@ -1232,6 +1232,13 @@ template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<C
     return "bytea";
 } // specialized method
 
+#ifdef _MSC_VER
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<CompNucSeqSharedPtr&>( )
+{
+    return PostgreSQLDBCon::TypeTranslator::getSQLTypeName<CompNucSeqSharedPtr>( );
+} // specialized method
+#endif
+
 // Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
 template <> inline void PostgreSQLDBCon::StmtArg::set( const CompNucSeqSharedPtr& rxCompSeq )
 {
@@ -1378,6 +1385,13 @@ template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<l
 {
     return "bytea";
 } // specialized method
+
+#ifdef _MSC_VER
+template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<libMA::NucSeqSql&>( )
+{
+    return PostgreSQLDBCon::TypeTranslator::getSQLTypeName<libMA::NucSeqSql>( );
+} // specialized method
+#endif
 
 // Part 2: Input arguments: Set the start of the blob (void *), size of the blob and type of the blob.
 template <> inline void PostgreSQLDBCon::StmtArg::set( const libMA::NucSeqSql& rxBlob )

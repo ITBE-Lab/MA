@@ -212,8 +212,21 @@ template <typename TP_RETURN_, bool IS_VOLATILE_, typename... TP_ARGUMENTS> clas
 class BasePledge
 {
   public:
-    static const size_t uiDefaultGraphThread;
-    static size_t uiThreadCurrentlyBuildingGraph;
+    
+
+#ifdef _MSC_VER
+#ifdef USE_DLL_EXPORT
+    __declspec(dllexport) static const size_t uiDefaultGraphThread;
+    __declspec(dllexport) static size_t uiThreadCurrentlyBuildingGraph;
+#else
+    __declspec(dllimport) static const size_t uiDefaultGraphThread;
+    __declspec(dllimport) static size_t uiThreadCurrentlyBuildingGraph;
+#endif
+#else
+      static const size_t uiDefaultGraphThread;
+      static size_t uiThreadCurrentlyBuildingGraph;
+#endif
+
     /**
      * @brief Reset the pledge
      */

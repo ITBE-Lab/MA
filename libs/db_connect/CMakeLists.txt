@@ -8,22 +8,28 @@ INCLUDE(cmake/FindMySQL.cmake)
 # (With Windows, PostgreSQL DLL location must be added to search path. (bin and lib folders of installation)) 
 find_package(PostgreSQL)
 
-
-if( MySQL_FOUND )
-    file(GLOB DB_CONNECT_SRC
-        "sql_global_context.cpp"
-    ) # file
-endif()
 if( PostgreSQL_FOUND )
     file(GLOB DB_CONNECT_SRC
         "sql_global_context.cpp"
         "connectors/postgre_global_context.cpp"
     ) # file
+else()
+    # In the case that there is not PostgreSQL, we go for MySQL
+    if( MySQL_FOUND )
+        file(GLOB DB_CONNECT_SRC
+            "sql_global_context.cpp"
+        ) # file
+    endif()
 endif()
+
+if(NOT (PostgreSQL_FOUND OR MySQL_FOUND) )
+    message(FATAL_ERROR "Could detect neither MySQL nor PostgreSQL ")
+endif()
+
 
 # Define the target dbSQL
 add_library(dbSQL SHARED ${DB_CONNECT_SRC})
-target_compile_definitions( dbSQL PUBLIC DLL_PORT_util=dllimport )
+target_compile_definitions( dbSQL PUBLIC DLL_PORT_util=dllexport )
 
 # link to the fort object file
 target_link_libraries ( dbSQL PUBLIC Threads::Threads fort util contrib_CPP_header )

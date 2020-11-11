@@ -13,7 +13,7 @@
 
 // DB related includes
 #include "sql_api.h"
-#include "wkb_spatial.h"
+#include "wkb_spatial.h" 
 
 
 auto jDBConfig = json{{SCHEMA,

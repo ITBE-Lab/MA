@@ -1,9 +1,11 @@
-
-
+#define USE_DLL_EXPORT
 #include "ma/container/minimizer_index.h"
 using namespace minimizer;
 
-unsigned char Index::seq_nt4_table[ 256 ] = {
+#ifdef _MSC_VER
+__declspec(dllexport) 
+#endif
+unsigned char Index::seq_nt4_table[256] = {
     0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 4, 1, 4, 4, 4, 2, 4, 4,
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 4, 1, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4,
@@ -13,7 +15,6 @@ unsigned char Index::seq_nt4_table[ 256 ] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
 
 #ifdef WITH_PYTHON
-
 void exportMinimizerIndex( libMS::SubmoduleOrganizer& xOrganizer )
 {
 #ifdef WITH_ZLIB

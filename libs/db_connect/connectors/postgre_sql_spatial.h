@@ -15,10 +15,17 @@
 /* Integration of geom::Rectangle as data-type in the MySQL interface. */
 
 // Part1 : Specify the corresponding MySQL-type for your blob.
-template <> inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBUint64Rectangle>( )
+template <> static inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBUint64Rectangle>( )
 {
     return "bytea"; // WKB data are passed as BLOB
 } // specialized method
+
+#ifdef _MSC_VER
+template <> static inline std::string PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBUint64Rectangle &>()
+{
+    return PostgreSQLDBCon::TypeTranslator::getSQLTypeName<WKBUint64Rectangle> ();
+} // specialized method
+#endif
 
 // Part1b : Spatial types require an indication that the argument passed at a placeholder's
 //          position has the format 'WKB'.

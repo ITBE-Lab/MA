@@ -85,12 +85,28 @@ function( ms_add_module_helper target_name )
             ${_lib_init_py_in}
             "${CMAKE_BINARY_DIR}/generated/${target_name}/_lib_init_.py"
         )
-        add_custom_command(
+        
+        if( MSVC )
+            # The below execution of a Python script works with Anaconda 3 on Windows
+            # Remark: We use a batch script that sets the PYTHONPATH to the working directory and use
+            #         ${CMAKE_BINARY_DIR} as this working directory. In ${CMAKE_BINARY_DIR} reside all
+            #         DLL required for Python script execution
+            add_custom_command(
                 OUTPUT "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py"
-                COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_BINARY_DIR}/generated/${target_name}/_lib_init_.py" > 
-                    "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py"
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}   
+                COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/libs/db_connect/dbSQL.dll" ${CMAKE_BINARY_DIR}
+                COMMAND "${CMAKE_SOURCE_DIR}/scripts/Python.bat" ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR} "${CMAKE_BINARY_DIR}/generated/${target_name}/_lib_init_.py"  
+                        > "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py"
                 DEPENDS "lib${target_name}" "${CMAKE_BINARY_DIR}/generated/${target_name}/_lib_init_.py"
             )
+        else()
+            add_custom_command(
+                OUTPUT "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py"
+                COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_BINARY_DIR}/generated/${target_name}/_lib_init_.py" > 
+                   "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py"
+                DEPENDS "lib${target_name}" "${CMAKE_BINARY_DIR}/generated/${target_name}/_lib_init_.py"
+            )
+        endif()
         add_custom_target(
                 ${target_name} ALL
                 DEPENDS "${CMAKE_BINARY_DIR}/${target_name}/_lib_init.py" 

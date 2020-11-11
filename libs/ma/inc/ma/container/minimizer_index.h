@@ -130,12 +130,12 @@ class Index : public libMS::Container
      * @brief Opens in Index if index filename is given or creates index if fasta(q) file is given
      */
     Index( const ParameterSetManager& rParameters, std::string sIndexName )
-        : xOptions{/* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
-                   /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
-                   /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        : xOptions{ /* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
+                    /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
+                    /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
+                    /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( ) }
     {
         this->xOptions.k = rParameters.getSelected( )->xMinimizerK->get( );
         this->xOptions.w = rParameters.getSelected( )->xMinimizerW->get( );
@@ -161,12 +161,12 @@ class Index : public libMS::Container
 
     Index( const ParameterSetManager& rParameters, std::vector<std::string> vContigs,
            std::vector<std::string> vContigsNames )
-        : xOptions{/* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
-                   /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
-                   /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
-                   /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
-                   /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
-                   /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( )}
+        : xOptions{ /* .k = */ rParameters.getSelected( )->xMinimizerK->get( ),
+                    /* .w = */ rParameters.getSelected( )->xMinimizerW->get( ),
+                    /* .flag = */ rParameters.getSelected( )->xMinimizerFlag->get( ),
+                    /* .bucket_bits = */ rParameters.getSelected( )->xMinimizerBucketBits->get( ),
+                    /* .mini_batch_size = */ rParameters.getSelected( )->xMinimizerMiniBatchSize->get( ),
+                    /* .batch_size = */ rParameters.getSelected( )->xMinimizerBatchSize->get( ) }
     {
         xOptions.k = rParameters.getSelected( )->xMinimizerK->get( );
         xOptions.w = rParameters.getSelected( )->xMinimizerW->get( );
@@ -285,7 +285,15 @@ class Index : public libMS::Container
     } // method
 
 #define VOID_MM UINT64_MAX
-    static unsigned char seq_nt4_table[ 256 ];
+
+#ifdef _MSC_VER
+#ifdef USE_DLL_EXPORT
+    __declspec( dllexport )
+#else
+    __declspec( dllimport )
+#endif
+#endif
+        static unsigned char seq_nt4_table[ 256 ];
 
     static inline uint64_t hash64( uint64_t key, uint64_t mask )
     {
@@ -321,10 +329,10 @@ class Index : public libMS::Container
     static std::vector<mm128_t> mm_sketch( const char* str, int len, int w, int k, uint32_t rid )
     {
         std::vector<mm128_t> p;
-        uint64_t shift1 = 2 * ( k - 1 ), mask = ( 1ULL << 2 * k ) - 1, kmer[ 2 ] = {0, 0};
+        uint64_t shift1 = 2 * ( k - 1 ), mask = ( 1ULL << 2 * k ) - 1, kmer[ 2 ] = { 0, 0 };
         int i, j, l, buf_pos, min_pos, kmer_span = 0;
         mm128_t buf[ 256 ]; // Circular Buffer of size w. stores kmer[ 0 ] and kmer[ 1 ] of each interation
-        mm128_t min = {VOID_MM, VOID_MM}; // minimizer
+        mm128_t min = { VOID_MM, VOID_MM }; // minimizer
         /* tiny_queue_t tq; */
         // std::cout << toBinString( mask ) << std::endl;
         assert( len > 0 && ( w > 0 && w < 256 ) &&
@@ -337,7 +345,7 @@ class Index : public libMS::Container
         for( i = l = buf_pos = min_pos = 0; i < len; ++i )
         {
             int c = seq_nt4_table[ (uint8_t)str[ i ] ];
-            mm128_t info = {VOID_MM, VOID_MM};
+            mm128_t info = { VOID_MM, VOID_MM };
             if( c < 4 )
             { // not an ambiguous base
                 int z;
@@ -475,8 +483,8 @@ class Index : public libMS::Container
         return _getHash( sSeq, iSize, xOptions.w, xOptions.k );
     } // method
 
-    std::vector<std::shared_ptr<libMA::Seeds>>
-    seed( std::vector<std::string> vQueries, bool bRectangular, std::shared_ptr<libMA::Pack> pPack )
+    std::vector<std::shared_ptr<libMA::Seeds>> seed( std::vector<std::string> vQueries, bool bRectangular,
+                                                     std::shared_ptr<libMA::Pack> pPack )
     {
         std::vector<std::shared_ptr<libMA::Seeds>> vRet;
 

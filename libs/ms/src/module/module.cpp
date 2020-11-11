@@ -2,11 +2,17 @@
  * @file module.cpp
  * @author Markus Schmidt
  */
+#define USE_DLL_EXPORT
 #include "ms/module/module.h"
 using namespace libMS;
 
+#ifdef _MSC_VER
+__declspec(dllexport) const size_t BasePledge::uiDefaultGraphThread = 0;
+__declspec(dllexport) size_t BasePledge::uiThreadCurrentlyBuildingGraph = uiDefaultGraphThread;
+#else
 const size_t BasePledge::uiDefaultGraphThread = 0;
 size_t BasePledge::uiThreadCurrentlyBuildingGraph = uiDefaultGraphThread;
+#endif
 
 #ifdef WITH_PYTHON
 

@@ -219,7 +219,16 @@ class SQLDBGlobalSync
 }; // class (SQLDBGlobalSync)
 
 /** @brief Single master object for concurrency synchronization. */
+
+#ifdef _MSC_VER
+#ifdef USE_DLL_EXPORT
+__declspec(dllexport) extern SQLDBGlobalSync xSQLDBGlobalSync;
+#else
+__declspec(dllimport) extern SQLDBGlobalSync xSQLDBGlobalSync;
+#endif
+#else
 extern SQLDBGlobalSync xSQLDBGlobalSync;
+#endif
 
 /** @brief GLobal literals */
 const std::string SCHEMA = "SCHEMA";
