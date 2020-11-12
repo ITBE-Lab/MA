@@ -125,8 +125,7 @@ class SvJump : public libMS::Container
         // necessary for mapping switch strand jumps rightwards
         assert( uiFrom * 8 + 1000 < static_cast<nucSeqIndex>( std::numeric_limits<int64_t>::max( ) ) );
 
-        assert( ( (uint32_t)uiFrom ) != DUMMY_LOCATION ||
-                ( (uint32_t)uiTo ) != DUMMY_LOCATION );
+        assert( ( (uint32_t)uiFrom ) != DUMMY_LOCATION || ( (uint32_t)uiTo ) != DUMMY_LOCATION );
     } // constructor
 
 
@@ -149,7 +148,7 @@ class SvJump : public libMS::Container
               std::max( rA.end( ) - 1, rB.start( ) ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
-              /* uiNumSupportingNt = */ std::min(rA.uiSoCNt, rB.uiSoCNt),
+              /* uiNumSupportingNt = */ std::min( rA.uiSoCNt, rB.uiSoCNt ),
               /* iID */ -1,
               /* iReadId */ iReadId )
     {
@@ -174,14 +173,14 @@ class SvJump : public libMS::Container
                   bFirstSeed == rA.bOnForwStrand
                       // if we jump to the start of the first seed we don't know where we are coming from
                       ? DUMMY_LOCATION
-                      : ( rA.bOnForwStrand ? rA.end_ref( ) - 1
-                                           // @note rA's direction is mirrored on reference if rA is on rev comp strand
-                                           : 1 + rA.start_ref( ) - rA.size( ) ),
+                      : ( rA.bOnForwStrand ? rA.end_ref( ) - 1 : rA.start_ref( ) ),
                   /* uiTo = */
                   bFirstSeed != rA.bOnForwStrand
                       // if we jump from the end of the last seed we don't know where we are going to
                       ? DUMMY_LOCATION
-                      : rA.start_ref( ),
+                      : ( rA.bOnForwStrand ? rA.start_ref( )
+                                           // @note rA's direction is mirrored on reference if rA is on rev comp strand
+                                           : 1 + rA.start_ref( ) - rA.size( ) ),
                   /* uiQueryFrom = */
                   bFirstSeed ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
                   /* uiQueryTo = */
@@ -197,8 +196,7 @@ class SvJump : public libMS::Container
         uiSeedBId = rA.uiId;
 #endif
 
-        assert( ( (uint32_t)uiFrom ) != DUMMY_LOCATION ||
-                ( (uint32_t)uiTo ) != DUMMY_LOCATION );
+        assert( ( (uint32_t)uiFrom ) != DUMMY_LOCATION || ( (uint32_t)uiTo ) != DUMMY_LOCATION );
     } // constructor
 
     bool does_switch_strand( ) const
@@ -670,7 +668,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         {
             nucSeqIndex uiMin = 1;
             nucSeqIndex uiMax = 0;
-            size_t uiI = vHorizontal.size();
+            size_t uiI = vHorizontal.size( );
             size_t uiJ = 0;
             while( uiMin > uiMax && uiI > 0 && uiJ < vVertical.size( ) )
             {

@@ -496,10 +496,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>> vRet;
 
 
+#if ONE_SIDED_CALLS_EXIST
         SQLQuery<DBCon, uint64_t> xGetPosFromCall( this->pConnection,
                                                    "SELECT from_pos "
                                                    "FROM sv_call_table "
                                                    "WHERE id = ? " );
+#endif
 
         while( true )
         {
@@ -548,6 +550,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // if there are no more calls or the next call starts in the next chromosome
                 if( std::get<0>( tNextCall ) == -1 || pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
                 {
+#if 0 // 1 -> extract contig ends (after the last jump); 0 -> do not
                     metaMeasureAndLogDuration<false>( "seq copy final", [ & ]( ) {
                         // extract the remainder of the contig we are currently in:
                         nucSeqIndex uiSize;
@@ -571,6 +574,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                             uiLastEdgeInsertionSize = 0;
                         } // if
                     } ); // metaMeasureAndLogDuration seq copy final
+#endif
                     // stop the loop there are no more calls.
                     break;
                 } // if
@@ -638,7 +642,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // this check becomes necessary since with the current index system,
                 // we would either extract the last nucleotide of the contig twice or extract the
                 // reverse complement of the contig...
-                if( pRef->onContigBorder( uiCurrPos ) )
+                // same for unconnected dummy calls
+                if( pRef->onContigBorder( uiCurrPos ) || uiCurrPos == SvJump::DUMMY_LOCATION )
                 {
                     deleteEntries( std::get<0>( tNextCall ) );
                     break;
@@ -796,7 +801,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
 #else
             // always return that this is not a one-sided call
-            "       -1, false, "
+            "       -1::int8, false, "
 #endif
             "       inserted_sequence_size "
             "FROM sv_call_table "
@@ -825,7 +830,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
 #else
             // always return that this is not a one-sided call
-            "       -1, false, "
+            "       -1::int8, false, "
 #endif
             "       inserted_sequence_size "
             "FROM sv_call_table "
@@ -916,6 +921,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                bool bWithInsertions, nucSeqIndex uiMinEntrySize )
     {
         size_t uiStartCnt = 1;
+        SQLQuery<DBCon, uint64_t> xQuery(
+            this->pConnection,
+            "SELECT reconstruction_table.from_pos " // potentially reversed
+                                                    // start of call
+            "FROM sv_call_table "
+            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+            "ORDER BY reconstruction_table.order_id ASC "
+            "LIMIT 1 " );
         auto getNextStart = [ & ]( ) {
             auto uiNumCalls =
                 SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table " ).scalar( );
@@ -926,27 +939,18 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
             else
             {
-                auto uiCallPos =
-                    SQLQuery<DBCon, uint64_t>(
-                        this->pConnection,
-                        "SELECT reconstruction_table.from_pos " // potentially reversed start of call
-                        "FROM sv_call_table "
-                        "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-                        "WHERE NOT reconstruction_table.mirrored " // do not accept mirrored calls here
-                        "ORDER BY reconstruction_table.order_id ASC "
-                        "LIMIT 1 " )
-                        .scalar( );
-                auto uiStartId = pRef->uiSequenceIdForPosition( uiCallPos );
+                xQuery.execAndFetch( );
+                auto uiStartPos = std::get<0>( xQuery.get( ) );
+                xQuery.next( );
+
+                auto uiStartId = pRef->uiSequenceIdForPosition( uiStartPos );
                 // forward context if start position is in first half of contig; backward context otherwise...
-                bool bForwContext = uiCallPos <= pRef->startOfSequenceWithId( uiStartId ) +
-                                                     pRef->lengthOfSequenceWithId( uiStartId ) / 2;
-                // start pos depending on context and contig of lowest id call
-                auto uiStartPos = bForwContext ? pRef->startOfSequenceWithId( uiStartId )
-                                               : pRef->endOfSequenceWithId( uiStartId ) - 1;
+                bool bForwContext = uiStartPos <= pRef->startOfSequenceWithId( uiStartId ) +
+                                                      pRef->lengthOfSequenceWithId( uiStartId ) / 2;
 #if 1
-                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << ( bForwContext ? "true" : "false" )
-                          << " uiStartPos: " << uiStartPos << " startChr: " << pRef->nameOfSequenceWithId( uiStartId )
-                          << std::endl;
+                std::cout << "uiStartPos: " << uiStartPos - pRef->startOfSequenceWithId( uiStartId )
+                          << " bForwContext: " << ( bForwContext ? "true" : "false" )
+                          << " startChr: " << pRef->nameOfSequenceWithId( uiStartId ) << std::endl;
 #endif
                 return std::make_tuple( false, uiStartPos, bForwContext,
                                         std::string( "chr" ) + std::to_string( uiStartCnt++ ) );
@@ -993,11 +997,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
     } // method
 
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
-        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeedsBorderd(
+        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>&
             vReconstructedSeeds,
         std::shared_ptr<Pack>
-            pRef )
+            pRef,
+        nucSeqIndex uiContigBorder )
     {
         auto pRet = std::make_shared<Pack>( );
         for( auto& xTup : vReconstructedSeeds )
@@ -1028,6 +1033,14 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         } // for
         return pRet;
     } // method
+    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
+        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+            vReconstructedSeeds,
+        std::shared_ptr<Pack>
+            pRef )
+    {
+        return reconstructSequencedGenomeFromSeedsBorderd( vReconstructedSeeds, pRef, 0 );
+    }
 
     /** @brief reconstruct a sequenced genome from a reference and the calls of the run with id iCallerRun.
      *  @details

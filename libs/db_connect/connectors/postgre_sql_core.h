@@ -296,7 +296,10 @@ template <typename CellType> class PGRowCellBase
         throw PostgreSQLError( "setNull not implemented for this " );
     } // method
 
-    inline void checkOid( const PGresult* pPGRes, Oid xCppOid, const std::map<std::string, Oid>& xOidMap )
+    inline void checkOid( const PGresult* pPGRes,
+                          Oid xCppOid,
+                          const std::map<std::string, Oid>& xOidMap,
+                          const std::string& rQueryText )
     {
         Oid xPGOid = PQftype( pPGRes, static_cast<int>( this->uiColNum ) );
 
@@ -328,8 +331,8 @@ template <typename CellType> class PGRowCellBase
                     sCppOidName = xKeyValuePair.first;
 
             throw PostgreSQLError( "Returned OID missmatch in column " + std::to_string( this->uiColNum ) +
-                                   ". Got: " + std::to_string( xCppOid ) + " = " + sCppOidName +
-                                   " Expected: " + std::to_string( xPGOid ) + " = " + sPGOidName );
+                                   ". Got: " + std::to_string( xCppOid ) + " = " + sCppOidName + " Expected: " +
+                                   std::to_string( xPGOid ) + " = " + sPGOidName + "\nQuery: " + rQueryText );
         } // if
     } // method
 
@@ -578,7 +581,7 @@ class PostgreSQLDBCon
         template <typename Type> static inline std::string getSQLColumnTypeName( )
         {
             // default redirects to the getSQLTypeName function above
-            return getSQLTypeName<Type>();
+            return getSQLTypeName<Type>( );
         } // method
 
         /** @brief Delivers the appropriate string for placeholder in prepared statement (as e.g. INSERT statement).
@@ -1223,7 +1226,7 @@ class PostgreSQLDBCon
 #else
                                 TypeTranslator::template getSQLTypeName<typeof( *rCell.pCellValue )>( ) );
 #endif
-                            rCell.checkOid( this->pPGRes, xCppOid, this->pDBConn->getOidMap( ) );
+                            rCell.checkOid( this->pPGRes, xCppOid, this->pDBConn->getOidMap( ), this->sStmtText );
                         } ); // for each tuple
                     } // if
 
