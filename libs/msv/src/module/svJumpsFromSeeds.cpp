@@ -391,7 +391,9 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<RecursiveReseedingSoCs, std::shared_ptr<Pack>>( xOrganizer, "RecursiveReseedingSoCs", []( auto&& x ) {
         x.def( "execute_helper", &RecursiveReseedingSoCs::execute_helper_py );
     } );
-    exportModule<JumpsFilterContigBorder>( xOrganizer, "JumpsFilterContigBorder" );
+    exportModule<JumpsFilterContigBorder>( xOrganizer, "JumpsFilterContigBorder", []( auto&& x ) {
+        x.def( "by_contig_border", &JumpsFilterContigBorder::jumpByContigBorder );
+    } );
     exportModule<SvJumpsFromExtractedSeeds, std::shared_ptr<Pack>>( xOrganizer, "SvJumpsFromExtractedSeeds" );
     exportModule<ExtractSeedsFilter, std::shared_ptr<Pack>, nucSeqIndex, nucSeqIndex>( xOrganizer,
                                                                                        "ExtractSeedsFilter" );

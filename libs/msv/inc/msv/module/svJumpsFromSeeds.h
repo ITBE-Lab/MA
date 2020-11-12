@@ -347,10 +347,13 @@ class SvJumpsFromSeeds
             uiLayer++;
         } // while
         if( uiLayer == uiLayerLimit )
+        {
+            eraseMarked( pRet );
             std::cerr << "WARNING hit reseeding layer limit" << std::endl;
+        } // if
 
         // std::cout << uiLayer << " " << pRet->size( ) << std::endl;
-        auto pFilteredRet = /*xFilterOverlapping.execute( xToSMEM.execute(*/ pRet /*) )*/;
+        auto pFilteredRet = pRet;
 
         nucSeqIndex uiNumNtTotal = 0;
         for( auto& rSeed : *pFilteredRet )
@@ -359,7 +362,6 @@ class SvJumpsFromSeeds
             rSeed.uiSoCNt = uiNumNtTotal;
         if( pOutExtra != nullptr )
         {
-            // pOutExtra->computeOverlappingSeedsVector( pFilteredRet );
             for( size_t uiJ = uiOutExtraSeedsBefore; uiJ < pOutExtra->pSeeds->size( ); uiJ++ )
                 ( *pOutExtra->pSeeds )[ uiJ ].uiSoCNt = uiNumNtTotal;
         } // if
@@ -477,8 +479,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -759,13 +761,12 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
         } // for
         if( pOutExtra != nullptr )
             pOutExtra->uiCurrSocID = 0;
-        return xFilter1.execute_helper(xFilter2.execute_helper( xDupRem.execute( pReseeded ), //
+        return xFilter1.execute_helper( xFilter2.execute_helper( xDupRem.execute( pReseeded ), //
                                                                  pQuery, pRefSeq, pOutExtra ),
                                         pQuery, pRefSeq, pOutExtra );
     }
-    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py( std::shared_ptr<SeedsSet> pSeedsSet,
-                                                                              std::shared_ptr<Pack> pRefSeq,
-                                                                              std::shared_ptr<NucSeq> pQuery )
+    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py(
+        std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
         return std::make_pair( execute_helper( pSeedsSet, pRefSeq, pQuery, &xRet ), xRet );
@@ -835,16 +836,18 @@ class JumpsFilterContigBorder
         return false;
     } // method
 
+    inline bool jumpByContigBorder( SvJump& rJ, std::shared_ptr<Pack> pPack )
+    {
+        return byContigBorder( rJ.from_start_same_strand( ), rJ.from_end_same_strand( ), pPack ) ||
+               byContigBorder( rJ.to_start( ), rJ.to_end( ), pPack );
+    } // method
+
     // overload
     virtual std::shared_ptr<libMS::ContainerVector<SvJump>> DLL_PORT( MA )
         execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
         pJumps->erase( std::remove_if( pJumps->begin( ), pJumps->end( ),
-                                       [ & ]( SvJump& rJ ) {
-                                           return byContigBorder( rJ.from_start_same_strand( ),
-                                                                  rJ.from_end_same_strand( ), pPack ) ||
-                                                  byContigBorder( rJ.to_start( ), rJ.to_end( ), pPack );
-                                       } ),
+                                       [ & ]( SvJump& rJ ) { return jumpByContigBorder( rJ, pPack ); } ),
                        pJumps->end( ) );
         return pJumps;
     } // method
@@ -891,8 +894,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

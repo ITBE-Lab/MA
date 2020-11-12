@@ -472,6 +472,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xRet;
     } // method
 
+#define ONE_SIDED_CALLS_EXIST 0
 
     template <typename Func_t, typename Func2_t>
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
@@ -602,6 +603,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #if DEBUG_LEVEL > 0
                         xVisitedCalls.insert( std::get<0>( tNextCall ) );
 #endif
+#if ONE_SIDED_CALLS_EXIST
                         // call is a dummy call (i.e. we do not know where it connects to)
                         if( std::get<5>( tNextCall ) >= 0 )
                         {
@@ -613,6 +615,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                 bForwContext = !bForwContext;
                         } // if
                         else
+#endif
                         {
                             // call is NOT a dummy call (i.e. we do know where it connects to)
                             bForwContext = std::get<2>( tNextCall );
@@ -625,7 +628,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                 SQLQuery<DBCon, uint64_t>( this->pConnection,
                                                            "SELECT COUNT(*) FROM reconstruction_table" )
                                     .scalar( );
-                            std::cout << 100.0 * ( uiNumCalls - uiNumCallsRemaining ) / (float)uiNumCalls << "%"
+                            std::cout << 100.0 * ( uiNumCalls - uiNumCallsRemaining ) / (float)uiNumCalls << "%\r"
                                       << std::endl;
                         }
                     } ); // metaMeasureAndLogDuration xDelete
@@ -726,7 +729,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+#if ONE_SIDED_CALLS_EXIST
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
+#endif
             "WHERE reconstruction_table.from_pos >= ? "
             "AND reconstruction_table.from_forward "
             "ORDER BY reconstruction_table.from_pos ASC "
@@ -741,7 +746,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+#if ONE_SIDED_CALLS_EXIST
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
+#endif
             "WHERE reconstruction_table.from_pos <= ? "
             "AND NOT reconstruction_table.from_forward "
             "ORDER BY reconstruction_table.from_pos DESC "
@@ -783,17 +790,26 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             this->pConnection,
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
+#if ONE_SIDED_CALLS_EXIST
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
             "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1,"
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
+#else
+            // always return that this is not a one-sided call
+            "       -1, false, "
+#endif
             "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+#if ONE_SIDED_CALLS_EXIST
             // check if the selected entry is one sided
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
+#endif
             "WHERE reconstruction_table.from_pos >= ? "
+#if ONE_SIDED_CALLS_EXIST
             // prevent going backwards on one sided jumps
             "AND sv_call_table.id NOT IN (SELECT call_id_to FROM one_sided_calls_table) "
+#endif
             "AND reconstruction_table.from_forward "
             // only use correctly mirrored entries
             "AND NOT reconstruction_table.mirrored "
@@ -803,17 +819,26 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             this->pConnection->getSlave( ), // slave not actually necessary here...
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
             "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
+#if ONE_SIDED_CALLS_EXIST
             // cannot return null with arne's sql wrapper (however -1 is unused as id)
             "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
             "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
+#else
+            // always return that this is not a one-sided call
+            "       -1, false, "
+#endif
             "       inserted_sequence_size "
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
+#if ONE_SIDED_CALLS_EXIST
             // check if the selected entry is one sided
             "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
+#endif
             "WHERE reconstruction_table.from_pos <= ? "
-            // prevent going backwards on one sided jumps
+        // prevent going backwards on one sided jumps
+#if ONE_SIDED_CALLS_EXIST
             "AND sv_call_table.id NOT IN (SELECT call_id_to FROM one_sided_calls_table) "
+#endif
             "AND NOT reconstruction_table.from_forward "
             // only use correctly mirrored entries
             "AND NOT reconstruction_table.mirrored "
@@ -918,7 +943,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // start pos depending on context and contig of lowest id call
                 auto uiStartPos = bForwContext ? pRef->startOfSequenceWithId( uiStartId )
                                                : pRef->endOfSequenceWithId( uiStartId ) - 1;
-#if 0
+#if 1
                 std::cout << "uiStartId: " << uiStartId << " bForwContext: " << ( bForwContext ? "true" : "false" )
                           << " uiStartPos: " << uiStartPos << " startChr: " << pRef->nameOfSequenceWithId( uiStartId )
                           << std::endl;
