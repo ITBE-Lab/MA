@@ -143,9 +143,9 @@ class SvJump : public libMS::Container
               /* uiTo = */
               rB.bOnForwStrand ? rB.start_ref( ) : rB.start_ref( ),
               /* uiQueryFrom = */
-              std::min( rA.end( ) - 1, rB.start( ) ),
+              rA.end( ),
               /* uiQueryTo = */
-              std::max( rA.end( ) - 1, rB.start( ) ),
+              rB.start( ),
               /* bFromForward = */ rA.bOnForwStrand,
               /* bToForward = */ rB.bOnForwStrand,
               /* uiNumSupportingNt = */ std::min( rA.uiSoCNt, rB.uiSoCNt ),
@@ -182,11 +182,11 @@ class SvJump : public libMS::Container
                                            // @note rA's direction is mirrored on reference if rA is on rev comp strand
                                            : 1 + rA.start_ref( ) - rA.size( ) ),
                   /* uiQueryFrom = */
-                  bFirstSeed ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ) - 1,
+                  bFirstSeed ? ( rA.start( ) > uiMaxJumpLen ? rA.start( ) - uiMaxJumpLen : 0 ) : rA.end( ),
                   /* uiQueryTo = */
-                  !bFirstSeed ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen - 1 ) : rA.start( ),
-                  /* bFromForward = */ true,
-                  /* bToForward = */ true,
+                  !bFirstSeed ? ( rA.end( ) + uiMaxJumpLen < qLen ? rA.end( ) + uiMaxJumpLen : qLen ) : rA.start( ),
+                  /* bFromForward = */ rA.bOnForwStrand,
+                  /* bToForward = */ rA.bOnForwStrand,
                   /* uiNumSupportingNt = */ rA.uiSoCNt,
                   /* iID */ -1,
                   /* iReadId */ iReadId )

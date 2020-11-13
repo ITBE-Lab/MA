@@ -513,6 +513,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             nucSeqIndex uiLastEdgeInsertionSize = 0;
             auto pRet = std::make_shared<Seeds>( );
             std::vector<std::shared_ptr<NucSeq>> vInsertions;
+            bool bFirstSeed = true;
             while( true )
             {
                 // get the next call
@@ -582,12 +583,17 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // we reach this point only if there are more calls, so tNextCall is set properly here
                 metaMeasureAndLogDuration<false>( "seq copy", [ & ]( ) {
                     // the call is in the current chromosome
-                    if( bForwContext )
+                    if( bFirstSeed )
+                    {
+                        bFirstSeed = false;
+                        pRet->emplace_back( 0, 0, 0, true );
+                    } // if
+                    else if( bForwContext )
                         pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                             std::get<1>( tNextCall ) - uiCurrPos + 1, uiCurrPos, true );
                     else
                         pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
-                                            uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos + 1, false );
+                                            uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos, false );
                     // append the skipped over sequence
                     if( bWithInsertions )
                     {
@@ -1015,9 +1021,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 if( xSeed.bOnForwStrand )
                     pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
                 else
-                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ) + 1,
-                                               pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ) +
-                                                   1,
+                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ),
+                                               pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ),
                                                xCurrChrom,
                                                true );
 

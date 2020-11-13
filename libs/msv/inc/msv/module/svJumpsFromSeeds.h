@@ -414,7 +414,7 @@ class SvJumpsFromSeeds
             auto xItLast = pSeeds->rbegin( );
             while( xItLast != pSeeds->rend( ) && xItLast->size( ) == 0 )
                 xItLast++;
-            if( xItLast != pSeeds->rend( ) && xItLast->end( ) + uiMinDistDummy <= pQuery->length( ) )
+            if( xItLast != pSeeds->rend( ) && xItLast->end( ) + uiMinDistDummy < pQuery->length( ) )
             {
                 pRet->emplace_back( *xItLast, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );
                 if( pOutExtra != nullptr )
