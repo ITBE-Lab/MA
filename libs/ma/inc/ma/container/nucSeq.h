@@ -119,8 +119,8 @@ class NucSeq : public libMS::Container
          * http://stackoverflow.com/questions/1986538/how-to-handle-realloc-when-it-fails-due-to-memory
          */
         auto pxReallocRef = (uint8_t*)realloc( pxSequenceRef, uxRequestedSize * sizeof( uint8_t ) );
-        uint8_t* pxReallocRef2 = NULL;
 #if WITH_QUALITY
+        uint8_t* pxReallocRef2 = NULL;
         if( bHasQuality( ) )
             pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxRequestedSize * sizeof( uint8_t ) );
 #endif
@@ -354,12 +354,13 @@ class NucSeq : public libMS::Container
         if( length( ) != xOther.length( ) )
             return false;
         for( size_t uiI = 0; uiI < length( ); uiI++ )
-            if( ( *this )[ uiI ] != xOther[ uiI ] )
+            if( ( *this )[ uiI ] != xOther[ uiI ] && ( *this )[ uiI ] < 4 && xOther[ uiI ] < 4 )
                 return false;
 #if WITH_QUALITY
-        for( size_t uiI = 0; uiI < length( ); uiI++ )
-            if( this->getQuality( uiI ) != xOther.getQuality( uiI ) )
-                return false;
+        if( bHasQuality( ) && xOther.bHasQuality( ) )
+            for( size_t uiI = 0; uiI < length( ); uiI++ )
+                if( this->getQuality( uiI ) != xOther.getQuality( uiI ) )
+                    return false;
 #endif
         return true;
     }

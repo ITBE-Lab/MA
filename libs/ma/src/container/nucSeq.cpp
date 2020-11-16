@@ -47,6 +47,7 @@ void exportNucSeq( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "quality", &NucSeq::getQuality )
 #endif
         .def( "fastaq", &NucSeq::fastaq )
+        .def( "equals", &NucSeq::isEqual )
         .def( "check", &NucSeq::check )
         .def_readwrite( "name", &NucSeq::sName )
         .def_readwrite( "id", &NucSeq::iId );

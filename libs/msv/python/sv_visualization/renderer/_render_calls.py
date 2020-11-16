@@ -74,6 +74,7 @@ def render_calls(self, render_all=False):
             max_blur = 500
             blur_step = 10
             stats_data_1 = {"l":[], "x":[], "y":[], "c":[]}
+            stats_data_4 = {"l":[], "x":[], "y":[], "c":[]}
             stats_data_2 = {"l":[], "x":[], "y":[], "c":[]}
             stats_data_3 = {"x":[], "w":[], "t":[], "c":[], "l":[]}
             print("computing stats 1...")
@@ -94,11 +95,25 @@ def render_calls(self, render_all=False):
             stats_data_1["x"].append([])
             stats_data_1["y"].append([])
             stats_data_1["c"].append("green")
+
+            stats_data_4["x"].append([])
+            stats_data_4["y"].append([])
+            stats_data_4["c"].append("green")
+            stats_data_4["l"].append("Accuracy")
+            stats_data_4["x"].append([])
+            stats_data_4["y"].append([])
+            stats_data_4["c"].append("blue")
+            stats_data_4["l"].append("Recall")
             for x, num_calls, num_tp in stats:
                 for n in [-1, -2]:
                     stats_data_1["x"][n].append(x)
+                    if num_calls > 0 and gt_total > 0:
+                        stats_data_4["x"][n].append(x)
                 stats_data_1["y"][-1].append(num_tp)
                 stats_data_1["y"][-2].append(num_calls)
+                if num_calls > 0 and gt_total > 0:
+                    stats_data_4["y"][-1].append(num_tp/gt_total) # recall
+                    stats_data_4["y"][-2].append(num_tp/num_calls) # accuracy
             stats_data_2["l"].append("Ground Truth")
             stats_data_2["x"].append([min_blur, max_blur])
             stats_data_2["y"].append([gt_total, gt_total])
@@ -227,6 +242,7 @@ def render_calls(self, render_all=False):
         if not stats_data_1 is None:
             self.read_plot.stat_lines_1.data = stats_data_1
             self.read_plot.stat_lines_2.data = stats_data_2
+            self.read_plot.stat_lines_4.data = stats_data_4
             self.read_plot.stat_lines_3.data = stats_data_3
     self.do_callback(callback)
 

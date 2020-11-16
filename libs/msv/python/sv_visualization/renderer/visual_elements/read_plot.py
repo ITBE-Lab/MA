@@ -136,6 +136,21 @@ class ReadPlot:
                                   legend_field="l")
         tab1 = Panel(child=stat_plot1, title="Min Score")
 
+        stat_plot4 = figure(
+            width=900,
+            height=250,
+            tools=[
+                "pan", "box_zoom",
+                "wheel_zoom", "reset"
+            ],
+            active_scroll="wheel_zoom"
+        )
+        stat_plot4.xaxis.axis_label = "Min Score"
+        self.stat_lines_4 = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
+        stat_plot4.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines_4,
+                                  legend_field="l")
+        tab4 = Panel(child=stat_plot4, title="Recall & Accuracy")
+
         stat_plot2 = figure(
             width=900,
             height=stat_plot1.height,
@@ -169,7 +184,7 @@ class ReadPlot:
         tab3 = Panel(child=stat_plot3, title="SoC support")
 
 
-        self.stats_tabs = Tabs(tabs=[tab1, tab2, tab3], width=900)
+        self.stats_tabs = Tabs(tabs=[tab1, tab4, tab2, tab3], width=900)
 
     def auto_adjust_y_range(self, renderer):
         if renderer.widgets.range_link_radio.active == 0:
