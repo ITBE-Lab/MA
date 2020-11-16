@@ -385,7 +385,8 @@ class SvJumpsFromSeeds
             auto xItFirst = pSeeds->begin( );
             while( xItFirst != pSeeds->end( ) && xItFirst->size( ) == 0 )
                 xItFirst++;
-            if( xItFirst != pSeeds->end( ) && xItFirst->start( ) > uiMinDistDummy )
+            // might need dummy jump exactly at start of read/contig (if uiMinDistDummy is 0)
+            if( xItFirst != pSeeds->end( ) && xItFirst->start( ) >= uiMinDistDummy )
             {
                 pRet->emplace_back( *xItFirst, pQuery->length( ), true, pQuery->iId, uiMaxDistDummy );
                 if( pOutExtra != nullptr )
@@ -414,6 +415,7 @@ class SvJumpsFromSeeds
             auto xItLast = pSeeds->rbegin( );
             while( xItLast != pSeeds->rend( ) && xItLast->size( ) == 0 )
                 xItLast++;
+            // don't need dummy jump exactly at end of read/contig (if uiMinDistDummy is 0)
             if( xItLast != pSeeds->rend( ) && xItLast->end( ) + uiMinDistDummy < pQuery->length( ) )
             {
                 pRet->emplace_back( *xItLast, pQuery->length( ), false, pQuery->iId, uiMaxDistDummy );

@@ -60,8 +60,7 @@ inline void ksw_simplified( int qlen, const uint8_t* query, int tlen, const uint
 #else
                             kswcpp_extz_t* ez,
 #endif
-                            AlignedMemoryManager& rMemoryManager,
-                            int minAddBandwidth = 10 )
+                            AlignedMemoryManager& rMemoryManager, int minAddBandwidth = 10 )
 {
     /*
      * Adjust the bandwith according to the delta distance of the seeds creating this gap
@@ -924,7 +923,8 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
             case 0:
                 for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                 {
-                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
+                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] || ( *pQuery )[ uiPos + qPos ] == 4 ||
+                        ( *pRef )[ uiPos + rPos ] == 4 )
                         pAlignment->append( MatchType::match );
                     else
                         pAlignment->append( MatchType::missmatch );
@@ -987,7 +987,8 @@ std::shared_ptr<Alignment> runKswExtend( std::shared_ptr<NucSeq> pQuery, std::sh
             case 0:
                 for( uint32_t uiPos = 0; uiPos < uiAmount; uiPos++ )
                 {
-                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] )
+                    if( ( *pQuery )[ uiPos + qPos ] == ( *pRef )[ uiPos + rPos ] || ( *pQuery )[ uiPos + qPos ] == 4 ||
+                        ( *pRef )[ uiPos + rPos ] == 4 )
                         pAlignment->append( MatchType::match );
                     else
                         pAlignment->append( MatchType::missmatch );

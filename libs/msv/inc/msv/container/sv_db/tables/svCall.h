@@ -583,6 +583,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // we reach this point only if there are more calls, so tNextCall is set properly here
                 metaMeasureAndLogDuration<false>( "seq copy", [ & ]( ) {
                     // the call is in the current chromosome
+                    // special case: the first entry is a dummy entry and we have to put an empty seed
+                    // (because we need and insertion before the first seed)
                     if( bFirstSeed )
                     {
                         bFirstSeed = false;
@@ -929,8 +931,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         size_t uiStartCnt = 1;
         SQLQuery<DBCon, uint64_t> xQuery(
             this->pConnection,
-            "SELECT reconstruction_table.from_pos " // potentially reversed
-                                                    // start of call
+            "SELECT reconstruction_table.from_pos " // potentially reversed start of call
             "FROM sv_call_table "
             "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
             "ORDER BY reconstruction_table.order_id ASC "

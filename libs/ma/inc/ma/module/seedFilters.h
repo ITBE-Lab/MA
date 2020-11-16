@@ -869,6 +869,14 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
     } // default constructor
 
 
+    /**
+     * @brief core computation of the overlap filter
+     * @details
+     * This function is a linesweep over the query intervals of SoCs/Seeds (depending on the templates)
+     * If removes all overlaps.
+     * We want to use the exact same algorithm twice once on SoC basis once on seed bases.
+     * Both filters call this core function but with different templates.
+     */
     template <typename LineSweepVec, typename RemoveSeedsInRange, typename RemoveSeeds, typename ValueInRange>
     void core( LineSweepVec& vLineSweepVec, RemoveSeedsInRange&& fRemoveSeedsInRange, RemoveSeeds&& fRemoveSeeds,
                HelperRetVal* pOutExtra, ValueInRange&& fValueInRange, std::shared_ptr<NucSeq> pQuerySeq,
@@ -903,14 +911,15 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
                 auto uiPercentageOfJ =
                     std::max( ( nucSeqIndex )( ( uiJEnd - uiJStart ) * fMinNonOverlap ), uiMinNonOverlap );
 
-                bool bStartOfIUncovered = uiIStart + uiPercentageOfI < uiJStart;
-                bool bEndOfIUncovered = uiJEnd + uiPercentageOfI < uiIEnd;
-                bool bEndOfJUncovered = uiIEnd + uiPercentageOfJ < uiJEnd;
-                bool bStartOfJUncovered = uiJStart + uiPercentageOfJ < uiIStart;
+                // marker (1) [see comment at end of function]
+                bool bStartOfIUncovered = uiIStart + uiPercentageOfI <= uiJStart;
+                bool bEndOfIUncovered = uiJEnd + uiPercentageOfI <= uiIEnd;
+                bool bEndOfJUncovered = uiIEnd + uiPercentageOfJ <= uiJEnd;
+                bool bStartOfJUncovered = uiJStart + uiPercentageOfJ <= uiIStart;
 
                 if( bStartOfIUncovered && bEndOfJUncovered )
                 {
-                    // both SoCs have unique regions
+                    // both SoCs overlap but have unique regions
                     // make a cut in the center of the overlapping region
                     // and remove seed from one side of the cut in each SoC
                     auto uiCenter = ( uiIEnd + uiJStart ) / 2;
@@ -953,6 +962,9 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
             if( uiIEnd > uiLocalQueryMax )
                 uiNumUncoveredNt += uiIEnd - uiLocalQueryMax;
 
+            // if this condition is < then the conditions below marker (1) must be <= or vice versa
+            // otherwise there can bee SoC that do not trigger the "SoCs overlap but have unique regions"
+            // but also neither of them triggers this condition; this would leave overlapping SoCs in the final result
             if( uiNumUncoveredNt < uiPercentageOfI && !bPairwiseOverlap )
                 // this SoC / seed is overlapped by too many other SoCs
                 fRemoveSeeds( std::get<2>( vLineSweepVec[ uiI ] ), pOutExtra );
