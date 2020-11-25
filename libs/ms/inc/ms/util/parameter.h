@@ -1068,6 +1068,12 @@ class ParameterSetManager
         xParametersSets[ "nanopore" ]->xMinNumSoC->set( 5 );
 
         xParametersSets.emplace( "sv-illumina", std::make_shared<Presetting>( "SV-Illumina" ) );
+        xParametersSets[ "sv-illumina" ]->xMaximalSeedAmbiguity->set( 1 );
+        xParametersSets[ "sv-illumina" ]->xMinNtInSoc->set( 25 );
+        xParametersSets[ "sv-illumina" ]->xRectangularSoc->set( false );
+        xParametersSets[ "sv-illumina" ]->xDoDummyJumps->set( false );
+        xParametersSets[ "sv-illumina" ]->xHarmScoreMinRel->set( 0 );
+        xParametersSets[ "sv-illumina" ]->xHarmScoreMin->set( xParametersSets[ "sv-illumina" ]->xMinNtInSoc->get( ) );
 
 
         // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?

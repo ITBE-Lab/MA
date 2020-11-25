@@ -177,6 +177,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLQuery<DBCon, double> xMinScore;
     SQLQuery<DBCon, double> xMaxAvSuppNt;
     SQLStatement<DBCon> xSetCoverageForCall;
+    SQLStatement<DBCon> xVacuumAnalyze;
     SQLStatement<DBCon> xDeleteCall;
     SQLStatement<DBCon> xUpdateCall;
     SQLStatement<DBCon> xFilterCallsWithHighScore;
@@ -247,6 +248,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                "UPDATE sv_call_table "
                                "SET reference_ambiguity = ? "
                                "WHERE id = ? " ),
+          xVacuumAnalyze( pConnection, "VACUUM ANALYZE sv_call_table " ),
           xDeleteCall( pConnection,
                        "DELETE FROM sv_call_table "
                        "WHERE id = ? " ),
@@ -279,12 +281,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         xEnableExtension.exec( );
         this->addIndex( json{ { INDEX_NAME, "rectangle" },
-                              { INDEX_COLUMNS, "rectangle" },
+                              { INDEX_COLUMNS, "sv_caller_run_id, rectangle" },
                               { INDEX_TYPE, "SPATIAL" },
-                              { INDEX_METHOD, "GIST" } } );
-        this->addIndex( json{ { INDEX_NAME, "flipped_rectangle" },
-                              { INDEX_COLUMNS, "flipped_rectangle" },
-                              { INDEX_TYPE, "SPATIAL" },
+                              { INCLUDE, "id, from_forward, to_forward, rectangle, score" },
                               { INDEX_METHOD, "GIST" } } );
 
 
@@ -296,8 +295,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline void dropIndices( int64_t iCallerRunId )
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
-        this->dropIndex( json{ { INDEX_NAME, "flipped_rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
+    } // method
+
+    inline void vacuumAnalyze( )
+    {
+        xVacuumAnalyze.exec( );
     } // method
 
     inline uint32_t numCalls( )

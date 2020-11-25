@@ -63,45 +63,55 @@ template <typename DBCon> class SvCallsFromDb
     std::unique_ptr<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t, bool, bool, NucSeqSql,
                              uint32_t, uint32_t, uint32_t>>
         pQuery = nullptr;
-    std::unique_ptr<SQLQuery<DBCon, uint32_t>> pQueryCount = nullptr;
+    std::unique_ptr<SQLQuery<DBCon, double>> pQueryCount = nullptr;
 
-    std::string rectanglesOverlapSQL( std::string sFromTable, std::string sToTable )
+    std::string rectanglesOverlapSQL_1( std::string sFromTable, std::string sToTable )
     {
         // clang-format off
         // ST_DWithin returns true if the geometries are within the specified distance of one another
         // makes use of indices
-        return  std::string("     AND ( (ST_DWithin(") + sToTable + ".rectangle::geometry, "
-                            "                       " + sFromTable + ".rectangle::geometry, ?) "
-                            "           AND " + sToTable + ".from_forward = " + sFromTable + ".from_forward "
-                            "           AND " + sToTable + ".to_forward = " + sFromTable + ".to_forward) "
+        return  std::string("ST_DWithin(" ) + sToTable + ".rectangle::geometry, "
+                                            + sFromTable + ".rectangle::geometry, ?) "
+                            "AND " + sToTable + ".from_forward = " + sFromTable + ".from_forward "
+                            "AND " + sToTable + ".to_forward = " + sFromTable + ".to_forward ";
+        // clang-format on
+    }
+    std::string rectanglesOverlapSQL_2( std::string sFromTable, std::string sToTable )
+    {
+        // clang-format off
+        // ST_DWithin returns true if the geometries are within the specified distance of one another
+        // makes use of indices
+        return  std::string( "ST_DWithin(" ) + sToTable + ".rectangle::geometry, "
                             // this considers reverse complemented calls
                             // Note: we need to mirror the rectangle on the matrix diagonal
                             //       and invert the strand information
-                            "       OR (ST_DWithin(" + sToTable + ".rectangle::geometry, "
-                            "                      " + sFromTable + ".flipped_rectangle::geometry, ?) "
-                            "           AND " + sToTable + ".from_forward != " + sFromTable + ".to_forward "
-                            "           AND " + sToTable + ".to_forward != " + sFromTable + ".from_forward)"
-                            "     )";
+                                             + sFromTable + ".flipped_rectangle::geometry, ?) "
+                            " AND " + sToTable + ".from_forward != " + sFromTable + ".to_forward "
+                            " AND " + sToTable + ".to_forward != " + sFromTable + ".from_forward ";
         // clang-format on
+    }
+    std::string rectanglesOverlapSQL( std::string sFromTable, std::string sToTable )
+    {
+        return std::string( "AND ( " ) + rectanglesOverlapSQL_1( sFromTable, sToTable ) + " ) " + //
+               "             OR ( " + rectanglesOverlapSQL_2( sFromTable, sToTable ) + " ) ";
     }
     std::string selfIntersectionSQL( std::string sFromTable, std::string sToTable )
     {
         // clang-format off
-        return std::string("AND NOT EXISTS( "
+        std::string sPref = std::string("AND NOT EXISTS( " ) +
                         // make sure that inner_table does not overlap with any other call with higher score
-                        "     SELECT " ) + sToTable + ".id "
+                        "     SELECT " + sToTable + ".id "
                         "     FROM sv_call_table AS " + sToTable +
                         "     WHERE " + sToTable + ".id != " + sFromTable + ".id "
                         "     AND " + sToTable + ".score >= " + sFromTable + ".score "
                         "     AND " + sToTable + ".sv_caller_run_id = " + sFromTable + ".sv_caller_run_id "
-                        // Returns true if the geometries are within the specified distance of one another
-                        // makes use of indices
-                        + rectanglesOverlapSQL(sFromTable, sToTable) +
-                        ") ";
+                        "     AND ";
+        return sPref + rectanglesOverlapSQL_1(sFromTable, sToTable) + ") " +
+               sPref + rectanglesOverlapSQL_2(sFromTable, sToTable) + ") ";
         // clang-format on
     }
 
-    void initQuery( std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xNewConfig )
+    void initQuery( std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xNewConfig, bool bPrintStatement = false )
     {
         if( xNewConfig != xConfiguration || ( xNewConfig[ ConfigFlags::JustCount ] && pQueryCount == nullptr ) ||
             ( !xNewConfig[ ConfigFlags::JustCount ] && pQuery == nullptr ) )
@@ -146,33 +156,46 @@ template <typename DBCon> class SvCallsFromDb
                 ( !xConfiguration[ ConfigFlags::WithIntersection ]
                       ? ""
                       : std::string( "AND " ) + ( xConfiguration[ ConfigFlags::Overlapping ] ? "" : "NOT " ) +
-                            // make sure that inner_table overlaps the outer_table:
+                            // make sure that inner_table overlaps the inner_table2:
                             "EXISTS( "
-                            "     SELECT outer_table.id "
-                            "     FROM sv_call_table AS outer_table "
-                            "     WHERE outer_table.sv_caller_run_id = ? " +
-                            ( !xConfiguration[ ConfigFlags::WithMinScoreGT ] ? "" : "AND outer_table.score >= ? " ) + //
-                            ( !xConfiguration[ ConfigFlags::WithMaxScoreGT ] ? "" : "AND outer_table.score < ? " ) + //
+                            "     SELECT inner_table2.id "
+                            "     FROM sv_call_table AS inner_table2 "
+                            "     WHERE inner_table2.sv_caller_run_id = ? " +
+                            ( !xConfiguration[ ConfigFlags::WithMinScoreGT ] ? ""
+                                                                             : "AND inner_table2.score >= ? " ) + //
+                            ( !xConfiguration[ ConfigFlags::WithMaxScoreGT ] ? "" : "AND inner_table2.score < ? " ) + //
                             ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRangeGT ]
                                   ? ""
-                                  : "AND outer_table.avg_supporting_nt >= ? " ) + //
+                                  : "AND inner_table2.avg_supporting_nt >= ? " ) + //
                             ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRangeGT ]
                                   ? ""
-                                  : "AND outer_table.avg_supporting_nt < ? " ) + //
-                            rectanglesOverlapSQL( "outer_table", "inner_table" ) +
+                                  : "AND inner_table2.avg_supporting_nt < ? " ) + //
+                            rectanglesOverlapSQL( "inner_table2", "inner_table" ) +
                             ( !xConfiguration[ ConfigFlags::WithOtherIntersection ]
                                   ? ""
-                                  : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
+                                  : selfIntersectionSQL( "inner_table2", "inner_table3" ) ) +
                             ") " ) +
                 ( !xConfiguration[ ConfigFlags::WithSelfIntersection ]
                       ? ""
-                      : selfIntersectionSQL( "inner_table", "inner_table2" ) ) +
+                      : selfIntersectionSQL( "inner_table", "inner_table4" ) ) +
+                ( !xConfiguration[ ConfigFlags::JustCount ] ? ""
+                                                            : rectanglesOverlapSQL( "outer_table", "inner_table" ) ) +
                 ( !xConfiguration[ ConfigFlags::OrderByScore ] ? "" : "ORDER BY score DESC " ) +
                 ( !xConfiguration[ ConfigFlags::Limit ] ? "" : "LIMIT ? " );
 
+            if( bPrintStatement )
+                std::cout << sQueryText << std::endl;
+
             if( xConfiguration[ ConfigFlags::JustCount ] )
-                pQueryCount = std::make_unique<SQLQuery<DBCon, uint32_t>>(
-                    pConnection, std::string( "SELECT COUNT(*) " ) + sQueryText );
+                pQueryCount =
+                    std::make_unique<SQLQuery<DBCon, double>>( pConnection,
+                                                               std::string( // COALESCE used to prevent NULL values
+                                                                   "SELECT COALESCE((SELECT MAX(inner_table.score) " ) +
+                                                                   sQueryText +
+                                                                   " ) , -1 ) AS data_score "
+                                                                   "FROM sv_call_table AS outer_table "
+                                                                   "WHERE sv_caller_run_id = ? "
+                                                                   "ORDER BY data_score ASC " );
             else
                 pQuery = std::make_unique<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t,
                                                    bool, bool, NucSeqSql, uint32_t, uint32_t, uint32_t>>(
@@ -356,100 +379,80 @@ template <typename DBCon> class SvCallsFromDb
         return !pQuery->eof( );
     } // method
 
+
+    /**
+EXPLAIN ANALYZE
+SELECT  (
+    SELECT MAX( inner_table.score )
+    FROM ufrj50816.sv_call_table AS inner_table
+    WHERE inner_table.sv_caller_run_id = 13
+    AND ( 	ST_DWithin(outer_table.flipped_rectangle::geometry, inner_table.rectangle::geometry, 110)
+            AND outer_table.from_forward != inner_table.to_forward
+            AND outer_table.to_forward != inner_table.from_forward)
+    OR (	ST_DWithin(outer_table.rectangle::geometry, inner_table.rectangle::geometry, 110)
+            AND outer_table.from_forward = inner_table.from_forward
+            AND outer_table.to_forward = inner_table.to_forward)
+    AND NOT EXISTS (
+        SELECT inner_table2.id
+        FROM ufrj50816.sv_call_table AS inner_table2
+        WHERE inner_table2.id != outer_table.id
+        AND inner_table2.score >= outer_table.score
+        AND inner_table2.sv_caller_run_id = outer_table.sv_caller_run_id
+        AND ST_DWithin(inner_table2.rectangle::geometry, outer_table.rectangle::geometry, 220)
+        AND inner_table2.from_forward = outer_table.from_forward
+        AND inner_table2.to_forward = outer_table.to_forward
+    )
+    AND NOT EXISTS (
+        SELECT inner_table2.id
+        FROM ufrj50816.sv_call_table AS inner_table2
+        WHERE inner_table2.id != outer_table.id
+        AND inner_table2.score >= outer_table.score
+        AND inner_table2.sv_caller_run_id = outer_table.sv_caller_run_id
+        AND ST_DWithin(inner_table2.rectangle::geometry, outer_table.flipped_rectangle::geometry, 220)
+        AND inner_table2.from_forward != outer_table.to_forward
+        AND inner_table2.to_forward != outer_table.from_forward
+    )
+) AS data_score
+FROM ufrj50816.sv_call_table AS outer_table
+WHERE sv_caller_run_id = 10
+ORDER BY data_score DESC
+    */
+
     // pair(list(tuple(x, calls with score > x, true positives with score > x)), |gt|)
-    std::tuple<std::vector<std::tuple<double, uint32_t, uint32_t>>, std::vector<std::pair<uint32_t, uint32_t>>,
-               uint32_t>
-    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, int64_t iAllowedDistMin,
-           int64_t iAllowedDistMax, int64_t iAllowedDistStep, double dMinScore, double dMaxScore, double dStep )
+    std::pair<std::vector<std::tuple<double, uint32_t, uint32_t>>, uint32_t>
+    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist )
     {
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
         std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
-        xConfig.set( ConfigFlags::Overlapping );
-        xConfig.set( ConfigFlags::WithIntersection );
         xConfig.set( ConfigFlags::WithSelfIntersection );
-        xConfig.set( ConfigFlags::WithMinScore );
-        xConfig.set( ConfigFlags::WithMaxScore );
         xConfig.set( ConfigFlags::JustCount );
-        initQuery( xConfig );
-        for( double dCurr = dMinScore; dCurr < dMaxScore; dCurr += dStep )
+        initQuery( xConfig, false );
+        std::vector<double> vScores = pQueryCount->template executeAndStoreInVector<0>(
+            iSvCallerIdA, iAllowedDist * 2, iAllowedDist * 2, iAllowedDist, iAllowedDist, iSvCallerIdB );
+        std::vector<std::pair<double, size_t>> vGrouped;
+        for( size_t uiI = 0; uiI < vScores.size( ); uiI++ )
         {
-            vRet.emplace_back( dCurr,
-                               pSvCallTable->numCalls( iSvCallerIdA, dCurr ),
-                               pQueryCount->scalar( iSvCallerIdA, dCurr, dMaxScore, iSvCallerIdB, iAllowedDist,
-                                                    iAllowedDist, iAllowedDist, iAllowedDist ) );
+            if( vGrouped.size( ) == 0 || vGrouped.back( ).first != vScores[ uiI ] )
+                vGrouped.emplace_back( vScores[ uiI ], (size_t)1 );
+            else
+                vGrouped.back( ).second++;
         } // for
-        std::vector<std::pair<uint32_t, uint32_t>> vRet2;
-        for( int64_t iAllowedDist = iAllowedDistMin; iAllowedDist < iAllowedDistMax; iAllowedDist += iAllowedDistStep )
+        size_t uiInc = 1;
+        if( vGrouped.size( ) > 100 )
+            uiInc = vGrouped.size( ) / 100;
+        std::cout << "fetching num calls" << std::endl;
+        size_t uiCnt = 0;
+        for( auto xPair : vGrouped )
         {
-            vRet2.emplace_back( iAllowedDist,
-                                pQueryCount->scalar( iSvCallerIdA, dMinScore, dMaxScore, iSvCallerIdB, iAllowedDist,
-                                                     iAllowedDist, iAllowedDist, iAllowedDist ) );
+            uiCnt += xPair.second;
+            if( xPair.first > 0 )
+            //                                                  compares using >=
+                vRet.emplace_back( xPair.first, pSvCallTable->numCalls( iSvCallerIdA, xPair.first ),
+                                   vScores.size( ) - uiCnt );
         } // for
-        return std::make_tuple( vRet, vRet2, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
+        return std::pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
     } // method
 
-    std::tuple<std::vector<std::pair<double, uint32_t>>, std::vector<std::pair<double, uint32_t>>,
-               std::vector<std::pair<double, uint32_t>>, double>
-    count_by_supp_nt( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, size_t uiNumSteps,
-                      double dMinScore, double dMaxScore, double dMaxAvgSupp )
-    {
-        double dStep = dMaxAvgSupp / uiNumSteps;
-
-        std::vector<std::pair<double, uint32_t>> vTruePositives;
-        std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
-        xConfig.set( ConfigFlags::Overlapping );
-        xConfig.set( ConfigFlags::WithIntersection );
-        xConfig.set( ConfigFlags::WithSelfIntersection );
-        xConfig.set( ConfigFlags::WithMinScore );
-        xConfig.set( ConfigFlags::WithMaxScore );
-        xConfig.set( ConfigFlags::JustCount );
-        xConfig.set( ConfigFlags::WithAvgSuppNtRange );
-        initQuery( xConfig );
-        for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
-        {
-            double dEnd = dStart + dStep;
-            vTruePositives.emplace_back( dStart + dStep / 2,
-                                         pQueryCount->scalar( iSvCallerIdA, dMinScore, dMaxScore, dStart, dEnd,
-                                                              iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
-                                                              iAllowedDist ) );
-        } // for
-        std::vector<std::pair<double, uint32_t>> vFalsePositives;
-        xConfig.reset( );
-        xConfig.set( ConfigFlags::WithIntersection );
-        xConfig.set( ConfigFlags::WithSelfIntersection );
-        xConfig.set( ConfigFlags::WithMinScore );
-        xConfig.set( ConfigFlags::WithMaxScore );
-        xConfig.set( ConfigFlags::JustCount );
-        xConfig.set( ConfigFlags::WithAvgSuppNtRange );
-        initQuery( xConfig );
-        for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
-        {
-            double dEnd = dStart + dStep;
-            vFalsePositives.emplace_back( dStart + dStep / 2,
-                                          pQueryCount->scalar( iSvCallerIdA, dMinScore, dMaxScore, dStart, dEnd,
-                                                               iSvCallerIdB, iAllowedDist, iAllowedDist, iAllowedDist,
-                                                               iAllowedDist ) );
-        } // for
-        std::vector<std::pair<double, uint32_t>> vFalseNegatives;
-        xConfig.reset( );
-        xConfig.set( ConfigFlags::WithIntersection );
-        xConfig.set( ConfigFlags::WithOtherIntersection );
-        xConfig.set( ConfigFlags::WithMinScoreGT );
-        xConfig.set( ConfigFlags::WithMaxScoreGT );
-        xConfig.set( ConfigFlags::JustCount );
-        xConfig.set( ConfigFlags::WithAvgSuppNtRange );
-        initQuery( xConfig );
-        for( double dStart = 0; dStart < dMaxAvgSupp; dStart += dStep )
-        {
-            double dEnd = dStart + dStep;
-            vFalseNegatives.emplace_back( dStart + dStep / 2,
-                                          pQueryCount->scalar( iSvCallerIdB, dStart, dEnd, iSvCallerIdA, dMinScore,
-                                                               dMaxScore, iAllowedDist, iAllowedDist, iAllowedDist,
-                                                               iAllowedDist ) );
-        } // for
-
-        return std::make_tuple( vTruePositives, vFalsePositives, vFalseNegatives, dStep );
-    } // method
 }; // namespace libMSV
 
 } // namespace libMSV

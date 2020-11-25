@@ -78,10 +78,8 @@ def render_calls(self, render_all=False):
             stats_data_2 = {"l":[], "x":[], "y":[], "c":[]}
             stats_data_3 = {"x":[], "w":[], "t":[], "c":[], "l":[]}
             print("computing stats 1...")
-            stats, blur_stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
-                                                            self.widgets.get_blur(), min_blur, max_blur, blur_step,
-                                                            self.get_min_score(), self.get_max_score(),
-                                                            max(1, (self.get_max_score() - self.get_min_score()) / 50))
+            stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
+                                                                         self.widgets.get_blur())
             print("done")
             stats_data_1["l"].append("Ground Truth")
             stats_data_1["x"].append([self.get_min_score(), self.get_max_score()])
@@ -122,25 +120,27 @@ def render_calls(self, render_all=False):
             stats_data_2["x"].append([])
             stats_data_2["y"].append([])
             stats_data_2["c"].append("green")
-            for x, y in blur_stats:
-                stats_data_2["x"][-1].append(x)
-                stats_data_2["y"][-1].append(y)
-            print("computing stats 2...")
-            tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
-                                                            self.get_gt_id(),
-                                                            self.widgets.get_blur(), 50,
-                                                            self.get_min_score(), self.get_max_score(),
-                                                            10000)
-            print("done")
-            for legend, color, bar in [("false-positive", "red", fp_bars),
-                                       ("true-positive", "green", tp_bars),
-                                       ("false-negative", "orange", fn_bars)]:
-                for c, t in bar:
-                    stats_data_3["x"].append(c)
-                    stats_data_3["w"].append(bar_width)
-                    stats_data_3["t"].append(t)
-                    stats_data_3["c"].append(color)
-                    stats_data_3["l"].append(legend)
+            if False: # deprecated ....
+                for x, y in blur_stats:
+                    stats_data_2["x"][-1].append(x)
+                    stats_data_2["y"][-1].append(y)
+            if False: # deprecated ....
+                print("computing stats 2...")
+                tp_bars, fp_bars, fn_bars, bar_width = self.count_calls_from_db.count_by_supp_nt(self.get_run_id(),
+                                                                self.get_gt_id(),
+                                                                self.widgets.get_blur(), 50,
+                                                                self.get_min_score(), self.get_max_score(),
+                                                                10000)
+                print("done")
+                for legend, color, bar in [("false-positive", "red", fp_bars),
+                                        ("true-positive", "green", tp_bars),
+                                        ("false-negative", "orange", fn_bars)]:
+                    for c, t in bar:
+                        stats_data_3["x"].append(c)
+                        stats_data_3["w"].append(bar_width)
+                        stats_data_3["t"].append(t)
+                        stats_data_3["c"].append(color)
+                        stats_data_3["l"].append(legend)
 
     with self.measure("SvCallFromDb(run_id)"):
         default_args = [self.get_run_id(),

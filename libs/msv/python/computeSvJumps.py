@@ -4,8 +4,6 @@ from MA import *
 import datetime
 
 def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_ids=0, runtime_file=None):
-    parameter_set_manager.set_selected("SV-PacBio")
-
     #parameter_set_manager.by_name("Number of Threads").set(1)
     #parameter_set_manager.by_name("Use all Processor Cores").set(False)
     #assert parameter_set_manager.get_num_threads() == 1

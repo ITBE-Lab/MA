@@ -222,9 +222,9 @@ class SQLDBGlobalSync
 
 #ifdef _MSC_VER
 #ifdef USE_DLL_EXPORT
-__declspec(dllexport) extern SQLDBGlobalSync xSQLDBGlobalSync;
+__declspec( dllexport ) extern SQLDBGlobalSync xSQLDBGlobalSync;
 #else
-__declspec(dllimport) extern SQLDBGlobalSync xSQLDBGlobalSync;
+__declspec( dllimport ) extern SQLDBGlobalSync xSQLDBGlobalSync;
 #endif
 #else
 extern SQLDBGlobalSync xSQLDBGlobalSync;
@@ -629,6 +629,7 @@ const std::string REFERENCES = "REFERENCES";
 // Constants for index definitions via json
 const std::string INDEX_NAME = "INDEX_NAME";
 const std::string INDEX_TYPE = "INDEX_TYPE";
+const std::string INCLUDE = "INCLUDE";
 const std::string INDEX_METHOD = "INDEX_METHOD";
 const std::string INDEX_COLUMNS = "INDEX_COLUMNS";
 const std::string WHERE = "WHERE";
@@ -690,15 +691,22 @@ template <typename DBCon, typename... ColTypes> class SQLTable
                     ? ""
                     : std::string( " USING " ) + jIndexDef[ INDEX_METHOD ].template get<std::string>( );
 
-            std::string sStmt = std::string( "CREATE " ) +
+            std::string sStmt =
+                std::string( "CREATE " ) +
 #ifndef POSTGRESQL // MySQL
-                                sIndexType +
+                sIndexType +
 #endif
-                                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName +
+                " INDEX " + rsNotExistsClause + rsIdxName + " ON " + rsTblName +
 #ifdef POSTGRESQL
-                                sIndexMethod +
+                sIndexMethod +
 #endif
-                                "(" + sCols + ")";
+                "(" + sCols + ") "
+#ifdef POSTGRESQL
+                + ( jIndexDef.count( INCLUDE ) == 0
+                        ? ""
+                        : std::string( "INCLUDE(" ) + jIndexDef[ INCLUDE ].template get<std::string>( ) + ")" )
+#endif
+                ;
 
             // WHERE is not supported by MySQL
             if( jIndexDef.count( WHERE ) )
