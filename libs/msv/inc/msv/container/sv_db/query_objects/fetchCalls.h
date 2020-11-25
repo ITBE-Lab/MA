@@ -41,7 +41,11 @@ template <typename DBCon> class SvCallsFromDb
         WithIntersection,
         /// @brief true: do not fetch calls that are overlapped by higher scoring calls from same run
         WithSelfIntersection,
-        /// @brief true: ignore ground truth run calls that are overlapped by higher scoring calls
+        /// @brief true: ignore GT calls that overlap other GT calls
+        // works only in combination with just count
+        WithOuterIntersection,
+        /// @brief true: ignore ground truth run calls that are overlapped by higher scoring
+        /// calls
         WithOtherIntersection,
         WithMinScore,
         WithMaxScore,
@@ -187,15 +191,18 @@ template <typename DBCon> class SvCallsFromDb
                 std::cout << sQueryText << std::endl;
 
             if( xConfiguration[ ConfigFlags::JustCount ] )
-                pQueryCount =
-                    std::make_unique<SQLQuery<DBCon, double>>( pConnection,
-                                                               std::string( // COALESCE used to prevent NULL values
-                                                                   "SELECT COALESCE((SELECT MAX(inner_table.score) " ) +
-                                                                   sQueryText +
-                                                                   " ) , -1 ) AS data_score "
-                                                                   "FROM sv_call_table AS outer_table "
-                                                                   "WHERE sv_caller_run_id = ? "
-                                                                   "ORDER BY data_score ASC " );
+                pQueryCount = std::make_unique<SQLQuery<DBCon, double>>(
+                    pConnection,
+                    std::string( // COALESCE used to prevent NULL values
+                        "SELECT COALESCE((SELECT MAX(inner_table.score) " ) +
+                        sQueryText +
+                        " ) , -1 ) AS data_score "
+                        "FROM sv_call_table AS outer_table "
+                        "WHERE sv_caller_run_id = ? " +
+                        ( !xConfiguration[ ConfigFlags::WithOuterIntersection ]
+                              ? ""
+                              : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
+                        "ORDER BY data_score ASC " );
             else
                 pQuery = std::make_unique<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t,
                                                    bool, bool, NucSeqSql, uint32_t, uint32_t, uint32_t>>(
@@ -424,11 +431,11 @@ ORDER BY data_score DESC
     {
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
         std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
-        xConfig.set( ConfigFlags::WithSelfIntersection );
+        xConfig.set( ConfigFlags::WithOuterIntersection );
         xConfig.set( ConfigFlags::JustCount );
         initQuery( xConfig, false );
         std::vector<double> vScores = pQueryCount->template executeAndStoreInVector<0>(
-            iSvCallerIdA, iAllowedDist * 2, iAllowedDist * 2, iAllowedDist, iAllowedDist, iSvCallerIdB );
+            iSvCallerIdA, iAllowedDist, iAllowedDist, iSvCallerIdB, iAllowedDist * 2, iAllowedDist * 2 );
         std::vector<std::pair<double, size_t>> vGrouped;
         for( size_t uiI = 0; uiI < vScores.size( ); uiI++ )
         {
@@ -437,20 +444,16 @@ ORDER BY data_score DESC
             else
                 vGrouped.back( ).second++;
         } // for
-        size_t uiInc = 1;
-        if( vGrouped.size( ) > 100 )
-            uiInc = vGrouped.size( ) / 100;
         std::cout << "fetching num calls" << std::endl;
         size_t uiCnt = 0;
+        size_t uiNumGT = vScores.size( );
         for( auto xPair : vGrouped )
         {
-            uiCnt += xPair.second;
             if( xPair.first > 0 )
-            //                                                  compares using >=
-                vRet.emplace_back( xPair.first, pSvCallTable->numCalls( iSvCallerIdA, xPair.first ),
-                                   vScores.size( ) - uiCnt );
+                vRet.emplace_back( xPair.first, pSvCallTable->numCalls( iSvCallerIdA, xPair.first ), uiNumGT - uiCnt );
+            uiCnt += xPair.second;
         } // for
-        return std::pair( vRet, pSvCallTable->numCalls( iSvCallerIdB, 0 ) );
+        return std::pair( vRet, uiNumGT );
     } // method
 
 }; // namespace libMSV

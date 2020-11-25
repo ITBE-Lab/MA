@@ -287,7 +287,7 @@ class ExactCompleteBipartiteSubgraphSweep
         std::map<int64_t, size_t> xSquashedY;
         std::vector<std::shared_ptr<SvJump>> vEdgesStart;
         std::vector<std::shared_ptr<SvJump>> vEdgesEnd;
-        while( uiStart < uiEnd )
+        while( uiStart <= uiEnd )
         {
             std::shared_ptr<SvJump> pJmp = rvEdges[ uiStart ];
             xSquashedY[ pJmp->to_start( ) ] = 0;
