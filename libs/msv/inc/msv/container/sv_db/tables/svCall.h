@@ -22,131 +22,6 @@ using namespace libMA;
 namespace libMSV
 {
 
-template <typename DBCon>
-using FirstCallPerContigTable_t = SQLTable<DBCon,
-                                           int64_t, // call_id
-                                           std::string, // contig_name
-                                           bool // forward_context
-                                           >;
-const json jFirstCallPerContigTableDef = { { TABLE_NAME, "first_call_per_contig" },
-                                           { TABLE_COLUMNS,
-                                             { { { COLUMN_NAME, "call_id" } },
-                                               { { COLUMN_NAME, "contig_name" } },
-                                               { { COLUMN_NAME, "forward_context" } } } } };
-
-template <typename DBCon> class FirstCallPerContigTable : public FirstCallPerContigTable_t<DBCon>
-{
-  public:
-    SQLQuery<DBCon, int64_t, bool> xGetCallId;
-    SQLQuery<DBCon, int64_t, bool> xGetCallIds;
-    FirstCallPerContigTable( std::shared_ptr<DBCon> pDB )
-        : FirstCallPerContigTable_t<DBCon>( pDB, jFirstCallPerContigTableDef ),
-          xGetCallId( pDB, "SELECT call_id, forward_context "
-                           "FROM first_call_per_contig "
-                           "JOIN sv_call_table ON sv_call_table.id = first_call_per_contig.call_id "
-                           "WHERE contig_name = ? "
-                           "AND sv_call_table.sv_caller_run_id = ? " ),
-          xGetCallIds( pDB, "SELECT call_id, forward_context "
-                            "FROM first_call_per_contig "
-                            "JOIN sv_call_table ON sv_call_table.id = first_call_per_contig.call_id "
-                            "WHERE sv_call_table.sv_caller_run_id = ? "
-                            "ORDER BY contig_name " )
-    {} // default constructor
-
-    inline std::tuple<int64_t, bool> getCallId( std::string sName, int64_t iCallerRunId )
-    {
-        if( xGetCallId.execAndFetch( sName, iCallerRunId ) )
-        {
-            auto xRet = xGetCallId.get( );
-            xGetCallId.next( );
-            return xRet;
-        }
-        return std::make_tuple( -1, true );
-    } // method
-    inline std::tuple<int64_t, bool> getCallId( std::string sName, std::vector<PriKeyDefaultType> vCallerRunIds )
-    {
-        for( auto iKey : vCallerRunIds )
-        {
-            auto xId = getCallId( sName, iKey );
-            if( std::get<0>( xId ) != -1 )
-                return xId;
-        } // for
-        return std::make_tuple( -1, true );
-    } // method
-
-    inline std::vector<std::tuple<int64_t, bool>> getCallIds( int64_t iCallerRunId )
-    {
-        return xGetCallIds.executeAndStoreInVector( iCallerRunId );
-    } // method
-
-    void insert_py( int64_t iId, std::string sDesc, bool bContext )
-    {
-        this->insert( iId, sDesc, bContext );
-    }
-}; // class
-
-template <typename DBCon>
-using OneSidedCallsTableType = SQLTable<DBCon, // DB connector type
-                                        PriKeyDefaultType, // call_id_from (foreign key)
-                                        PriKeyDefaultType, // call_id_to (foreign key)
-                                        bool // do_reverse_context
-                                        >;
-
-template <typename DBCon> class OneSidedCallsTable : public OneSidedCallsTableType<DBCon>
-{
-    SQLQuery<DBCon, uint64_t, bool> xGetMate;
-
-  public:
-    json jSvCallTableDef( )
-    {
-        return json{
-            { TABLE_NAME, "one_sided_calls_table" },
-            { TABLE_COLUMNS,
-              {
-                  { { COLUMN_NAME, "call_id_from" }, { CONSTRAINTS, "NOT NULL UNIQUE PRIMARY KEY" } },
-                  { { COLUMN_NAME, "call_id_to" } },
-                  { { COLUMN_NAME, "do_reverse_context" } } //
-              } },
-            { FOREIGN_KEY, { { COLUMN_NAME, "call_id_from" }, { REFERENCES, "sv_call_table(id) ON DELETE CASCADE" } } },
-            { FOREIGN_KEY, { { COLUMN_NAME, "call_id_to" }, { REFERENCES, "sv_call_table(id) ON DELETE CASCADE" } } } };
-    }; // method
-
-    OneSidedCallsTable( std::shared_ptr<DBCon> pConnection )
-        : OneSidedCallsTableType<DBCon>( pConnection, // the database where the table resides
-                                         jSvCallTableDef( ) ), // table definition
-          xGetMate( pConnection,
-                    "SELECT call_id_to, do_reverse_context FROM one_sided_calls_table WHERE call_id_from = ?" )
-    {} // constructor
-
-    std::tuple<int64_t, bool> getMate( int64_t iCallId )
-    {
-        if( xGetMate.execAndFetch( iCallId ) )
-        {
-            auto iRet = xGetMate.get( );
-            xGetMate.next( ); // terminate query...
-            return iRet;
-        } // if
-        else
-            return std::make_tuple( -1, false );
-    } // method
-
-    inline void insertCalls( SvCall& rFrom, SvCall& rTo )
-    {
-        this->insert( rFrom.iId, rTo.iId, rFrom.bFromForward != rTo.bToForward );
-    } // method
-
-    inline void genIndices( )
-    {
-        this->addIndex( json{ { INDEX_NAME, "one_sided_calls_index" }, { INDEX_COLUMNS, "call_id_from" } } );
-    } // method
-
-    inline void dropIndices( )
-    {
-        this->dropIndex( json{ { INDEX_NAME, "one_sided_calls_index" } } );
-    } // method
-
-}; // namespace libMSV
-
 
 template <typename DBCon>
 using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
@@ -163,6 +38,7 @@ using SvCallTableType = SQLTableWithLibIncrPriKey<DBCon, // DB connector type
                                                   uint32_t, // supporting_nt
                                                   uint32_t, // reference_ambiguity
                                                   int64_t, // order_id
+                                                  int64_t, // ctg_order_id
                                                   bool, // mirrored
                                                   WKBUint64Rectangle // rectangle (geometry)
                                                   >;
@@ -203,6 +79,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                          { { COLUMN_NAME, "supporting_nt" } },
                          { { COLUMN_NAME, "reference_ambiguity" } },
                          { { COLUMN_NAME, "order_id" } },
+                         { { COLUMN_NAME, "ctg_order_id" } },
                          { { COLUMN_NAME, "mirrored" } },
                          { { COLUMN_NAME, "rectangle" }, { CONSTRAINTS, "NOT NULL" } } } },
                      { GENERATED_COLUMNS,
@@ -267,6 +144,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        "    supporting_nt = ?, "
                        "    reference_ambiguity = ?, "
                        "    order_id = ?, "
+                       "    ctg_order_id = ?, "
                        "    mirrored = ?, "
                        "    rectangle = ST_GeomFromWKB(?, 0) "
                        "WHERE id = ? " ),
@@ -285,10 +163,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                          "UPDATE sv_call_table AS outer_ "
                          "SET order_id=subquery.order_id, "
                          "    inserted_sequence=subquery.inserted_sequence, "
+                         "    ctg_order_id=subquery.ctg_order_id, "
                          "    inserted_sequence_size=subquery.inserted_sequence_size "
                          "FROM ( "
-                         "       SELECT id, order_id, inserted_sequence, inserted_sequence_size, rectangle, "
-                         "              from_forward, to_forward "
+                         "       SELECT id, order_id, ctg_order_id, inserted_sequence, inserted_sequence_size, "
+                         "              rectangle, from_forward, to_forward "
                          "       FROM sv_call_table AS inner_ "
                          "       WHERE sv_caller_run_id = ? " ) +
                          //      enforce that subquery has no overlap with it's own run
@@ -358,12 +237,15 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
         this->addIndex( json{ { INDEX_NAME, "runId_score" }, { INDEX_COLUMNS, "sv_caller_run_id, score" } } );
+        this->addIndex( json{ { INDEX_NAME, "reconstruction_index" },
+                              { INDEX_COLUMNS, "ctg_order_id, sv_caller_run_id, order_id" } } );
     } // method
 
     inline void dropIndices( int64_t iCallerRunId )
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
+        this->dropIndex( json{ { INDEX_NAME, "reconstruction_index" } } );
     } // method
 
     inline void vacuumAnalyze( )
@@ -415,19 +297,19 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
     {
         auto xRectangle = WKBUint64Rectangle( rCall );
-        int64_t iCallId =
-            this->insert( iSvCallerRunId, //
-                          (uint32_t)rCall.xXAxis.start( ), //
-                          (uint32_t)rCall.xYAxis.start( ), //
-                          (uint32_t)rCall.xXAxis.size( ), //
-                          (uint32_t)rCall.xYAxis.size( ), //
-                          rCall.bFromForward, //
-                          rCall.bToForward,
-                          // can deal with nullpointers
-                          makeSharedCompNucSeq( rCall.pInsertedSequence ), //
-                          rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
-                          (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiSuppNt,
-                          (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.bMirrored, xRectangle );
+        int64_t iCallId = this->insert( iSvCallerRunId, //
+                                        (uint32_t)rCall.xXAxis.start( ), //
+                                        (uint32_t)rCall.xYAxis.start( ), //
+                                        (uint32_t)rCall.xXAxis.size( ), //
+                                        (uint32_t)rCall.xYAxis.size( ), //
+                                        rCall.bFromForward, //
+                                        rCall.bToForward,
+                                        // can deal with nullpointers
+                                        makeSharedCompNucSeq( rCall.pInsertedSequence ), //
+                                        rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ),
+                                        (uint32_t)rCall.uiNumSuppReads, (uint32_t)rCall.uiSuppNt,
+                                        (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.iCtgOrderID,
+                                        rCall.bMirrored, xRectangle );
         rCall.iId = iCallId;
 
         return iCallId;
@@ -442,8 +324,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             // can deal with nullpointers
             makeSharedCompNucSeq( rCall.pInsertedSequence ),
             rCall.pInsertedSequence == nullptr ? 0 : rCall.pInsertedSequence->length( ), (uint32_t)rCall.uiNumSuppReads,
-            (uint32_t)rCall.uiSuppNt, (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.bMirrored, xRectangle,
-            rCall.iId );
+            (uint32_t)rCall.uiSuppNt, (uint32_t)rCall.uiReferenceAmbiguity, rCall.iOrderID, rCall.iCtgOrderID,
+            rCall.bMirrored, xRectangle, rCall.iId );
         return rCall.iId;
     } // method
 
@@ -480,35 +362,30 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
 
     using NextCallType = SQLQuery<DBCon, int64_t, bool, bool, uint32_t, uint32_t, uint32_t, uint32_t,
-                                  std::shared_ptr<CompressedNucSeq>, bool, int64_t, bool, uint32_t>;
-    using NextCallSlaveType = SQLQuery<typename DBCon::SlaveType, int64_t, bool, bool, uint32_t, uint32_t, uint32_t,
-                                       uint32_t, std::shared_ptr<CompressedNucSeq>, bool, int64_t, bool, uint32_t>;
+                                  std::shared_ptr<CompressedNucSeq>, bool, uint32_t, int64_t>;
 
-    /** @brief returns call id, jump start pos, next context, inserted sequence, jump end position, one_sided_mate_id
+    /** @brief returns call id, jump start pos, next context, inserted sequence, jump end position, one_sided_mate_id,
+     * one sided mate do_reverse_context, last context, new contig order
      *  @details helper function for reconstructSequencedGenome */
-    inline std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, int64_t, bool>
-    getNextCall( uint32_t uiFrom, //
-                 bool bForwardContext,
-                 NextCallType& xNextCallForwardContext,
-                 NextCallSlaveType& xNextCallBackwardContext )
+    inline std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, bool, int64_t>
+    getNextCall( int64_t iOrderId, int64_t iCtgOrderId, NextCallType& xNextCall )
     {
-        std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, int64_t, bool> xRet;
+        std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, bool, int64_t> xRet;
         std::get<0>( xRet ) = -1;
-        std::get<2>( xRet ) = bForwardContext; // does nothing...
         std::get<3>( xRet ) = nullptr;
 
-        if( ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).execAndFetch( uiFrom ) )
+        if( xNextCall.execAndFetch( iOrderId, iCtgOrderId ) )
         {
-            auto xQ = ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).get( );
+            auto xQ = xNextCall.get( );
 #if 0
-            std::cout << "bForwardContext: " << bForwardContext << " id: " << std::get<0>( xQ )
+            std::cout << " id: " << std::get<0>( xQ )
                       << " from_forward: " << std::get<1>( xQ ) << " to_forward: " << std::get<2>( xQ )
                       << " from_pos: " << std::get<3>( xQ ) << " to_pos: " << std::get<4>( xQ )
                       << " from_size: " << std::get<5>( xQ ) << " to_size: " << std::get<6>( xQ )
                       << " inserted_sequence: "
                       << ( std::get<7>( xQ ) == nullptr ? "NULL" : std::get<7>( xQ )->pUncomNucSeq->toString( ) )
-                      << " inserted_sequence_size: " << std::get<11>( xQ ) << " do_reverse: " << std::get<8>( xQ )
-                      << " one_sided_mate: " << std::get<9>( xQ ) << std::endl;
+                      << " inserted_sequence_size: " << std::get<9>( xQ ) << " do_reverse: " << std::get<8>( xQ )
+                      << std::endl;
 #endif
             // if the call was reverted
             if( std::get<8>( xQ ) )
@@ -522,571 +399,198 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 std::swap( std::get<5>( xQ ), std::get<6>( xQ ) );
             } // if
 
-            // from context of call must match search
-            assert( std::get<1>( xQ ) == bForwardContext );
-
             std::get<0>( xRet ) = std::get<0>( xQ );
             // if we are in a forward context, the start of the jump is at the right of the call
             // if we are in a backward context, the start of the jump is at the left of the call
-            std::get<1>( xRet ) = bForwardContext ? std::get<3>( xQ ) + std::get<5>( xQ ) : std::get<3>( xQ );
+            std::get<1>( xRet ) = std::get<1>( xQ ) ? std::get<3>( xQ ) + std::get<5>( xQ ) : std::get<3>( xQ );
             // next context is simply the output of the call
             std::get<2>( xRet ) = std::get<2>( xQ );
             // check if we have an insertion
             std::get<3>( xRet ) = std::get<7>( xQ ) == nullptr ? nullptr : std::get<7>( xQ )->pUncomNucSeq;
-            if( std::get<3>( xRet ) != nullptr && std::get<11>( xQ ) != std::get<3>( xRet )->length( ) )
+            if( std::get<3>( xRet ) != nullptr && std::get<9>( xQ ) != std::get<3>( xRet )->length( ) )
                 throw std::runtime_error( "sanity check failed: inserted_sequence is inconsistent with "
                                           "inserted_sequence_size column for call with id " +
                                           std::to_string( std::get<0>( xQ ) ) +
-                                          " lengths are: " + std::to_string( std::get<11>( xQ ) ) + " and " +
+                                          " lengths are: " + std::to_string( std::get<9>( xQ ) ) + " and " +
                                           std::to_string( std::get<3>( xRet )->length( ) ) );
 
             // if we have a forward context next, the end of the jump is at the bottom of the call
             // if we have a backward context next, the end of the jump is at the top of the call
             std::get<4>( xRet ) = std::get<2>( xQ ) ? std::get<4>( xQ ) : std::get<4>( xQ ) + std::get<6>( xQ );
 
-            // forward one sided mate id
-            std::get<5>( xRet ) = std::get<9>( xQ );
-            // forward one sided mate do_reverse_context
-            std::get<6>( xRet ) = std::get<10>( xQ );
+            // previous context
+            std::get<5>( xRet ) = std::get<1>( xQ );
+            // next contig order
+            std::get<6>( xRet ) = std::get<10>( xQ ) + 1;
 
             // fetch next element to terminate query
-            ( bForwardContext ? xNextCallForwardContext : xNextCallBackwardContext ).next( );
+            xNextCall.next( );
         } // if
         return xRet;
     } // method
 
-#define ONE_SIDED_CALLS_EXIST 0
-
-    template <typename Func_t, typename Func2_t>
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsHelper( std::shared_ptr<Pack> pRef, bool bWithInsertions, Func_t&& getNextStart,
-                        // std::vector<std::tuple<bool, std::string, bool, std::string>> vStarts,
-                        NextCallType& xNextCallForwardContext, NextCallSlaveType& xNextCallBackwardContext,
-                        Func2_t&& deleteEntries )
+    callsToSeedsHelper( std::shared_ptr<Pack> pRef, bool bWithInsertions, NextCallType& xNextCall )
     {
+#if 0
         auto uiNumCalls =
             SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
-#if 0
         std::cout << "num calls: " << uiNumCalls << std::endl;
 #endif
 
-
-#if DEBUG_LEVEL > 0
-        std::set<int64_t> xVisitedCalls;
-#endif
-        size_t uiNumCallsExcecuted = 0;
-
         std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>> vRet;
 
-
-#if ONE_SIDED_CALLS_EXIST
-        SQLQuery<DBCon, uint64_t> xGetPosFromCall( this->pConnection,
-                                                   "SELECT from_pos "
-                                                   "FROM sv_call_table "
-                                                   "WHERE id = ? " );
-#endif
-
+        int64_t uiCtgOrder = 0;
         while( true )
         {
-            auto xStartTuple = getNextStart( );
-            if( std::get<0>( xStartTuple ) ) // check if function indicates stop
-                break;
-            bool bForwContext = std::get<2>( xStartTuple );
-            uint32_t uiCurrPos = std::get<1>( xStartTuple );
-            nucSeqIndex uiLastEdgeInsertionSize = 0;
             auto pRet = std::make_shared<Seeds>( );
             std::vector<std::shared_ptr<NucSeq>> vInsertions;
-            bool bFirstSeed = true;
+            int64_t uiOrder = 0;
+            bool uiLastWasForwardContext = true;
+            uint32_t uiLastPos = 0;
+            nucSeqIndex uiLastEdgeInsertionSize = 0;
+
             while( true )
             {
                 // get the next call
-                std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, int64_t, bool> tNextCall;
-                uint32_t uiIntermediatePos = uiCurrPos;
+                std::tuple<int64_t, uint32_t, bool, std::shared_ptr<NucSeq>, uint32_t, bool, int64_t> tNextCall;
                 // search for the next call that we have not visited yet...
-                metaMeasureAndLogDuration<false>( "SQL", [ & ]( ) {
-                    tNextCall = this->getNextCall( uiIntermediatePos, bForwContext, xNextCallForwardContext,
-                                                   xNextCallBackwardContext );
-                } );
-#if DEBUG_LEVEL > 0
-                if( std::get<0>( tNextCall ) != -1 && // there is no next call
-                                                      // we have not visited the next call
-                    xVisitedCalls.find( std::get<0>( tNextCall ) ) != xVisitedCalls.end( ) )
-                {
-
-                    // we have visited the next call and need to search again
-                    std::cout << "SHOULD NEVER REACH THIS PRINT?" << std::endl;
-                    assert( false );
-                } // if
-#endif
+                metaMeasureAndLogDuration<false>(
+                    "SQL", [ & ]( ) { tNextCall = this->getNextCall( uiOrder, uiCtgOrder, xNextCall ); } );
 #if 0
-                std::cout << "contig: " << std::get<3>( xStartTuple ) << " id: " << std::get<0>( tNextCall )
-                          << " currpos: " << uiCurrPos << " from: " << std::get<1>( tNextCall )
-                          << " to: " << std::get<4>( tNextCall )
+                std::cout << "id: " << std::get<0>( tNextCall ) << " currpos: " << uiLastPos
+                          << " from: " << std::get<1>( tNextCall ) << " to: "
+                          << std::get<4>( tNextCall ) - pRef->startOfSequenceWithId(
+                                                            pRef->uiSequenceIdForPosition( std::get<4>( tNextCall ) ) )
+                          << " toContig: "
+                          << pRef->nameOfSequenceWithId( pRef->uiSequenceIdForPosition( std::get<4>( tNextCall ) ) )
                           << ( std::get<2>( tNextCall ) ? " forward" : " rev-comp" ) << " inserted_seq: "
                           << ( std::get<3>( tNextCall ) == nullptr
                                    ? "nullptr"
                                    : ( std::get<3>( tNextCall )->uiSize == 0 ? "empty"
                                                                              : std::get<3>( tNextCall )->toString( ) ) )
-                          << " one_sided_mate_id: " << std::get<5>(tNextCall)
-                          << " one_sided_mate_do_reverse_context: " << std::get<6>(tNextCall)
                           << std::endl;
 #endif
                 // if there are no more calls or the next call starts in the next chromosome
-                if( std::get<0>( tNextCall ) == -1 || pRef->bridgingPositions( uiCurrPos, std::get<1>( tNextCall ) ) )
+                if( std::get<0>( tNextCall ) == -1 )
                 {
-#if 0 // 1 -> extract contig ends (after the last jump); 0 -> do not
-                    metaMeasureAndLogDuration<false>( "seq copy final", [ & ]( ) {
-                        // extract the remainder of the contig we are currently in:
-                        nucSeqIndex uiSize;
-                        if( bForwContext )
-                            uiSize =
-                                pRef->endOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) ) -
-                                uiCurrPos;
-                        else
-                            uiSize = uiCurrPos - pRef->startOfSequenceWithIdOrReverse(
-                                                     pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) );
-                        // sanity check: contig end cannot be longer than half the contigs size
-                        // just ignore ends of contigs that are too long.
-                        if( uiSize <
-                            pRef->lengthOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiCurrPos ) ) /
-                                2 )
-                        {
-                            pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
-                                                uiSize, uiCurrPos, bForwContext );
-                            if( bWithInsertions )
-                                vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
-                            uiLastEdgeInsertionSize = 0;
-                        } // if
-                    } ); // metaMeasureAndLogDuration seq copy final
-#endif
+                    // extract the remainder of the contig we are currently in:
+                    nucSeqIndex uiSize;
+                    if( uiLastWasForwardContext )
+                        uiSize = pRef->endOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiLastPos ) ) -
+                                 uiLastPos;
+                    else
+                        uiSize = uiLastPos - pRef->startOfSequenceWithIdOrReverse(
+                                                 pRef->uiSequenceIdForPositionOrRev( uiLastPos ) );
+                    // sanity check: contig end cannot be longer than half the contigs size
+                    // just ignore ends of contigs that are too long.
+                    if( uiSize <
+                        pRef->lengthOfSequenceWithIdOrReverse( pRef->uiSequenceIdForPositionOrRev( uiLastPos ) ) / 2 )
+                    {
+                        pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                            uiSize, uiLastPos, uiLastWasForwardContext );
+                        if( bWithInsertions )
+                            vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                        uiLastEdgeInsertionSize = 0;
+                    } // if
                     // stop the loop there are no more calls.
                     break;
                 } // if
-
                 // we reach this point only if there are more calls, so tNextCall is set properly here
-                metaMeasureAndLogDuration<false>( "seq copy", [ & ]( ) {
-                    // the call is in the current chromosome
-                    // special case: the first entry is a dummy entry and we have to put an empty seed
-                    // (because we need and insertion before the first seed)
-                    if( bFirstSeed )
-                    {
-                        bFirstSeed = false;
-                        pRet->emplace_back( 0, 0, 0, true );
-                    } // if
-                    else if( bForwContext )
-                        pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
-                                            std::get<1>( tNextCall ) - uiCurrPos + 1, uiCurrPos, true );
-                    else
-                        pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
-                                            uiCurrPos - std::get<1>( tNextCall ) + 1, uiCurrPos, false );
-                    // append the skipped over sequence
-                    if( bWithInsertions )
-                    {
-                        if( std::get<3>( tNextCall ) != nullptr )
-                            vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
-                        else
-                            vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
-                    }
-                    if( std::get<3>( tNextCall ) != nullptr )
-                        uiLastEdgeInsertionSize = std::get<3>( tNextCall )->length( );
-                    else
-                        uiLastEdgeInsertionSize = 0;
 
-                    metaMeasureAndLogDuration<false>( "xDelete", [ & ]( ) {
-                        // remember that we used this call
-                        deleteEntries( std::get<0>( tNextCall ) );
-#if DEBUG_LEVEL > 0
-                        xVisitedCalls.insert( std::get<0>( tNextCall ) );
-#endif
-#if ONE_SIDED_CALLS_EXIST
-                        // call is a dummy call (i.e. we do not know where it connects to)
-                        if( std::get<5>( tNextCall ) >= 0 )
-                        {
-                            auto iNextCallID = std::get<5>( tNextCall );
-                            auto bDoReverseContext = std::get<6>( tNextCall );
-                            uiCurrPos = xGetPosFromCall.scalar( iNextCallID );
-                            deleteEntries( iNextCallID );
-                            if( bDoReverseContext )
-                                bForwContext = !bForwContext;
-                        } // if
-                        else
-#endif
-                        {
-                            // call is NOT a dummy call (i.e. we do know where it connects to)
-                            bForwContext = std::get<2>( tNextCall );
-                            uiCurrPos = std::get<4>( tNextCall );
-                        }
-                        uiNumCallsExcecuted++;
-                        if( uiNumCallsExcecuted % 500 == 0 )
-                        {
-                            auto uiNumCallsRemaining =
-                                SQLQuery<DBCon, uint64_t>( this->pConnection,
-                                                           "SELECT COUNT(*) FROM reconstruction_table" )
-                                    .scalar( );
-                            std::cout << 100.0 * ( uiNumCalls - uiNumCallsRemaining ) / (float)uiNumCalls << "%\r"
-                                      << std::endl;
-                        }
-                    } ); // metaMeasureAndLogDuration xDelete
-                } ); // metaMeasureAndLogDuration seq copy
-
-                // for jumps to the end of a contig we do not want to continue...
-                // this check becomes necessary since with the current index system,
-                // we would either extract the last nucleotide of the contig twice or extract the
-                // reverse complement of the contig...
-                // same for unconnected dummy calls
-                if( pRef->onContigBorder( uiCurrPos ) || uiCurrPos == SvJump::DUMMY_LOCATION )
+                // if this is the first call of the chromosome
+                // then add the sequence between call start and contig start
+                if( uiOrder == 0 )
                 {
-                    deleteEntries( std::get<0>( tNextCall ) );
-                    break;
-                }
+                    bool uiLastWasForwardContext = std::get<5>( tNextCall );
+                    if( uiLastWasForwardContext )
+                        uiLastPos =
+                            pRef->startOfSequenceWithId( pRef->uiSequenceIdForPosition( std::get<1>( tNextCall ) ) );
+                    else
+                        uiLastPos =
+                            pRef->endOfSequenceWithId( pRef->uiSequenceIdForPosition( std::get<1>( tNextCall ) ) );
+                } // if
+
+                // check if we can reach the start of the current call with a seed
+                if( uiLastWasForwardContext && uiLastPos <= std::get<1>( tNextCall ) &&
+                    !pRef->bridgingPositions( uiLastPos, std::get<1>( tNextCall ) ) )
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                        std::get<1>( tNextCall ) - uiLastPos + 1, uiLastPos, true );
+                else if( !uiLastWasForwardContext && uiLastPos >= std::get<1>( tNextCall ) &&
+                         !pRef->bridgingPositions( uiLastPos, std::get<1>( tNextCall ) ) )
+                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                        uiLastPos - std::get<1>( tNextCall ) + 1, uiLastPos, false );
+                // else: cannot connect last pos and this pos (just add no seed at all)
+
+
+                // append the skipped over sequence
+                if( bWithInsertions )
+                {
+                    if( std::get<3>( tNextCall ) != nullptr )
+                        vInsertions.push_back( std::get<3>( tNextCall ) ); // have inserted sequence
+                    else
+                        vInsertions.push_back( std::make_shared<NucSeq>( ) ); // no inserted sequence
+                } // if
+
+                // memorize length of the insertion (even if we do not keep the nucseq)
+                // so that next seed can be placed correctly
+                if( std::get<3>( tNextCall ) != nullptr )
+                    uiLastEdgeInsertionSize = std::get<3>( tNextCall )->length( );
+                else
+                    uiLastEdgeInsertionSize = 0;
+
+                // update orderId for next fetch as well as last context and last pos
+                uiLastWasForwardContext = std::get<2>( tNextCall );
+                uiLastPos = std::get<4>( tNextCall );
+                uiOrder = std::get<6>( tNextCall );
             } // while
-            vRet.push_back( std::make_tuple( std::get<3>( xStartTuple ), pRet, vInsertions ) );
+
+            if( uiOrder == 0 ) // check if we reached the last contig
+                break;
+
+            vRet.push_back( std::make_tuple( "chr" + std::to_string( uiCtgOrder ), pRet, vInsertions ) );
+            uiCtgOrder++; //  move to next contig
         } // while
         return vRet;
     }
 
-    inline std::shared_ptr<SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool, int64_t, bool>>
-    createReconstructionTable( std::vector<PriKeyDefaultType> vCallerRuns, nucSeqIndex uiMinEntrySize )
+    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+    callsToSeedsById( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns, bool bWithInsertions,
+                      nucSeqIndex uiMinEntrySize )
     {
-        auto pReconstructionTable = std::make_shared<
-            SQLTable<DBCon, PriKeyDefaultType, uint32_t, uint32_t, bool, bool, int64_t, bool>>(
-            this->pConnection,
-            json{
-                { TABLE_NAME, "reconstruction_table" },
-                { CPP_EXTRA, "DROP ON DESTRUCTION" },
-                { TABLE_COLUMNS,
-                  {
-                      { { COLUMN_NAME, "call_id" }, { REFERENCES, "sv_call_table(id)" }, { CONSTRAINTS, "NOT NULL" } },
-                      { { COLUMN_NAME, "from_pos" } },
-                      { { COLUMN_NAME, "to_pos" } },
-                      { { COLUMN_NAME, "from_forward" } },
-                      { { COLUMN_NAME,
-                          "do_reverse" } }, // was the call reversed during the insertion in the reconstruction table
-                      { { COLUMN_NAME, "order_id" } },
-                      { { COLUMN_NAME, "mirrored" } } // was the call mirored on the diagonal during it's creation?
-                      //
-                  } } } );
+        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
+        auto pReconstructionTable =
+            std::make_shared<SQLTable<DBCon, PriKeyDefaultType>>( this->pConnection,
+                                                                  json{ { TABLE_NAME, "reconstruction_table" },
+                                                                        { CPP_EXTRA, "DROP ON DESTRUCTION" },
+                                                                        { TABLE_COLUMNS,
+                                                                          {
+                                                                              { { COLUMN_NAME, "caller_run_id" },
+                                                                                { REFERENCES, "sv_call_table(id)" },
+                                                                                { CONSTRAINTS, "NOT NULL" } }
+                                                                              //
+                                                                          } } } );
 
         // clear table
         pReconstructionTable->deleteAllRows( );
 
-        SQLStatement<DBCon> xInsert( this->pConnection,
-                                     "INSERT INTO reconstruction_table (call_id, from_pos, "
-                                     "                           to_pos, from_forward, do_reverse, order_id, mirrored) "
-                                     "SELECT id, from_pos, to_pos, from_forward, false, order_id, mirrored "
-                                     "FROM sv_call_table "
-                                     "WHERE sv_caller_run_id = ? "
-                                     "AND order_id != -1 "
-                                     "AND ( GREATEST(ABS(CAST(to_pos AS int8) - CAST(from_pos AS int8)), "
-                                     "             inserted_sequence_size) >= ? "
-                                     "OR from_forward != to_forward ) " );
-        SQLStatement<DBCon> xInsert2(
-            this->pConnection,
-            "INSERT INTO reconstruction_table (call_id, from_pos, "
-            "                           to_pos, from_forward, do_reverse, order_id, mirrored) "
-            "SELECT id, to_pos, from_pos, NOT to_forward, true, order_id, NOT mirrored "
-            "FROM sv_call_table "
-            "WHERE sv_caller_run_id = ? "
-            "AND order_id != -1 "
-            "AND ( GREATEST(ABS(CAST(to_pos AS int8) - CAST(from_pos AS int8)), "
-            "             inserted_sequence_size) >= ? "
-            "OR from_forward != to_forward ) " );
+        for( auto iCallerRun : vCallerRuns )
+            pReconstructionTable->insert( iCallerRun );
 
-        metaMeasureAndLogDuration<false>( "fill reconstruction table", [ & ]( ) {
-            for( auto iCallerRun : vCallerRuns )
-            {
-                xInsert.exec( iCallerRun, uiMinEntrySize );
-                xInsert2.exec( iCallerRun, uiMinEntrySize );
-            } // for
-        } );
-
-
-        metaMeasureAndLogDuration<false>( "create indices on reconstruction table", [ & ]( ) {
-            pReconstructionTable->addIndex(
-                json{ { INDEX_NAME, "tmp_rct_from" }, { INDEX_COLUMNS, "from_forward, from_pos" } } );
-            pReconstructionTable->addIndex( json{ { INDEX_NAME, "tmp_call_id" }, { INDEX_COLUMNS, "order_id" } } );
-        } );
-
-        return pReconstructionTable;
-    }
-
-    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeeds( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns, bool bWithInsertions,
-                  nucSeqIndex uiMinEntrySize, std::vector<std::tuple<std::string, bool, std::string>> vStarts )
-    {
-        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        auto pReconstructionTable = createReconstructionTable( vCallerRuns, uiMinEntrySize );
-
-        NextCallType xNextCallForwardContext(
+        NextCallType xNextCall(
             this->pConnection,
             "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
-            // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
-            "       inserted_sequence_size "
+            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, mirrored, "
+            "       inserted_sequence_size, order_id "
             "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-#if ONE_SIDED_CALLS_EXIST
-            "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
-#endif
-            "WHERE reconstruction_table.from_pos >= ? "
-            "AND reconstruction_table.from_forward "
-            "ORDER BY reconstruction_table.from_pos ASC "
-            "LIMIT 1 " );
-        NextCallSlaveType xNextCallBackwardContext(
-            this->pConnection->getSlave( ),
-            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
-            // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END as v2, "
-            "       inserted_sequence_size "
-            "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-#if ONE_SIDED_CALLS_EXIST
-            "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
-#endif
-            "WHERE reconstruction_table.from_pos <= ? "
-            "AND NOT reconstruction_table.from_forward "
-            "ORDER BY reconstruction_table.from_pos DESC "
+            "WHERE order_id >= ? "
+            "AND ctg_order_id = ? "
+            "AND sv_caller_run_id IN (SELECT caller_run_id FROM reconstruction_table) "
+            "ORDER BY order_id ASC "
             "LIMIT 1 " );
 
-        SQLStatement<DBCon> xDelete( this->pConnection->getSlave( )->getSlave( ),
-                                     "DELETE FROM reconstruction_table "
-                                     "WHERE call_id = ? " );
-        auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); };
-
-        size_t uiStartCnt = 0;
-        auto getNextStart = [ & ]( ) {
-            if( uiStartCnt == vStarts.size( ) )
-                return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
-            else
-            {
-                uiStartCnt++;
-                auto uiStartPos = std::get<1>( vStarts[ uiStartCnt - 1 ] )
-                                      ? pRef->startOfSequenceWithName( std::get<0>( vStarts[ uiStartCnt - 1 ] ) )
-                                      : pRef->endOfSequenceWithName( std::get<0>( vStarts[ uiStartCnt - 1 ] ) ) - 1;
-                return std::make_tuple( false, uiStartPos, std::get<1>( vStarts[ uiStartCnt - 1 ] ),
-                                        std::get<2>( vStarts[ uiStartCnt - 1 ] ) );
-            } // else
-        };
-
-        return callsToSeedsHelper( pRef, bWithInsertions, getNextStart, xNextCallForwardContext,
-                                   xNextCallBackwardContext, fDeleteEntries );
-    } // method
-
-    template <typename Func_t>
-    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsByIdHelper( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
-                            bool bWithInsertions, nucSeqIndex uiMinEntrySize, Func_t&& getNextStart )
-    {
-        auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        auto pReconstructionTable = createReconstructionTable( vCallerRuns, uiMinEntrySize );
-
-        NextCallType xNextCallForwardContext(
-            this->pConnection,
-            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
-#if ONE_SIDED_CALLS_EXIST
-            // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1,"
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
-#else
-            // always return that this is not a one-sided call
-            "       -1::int8, false, "
-#endif
-            "       inserted_sequence_size "
-            "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-#if ONE_SIDED_CALLS_EXIST
-            // check if the selected entry is one sided
-            "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
-#endif
-            "WHERE reconstruction_table.from_pos >= ? "
-#if ONE_SIDED_CALLS_EXIST
-            // prevent going backwards on one sided jumps
-            "AND sv_call_table.id NOT IN (SELECT call_id_to FROM one_sided_calls_table) "
-#endif
-            "AND reconstruction_table.from_forward "
-            // only use correctly mirrored entries
-            "AND NOT reconstruction_table.mirrored "
-            "ORDER BY reconstruction_table.order_id ASC "
-            "LIMIT 1 " );
-        NextCallSlaveType xNextCallBackwardContext(
-            this->pConnection->getSlave( ), // slave not actually necessary here...
-            "SELECT id, sv_call_table.from_forward, sv_call_table.to_forward, sv_call_table.from_pos, "
-            "       sv_call_table.to_pos, from_size, to_size, inserted_sequence, do_reverse, "
-#if ONE_SIDED_CALLS_EXIST
-            // cannot return null with arne's sql wrapper (however -1 is unused as id)
-            "       CASE WHEN call_id_to is NULL THEN -1 ELSE call_id_to END AS v1, "
-            "       CASE WHEN do_reverse_context is NULL THEN false ELSE do_reverse_context END AS v2, "
-#else
-            // always return that this is not a one-sided call
-            "       -1::int8, false, "
-#endif
-            "       inserted_sequence_size "
-            "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-#if ONE_SIDED_CALLS_EXIST
-            // check if the selected entry is one sided
-            "LEFT JOIN one_sided_calls_table ON one_sided_calls_table.call_id_from = sv_call_table.id "
-#endif
-            "WHERE reconstruction_table.from_pos <= ? "
-        // prevent going backwards on one sided jumps
-#if ONE_SIDED_CALLS_EXIST
-            "AND sv_call_table.id NOT IN (SELECT call_id_to FROM one_sided_calls_table) "
-#endif
-            "AND NOT reconstruction_table.from_forward "
-            // only use correctly mirrored entries
-            "AND NOT reconstruction_table.mirrored "
-            "ORDER BY reconstruction_table.order_id ASC "
-            "LIMIT 1 " );
-
-        SQLStatement<DBCon> xDelete(
-            this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
-            "DELETE FROM reconstruction_table "
-            "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) " );
-
-#if DEBUG_LEVEL > 0 || 1
-        size_t uiNumPassedEntries = 0;
-        SQLQuery<DBCon, uint32_t> xCount(
-            this->pConnection->getSlave( )->getSlave( ), // slave not actually necessary here...
-            "SELECT COUNT(DISTINCT call_id)"
-            "FROM reconstruction_table "
-            "WHERE order_id <= (SELECT MIN(order_id) FROM sv_call_table WHERE id = ?) " );
-        auto fDeleteEntries = [ & ]( int64_t iId ) {
-            size_t uiNumDeleted = xCount.scalar( iId );
-            if( uiNumDeleted > 1 )
-            {
-                std::cout << "genome reconstruction: passed over " << uiNumDeleted - 1
-                          << " entries while reconstructing entry " << iId << std::endl;
-                uiNumPassedEntries += uiNumDeleted - 1;
-            } // if
-            xDelete.exec( iId );
-        }; // lambda function
-#else
-        auto fDeleteEntries = [ & ]( int64_t iId ) { xDelete.exec( iId ); }; // lambda function
-#endif
-
-        auto xRet = callsToSeedsHelper( pRef, bWithInsertions, getNextStart, xNextCallForwardContext,
-                                        xNextCallBackwardContext, fDeleteEntries );
-#if DEBUG_LEVEL > 0 || 1
-        if( uiNumPassedEntries > 0 )
-        {
-            auto uiNumCalls = 0;
-
-            SQLQuery<DBCon, uint64_t> xCount( this->pConnection,
-                                              "SELECT COUNT(*) FROM sv_call_table WHERE sv_caller_run_id = ?" );
-            for( auto iCallerRun : vCallerRuns )
-                uiNumCalls += xCount.scalar( iCallerRun );
-            std::cout << "Passed over a total of " << uiNumPassedEntries << " entries, thats "
-                      << 100.0 * ( (double)uiNumPassedEntries ) / ( (double)uiNumCalls ) << "%." << std::endl;
-        } // if
-#endif
+        auto xRet = callsToSeedsHelper( pRef, bWithInsertions, xNextCall );
         return xRet;
-    } // method
-
-    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsById( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns, bool bWithInsertions,
-                      nucSeqIndex uiMinEntrySize, std::vector<std::tuple<std::string, bool, std::string>> vStarts )
-    {
-        size_t uiStartCnt = 0;
-        auto getNextStart = [ & ]( ) {
-            if( uiStartCnt == vStarts.size( ) )
-                return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
-            else
-            {
-                uiStartCnt++;
-                auto uiStartPos = std::get<1>( vStarts[ uiStartCnt - 1 ] )
-                                      ? pRef->startOfSequenceWithName( std::get<0>( vStarts[ uiStartCnt - 1 ] ) )
-                                      : pRef->endOfSequenceWithName( std::get<0>( vStarts[ uiStartCnt - 1 ] ) ) - 1;
-                return std::make_tuple( false, uiStartPos, std::get<1>( vStarts[ uiStartCnt - 1 ] ),
-                                        std::get<2>( vStarts[ uiStartCnt - 1 ] ) );
-            } // else
-        };
-
-        return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
-    } // method
-
-    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsByIdAutoStart( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
-                               bool bWithInsertions, nucSeqIndex uiMinEntrySize )
-    {
-        size_t uiStartCnt = 1;
-        SQLQuery<DBCon, uint64_t> xQuery(
-            this->pConnection,
-            "SELECT reconstruction_table.from_pos " // potentially reversed start of call
-            "FROM sv_call_table "
-            "INNER JOIN reconstruction_table ON reconstruction_table.call_id = sv_call_table.id "
-            "ORDER BY reconstruction_table.order_id ASC "
-            "LIMIT 1 " );
-        auto getNextStart = [ & ]( ) {
-            auto uiNumCalls =
-                SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table " ).scalar( );
-#if 0
-            std::cout << "uiNumCalls: " << uiNumCalls << std::endl;
-#endif
-            if( uiNumCalls == 0 || uiStartCnt > 3 )
-                return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
-            else
-            {
-                xQuery.execAndFetch( );
-                auto uiStartPos = std::get<0>( xQuery.get( ) );
-                xQuery.next( );
-
-                auto uiStartId = pRef->uiSequenceIdForPosition( uiStartPos );
-                // forward context if start position is in first half of contig; backward context otherwise...
-                bool bForwContext = uiStartPos <= pRef->startOfSequenceWithId( uiStartId ) +
-                                                      pRef->lengthOfSequenceWithId( uiStartId ) / 2;
-#if 1
-                std::cout << "uiStartPos: " << uiStartPos - pRef->startOfSequenceWithId( uiStartId )
-                          << " bForwContext: " << ( bForwContext ? "true" : "false" )
-                          << " startChr: " << pRef->nameOfSequenceWithId( uiStartId ) << std::endl;
-#endif
-                return std::make_tuple( false, uiStartPos, bForwContext,
-                                        std::string( "chr" ) + std::to_string( uiStartCnt++ ) );
-            } // else
-        };
-
-        return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
-    } // method
-
-    inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsByIdTableStart( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
-                                bool bWithInsertions, nucSeqIndex uiMinEntrySize )
-    {
-        size_t uiStartCnt = 0;
-        FirstCallPerContigTable xGetCallNContext( this->pConnection );
-        SQLQuery<DBCon, uint64_t> xCallPos( this->pConnection,
-                                            "SELECT from_pos " // potentially reversed start of call
-                                            "FROM sv_call_table "
-                                            "WHERE id = ? " // do not accept mirrored calls here
-        );
-        auto getNextStart = [ & ]( ) {
-            if( uiStartCnt > pRef->uiNumContigs( ) )
-                return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
-            else
-            {
-                auto xCallNContext =
-                    xGetCallNContext.getCallId( pRef->nameOfSequenceWithId( uiStartCnt ), vCallerRuns );
-                auto uiCallPos = xCallPos.scalar( std::get<0>( xCallNContext ) );
-                auto uiStartId = pRef->uiSequenceIdForPosition( uiCallPos );
-                bool bForwContext = std::get<1>( xCallNContext );
-                // start pos depending on context and contig of lowest id call
-                auto uiStartPos = bForwContext ? pRef->startOfSequenceWithId( uiStartId )
-                                               : pRef->endOfSequenceWithId( uiStartId ) - 1;
-#if 1
-                std::cout << "uiStartId: " << uiStartId << " bForwContext: " << ( bForwContext ? "true" : "false" )
-                          << " uiStartPos: " << uiStartPos << " startChr: " << pRef->nameOfSequenceWithId( uiStartId )
-                          << std::endl;
-#endif
-                return std::make_tuple( false, uiStartPos, bForwContext,
-                                        std::string( pRef->nameOfSequenceWithId( uiStartCnt++ ) ) );
-            } // else
-        };
-
-        return callsToSeedsByIdHelper( pRef, vCallerRuns, bWithInsertions, uiMinEntrySize, getNextStart );
     } // method
 
     inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeedsBorderd(
@@ -1131,20 +635,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             pRef )
     {
         return reconstructSequencedGenomeFromSeedsBorderd( vReconstructedSeeds, pRef, 0 );
-    }
-
-    /** @brief reconstruct a sequenced genome from a reference and the calls of the run with id iCallerRun.
-     *  @details
-     *  @todo at the moment this does not check the regex (?)
-     *  Creates a reconstruction_table that is filled with all unused calls from iCallerRun and then deletes the calls
-     *  one by one until the sequenced genome is reconstructed
-     */
-    inline std::shared_ptr<Pack>
-    reconstructSequencedGenome( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns,
-                                std::vector<std::tuple<std::string, bool, std::string>> vStarts )
-    {
-        auto xGenomeSeeds = callsToSeeds( pRef, vCallerRuns, true, 0, vStarts );
-        return reconstructSequencedGenomeFromSeeds( xGenomeSeeds, pRef );
     } // method
 }; // namespace libMSV
 

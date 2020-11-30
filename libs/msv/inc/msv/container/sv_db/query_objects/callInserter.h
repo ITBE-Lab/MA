@@ -86,6 +86,7 @@ class SvCallInserterContainerTmpl : public BulkOrNot<DBCon, AbstractInserterCont
             (uint32_t)rCall.uiSuppNt, //
             (uint32_t)rCall.uiReferenceAmbiguity, //
             rCall.iOrderID, // order_id
+            rCall.iCtgOrderID, // ctg_order_id
             rCall.bMirrored, // mirrored
             xRectangle );
         rCall.iId = iCallId;

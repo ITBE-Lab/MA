@@ -456,6 +456,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
     std::vector<int64_t> vSupportingJumpIds;
     int64_t iId;
     int64_t iOrderID = -1;
+    int64_t iCtgOrderID = -1;
     bool bMirrored = false;
     bool bDummy = false;
 #if 0
@@ -492,6 +493,7 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
           vSupportingJumpIds( rOther.vSupportingJumpIds ),
           iId( rOther.iId ),
           iOrderID( rOther.iOrderID ),
+          iCtgOrderID( rOther.iCtgOrderID ),
           bMirrored( rOther.bMirrored ),
           bDummy( rOther.bDummy ),
           uiOpenEdges( rOther.uiOpenEdges ),

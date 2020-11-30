@@ -59,13 +59,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
 {
     py::class_<SvCallTable<DBConSingle>, std::shared_ptr<SvCallTable<DBConSingle>>>( xOrganizer.util( ), "SvCallTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenome )
-        .def( "calls_to_seeds", &SvCallTable<DBConSingle>::callsToSeeds )
+        .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "calls_to_seeds_by_id", &SvCallTable<DBConSingle>::callsToSeedsById )
-        .def( "calls_to_seeds_by_id_auto", &SvCallTable<DBConSingle>::callsToSeedsByIdAutoStart )
-        .def( "calls_to_seeds_by_id_table", &SvCallTable<DBConSingle>::callsToSeedsByIdTableStart )
-        .def( "reconstruct_sequenced_genome_from_seeds",
-              &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
         .def( "copy_path", &SvCallTable<DBConSingle>::copyPath )
         .def( "max_score", &SvCallTable<DBConSingle>::maxScore )
@@ -75,12 +70,6 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "filter_calls_with_high_score", &SvCallTable<DBConSingle>::filterCallsWithHighScore )
         .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices )
         .def( "insert_call", &SvCallTable<DBConSingle>::insertCall );
-
-    py::class_<OneSidedCallsTable<DBConSingle>, std::shared_ptr<OneSidedCallsTable<DBConSingle>>>(
-        xOrganizer.util( ), "OneSidedCallsTable" )
-        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "get_name", &OneSidedCallsTable<DBConSingle>::getMate )
-        .def( "insert_calls", &OneSidedCallsTable<DBConSingle>::insertCalls );
 
     py::class_<KMerFilterTable<DBConSingle>, std::shared_ptr<KMerFilterTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                              "KMerFilterTable" )
@@ -106,10 +95,6 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "insert", &CallDescTable<DBConSingle>::insert_py )
         .def( "gen_index", &CallDescTable<DBConSingle>::genIndex )
         .def( "get_desc", &CallDescTable<DBConSingle>::getDesc );
-    py::class_<FirstCallPerContigTable<DBConSingle>, std::shared_ptr<FirstCallPerContigTable<DBConSingle>>>(
-        xOrganizer.util( ), "FirstCallPerContigTable" )
-        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "insert", &FirstCallPerContigTable<DBConSingle>::insert_py );
 
     py::class_<SvJumpTable<DBConSingle>, std::shared_ptr<SvJumpTable<DBConSingle>>>( xOrganizer.util( ), "SvJumpTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
