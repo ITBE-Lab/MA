@@ -69,51 +69,6 @@ template <typename DBCon> class SvCallsFromDb
         pQuery = nullptr;
     std::unique_ptr<SQLQuery<DBCon, double>> pQueryCount = nullptr;
 
-    std::string rectanglesOverlapSQL_1( std::string sFromTable, std::string sToTable )
-    {
-        // clang-format off
-        // ST_DWithin returns true if the geometries are within the specified distance of one another
-        // makes use of indices
-        return  std::string("ST_DWithin(" ) + sToTable + ".rectangle::geometry, "
-                                            + sFromTable + ".rectangle::geometry, ?) "
-                            "AND " + sToTable + ".from_forward = " + sFromTable + ".from_forward "
-                            "AND " + sToTable + ".to_forward = " + sFromTable + ".to_forward ";
-        // clang-format on
-    }
-    std::string rectanglesOverlapSQL_2( std::string sFromTable, std::string sToTable )
-    {
-        // clang-format off
-        // ST_DWithin returns true if the geometries are within the specified distance of one another
-        // makes use of indices
-        return  std::string( "ST_DWithin(" ) + sToTable + ".rectangle::geometry, "
-                            // this considers reverse complemented calls
-                            // Note: we need to mirror the rectangle on the matrix diagonal
-                            //       and invert the strand information
-                                             + sFromTable + ".flipped_rectangle::geometry, ?) "
-                            " AND " + sToTable + ".from_forward != " + sFromTable + ".to_forward "
-                            " AND " + sToTable + ".to_forward != " + sFromTable + ".from_forward ";
-        // clang-format on
-    }
-    std::string rectanglesOverlapSQL( std::string sFromTable, std::string sToTable )
-    {
-        return std::string( "AND ( " ) + rectanglesOverlapSQL_1( sFromTable, sToTable ) + " ) " + //
-               "             OR ( " + rectanglesOverlapSQL_2( sFromTable, sToTable ) + " ) ";
-    }
-    std::string selfIntersectionSQL( std::string sFromTable, std::string sToTable )
-    {
-        // clang-format off
-        std::string sPref = std::string("AND NOT EXISTS( " ) +
-                        // make sure that inner_table does not overlap with any other call with higher score
-                        "     SELECT " + sToTable + ".id "
-                        "     FROM sv_call_table AS " + sToTable +
-                        "     WHERE " + sToTable + ".id != " + sFromTable + ".id "
-                        "     AND " + sToTable + ".score >= " + sFromTable + ".score "
-                        "     AND " + sToTable + ".sv_caller_run_id = " + sFromTable + ".sv_caller_run_id "
-                        "     AND ";
-        return sPref + rectanglesOverlapSQL_1(sFromTable, sToTable) + ") " +
-               sPref + rectanglesOverlapSQL_2(sFromTable, sToTable) + ") ";
-        // clang-format on
-    }
 
     void initQuery( std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xNewConfig, bool bPrintStatement = false )
     {
@@ -174,16 +129,17 @@ template <typename DBCon> class SvCallsFromDb
                             ( !xConfiguration[ ConfigFlags::WithAvgSuppNtRangeGT ]
                                   ? ""
                                   : "AND inner_table2.avg_supporting_nt < ? " ) + //
-                            rectanglesOverlapSQL( "inner_table2", "inner_table" ) +
+                            SvCallTable<DBCon>::rectanglesOverlapSQL( "inner_table2", "inner_table" ) +
                             ( !xConfiguration[ ConfigFlags::WithOtherIntersection ]
                                   ? ""
-                                  : selfIntersectionSQL( "inner_table2", "inner_table3" ) ) +
+                                  : SvCallTable<DBCon>::selfIntersectionSQL( "inner_table2", "inner_table3" ) ) +
                             ") " ) +
                 ( !xConfiguration[ ConfigFlags::WithSelfIntersection ]
                       ? ""
-                      : selfIntersectionSQL( "inner_table", "inner_table4" ) ) +
-                ( !xConfiguration[ ConfigFlags::JustCount ] ? ""
-                                                            : rectanglesOverlapSQL( "outer_table", "inner_table" ) ) +
+                      : SvCallTable<DBCon>::selfIntersectionSQL( "inner_table", "inner_table4" ) ) +
+                ( !xConfiguration[ ConfigFlags::JustCount ]
+                      ? ""
+                      : SvCallTable<DBCon>::rectanglesOverlapSQL( "outer_table", "inner_table" ) ) +
                 ( !xConfiguration[ ConfigFlags::OrderByScore ] ? "" : "ORDER BY score DESC " ) +
                 ( !xConfiguration[ ConfigFlags::Limit ] ? "" : "LIMIT ? " );
 
@@ -201,7 +157,7 @@ template <typename DBCon> class SvCallsFromDb
                         "WHERE sv_caller_run_id = ? " +
                         ( !xConfiguration[ ConfigFlags::WithOuterIntersection ]
                               ? ""
-                              : selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
+                              : SvCallTable<DBCon>::selfIntersectionSQL( "outer_table", "outer_table2" ) ) +
                         "ORDER BY data_score ASC " );
             else
                 pQuery = std::make_unique<SQLQuery<DBCon, PriKeyDefaultType, uint32_t, uint32_t, uint32_t, uint32_t,

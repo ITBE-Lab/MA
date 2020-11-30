@@ -72,6 +72,7 @@ class SvJumpsFromSeeds
     const size_t uiMinDistDummy;
     const size_t uiMaxDistDummy;
     const size_t uiMinSizeJump;
+    const size_t uiMaxSizeJump;
     SeedLumping xSeedLumper;
     SortRemoveDuplicates xRemoveDuplicates;
     MaxExtendedToSMEM xToSMEM;
@@ -104,6 +105,7 @@ class SvJumpsFromSeeds
           uiMinDistDummy( rParameters.getSelected( )->xMinDistDummy->get( ) ),
           uiMaxDistDummy( rParameters.getSelected( )->xMaxDistDummy->get( ) ),
           uiMinSizeJump( (size_t)rParameters.getSelected( )->xMinSizeEdge->get( ) ),
+          uiMaxSizeJump( (size_t)rParameters.getSelected( )->xMaxSizeEdge->get( ) ),
           xSeedLumper( rParameters ),
           xRemoveDuplicates( rParameters ),
           xToSMEM( rParameters ),
@@ -406,7 +408,8 @@ class SvJumpsFromSeeds
 
             pRet->emplace_back( rA, rB, pQuery->iId );
             // remove jump again if it is too short (max of query and ref size)
-            if( pRet->back( ).size( ) < uiMinSizeJump )
+            if( pRet->back( ).size( ) < uiMinSizeJump ||
+                ( uiMaxSizeJump != 0 && pRet->back( ).size( ) >= uiMaxSizeJump ) )
                 pRet->pop_back( );
         } );
         // dummy jumps for last seed
@@ -485,8 +488,8 @@ class SvJumpsFromSeeds
      * @details
      * Assumes that the seeds are completeley within the rectangles.
      */
-    float rectFillPercentage( std::shared_ptr<Seeds> pvSeeds,
-                              std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
+    float rectFillPercentage(
+        std::shared_ptr<Seeds> pvSeeds, std::pair<geom::Rectangle<nucSeqIndex>, geom::Rectangle<nucSeqIndex>> xRects )
     {
         nucSeqIndex uiSeedSize = 0;
         for( auto& rSeed : *pvSeeds )
@@ -771,9 +774,8 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
                                                                  pQuery, pRefSeq, pOutExtra ),
                                         pQuery, pRefSeq, pOutExtra );
     }
-    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py( std::shared_ptr<SeedsSet> pSeedsSet,
-                                                                              std::shared_ptr<Pack> pRefSeq,
-                                                                              std::shared_ptr<NucSeq> pQuery )
+    inline std::pair<std::shared_ptr<Seeds>, HelperRetVal> execute_helper_py(
+        std::shared_ptr<SeedsSet> pSeedsSet, std::shared_ptr<Pack> pRefSeq, std::shared_ptr<NucSeq> pQuery )
     {
         HelperRetVal xRet;
         return std::make_pair( execute_helper( pSeedsSet, pRefSeq, pQuery, &xRet ), xRet );
@@ -901,8 +903,8 @@ class FilterJumpsByRefAmbiguity
           uiMaxRefAmbiguity( rParameters.getSelected( )->xMaxRefAmbiguityJump->get( ) )
     {} // constructor
 
-    std::shared_ptr<libMS::ContainerVector<SvJump>> execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps,
-                                                             std::shared_ptr<Pack> pPack )
+    std::shared_ptr<libMS::ContainerVector<SvJump>>
+    execute( std::shared_ptr<libMS::ContainerVector<SvJump>> pJumps, std::shared_ptr<Pack> pPack )
     {
 #if ANALYZE_FILTERS
         auto uiSizeBefore = pJumps->size( );

@@ -67,6 +67,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "reconstruct_sequenced_genome_from_seeds",
               &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
+        .def( "copy_path", &SvCallTable<DBConSingle>::copyPath )
         .def( "max_score", &SvCallTable<DBConSingle>::maxScore )
         .def( "min_score", &SvCallTable<DBConSingle>::minScore )
         .def( "call_area", &SvCallTable<DBConSingle>::callArea )

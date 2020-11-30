@@ -182,6 +182,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xUpdateCall;
     SQLStatement<DBCon> xFilterCallsWithHighScore;
     SQLStatement<DBCon> xEnableExtension;
+    SQLStatement<DBCon> xCopyPath;
 
   public:
     // Consider: Place the table on global level
@@ -274,8 +275,77 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                      "WHERE sv_caller_run_id = ? "
                                      // filters out ?% of the calls with the highest scores in sv_call_table
                                      "AND score >= ? " ),
-          xEnableExtension( pConnection, "CREATE EXTENSION IF NOT EXISTS btree_gist" )
+          xEnableExtension( pConnection, "CREATE EXTENSION IF NOT EXISTS btree_gist" ),
+          // https://www.postgresql.org/docs/current/sql-update.html
+          // Query does not update anything where the FROM & WHERE section returns nothing
+          // "query may give unexpected results if" [one row is updated multiple times]
+          // However: our query should prevent that as long as the allowed distances are set properly
+          xCopyPath( pConnection,
+                     std::string( //
+                         "UPDATE sv_call_table AS outer_ "
+                         "SET order_id=subquery.order_id, "
+                         "    inserted_sequence=subquery.inserted_sequence, "
+                         "    inserted_sequence_size=subquery.inserted_sequence_size "
+                         "FROM ( "
+                         "       SELECT id, order_id, inserted_sequence, inserted_sequence_size, rectangle, "
+                         "              from_forward, to_forward "
+                         "       FROM sv_call_table AS inner_ "
+                         "       WHERE sv_caller_run_id = ? " ) +
+                         //      enforce that subquery has no overlap with it's own run
+                         /*   */ selfIntersectionSQL( "inner_", "inner_2" ) +
+                         "     ) AS subquery "
+                         "WHERE outer_.sv_caller_run_id = ? " +
+                         // enforce that outer and inner overlap
+                         rectanglesOverlapSQL( "outer_", "subquery" ) +
+                         // enforce that outer has no overlap with it's own run
+                         selfIntersectionSQL( "outer_", "outer_2" ) )
     {} // default constructor
+
+
+    static std::string rectanglesOverlapSQL_1( std::string sFromTable, std::string sToTable )
+    {
+        // ST_DWithin returns true if the geometries are within the specified distance of one another
+        // makes use of indices
+        return std::string( "ST_DWithin(" ) + sToTable + ".rectangle::geometry, " + sFromTable +
+               ( sFromTable.empty( ) ? "" : "." ) + "rectangle::geometry, ?) AND " + sToTable +
+               ".from_forward = " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "from_forward AND " + sToTable +
+               ".to_forward = " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "to_forward ";
+    }
+    static std::string rectanglesOverlapSQL_2( std::string sFromTable, std::string sToTable )
+    {
+        // ST_DWithin returns true if the geometries are within the specified distance of one another
+        // makes use of indices
+        return std::string( "ST_DWithin(" ) + sToTable +
+               ".rectangle::geometry, "
+               // this considers reverse complemented calls
+               // Note: we need to mirror the rectangle on the matrix diagonal
+               //       and invert the strand information
+               + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "flipped_rectangle::geometry, ?) AND " + sToTable +
+               ".from_forward != " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "to_forward AND " + sToTable +
+               ".to_forward != " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "from_forward ";
+    }
+    static std::string rectanglesOverlapSQL( std::string sFromTable, std::string sToTable )
+    {
+        return std::string( "AND (( " ) + rectanglesOverlapSQL_1( sFromTable, sToTable ) + " ) " + //
+               "                 OR ( " + rectanglesOverlapSQL_2( sFromTable, sToTable ) + " )) ";
+    }
+
+    static std::string selfIntersectionSQL( std::string sFromTable, std::string sToTable )
+    {
+        // clang-format off
+        std::string sPref = std::string("AND NOT EXISTS( " ) +
+            // make sure that inner_table does not overlap with any other call with higher score
+            "     SELECT " + sToTable + ".id "
+            "     FROM sv_call_table AS " + sToTable +
+            "     WHERE " + sToTable + ".id != " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "id "
+            "     AND " + sToTable + ".score >= " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + "score "
+            "     AND " + sToTable + ".sv_caller_run_id = " + sFromTable + ( sFromTable.empty( ) ? "" : "." ) + 
+                                                                                                    "sv_caller_run_id "
+            "     AND ";
+        // clang-format on
+        return sPref + rectanglesOverlapSQL_1( sFromTable, sToTable ) + ") " + sPref +
+               rectanglesOverlapSQL_2( sFromTable, sToTable ) + ") ";
+    }
 
     inline void genIndices( int64_t iCallerRunId )
     {
@@ -285,8 +355,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                               { INDEX_TYPE, "SPATIAL" },
                               { INCLUDE, "id, from_forward, to_forward, rectangle, score" },
                               { INDEX_METHOD, "GIST" } } );
-
-
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
         this->addIndex( json{ { INDEX_NAME, "runId_score" }, { INDEX_COLUMNS, "sv_caller_run_id, score" } } );
@@ -330,6 +398,18 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline void deleteCall( SvCall& rCall )
     {
         deleteCall( rCall.iId );
+    } // method
+
+    inline void copyPath( int64_t iCallerRunIdFrom, int64_t iCallerRunIdTo, int64_t iAllowedDist )
+    {
+        xCopyPath.exec( iCallerRunIdFrom,
+                        // overlap distance from and from
+                        iAllowedDist * 2, iAllowedDist * 2, //
+                        iCallerRunIdTo,
+                        // overlap distance between from and to
+                        iAllowedDist, iAllowedDist,
+                        // overlap distance to and to
+                        iAllowedDist * 2, iAllowedDist * 2 );
     } // method
 
     inline int64_t insertCall( int64_t iSvCallerRunId, SvCall& rCall )
@@ -696,6 +776,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                      "SELECT id, from_pos, to_pos, from_forward, false, order_id, mirrored "
                                      "FROM sv_call_table "
                                      "WHERE sv_caller_run_id = ? "
+                                     "AND order_id != -1 "
                                      "AND ( GREATEST(ABS(CAST(to_pos AS int8) - CAST(from_pos AS int8)), "
                                      "             inserted_sequence_size) >= ? "
                                      "OR from_forward != to_forward ) " );
@@ -706,6 +787,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "SELECT id, to_pos, from_pos, NOT to_forward, true, order_id, NOT mirrored "
             "FROM sv_call_table "
             "WHERE sv_caller_run_id = ? "
+            "AND order_id != -1 "
             "AND ( GREATEST(ABS(CAST(to_pos AS int8) - CAST(from_pos AS int8)), "
             "             inserted_sequence_size) >= ? "
             "OR from_forward != to_forward ) " );
@@ -945,7 +1027,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 #if 0
             std::cout << "uiNumCalls: " << uiNumCalls << std::endl;
 #endif
-            if( uiNumCalls == 0 )
+            if( uiNumCalls == 0 || uiStartCnt > 3 )
                 return std::make_tuple( true, (uint64_t)0, true, std::string( ) );
             else
             {

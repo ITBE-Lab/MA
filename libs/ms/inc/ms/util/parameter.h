@@ -580,6 +580,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xDoMateJumps; // compute jumps between paired reads
     AlignerParameterPointer<int> xMaxSizeReseed; // minimal edge size for which we reseed
     AlignerParameterPointer<int> xMinSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
+    AlignerParameterPointer<int> xMaxSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
     AlignerParameterPointer<int> xMaxFuzzinessFilter; // maximal fuzziness for sv calls
     AlignerParameterPointer<int> xMaxSuppNtShortCallFilter; // maximal number of nt for short call low support filter
     AlignerParameterPointer<int> xMaxCallSizeShortCallFilter; // maximal call size for short call low support filter
@@ -587,6 +588,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMMFilterMaxOcc; // xMMFilterMaxOcc
     AlignerParameterPointer<int> xMinNtInSoc; // Min NT in SoC
     AlignerParameterPointer<int> xMinNtAfterReseeding; // Min NT after reseeding
+    AlignerParameterPointer<int> xMinReadsInCall; // Min Reads in Call
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -776,6 +778,7 @@ class Presetting : public ParameterSetBase
           xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
           xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 0, checkPositiveValue ),
+          xMaxSizeEdge( this, "Max Size Edge", "@todo", SV_PARAMETERS, 0, checkPositiveValue ),
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
           xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
@@ -783,6 +786,7 @@ class Presetting : public ParameterSetBase
           xMMFilterMaxOcc( this, "Max Occ MM Filter", "@todo", SV_PARAMETERS, 200, checkPositiveValue ),
           xMinNtInSoc( this, "Min NT in SoC", "@todo", SV_PARAMETERS, 150, checkPositiveValue ),
           xMinNtAfterReseeding( this, "Min NT after reseeding", "@todo", SV_PARAMETERS, 100, checkPositiveValue ),
+          xMinReadsInCall( this, "Min Reads in call", "@todo", SV_PARAMETERS, 2, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -1073,7 +1077,9 @@ class ParameterSetManager
         xParametersSets[ "sv-illumina" ]->xRectangularSoc->set( false );
         xParametersSets[ "sv-illumina" ]->xDoDummyJumps->set( false );
         xParametersSets[ "sv-illumina" ]->xHarmScoreMinRel->set( 0 );
+        xParametersSets[ "sv-illumina" ]->xMinReadsInCall->set( 10 );
         xParametersSets[ "sv-illumina" ]->xHarmScoreMin->set( xParametersSets[ "sv-illumina" ]->xMinNtInSoc->get( ) );
+        xParametersSets[ "sv-illumina" ]->xMaxSizeEdge->set( 200 );
 
 
         // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?

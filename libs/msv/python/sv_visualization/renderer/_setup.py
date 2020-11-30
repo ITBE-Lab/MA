@@ -88,6 +88,7 @@ def setup(self):
             for run_id in run_table.getIds():
                 text = run_table.getName(run_id) + " - " + run_table.getDate(run_id) + " - " + run_table.getDesc(run_id)
                 text += " - " + str(SvCallTable(self.db_conn).num_calls(run_id, self.widgets.score_slider.value[0]))
+                text += " entries"
                 menu.append((text, str(run_id)))
         self.widgets.run_id_dropdown.menu = menu
         self.widgets.ground_truth_id_dropdown.menu = menu

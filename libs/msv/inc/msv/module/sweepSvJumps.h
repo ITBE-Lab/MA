@@ -88,6 +88,7 @@ class CompleteBipartiteSubgraphSweep
     size_t uiSqueezeFactor;
     size_t uiCenterStripUp;
     size_t uiCenterStripDown;
+    const size_t iMinReadsInCall;
 
     // record the times each step takes
     double dInit = 0;
@@ -106,7 +107,8 @@ class CompleteBipartiteSubgraphSweep
           iMaxFuzziness( (int64_t)pGlobalParams->xJumpH->get( ) * 10 ),
           uiSqueezeFactor( 5000 ),
           uiCenterStripUp( 5000 ),
-          uiCenterStripDown( 1000 )
+          uiCenterStripDown( 1000 ),
+          iMinReadsInCall( (size_t)rParameters.getSelected( )->xMinReadsInCall->get( ) )
     {} // constructor
 
     // @todo document this function it is the main loop of the sv caller
@@ -240,7 +242,8 @@ class CompleteBipartiteSubgraphSweep
                                                    xActiveClusters.end( ) );
 #endif
                             if( pCluster->xXAxis.start( ) < uiForwStrandEnd &&
-                                pCluster->xXAxis.start( ) >= uiForwStrandStart )
+                                pCluster->xXAxis.start( ) >= uiForwStrandStart &&
+                                pCluster->uiNumSuppReads >= iMinReadsInCall )
                                 pRet->vContent.push_back( pCluster );
                         } // if
                         auto xInnerEnd = std::chrono::high_resolution_clock::now( );
@@ -273,11 +276,13 @@ class ExactCompleteBipartiteSubgraphSweep
 {
   public:
     int64_t iMaxInsertRatioDiff = 150;
+    const size_t iMinReadsInCall;
     /**
      * @brief
      * @details
      */
     ExactCompleteBipartiteSubgraphSweep( const ParameterSetManager& rParameters )
+        : iMinReadsInCall( (size_t)rParameters.getSelected( )->xMinReadsInCall->get( ) )
     {} // constructor
 
     inline void exact_sweep( std::vector<std::shared_ptr<SvJump>>& rvEdges, size_t uiStart, size_t uiEnd,
@@ -405,7 +410,8 @@ class ExactCompleteBipartiteSubgraphSweep
                     // we messed up this counter by removing jumps, fix that
                     pCurrCluster->uiNumSuppReads = pCurrCluster->vSupportingJumps.size( );
                     // save the cluster
-                    pRet->vContent.push_back( pCurrCluster );
+                    if( pCurrCluster->uiNumSuppReads >= iMinReadsInCall )
+                        pRet->vContent.push_back( pCurrCluster );
                 } // if
                 // decrement the counter vector
                 while( uiStart <= uiEnd )
