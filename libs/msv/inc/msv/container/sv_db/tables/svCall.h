@@ -514,14 +514,19 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // check if we can reach the start of the current call with a seed
                 if( uiLastWasForwardContext && uiLastPos <= std::get<1>( tNextCall ) &&
                     !pRef->bridgingPositions( uiLastPos, std::get<1>( tNextCall ) ) )
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                    pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
+                                                       : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         std::get<1>( tNextCall ) - uiLastPos + 1, uiLastPos, true );
                 else if( !uiLastWasForwardContext && uiLastPos >= std::get<1>( tNextCall ) &&
                          !pRef->bridgingPositions( uiLastPos, std::get<1>( tNextCall ) ) )
-                    pRet->emplace_back( pRet->empty( ) ? 0 : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                    pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
+                                                       : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         uiLastPos - std::get<1>( tNextCall ) + 1, uiLastPos, false );
-                // else: cannot connect last pos and this pos (just add no seed at all)
-
+                else // cannot connect last pos and this pos
+                    // (add zero size seed so that we do not mess up the insertion order)
+                    pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
+                                                       : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
+                                        0, 0, true );
 
                 // append the skipped over sequence
                 if( bWithInsertions )
@@ -548,8 +553,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             if( uiOrder == 0 ) // check if we reached the last contig
                 break;
 
-            vRet.push_back( std::make_tuple( "chr" + std::to_string( uiCtgOrder ), pRet, vInsertions ) );
-            uiCtgOrder++; //  move to next contig
+            vRet.push_back( std::make_tuple( "chr" + std::to_string( uiCtgOrder + 1 ), pRet, vInsertions ) );
+            uiCtgOrder++; // move to next contig
         } // while
         return vRet;
     }
@@ -559,17 +564,17 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                       nucSeqIndex uiMinEntrySize )
     {
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
-        auto pReconstructionTable =
-            std::make_shared<SQLTable<DBCon, PriKeyDefaultType>>( this->pConnection,
-                                                                  json{ { TABLE_NAME, "reconstruction_table" },
-                                                                        { CPP_EXTRA, "DROP ON DESTRUCTION" },
-                                                                        { TABLE_COLUMNS,
-                                                                          {
-                                                                              { { COLUMN_NAME, "caller_run_id" },
-                                                                                { REFERENCES, "sv_call_table(id)" },
-                                                                                { CONSTRAINTS, "NOT NULL" } }
-                                                                              //
-                                                                          } } } );
+        auto pReconstructionTable = std::make_shared<SQLTable<DBCon, PriKeyDefaultType>>(
+            this->pConnection,
+            json{ { TABLE_NAME, "reconstruction_table" },
+                  { CPP_EXTRA, "DROP ON DESTRUCTION" },
+                  { TABLE_COLUMNS,
+                    {
+                        { { COLUMN_NAME, "caller_run_id" },
+                          { REFERENCES, "sv_caller_run_table(id)" },
+                          { CONSTRAINTS, "NOT NULL" } }
+                        //
+                    } } } );
 
         // clear table
         pReconstructionTable->deleteAllRows( );
