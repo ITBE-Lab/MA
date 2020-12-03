@@ -699,8 +699,8 @@ class SvCall : public libMS::Container, public geom::Rectangle<nucSeqIndex>
         } // else
 
 
-        this->xXAxis.size( 1 );
-        this->xYAxis.size( 1 );
+        this->xXAxis.size( 0 );
+        this->xYAxis.size( 0 );
     } // method
 
     inline nucSeqIndex size( ) const

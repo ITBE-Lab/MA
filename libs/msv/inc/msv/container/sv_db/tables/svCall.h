@@ -164,10 +164,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                          "SET order_id=subquery.order_id, "
                          "    inserted_sequence=subquery.inserted_sequence, "
                          "    ctg_order_id=subquery.ctg_order_id, "
+                         "    mirrored=subquery.mirrored, "
                          "    inserted_sequence_size=subquery.inserted_sequence_size "
                          "FROM ( "
                          "       SELECT id, order_id, ctg_order_id, inserted_sequence, inserted_sequence_size, "
-                         "              rectangle, from_forward, to_forward "
+                         "              rectangle, from_forward, to_forward, mirrored "
                          "       FROM sv_call_table AS inner_ "
                          "       WHERE sv_caller_run_id = ? " ) +
                          //      enforce that subquery has no overlap with it's own run
