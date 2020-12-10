@@ -826,7 +826,8 @@ class JumpsFilterContigBorder
     : public libMS::Module<libMS::ContainerVector<SvJump>, false, libMS::ContainerVector<SvJump>, Pack>
 {
   public:
-    size_t uiMaxDist = 25000;
+    // size_t uiMaxDist = 25000;
+    size_t uiMaxDist = 0;
 
     JumpsFilterContigBorder( const ParameterSetManager& rParameters )
     {} // default constructor

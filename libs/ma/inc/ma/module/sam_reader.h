@@ -57,6 +57,17 @@ class ReadByName : public libMS::Container
 
 }; // class ReadByName
 
+/// http://www.martinbroadhurst.com/how-to-split-a-string-in-c.html
+template <class Container_t> Container_t splitString( const std::string& sString, char sDelim = ' ' )
+{
+    std::stringstream xStream( sString );
+    std::string sCurrToken;
+    Container_t xCont;
+    while( std::getline( xStream, sCurrToken, sDelim ) )
+        xCont.push_back( sCurrToken );
+    return xCont;
+} // method
+
 class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, ReadByName>
 {
   public:
@@ -66,16 +77,6 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
     SamFileReader( const ParameterSetManager& rParameters )
     {} // constructor
 
-    /// http://www.martinbroadhurst.com/how-to-split-a-string-in-c.html
-    template <class Container_t> Container_t splitString( const std::string& sString, char sDelim = ' ' )
-    {
-        std::stringstream xStream( sString );
-        std::string sCurrToken;
-        Container_t xCont;
-        while( std::getline( xStream, sCurrToken, sDelim ) )
-            xCont.push_back( sCurrToken );
-        return xCont;
-    } // method
 
     std::shared_ptr<Alignment> DLL_PORT( MA )
         execute( std::shared_ptr<FileStream> pStream, std::shared_ptr<Pack> pRef, std::shared_ptr<ReadByName> pReads )
@@ -120,6 +121,51 @@ class SamFileReader : public libMS::Module<Alignment, true, FileStream, Pack, Re
             pRet->bSecondary = atoll( vColumns[ 1 ].c_str( ) ) & 256;
             pRet->bSupplementary = atoll( vColumns[ 1 ].c_str( ) ) & 2048;
             pRet->appendCigarString( vColumns[ 5 ], pQuery, *pRef );
+            return pRet;
+        } // while
+    } // method
+
+}; // class SamFileReader
+
+class KswFileReader : public libMS::Module<Alignment, true, FileStream, Pack, ReadByName>
+{
+  public:
+    /**
+     * @brief creates a new SamFileReader.
+     */
+    KswFileReader( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<Alignment> DLL_PORT( MA )
+        execute( std::shared_ptr<FileStream> pStream, std::shared_ptr<Pack> pRef, std::shared_ptr<ReadByName> pReads )
+    {
+        while( true )
+        {
+            std::string sLine = "";
+            {
+                std::lock_guard<std::mutex> xLock( pStream->xMutex );
+                pStream->peek( ); // potentionally trigger eof
+                if( pStream->eof( ) ) // eof case
+                    return nullptr;
+                // ignore empty lines and comment/header lines (starting with '@')
+                while( sLine.empty( ) || sLine[ 0 ] == '@' )
+                    pStream->safeGetLine( sLine );
+                while( !pStream->eof( ) && pStream->peek( ) == '\n' && pStream->peek( ) == '\r' &&
+                       pStream->peek( ) == '@' && pStream->peek( ) == ' ' && pStream->peek( ) == '\t' )
+                    pStream->pop( );
+            } // scope for xLock
+            auto vColumns = splitString<std::vector<std::string>>( sLine, '\t' );
+            if( vColumns.size( ) != 10 )
+                throw std::runtime_error( "wrong number of tab seperated columns for a Ksw output file!" );
+            std::shared_ptr<NucSeq> pQuery;
+            // only use pReads if sequence is not given in sam file
+            pQuery = ( *pReads )[ vColumns[ 3 ] ];
+
+            nucSeqIndex uiRefStart =
+                atoll( vColumns[ 1 ].c_str( ) ) + pRef->startOfSequenceWithName( vColumns[ 0 ] ) - 1;
+            auto pRet = std::make_shared<Alignment>( uiRefStart );
+            pRet->xStats.sName = vColumns[ 3 ];
+            pRet->appendCigarString( vColumns[ 9 ], pQuery, *pRef );
             return pRet;
         } // while
     } // method
@@ -324,6 +370,23 @@ class GetReadByName : public libMS::Module<NucSeq, false, Alignment, ReadByName>
         execute( std::shared_ptr<Alignment> pAlignment, std::shared_ptr<ReadByName> pReadByName )
     {
         return ( *pReadByName )[ pAlignment->xStats.sName ];
+    } // method
+
+}; // class GetReadByName
+
+class GetReadByReadName : public libMS::Module<NucSeq, false, NucSeq, ReadByName>
+{
+  public:
+    /**
+     * @brief creates a new GetReadByName module.
+     */
+    GetReadByReadName( const ParameterSetManager& rParameters )
+    {} // constructor
+
+    std::shared_ptr<NucSeq> DLL_PORT( MA )
+        execute( std::shared_ptr<NucSeq> pRead, std::shared_ptr<ReadByName> pReadByName )
+    {
+        return ( *pReadByName )[ pRead->sName ];
     } // method
 
 }; // class GetReadByName

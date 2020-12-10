@@ -892,28 +892,25 @@ std::vector<char> randomNucSeq( const size_t uiLen )
 } // function
 
 
-std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef, int iMinAddBandwidth )
+std::shared_ptr<Alignment> NWAlignment::execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef )
 {
+
     auto pAlignment = std::make_shared<Alignment>( );
     Wrapper_ksw_extz_t ez;
     AlignedMemoryManager xMemoryManager;
-    KswCppParam<5> xParams( pGlobalParams->iMatch->get( ), pGlobalParams->iMissMatch->get( ),
-                            pGlobalParams->iGap->get( ), pGlobalParams->iExtend->get( ), pGlobalParams->iGap2->get( ),
-                            pGlobalParams->iExtend2->get( ) );
 
     ksw_simplified( (int)pQuery->length( ),
                     pQuery->pGetSequenceRef( ),
                     (int)pRef->length( ),
                     pRef->pGetSequenceRef( ),
-                    xParams,
+                    xKswParameters,
                     -1,
                     ez.ez, // return value
                     xMemoryManager,
-                    iMinAddBandwidth );
+                    iMinBandwidthGapFilling );
 
     uint32_t qPos = 0;
     uint32_t rPos = 0;
-#if 1
     for( int i = 0; i < ez.ez->n_cigar; ++i )
     {
         uint32_t uiSymbol = ez.ez->cigar[ i ] & 0xf;
@@ -941,13 +938,19 @@ std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_p
                 rPos += uiAmount;
                 break;
             default:
-                std::cerr << "obtained wierd symbol from ksw: " << uiSymbol << std::endl;
+                std::cerr << "obtained wired symbol from ksw: " << uiSymbol << std::endl;
                 assert( false );
                 break;
         } // switch
     } // for
-#endif
     return pAlignment;
+} // method
+
+
+std::shared_ptr<Alignment> runKsw( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef )
+{
+    ParameterSetManager xParameters;
+    return NWAlignment( xParameters ).execute( pQuery, pRef );
 } // function
 
 
@@ -1140,6 +1143,7 @@ void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the NeedlemanWunsch class
     exportModule<NeedlemanWunsch>( xOrganizer, "NeedlemanWunsch" );
+    exportModule<NWAlignment>( xOrganizer, "NWAlignment" );
 
     xOrganizer.util( ).def( "runKsw", &runKsw );
     xOrganizer.util( ).def( "runKswExtend", &runKswExtend );

@@ -28,9 +28,9 @@ class Wrapper_ksw_extz_t
     Wrapper_ksw_extz_t( )
     {
 #if OLD_KSW == 1
-        ez = new ksw_extz_t{}; // {} forces zero initialization
+        ez = new ksw_extz_t{ }; // {} forces zero initialization
 #else
-        ez = new kswcpp_extz_t{}; // {} forces zero initialization
+        ez = new kswcpp_extz_t{ }; // {} forces zero initialization
 #endif
 
     } // default constructor
@@ -100,7 +100,7 @@ class NeedlemanWunsch : public libMS::Module<libMS::ContainerVector<std::shared_
           uiMissMatch( pGlobalParams->iMissMatch->get( ) ),
           uiZDrop( rParameters.getSelected( )->xZDrop->get( ) ),
           iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get( ) ),
-          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ){}; // default constructor
+          iBandwidthDPExtension( rParameters.getSelected( )->xBandwidthDPExtension->get( ) ){ }; // default constructor
 
 
     std::shared_ptr<Alignment> DLL_PORT( MA )
@@ -132,6 +132,25 @@ class NeedlemanWunsch : public libMS::Module<libMS::ContainerVector<std::shared_
                    []( std::shared_ptr<Alignment>& pA, std::shared_ptr<Alignment>& pB ) { return pA->larger( pB ); } );
         return pRet;
     } // function
+
+}; // class
+
+class NWAlignment : public libMS::Module<Alignment, false, NucSeq, NucSeq>
+{
+  public:
+    const KswCppParam<5> xKswParameters;
+    const int iMinBandwidthGapFilling;
+    NWAlignment( const ParameterSetManager& rParameters )
+        : xKswParameters( pGlobalParams->iMatch->get( ),
+                          pGlobalParams->iMissMatch->get( ),
+                          pGlobalParams->iGap->get( ),
+                          pGlobalParams->iExtend->get( ),
+                          pGlobalParams->iGap2->get( ),
+                          pGlobalParams->iExtend2->get( ) ),
+          iMinBandwidthGapFilling( rParameters.getSelected( )->xMinBandwidthGapFilling->get( ) )
+    {} // constructor
+
+    virtual std::shared_ptr<Alignment> execute( std::shared_ptr<NucSeq> pQuery, std::shared_ptr<NucSeq> pRef );
 
 }; // class
 
