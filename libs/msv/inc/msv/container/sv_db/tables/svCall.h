@@ -238,6 +238,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
         this->addIndex( json{ { INDEX_NAME, "runId_score" }, { INDEX_COLUMNS, "sv_caller_run_id, score" } } );
+        this->addIndex( json{ { INDEX_NAME, "from_pos_idx" }, { INDEX_COLUMNS, "from_pos" } } );
+        this->addIndex( json{ { INDEX_NAME, "to_pos_idx" }, { INDEX_COLUMNS, "to_pos" } } );
         this->addIndex( json{ { INDEX_NAME, "reconstruction_index" },
                               { INDEX_COLUMNS, "ctg_order_id, sv_caller_run_id, order_id" } } );
     } // method
@@ -246,6 +248,8 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
+        this->dropIndex( json{ { INDEX_NAME, "from_pos_idx" } } );
+        this->dropIndex( json{ { INDEX_NAME, "to_pos_idx" } } );
         this->dropIndex( json{ { INDEX_NAME, "reconstruction_index" } } );
     } // method
 
@@ -430,14 +434,64 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         return xRet;
     } // method
 
+    struct ReconstructionStats
+    {
+        size_t uiNumProperJumps = 0;
+        size_t uiNumContradictingJumps = 0;
+        size_t uiNumNonConsecutiveJumps = 0;
+    };
+
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-    callsToSeedsHelper( std::shared_ptr<Pack> pRef, bool bWithInsertions, NextCallType& xNextCall )
+    callsToSeedsHelper( std::shared_ptr<Pack> pRef, bool bWithInsertions, NextCallType& xNextCall,
+                        ReconstructionStats* pStats = nullptr )
     {
 #if 0
         auto uiNumCalls =
             SQLQuery<DBCon, uint64_t>( this->pConnection, "SELECT COUNT(*) FROM reconstruction_table" ).scalar( );
         std::cout << "num calls: " << uiNumCalls << std::endl;
 #endif
+
+        SQLQuery<DBCon, int64_t> xCallInBetweenForw(
+            this->pConnection,
+            "SELECT COUNT(id) "
+            "FROM sv_call_table "
+            "WHERE ("
+            "   (   from_pos > ? "
+            "       AND from_pos < ? "
+            "       AND from_forward ) "
+            "   OR "
+            "   (   to_pos > ? "
+            "       AND to_pos < ? "
+            "       AND NOT to_forward ) "
+            ")"
+            "AND sv_caller_run_id IN (SELECT caller_run_id FROM reconstruction_table) "
+            "LIMIT 1 " );
+
+        SQLQuery<DBCon, int64_t> xCallInBetweenRev(
+            this->pConnection,
+            "SELECT COUNT(id) "
+            "FROM sv_call_table "
+            "WHERE ("
+            "   (   from_pos < ? "
+            "       AND from_pos > ? "
+            "       AND NOT from_forward ) "
+            "   OR "
+            "   (   to_pos < ? "
+            "       AND to_pos > ? "
+            "       AND to_forward ) "
+            ")"
+            "AND sv_caller_run_id IN (SELECT caller_run_id FROM reconstruction_table) "
+            "LIMIT 1 " );
+        auto fIncStatsProper = [ & ]( uint32_t uiLastPos, uint32_t uiNextPos, bool bOnFrowStrand ) {
+            if( pStats != nullptr )
+            {
+                if( ( bOnFrowStrand ? xCallInBetweenForw : xCallInBetweenRev )
+                        .scalar( uiLastPos, uiNextPos, uiLastPos, uiNextPos ) > 0 )
+                    pStats->uiNumNonConsecutiveJumps++;
+                else
+                    pStats->uiNumProperJumps++;
+            } // if
+        }; // lambda
 
         std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>> vRet;
 
@@ -515,19 +569,29 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                 // check if we can reach the start of the current call with a seed
                 if( uiLastWasForwardContext && uiLastPos <= std::get<1>( tNextCall ) &&
                     !pRef->bridgingPositions( uiLastPos, std::get<1>( tNextCall ) ) )
+                {
                     pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
                                                        : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         std::get<1>( tNextCall ) - uiLastPos + 1, uiLastPos, true );
+                    fIncStatsProper( uiLastPos, std::get<1>( tNextCall ), uiLastWasForwardContext );
+                } // if
                 else if( !uiLastWasForwardContext && uiLastPos >= std::get<1>( tNextCall ) &&
                          !pRef->bridgingPositions( uiLastPos, std::get<1>( tNextCall ) ) )
+                {
                     pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
                                                        : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         uiLastPos - std::get<1>( tNextCall ) + 1, uiLastPos, false );
+                    fIncStatsProper( uiLastPos, std::get<1>( tNextCall ), uiLastWasForwardContext );
+                } // else if
                 else // cannot connect last pos and this pos
-                    // (add zero size seed so that we do not mess up the insertion order)
+                // (add zero size seed so that we do not mess up the insertion order)
+                {
                     pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
                                                        : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         0, 0, true );
+                    if( pStats != nullptr )
+                        pStats->uiNumContradictingJumps++;
+                } // else
 
                 // append the skipped over sequence
                 if( bWithInsertions )
@@ -562,7 +626,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
 
     inline std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
     callsToSeedsById( std::shared_ptr<Pack> pRef, std::vector<PriKeyDefaultType> vCallerRuns, bool bWithInsertions,
-                      nucSeqIndex uiMinEntrySize )
+                      bool bPrintStats )
     {
         auto pTransaction = this->pConnection->uniqueGuardedTrxn( );
         auto pReconstructionTable = std::make_shared<SQLTable<DBCon, PriKeyDefaultType>>(
@@ -595,7 +659,18 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "ORDER BY order_id ASC "
             "LIMIT 1 " );
 
-        auto xRet = callsToSeedsHelper( pRef, bWithInsertions, xNextCall );
+        ReconstructionStats xStats;
+
+        auto xRet = callsToSeedsHelper( pRef, bWithInsertions, xNextCall, bPrintStats ? &xStats : nullptr );
+        if( bPrintStats )
+        {
+            std::cout << "reconstruction stats:" << std::endl;
+            std::cout << "Graph is in accordance with path: " << xStats.uiNumProperJumps << std::endl;
+            // - 2 since first and last entry count as contradictions in the code
+            // but that's just the beginning and end of the path respectiveley.
+            std::cout << "Graph contradicts path: " << xStats.uiNumContradictingJumps - 2 << std::endl;
+            std::cout << "Path passes an SV entry of graph: " << xStats.uiNumNonConsecutiveJumps << std::endl;
+        } // if
         return xRet;
     } // method
 
