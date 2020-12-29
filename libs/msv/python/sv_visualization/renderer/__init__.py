@@ -58,6 +58,7 @@ class Renderer():
         self.calls_from_db = None
         self.count_calls_from_db = None
         self.calls_from_db_gt = None
+        self.print_to_tsv = True
 
     def get_run_id(self):
         if self.widgets.run_id_dropdown.value is None:

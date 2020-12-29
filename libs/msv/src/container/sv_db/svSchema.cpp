@@ -52,14 +52,61 @@ uint32_t getNumJumpsInArea( std::shared_ptr<DBCon> pConnection, std::shared_ptr<
     return xRet;
 } // function
 
+std::shared_ptr<Pack> reconstructSequencedGenomeFromSeedsBorderd(
+    std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>&
+        vReconstructedSeeds,
+    std::shared_ptr<Pack>
+        pRef,
+    nucSeqIndex uiContigBorder )
+{
+    auto pRet = std::make_shared<Pack>( );
+    for( auto& xTup : vReconstructedSeeds )
+    {
+        NucSeq xCurrChrom;
+        for( size_t uiI = 0; uiI < std::get<1>( xTup )->size( ); uiI++ )
+        {
+            auto xSeed = ( *std::get<1>( xTup ) )[ uiI ];
+
+            if( xSeed.bOnForwStrand )
+                pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
+            else
+                pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ),
+                                           pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ),
+                                           xCurrChrom,
+                                           true );
+
+            if( !std::get<2>( xTup ).empty( ) )
+            {
+                auto pNucSeq = std::get<2>( xTup )[ uiI ];
+                if( pNucSeq != nullptr && pNucSeq->length( ) > 0 )
+                    xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
+            } // if
+        } // for
+
+        pRet->vAppendSequence( std::get<0>( xTup ), "no_description", xCurrChrom );
+    } // for
+    return pRet;
+} // method
+
+std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
+    std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
+        vReconstructedSeeds,
+    std::shared_ptr<Pack>
+        pRef )
+{
+    return reconstructSequencedGenomeFromSeedsBorderd( vReconstructedSeeds, pRef, 0 );
+} // method
+
 
 #ifdef WITH_PYTHON
 
 void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
 {
+    // @todo this should be a module...
+    xOrganizer.util().def("reconstruct_sequenced_genome", reconstructSequencedGenomeFromSeeds);
+
     py::class_<SvCallTable<DBConSingle>, std::shared_ptr<SvCallTable<DBConSingle>>>( xOrganizer.util( ), "SvCallTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
-        .def( "reconstruct_sequenced_genome", &SvCallTable<DBConSingle>::reconstructSequencedGenomeFromSeeds )
         .def( "calls_to_seeds_by_id", &SvCallTable<DBConSingle>::callsToSeedsById )
         .def( "num_calls", &SvCallTable<DBConSingle>::numCalls_py )
         .def( "copy_path", &SvCallTable<DBConSingle>::copyPath )

@@ -12,7 +12,7 @@ def insert_reads(db_conn, reference, parameter_set, dataset_name):
     print("done")
 
     print("reconstructing genome...")
-    reconstr = SvCallTable(db_conn).reconstruct_sequenced_genome(reference, ground_truth_id)
+    reconstr = reconstruct_sequenced_genome(reference, ground_truth_id)
     print("done")
 
     print("inserting reads...")

@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     expected_sequence = "GGATCGTCCGACGAAATGTTCA"
 
-    reconstr = SvCallTable(db_conn).reconstruct_sequenced_genome(reference, run_id)
+    reconstr = reconstruct_sequenced_genome(reference, run_id)
 
     if str(reconstr.extract_forward_strand_n()) != expected_sequence:
         print("original sequence     ", reference.extract_forward_strand_n())

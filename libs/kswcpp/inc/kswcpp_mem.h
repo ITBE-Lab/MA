@@ -298,6 +298,8 @@ template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicF
 
 }; // class
 
+extern std::string sFilePrefix;
+
 template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_SIZE> class CIGARMemoryManager
 {
     static const int64_t CHUNK_SIZE = ( CHUNK_SIZE_GB * 1073741824 ) / sizeof( TP_DIFF_VEC );
@@ -336,7 +338,7 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_
                       << " gigabytes." << std::endl;
 
             // zero initialize zero value
-            xCache.init( "/tmp/.CIGARMemoryManager", []( std::vector<TP_DIFF_VEC>& rArr ) {
+            xCache.init( sFilePrefix, []( std::vector<TP_DIFF_VEC>& rArr ) {
                 rArr.resize( CHUNK_SIZE );
                 for( size_t uiI = 0; uiI < CHUNK_SIZE; uiI++ )
                     rArr[ uiI ].setzero( );

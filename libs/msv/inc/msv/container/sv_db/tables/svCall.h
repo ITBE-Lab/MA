@@ -455,7 +455,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             this->pConnection,
             "SELECT COUNT(id) "
             "FROM sv_call_table "
-            "WHERE ("
+            "WHERE ( "
             "   (   from_pos > ? "
             "       AND from_pos < ? "
             "       AND from_forward ) "
@@ -463,7 +463,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "   (   to_pos > ? "
             "       AND to_pos < ? "
             "       AND NOT to_forward ) "
-            ")"
+            ") "
             "AND sv_caller_run_id IN (SELECT caller_run_id FROM reconstruction_table) "
             "LIMIT 1 " );
 
@@ -471,7 +471,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             this->pConnection,
             "SELECT COUNT(id) "
             "FROM sv_call_table "
-            "WHERE ("
+            "WHERE ( "
             "   (   from_pos < ? "
             "       AND from_pos > ? "
             "       AND NOT from_forward ) "
@@ -479,7 +479,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
             "   (   to_pos < ? "
             "       AND to_pos > ? "
             "       AND to_forward ) "
-            ")"
+            ") "
             "AND sv_caller_run_id IN (SELECT caller_run_id FROM reconstruction_table) "
             "LIMIT 1 " );
         auto fIncStatsProper = [ & ]( uint32_t uiLastPos, uint32_t uiNextPos, bool bOnFrowStrand ) {
@@ -589,7 +589,11 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                     pRet->emplace_back( pRet->empty( ) ? uiLastEdgeInsertionSize
                                                        : ( pRet->back( ).end( ) + uiLastEdgeInsertionSize ),
                                         0, 0, true );
-                    if( pStats != nullptr )
+                    // first entry (uiOrder == 0) always ends up in this else scope
+                    // however this is not because it is a contradiction between traversal and graph
+                    // just the starting position cannot be properly set before the first entry
+                    // so don't count it as a contradiction
+                    if( pStats != nullptr && uiOrder != 0 )
                         pStats->uiNumContradictingJumps++;
                 } // else
 
@@ -666,56 +670,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         {
             std::cout << "reconstruction stats:" << std::endl;
             std::cout << "Graph is in accordance with path: " << xStats.uiNumProperJumps << std::endl;
-            // - 2 since first and last entry count as contradictions in the code
-            // but that's just the beginning and end of the path respectiveley.
-            std::cout << "Graph contradicts path: " << xStats.uiNumContradictingJumps - 2 << std::endl;
+            std::cout << "Graph contradicts path: " << xStats.uiNumContradictingJumps << std::endl;
             std::cout << "Path passes an SV entry of graph: " << xStats.uiNumNonConsecutiveJumps << std::endl;
         } // if
         return xRet;
-    } // method
-
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeedsBorderd(
-        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>&
-            vReconstructedSeeds,
-        std::shared_ptr<Pack>
-            pRef,
-        nucSeqIndex uiContigBorder )
-    {
-        auto pRet = std::make_shared<Pack>( );
-        for( auto& xTup : vReconstructedSeeds )
-        {
-            NucSeq xCurrChrom;
-            for( size_t uiI = 0; uiI < std::get<1>( xTup )->size( ); uiI++ )
-            {
-                auto xSeed = ( *std::get<1>( xTup ) )[ uiI ];
-
-                if( xSeed.bOnForwStrand )
-                    pRef->vExtractSubsectionN( xSeed.start_ref( ), xSeed.end_ref( ), xCurrChrom, true );
-                else
-                    pRef->vExtractSubsectionN( pRef->uiPositionToReverseStrand( xSeed.start_ref( ) ),
-                                               pRef->uiPositionToReverseStrand( xSeed.start_ref( ) - xSeed.size( ) ),
-                                               xCurrChrom,
-                                               true );
-
-                if( !std::get<2>( xTup ).empty( ) )
-                {
-                    auto pNucSeq = std::get<2>( xTup )[ uiI ];
-                    if( pNucSeq != nullptr && pNucSeq->length( ) > 0 )
-                        xCurrChrom.vAppend( pNucSeq->pxSequenceRef, pNucSeq->length( ) );
-                } // if
-            } // for
-
-            pRet->vAppendSequence( std::get<0>( xTup ), "no_description", xCurrChrom );
-        } // for
-        return pRet;
-    } // method
-    inline std::shared_ptr<Pack> reconstructSequencedGenomeFromSeeds(
-        std::vector<std::tuple<std::string, std::shared_ptr<Seeds>, std::vector<std::shared_ptr<NucSeq>>>>
-            vReconstructedSeeds,
-        std::shared_ptr<Pack>
-            pRef )
-    {
-        return reconstructSequencedGenomeFromSeedsBorderd( vReconstructedSeeds, pRef, 0 );
     } // method
 }; // namespace libMSV
 

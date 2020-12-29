@@ -8,6 +8,7 @@
 
 /* Initialize static member data */
 const CPU_Info::CPU_Info_Internal CPU_Info::xCPU_Rep;
+std::string sFilePrefix = "/MAdata/tmp/.CIGARMemoryManager";
 
 /* Export vendor and brand as const strings */
 const std::string& CPU_Info::sVendor = xCPU_Rep.sVendor;

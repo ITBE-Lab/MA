@@ -112,6 +112,14 @@ def render_calls(self, render_all=False):
                 if num_calls > 0 and gt_total > 0:
                     stats_data_4["y"][-1].append(num_tp/gt_total) # recall
                     stats_data_4["y"][-2].append(num_tp/num_calls) # accuracy
+            if self.print_to_tsv:
+                with open(self.widgets.file_input.value + "-" + self.widgets.run_id_dropdown.value + ".tsv",
+                          "w") as out_file:
+                    out_file.write("//|ground truth| = " + str(gt_total) + "\n")
+                    out_file.write("//#supporting reads\t#true positives\t#num entries\trecall\taccuracy\n")
+                    for x, num_calls, num_tp in stats:
+                        out_file.write(str(x) + "\t" + str(num_tp) + "\t" + str(num_calls) +
+                                       "\t" + str(num_tp/gt_total) + "\t" + str(num_tp/num_calls) + "\n")
             stats_data_2["l"].append("Ground Truth")
             stats_data_2["x"].append([min_blur, max_blur])
             stats_data_2["y"].append([gt_total, gt_total])

@@ -8,6 +8,7 @@
 #include "ma/ksw/ksw2.h"
 #endif
 
+#include "kswcpp_mem.h"
 #include <algorithm>
 #include <bitset>
 #include <cassert>
@@ -1138,7 +1139,7 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 #endif
 
 #ifdef WITH_PYTHON
-
+extern std::string sFilePrefix;
 void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the NeedlemanWunsch class
@@ -1146,6 +1147,7 @@ void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<NWAlignment>( xOrganizer, "NWAlignment" );
 
     xOrganizer.util( ).def( "runKsw", &runKsw );
+    xOrganizer.util( ).attr( "ksw_file_prefix" ) = &sFilePrefix;
     xOrganizer.util( ).def( "runKswExtend", &runKswExtend );
 } // function
 #endif
