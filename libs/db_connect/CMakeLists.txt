@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("db_connect" VERSION 0.1 DESCRIPTION "Database connection library")
 
-INCLUDE(cmake/FindMySQL.cmake)
+#INCLUDE(cmake/FindMySQL.cmake)
 
 # Check for PostgreSQL Support
 # (With Windows, PostgreSQL DLL location must be added to search path. (bin and lib folders of installation)) 
@@ -37,11 +37,11 @@ target_link_libraries ( dbSQL PUBLIC Threads::Threads fort util contrib_CPP_head
 target_include_directories( dbSQL PUBLIC connectors . )
 
 
-if( MySQL_FOUND )
-    message( "Found MySQL includes and libraries")
-    target_link_libraries ( dbSQL PUBLIC ${MYSQL_LIBRARIES} )
-    target_include_directories( dbSQL PUBLIC ${MYSQL_INCLUDE_DIRS} )
-endif()
+# if( MySQL_FOUND )
+#     message( "Found MySQL includes and libraries")
+#     target_link_libraries ( dbSQL PUBLIC ${MYSQL_LIBRARIES} )
+#     target_include_directories( dbSQL PUBLIC ${MYSQL_INCLUDE_DIRS} )
+# endif()
 
 if( PostgreSQL_FOUND )
     message( "Found PostgreSQL - library: " ${PostgreSQL_LIBRARIES} )

@@ -299,8 +299,9 @@ template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicF
 }; // class
 
 extern std::string sFilePrefix;
+extern size_t uiKswHashTableGbMinSize;
 
-template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_SIZE> class CIGARMemoryManager
+template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB> class CIGARMemoryManager
 {
     static const int64_t CHUNK_SIZE = ( CHUNK_SIZE_GB * 1073741824 ) / sizeof( TP_DIFF_VEC );
     void* mem2 = nullptr;
@@ -316,15 +317,15 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_
 
     void resize( size_t uiSize )
     {
-        if( uiSize * sizeof( TP_DIFF_VEC ) <= HASH_TABLE_GB_MIN_SIZE * 1073741824 )
+        if( uiSize * sizeof( TP_DIFF_VEC ) <= uiKswHashTableGbMinSize * 1073741824 )
         {
             if( p_pstruct != nullptr ) // safety check
                 free( mem2 );
-            // std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << HASH_TABLE_GB_MIN_SIZE *
+            // std::cout << "allocating " << uiSize * sizeof( TP_DIFF_VEC ) << " / " << uiKswHashTableGbMinSize *
             // 1073741824
             //          << " bytes." << std::endl;
             // std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " <<
-            // HASH_TABLE_GB_MIN_SIZE
+            // uiKswHashTableGbMinSize
             //          << " gigabytes." << std::endl;
             mem2 = malloc( uiSize * sizeof( TP_DIFF_VEC ) );
             p_pstruct = (TP_DIFF_VEC*)( ( ( (size_t)mem2 + ( sizeof( TP_DIFF_VEC ) - 1 ) ) / sizeof( TP_DIFF_VEC ) ) *
@@ -333,8 +334,8 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB, size_t HASH_TABLE_GB_MIN_
         else
         {
             std::cout << "using filesystem because: " << uiSize * sizeof( TP_DIFF_VEC ) << " / "
-                      << HASH_TABLE_GB_MIN_SIZE * 1073741824 << " bytes are required." << std::endl;
-            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << HASH_TABLE_GB_MIN_SIZE
+                      << uiKswHashTableGbMinSize * 1073741824 << " bytes are required." << std::endl;
+            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << uiKswHashTableGbMinSize
                       << " gigabytes." << std::endl;
 
             // zero initialize zero value

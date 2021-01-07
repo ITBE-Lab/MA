@@ -1140,6 +1140,7 @@ std::string run_ksw( std::string sA, std::string sB, int8_t iM, int8_t iMm, int8
 
 #ifdef WITH_PYTHON
 extern std::string sFilePrefix;
+extern size_t uiKswHashTableGbMinSize;
 void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
 {
     // export the NeedlemanWunsch class
@@ -1148,6 +1149,7 @@ void exportNeedlemanWunsch( libMS::SubmoduleOrganizer& xOrganizer )
 
     xOrganizer.util( ).def( "runKsw", &runKsw );
     xOrganizer.util( ).attr( "ksw_file_prefix" ) = &sFilePrefix;
+    xOrganizer.util( ).attr( "ksw_file_system_min_gb_size" ) = &uiKswHashTableGbMinSize;
     xOrganizer.util( ).def( "runKswExtend", &runKswExtend );
 } // function
 #endif
