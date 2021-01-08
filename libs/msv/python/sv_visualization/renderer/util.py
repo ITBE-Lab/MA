@@ -82,7 +82,7 @@ def append_nuc_type(dict_, nuc, pos, pos_key):
         dict_["i"].append(nuc + " @" + str(pos))
     dict_[pos_key].append(pos + 0.5)
 
-def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter, parlindrome, layer,
+def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_counter, palindrome, layer,
              read_id, idx, r_name):
     seed_size = seed.size - 1
     if seed.on_forward_strand:
@@ -124,7 +124,7 @@ def add_seed(seed, read_dict, max_seed_size, end_column, all_col_ids, category_c
     read_dict["q"].append(seed.start)
     read_dict["idx"].append(idx)
     read_dict["layer"].append(layer)
-    read_dict["parlindrome"].append(parlindrome)
+    read_dict["palindrome"].append(palindrome)
     read_dict["f"].append(seed.on_forward_strand)
     read_dict["category"].append(category_counter + curr_column)
     read_dict["overlapping"].append(False)

@@ -105,7 +105,7 @@ class ReadPlot:
                                                 ("index", "@idx"),
                                                 ("soc", "id:@soc_id, nt: @soc_nt"),
                                                 ("reseeding", "layer:@layer, in_soc: @in_soc_reseed"),
-                                                ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
+                                                ("filtered", "palindrome: @palindrome, overlapp: @overlapping"),
                                                 ("read MM count", "min: @min_filter, max: @max_filter")
                                                 ],
                                       names=['seeds'],

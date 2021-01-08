@@ -189,7 +189,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
     GetAllFeasibleSoCsAsSet xSocFilter( rParameters );
 
     std::vector<std::future<void>> vFutures;
-    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read, bInSocReseed
+    // seed_order_on_query, seed, layer, palindrome, overlapping, read_id, read_name, read, bInSocReseed
     std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string, std::shared_ptr<NucSeq>, bool,
                            std::shared_ptr<HashCounter>, size_t>>
         vAllSeeds;
@@ -233,7 +233,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
 
                     // auto xHelperRet = xJumpsFromSeeds.execute_helper_py3( pReseeded, pPack, pRead );
 
-                    // seed_order_on_query, seed, layer, parlindrome, overlapping, read_id, read_name, read,
+                    // seed_order_on_query, seed, layer, palindrome, overlapping, read_id, read_name, read,
                     // bInSocReseed
                     std::vector<std::tuple<size_t, Seed, size_t, bool, bool, int64_t, std::string,
                                            std::shared_ptr<NucSeq>, bool, std::shared_ptr<HashCounter>, size_t>>

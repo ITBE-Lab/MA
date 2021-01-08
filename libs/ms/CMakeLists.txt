@@ -195,7 +195,7 @@ else()
 endif()
 
 if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
-    message( "--libMS: WARNING cannot infer verison from git (maybe git.exe is not in your environment path?)" )
+    message( "--libMS: WARNING cannot infer version from git (maybe git.exe is not in your environment path?)" )
     set(MS_VERSION "Unknown")
 else()
     set(MS_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")

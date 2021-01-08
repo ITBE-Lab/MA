@@ -73,7 +73,7 @@ class SeedPlot:
                                           ("index", "@idx"),
                                           ("soc", "id:@soc_id, nt: @soc_nt"),
                                           ("reseeding", "layer:@layer, in_soc: @in_soc_reseed"),
-                                          ("filtered", "parlindrome: @parlindrome, overlapp: @overlapping"),
+                                          ("filtered", "palindrome: @palindrome, overlapp: @overlapping"),
                                           ("read MM count", "min: @min_filter, max: @max_filter")],
                                 names=['seeds'],
                                 name="Hover reads")
@@ -86,12 +86,12 @@ class SeedPlot:
 
     def update_selection(self, renderer):
         def highlight_seed(condition):
-            if len(self.seeds.data["c"]) > 0 and "parlindrome" in self.seeds.data:
+            if len(self.seeds.data["c"]) > 0 and "palindrome" in self.seeds.data:
                 repl_dict = copy.copy(self.seeds.data)
                 #max_seed_size = max(repl_dict["size"])
                 for idx, _ in enumerate(repl_dict["c"]):
                     if condition(idx):
-                        if repl_dict["parlindrome"][idx] or repl_dict["overlapping"][idx]:
+                        if repl_dict["palindrome"][idx] or repl_dict["overlapping"][idx]:
                             repl_dict["c"][idx] = "red"
                         elif repl_dict["f"][idx]: # on forward strand
                             if repl_dict["in_soc_reseed"][idx] and repl_dict["layer"][idx] == 0:

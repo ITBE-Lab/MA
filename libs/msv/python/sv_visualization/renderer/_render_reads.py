@@ -47,7 +47,7 @@ def render_reads(self, render_all=False):
         "oc": [],
         "f": [],
         "layer": [],
-        "parlindrome": [],
+        "palindrome": [],
         "overlapping": [],
         "in_soc_reseed": [],
         "soc_nt": [],
@@ -99,7 +99,7 @@ def render_reads(self, render_all=False):
                     read_dict["q"].append(seed_info.uiQ)
                     read_dict["idx"].append(seed_info.uiSeedOrderOnQuery)
                     read_dict["layer"].append(seed_info.uiLayer)
-                    read_dict["parlindrome"].append(seed_info.bParlindrome)
+                    read_dict["palindrome"].append(seed_info.bParlindrome)
                     read_dict["overlapping"].append(seed_info.bOverlapping)
                     read_dict["in_soc_reseed"].append(seed_info.bInSocReseed)
                     read_dict["soc_nt"].append(seed_info.soc_nt)

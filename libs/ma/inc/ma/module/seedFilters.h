@@ -1039,9 +1039,9 @@ template <bool WITH_SOC> class FilterOverlappingSoCs : public libMS::Module<Seed
 }; // class
 
 /**
- * @brief Filters a set of seeds removing all parlindrome seeds
+ * @brief Filters a set of seeds removing all palindrome seeds
  * @details
- * parlindrome seeds are two seeds that are crossing and on opposite strands.
+ * palindrome seeds are two seeds that are crossing and on opposite strands.
  * @ingroup module
  */
 class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
@@ -1151,7 +1151,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
     /**
      * @brief call this to keep all parlindrom seeds
      * @details
-     * calling this will discard all currently kept parlindromes and set up a datastructor to keep all future ones.
+     * calling this will discard all currently kept palindromes and set up a datastructor to keep all future ones.
      * @note Once this is called the module is no longer threadsave!
      */
     void keepParlindromes( )
@@ -1166,7 +1166,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
  * @brief
  * removes all parlindrom seeds
  * @details
- * Seeds that indicate parlindromes must be of opposite strands and cross each other.
+ * Seeds that indicate palindromes must be of opposite strands and cross each other.
  * This is a linesweep:
  * all seeds are rotated rightwards 45 degrees:
  *  - forward strand seeds are then horizontal lines
@@ -1187,7 +1187,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
  * The end of forward strand seed case is implemented via a heap that holds all open seeds ordered by their
  * endpoints on the x-axis.
  *
- * @todo O( n^2 ) with respect to the amount of parlindromes (can this be improved?)
+ * @todo O( n^2 ) with respect to the amount of palindromes (can this be improved?)
  *       O( n log n ) with respect to the amount of seeds.
  */
 #define DEBUG_CODE 0
@@ -1236,7 +1236,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
          * The line sweep is over the rotated x-axis.
          * - xForwStartIt: inserts a new seed into xIntervals once we pass the start of a forward strand seed on x-axis
          * - xHeap.front(): removes a seed from xIntervals once we pass the end of such a forward strand seed on x-axis
-         * - xRevIt: checks for parlindrome seeds via xIntervals (only iterator on reverse strand seeds)
+         * - xRevIt: checks for palindrome seeds via xIntervals (only iterator on reverse strand seeds)
          */
         while( xRevIt != pSeeds->end( ) )
         {
@@ -1321,7 +1321,7 @@ class ParlindromeFilter : public libMS::Module<Seeds, false, Seeds>
             pRet->push_back( *xForwStartIt );
             xForwStartIt++;
         } // while
-        // add the seeds in xIntervals that are no parlindromes to pRet
+        // add the seeds in xIntervals that are no palindromes to pRet
         for( auto xPair : xIntervals )
         {
             if( xPair.second )

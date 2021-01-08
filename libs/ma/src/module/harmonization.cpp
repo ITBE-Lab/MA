@@ -581,8 +581,8 @@ void exportHarmonization( libMS::SubmoduleOrganizer& xOrganizer )
     } );
 
     exportModule<ParlindromeFilter>( xOrganizer, "ParlindromeFilter", []( auto&& x ) {
-        x.def_readwrite( "parlindromes", &ParlindromeFilter::pParlindromes )
-            .def( "keep_parlindromes", &ParlindromeFilter::keepParlindromes );
+        x.def_readwrite( "palindromes", &ParlindromeFilter::pParlindromes )
+            .def( "keep_palindromes", &ParlindromeFilter::keepParlindromes );
     } );
 
     exportModule<Harmonization>( xOrganizer, "Harmonization" );

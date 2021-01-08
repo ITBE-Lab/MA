@@ -353,10 +353,10 @@ static inline void kswcpp_inner_core( const int qlen, // query length
 #ifdef OLD_CIGAR_MEMORY_MANAGMENT
     TP_DIFF_SCORE_UNSIGNED* mem2 = 0;
 #else
-    // allocate max. 5GB of array (for larger arrays use hash map instead)
+    // allocate max. 8GB of array (for larger arrays use hash map instead)
     // use chunks of 1.000 within the hash map in order to minimize buckets (we know that actually used indices occur
     // in sequence)
-    CIGARMemoryManager<TP_DIFF_VEC, 5> xMem;
+    CIGARMemoryManager<TP_DIFF_VEC, 8> xMem;
 #endif
 
     ksw_reset_extz( ez );

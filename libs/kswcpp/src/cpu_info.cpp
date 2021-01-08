@@ -9,7 +9,7 @@
 /* Initialize static member data */
 const CPU_Info::CPU_Info_Internal CPU_Info::xCPU_Rep;
 std::string sFilePrefix = "/MAdata/tmp/.CIGARMemoryManager";
-size_t uiKswHashTableGbMinSize = 90;
+size_t uiKswHashTableGbMinSize = 8;
 
 /* Export vendor and brand as const strings */
 const std::string& CPU_Info::sVendor = xCPU_Rep.sVendor;

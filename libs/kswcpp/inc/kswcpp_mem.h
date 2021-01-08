@@ -291,7 +291,7 @@ template <typename TP_KEY, typename TP_CONTENT, size_t NUM_CACHED> class CyclicF
     {
         if( uiCacheHits + uiCacheMisses > 0 )
             std::cout << "CyclicFileCache hits: " << uiCacheHits << " misses: " << uiCacheMisses << " = "
-                      << (100.0 * (double)uiCacheHits) / (double)( uiCacheHits + uiCacheMisses ) << "%" << std::endl;
+                      << ( 100.0 * (double)uiCacheHits ) / (double)( uiCacheHits + uiCacheMisses ) << "%" << std::endl;
         for( auto iKey : xInFile )
             remove( ( sPrefix + std::to_string( iKey ) ).c_str( ) );
     } // deconstructor
@@ -303,7 +303,8 @@ extern size_t uiKswHashTableGbMinSize;
 
 template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB> class CIGARMemoryManager
 {
-    static const int64_t CHUNK_SIZE = ( CHUNK_SIZE_GB * 1073741824 ) / sizeof( TP_DIFF_VEC );
+    // since there are 10 chunks divide final size by 10
+    static const int64_t CHUNK_SIZE = ( CHUNK_SIZE_GB * 107374182 ) / sizeof( TP_DIFF_VEC );
     void* mem2 = nullptr;
     TP_DIFF_VEC* p_pstruct = nullptr;
     int64_t iPROffset = 0;
@@ -333,10 +334,10 @@ template <typename TP_DIFF_VEC, int64_t CHUNK_SIZE_GB> class CIGARMemoryManager
         } // if
         else
         {
-            std::cout << "using filesystem because: " << uiSize * sizeof( TP_DIFF_VEC ) << " / "
-                      << uiKswHashTableGbMinSize * 1073741824 << " bytes are required." << std::endl;
-            std::cout << "that is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " / " << uiKswHashTableGbMinSize
-                      << " gigabytes." << std::endl;
+            std::cout << "using filesystem because " << uiSize * sizeof( TP_DIFF_VEC )
+                      << " bytes are required; but max. " << uiKswHashTableGbMinSize * 1073741824 << " allowed."
+                      << " That is " << uiSize * sizeof( TP_DIFF_VEC ) / 1073741824.0 << " (" << uiKswHashTableGbMinSize
+                      << ") gb." << std::endl;
 
             // zero initialize zero value
             xCache.init( sFilePrefix, []( std::vector<TP_DIFF_VEC>& rArr ) {
