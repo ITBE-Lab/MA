@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project("MS Lib" VERSION 1.1.1 DESCRIPTION "Modular Structure library")
+project("MS Lib" VERSION 2.0.0 DESCRIPTION "Modular Structure library")
 
 
 if( PythonLibs_FOUND )
