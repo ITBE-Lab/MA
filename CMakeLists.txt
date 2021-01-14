@@ -10,8 +10,9 @@ project("MA" VERSION 0.1 DESCRIPTION "MA - The Modular Aligner")
 # optional features
 option(WITH_PYTHON "Build python integration of libMS." ON)
 option(WITH_ZLIB "Build gz file readers using zlib." ON)
-option(WITH_DOCS "Build doxygen documentation." ON)
+option(WITH_DOCS "Build doxygen documentation." OFF)
 option(WITH_GUI "Build maGUI" OFF)
+option(WITH_DB "Build Database connector and dependant modules (required for MSV)." ON)
 
 # assert that the compiler knows c++17
 if ( NOT "cxx_std_17" IN_LIST CMAKE_CXX_COMPILE_FEATURES)

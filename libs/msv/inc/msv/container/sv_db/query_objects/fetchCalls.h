@@ -409,7 +409,7 @@ ORDER BY data_score DESC
                 vRet.emplace_back( xPair.first, pSvCallTable->numCalls( iSvCallerIdA, xPair.first ), uiNumGT - uiCnt );
             uiCnt += xPair.second;
         } // for
-        return std::pair( vRet, uiNumGT );
+        return std::pair<std::vector<std::tuple<double, uint32_t, uint32_t>>, uint32_t>( vRet, uiNumGT );
     } // method
 
 }; // namespace libMSV

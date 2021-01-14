@@ -7,6 +7,7 @@
  *      Test the C version of libpq, the PostgreSQL frontend library.
  */
 
+#ifdef WITH_DB
 // Then include the SQL common stuff that is currently below
 // #define SQL_VERBOSE
 #include <db_base.h>
@@ -19,15 +20,16 @@
 #include <stdlib.h>
 
 // General definition of the DB connection
-auto jDBConfig = json{{SCHEMA, {{NAME, "db_test"} /* , { FLAGS, { DROP_ON_CLOSURE } } */}},
+auto jDBConfig =
+    json{ { SCHEMA, { { NAME, "db_test" } /* , { FLAGS, { DROP_ON_CLOSURE } } */ } },
 // { TEMPORARY, true },
 #ifdef USE_PG
-                      {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "postgres"}, {PASSWORD, "admin"}, {PORT, 0}}}
+          { CONNECTION, { { HOSTNAME, "localhost" }, { USER, "postgres" }, { PASSWORD, "admin" }, { PORT, 0 } } }
 #endif
 #ifdef USE_MSQL
-                      {CONNECTION, {{HOSTNAME, "localhost"}, {USER, "root"}, {PASSWORD, "admin"}, {PORT, 0}}}
+          { CONNECTION, { { HOSTNAME, "localhost" }, { USER, "root" }, { PASSWORD, "admin" }, { PORT, 0 } } }
 #endif
-};
+    };
 
 template <typename DBConnector> void lowLevel( std::shared_ptr<DBConnector> pMySQLDB, size_t jobnr )
 {
@@ -54,16 +56,16 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
 
     {
         // json::array( { "WITHOUT ROWID" } )
-        json xTestTableDef = json{{TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr )},
-                                  {TABLE_COLUMNS,
-                                   {{{COLUMN_NAME, "Column_1"} /*, { CONSTRAINTS, "UNIQUE" } */},
-                                    {{COLUMN_NAME, "Column_2"}},
-                                    {{COLUMN_NAME, "BlobColum"}},
-                                    {{COLUMN_NAME, "TextColumn"}},
-                                    {{COLUMN_NAME, "Col_uint32_t"}}}},
-                                  {SQLITE_EXTRA, {"WITHOUT ROWID"}},
-                                  {CPP_EXTRA, {"DROP ON DESTRUCTION"}}
-                                  /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+        json xTestTableDef = json{ { TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr ) },
+                                   { TABLE_COLUMNS,
+                                     { { { COLUMN_NAME, "Column_1" } /*, { CONSTRAINTS, "UNIQUE" } */ },
+                                       { { COLUMN_NAME, "Column_2" } },
+                                       { { COLUMN_NAME, "BlobColum" } },
+                                       { { COLUMN_NAME, "TextColumn" } },
+                                       { { COLUMN_NAME, "Col_uint32_t" } } } },
+                                   { SQLITE_EXTRA, { "WITHOUT ROWID" } },
+                                   { CPP_EXTRA, { "DROP ON DESTRUCTION" } }
+                                   /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
         // {CPP_EXTRA, "DROP ON DESTRUCTION"}};
         // std::cout << std::setw( 2 ) << xTestTableLibIncrDef << std::endl;
         SQLTableWithLibIncrPriKey<DBConnector, int, int, int, std::string, uint32_t> xTestTable( pMySQLDB,
@@ -80,7 +82,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
 
             // SomeBlobType blob;
             {
-                metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
+                metaMeasureAndLogDuration<true>( "BulkInserter required time:", [ & ]( ) {
                     auto xBulkInserter = xTestTable.template getBulkInserter<1000>( );
                     for( int i = 0; i < numValues; i++ )
                         xBulkInserter->insert( i, 4, i, text, std::numeric_limits<uint32_t>::max( ) );
@@ -98,15 +100,15 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         } // scope transaction
 
         // json::array( { "WITHOUT ROWID" } )
-        json xTestTableAutoIncrDef = json{{TABLE_NAME, "TEST_TABLE_AUOINCR" + std::to_string( jobnr )},
-                                          {TABLE_COLUMNS,
-                                           {
-                                               {{COLUMN_NAME, "Column1"} /*, { CONSTRAINTS, "UNIQUE" } */},
-                                               {{COLUMN_NAME, "Column2"} /*, { CONSTRAINTS, "UNIQUE" } */},
-                                           }},
-                                          {SQLITE_EXTRA, {"WITHOUT ROWID"}}
-                                          // , { CPP_EXTRA, { "DROP ON DESTRUCTION" } }
-                                          /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+        json xTestTableAutoIncrDef = json{ { TABLE_NAME, "TEST_TABLE_AUOINCR" + std::to_string( jobnr ) },
+                                           { TABLE_COLUMNS,
+                                             {
+                                                 { { COLUMN_NAME, "Column1" } /*, { CONSTRAINTS, "UNIQUE" } */ },
+                                                 { { COLUMN_NAME, "Column2" } /*, { CONSTRAINTS, "UNIQUE" } */ },
+                                             } },
+                                           { SQLITE_EXTRA, { "WITHOUT ROWID" } }
+                                           // , { CPP_EXTRA, { "DROP ON DESTRUCTION" } }
+                                           /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
         // {CPP_EXTRA, "DROP ON DESTRUCTION"}};
         // std::cout << std::setw( 2 ) << xTestTableLibIncrDef << std::endl;
         SQLTableWithAutoPriKey<DBConnector, double, std::string> xTestTableAutoIncr( pMySQLDB, xTestTableAutoIncrDef );
@@ -114,7 +116,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         // SomeBlobType blob;
         {
             auto pTrxnGuard = pMySQLDB->uniqueGuardedTrxn( );
-            metaMeasureAndLogDuration<true>( "BulkInserter required time:", [&]( ) {
+            metaMeasureAndLogDuration<true>( "BulkInserter required time:", [ & ]( ) {
                 auto xBulkInserter = xTestTableAutoIncr.template getBulkInserter<10>( );
                 for( int i = 0; i < numValues; i++ )
                     xBulkInserter->insert( 3.5, "Hello World" );
@@ -125,7 +127,7 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
         SQLQuery<DBConnector, double, std::string> xQuery( pMySQLDB, "SELECT Column1, Column2 FROM TEST_TABLE_AUOINCR" +
                                                                          std::to_string( jobnr ) + " WHERE id=?" );
         xQuery.execAndForAll(
-            [&]( double iCell, const std::string& rString ) { std::cout << iCell << " " << rString << std::endl; }, 2
+            [ & ]( double iCell, const std::string& rString ) { std::cout << iCell << " " << rString << std::endl; }, 2
             /* , std::string("Column1") */ );
 
         std::cout << "Do ImmediateQueryTmpl Test:" << std::endl;
@@ -339,53 +341,54 @@ template <typename DBConnector> void checkDB( std::shared_ptr<DBConnector> pMySQ
 
 void tableCreationTest1( std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr )
 {
-    json xTestTableDef = json{{TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr )},
-                              {TABLE_COLUMNS,
-                               {{{COLUMN_NAME, "INT_COL_1"} /*, { CONSTRAINTS, "UNIQUE" } */},
-                                {{COLUMN_NAME, "INT_COL_2"}},
-                                {{COLUMN_NAME, "INT_COL_3"}},
-                                {{COLUMN_NAME, "STRING_COL"}},
-                                {{COLUMN_NAME, "UINT32T_COL"}}}},
-                              {CPP_EXTRA, {"DROP ON DESTRUCTION"}}
-                              /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+    json xTestTableDef = json{ { TABLE_NAME, "TEST_TABLE" + std::to_string( jobnr ) },
+                               { TABLE_COLUMNS,
+                                 { { { COLUMN_NAME, "INT_COL_1" } /*, { CONSTRAINTS, "UNIQUE" } */ },
+                                   { { COLUMN_NAME, "INT_COL_2" } },
+                                   { { COLUMN_NAME, "INT_COL_3" } },
+                                   { { COLUMN_NAME, "STRING_COL" } },
+                                   { { COLUMN_NAME, "UINT32T_COL" } } } },
+                               { CPP_EXTRA, { "DROP ON DESTRUCTION" } }
+                               /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
     SQLTableWithLibIncrPriKey<SQLDB<DBConn>, int, int, int, std::string, uint32_t> xTestTable( pDBConn, xTestTableDef );
 } // test function
 
 void tableCreationTest2( std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr )
 {
-    json xTestTableDef = json{{TABLE_NAME, "TEST_TABLE"},
-                              {TABLE_COLUMNS,
-                               {{{COLUMN_NAME, "INT_COL_1"}},
-                                {{COLUMN_NAME, "INT_COL_2"}},
-                                {{COLUMN_NAME, "INT_COL_3"}},
-                                {{COLUMN_NAME, "STRING_COL"}},
-                                {{COLUMN_NAME, "UINT32T_COL"}}}} //,
-                              //{ CPP_EXTRA, { "DROP ON DESTRUCTION" } }
-                              /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+    json xTestTableDef = json{ { TABLE_NAME, "TEST_TABLE" },
+                               { TABLE_COLUMNS,
+                                 { { { COLUMN_NAME, "INT_COL_1" } },
+                                   { { COLUMN_NAME, "INT_COL_2" } },
+                                   { { COLUMN_NAME, "INT_COL_3" } },
+                                   { { COLUMN_NAME, "STRING_COL" } },
+                                   { { COLUMN_NAME, "UINT32T_COL" } } } } //,
+                               //{ CPP_EXTRA, { "DROP ON DESTRUCTION" } }
+                               /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
     SQLTableWithLibIncrPriKey<SQLDB<DBConn>, int, int, int, std::string, uint32_t> xTestTable( pDBConn, xTestTableDef );
 } // test function
 
 void tableCreationTest3( std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr )
 {
-    json xTestTableDef = json{{TABLE_NAME, "TEST_TABLE"},
-                              {TABLE_COLUMNS,
-                               {{{COLUMN_NAME, "INT_COL_1"}},
-                                {{COLUMN_NAME, "INT_COL_2"}},
-                                {{COLUMN_NAME, "INT_COL_3"}},
-                                {{COLUMN_NAME, "STRING_COL"}},
-                                {{COLUMN_NAME, "UINT32T_COL"}}}},
-                              {CPP_EXTRA, {"DROP ON DESTRUCTION"}}
-                              /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+    json xTestTableDef = json{ { TABLE_NAME, "TEST_TABLE" },
+                               { TABLE_COLUMNS,
+                                 { { { COLUMN_NAME, "INT_COL_1" } },
+                                   { { COLUMN_NAME, "INT_COL_2" } },
+                                   { { COLUMN_NAME, "INT_COL_3" } },
+                                   { { COLUMN_NAME, "STRING_COL" } },
+                                   { { COLUMN_NAME, "UINT32T_COL" } } } },
+                               { CPP_EXTRA, { "DROP ON DESTRUCTION" } }
+                               /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
     SQLTableWithLibIncrPriKey<SQLDB<DBConn>, int, int, int, std::string, uint32_t> xTestTable( pDBConn, xTestTableDef );
 } // test function
 
 void textNullPtrInsertion( std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr )
 {
     json xTestTableDef = json{
-        {TABLE_NAME, "TEST_TABLE"},
-        {TABLE_COLUMNS, {{{COLUMN_NAME, "INT_COL_1"}}, {{COLUMN_NAME, "INT_COL_2"}}, {{COLUMN_NAME, "INT_COL_3"}}}} //,
+        { TABLE_NAME, "TEST_TABLE" },
+        { TABLE_COLUMNS,
+          { { { COLUMN_NAME, "INT_COL_1" } }, { { COLUMN_NAME, "INT_COL_2" } }, { { COLUMN_NAME, "INT_COL_3" } } } } //,
         //{ CPP_EXTRA, { "DROP ON DESTRUCTION" } }
-        /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */}; // ,
+        /* { SQL_EXTRA, { "INSERT NULL ON", 3 } } */ }; // ,
     SQLTableWithLibIncrPriKey<SQLDB<DBConn>, int, int, int> xTestTable( pDBConn, xTestTableDef );
 
     xTestTable.insertNonSafe( nullptr, 4, 6 );
@@ -401,8 +404,9 @@ void selectOnTextColumn( std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr )
                                                     std::string // read sequence
                                                     >;
     const json jReadTableDef = {
-        {TABLE_NAME, "read_table"},
-        {TABLE_COLUMNS, {{{COLUMN_NAME, "sequencer_id"}}, {{COLUMN_NAME, "_name_"}}, {{COLUMN_NAME, "sequence"}}}}};
+        { TABLE_NAME, "read_table" },
+        { TABLE_COLUMNS,
+          { { { COLUMN_NAME, "sequencer_id" } }, { { COLUMN_NAME, "_name_" } }, { { COLUMN_NAME, "sequence" } } } } };
 
     ReadTableType xTable( pDBConn, jReadTableDef );
 
@@ -410,10 +414,11 @@ void selectOnTextColumn( std::shared_ptr<SQLDB<DBConn>> pDBConn, size_t jobnr )
         pDBConn, "SELECT COUNT(*) FROM read_table WHERE sequencer_id = ? AND _name_ = ? " );
 
     for( int i = 0; i < 100; i++ )
-        xTable.insert( i, std::string("m150417_101358_00127_c100782972550000001823173608251533_s1_p0/105488/0_27221"), std::string("dummy") );
+        xTable.insert( i, std::string( "m150417_101358_00127_c100782972550000001823173608251533_s1_p0/105488/0_27221" ),
+                       std::string( "dummy" ) );
 
     std::cout << xGetNumMatchingReads.scalar(
-                     1, std::string("m150417_101358_00127_c100782972550000001823173608251533_s1_p0/105488/0_27221") )
+                     1, std::string( "m150417_101358_00127_c100782972550000001823173608251533_s1_p0/105488/0_27221" ) )
               << std::endl;
 }
 
@@ -426,9 +431,9 @@ int test_in_pool( size_t uiPoolSize, const std::function<void( std::shared_ptr<S
             SQLDBConPool<DBConn> xDBPool( uiPoolSize, jDBConfig );
             for( int i = 0; i < uiPoolSize; i++ )
                 // type behind auto: std::shared_ptr<SQLDBConPool<MySQLConDB>::PooledSQLDBCon>
-                vFutures.push_back( xDBPool.enqueue( [&rfTestFun]( auto pDBCon ) {
+                vFutures.push_back( xDBPool.enqueue( [ &rfTestFun ]( auto pDBCon ) {
                     doNoExcept(
-                        [&rfTestFun, &pDBCon] {
+                        [ &rfTestFun, &pDBCon ] {
                             // pDBCon->doPoolSafe( [ & ] {
                             //     std::cout << "Thread:" << pDBCon->getTaskId( ) << " performs test" << std::endl;
                             // } );
@@ -441,7 +446,7 @@ int test_in_pool( size_t uiPoolSize, const std::function<void( std::shared_ptr<S
 
         // Get all futures for catching forwarded exceptions
         for( auto& rFurture : vFutures )
-            doNoExcept( [&] { rFurture.get( ); } );
+            doNoExcept( [ & ] { rFurture.get( ); } );
     } // try
     catch( std::runtime_error& e )
     {
@@ -531,3 +536,5 @@ std::cout << "Database test finished successfully." << std::endl;
 return 0;
 #endif
 } // main
+
+#endif

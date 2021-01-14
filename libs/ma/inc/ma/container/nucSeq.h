@@ -11,10 +11,13 @@
 #include <cstring>
 #include <memory>
 #include <numeric>
+#include <chrono>
 /// @endcond
 
 #include "ma/container/seed.h"
+#ifdef WITH_DB
 #include <db_base.h> // import database support
+#endif
 
 namespace libMA
 {
@@ -815,6 +818,7 @@ class NucSeq : public libMS::Container
     } // method
 }; // class NucSeq
 
+#ifdef WITH_DB
 /** @brief Compressed representation of nucleotide sequences without quality information.
  *  @details
  *  Header: uint64 value that tells the size of the uncompressed sequence.
@@ -1148,8 +1152,11 @@ inline std::shared_ptr<CompressedNucSeq> makeSharedCompNucSeq( const std::shared
     return makeSharedCompNucSeq( *pNucSeq );
 } // function
 
+#endif
+
 } // namespace libMA
 
+#ifdef WITH_MYSQL
 inline std::string buf_to_hex( char* pBuf, size_t uiSize )
 {
     static const char hex_digits[] = "0123456789ABCDEF";
@@ -1430,6 +1437,7 @@ template <> struct PGRowCell<libMA::NucSeqSql> : public PGRowCellBase<libMA::Nuc
         pCellValue->pNucSeq = nullptr; // read 'Null' table entry
     } // method
 }; // specialized class
+#endif
 #endif
 
 

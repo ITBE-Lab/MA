@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <mutex>
 #include <queue>
+#include <chrono>
 
 namespace libMS
 {

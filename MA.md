@@ -45,7 +45,8 @@ Get the github clone and use cmake (at least version 3.8) for building. This can
     git clone https://github.com/ITBE-Lab/MA
     mkdir build
     cd build
-    cmake ../MA/
+    # see section Python Integration and WITH_DB below
+    cmake -DWITH_DB=OFF -DWITH_PYTHON=OFF ../MA/
     make
 
 ### Bioconda
@@ -97,6 +98,11 @@ since Python is only responsible for an initial C++-module
 coupling, while all actual computations are done within the C++-modules. The idea is similar 
 to the one used in the context of [TensorFlow](https://www.tensorflow.org "TensorFlow").
 The Python integration has to be enabled using `-DWITH_PYTHON=ON`.
+
+### WITH_DB
+
+[MSV - The Modular SV Caller](MSV.md "MSV GitHub Page") relies on a PostgreSQL Database.
+This DB is not required for MA and can therefore be disabled while compiling MA.
 
 ### zLib Support
 For getting zLib support cmake has to find the appropriate zLib libraries.

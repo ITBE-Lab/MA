@@ -1,5 +1,8 @@
 #include "ms/container/sv_db/pool_container.h"
 
+
+#ifdef WITH_DB
+
 using namespace libMS;
 
 #ifdef WITH_PYTHON
@@ -25,3 +28,5 @@ void exportPoolContainer( SubmoduleOrganizer& xOrganizer )
         .def( "drop_schema", &DBConSingle::dropSchema );
 } // function
 #endif // WITH_PYTHON
+
+#endif // WITH_DB

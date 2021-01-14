@@ -1,6 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #define DO_ERROR ( 0 )
 

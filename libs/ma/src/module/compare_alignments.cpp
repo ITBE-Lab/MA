@@ -1,11 +1,11 @@
 #include "ma/module/compare_alignments.h"
-#include "ms/util/pybind11.h"
-#include <pybind11/stl.h>
 
 using namespace libMA;
 using namespace libMS;
 
 #ifdef WITH_PYTHON
+#include "ms/util/pybind11.h"
+#include <pybind11/stl.h>
 
 void exportCompareAlignments( libMS::SubmoduleOrganizer& xOrganizer )
 {

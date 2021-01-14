@@ -1,4 +1,3 @@
-
 #include "ma/container/nucSeq.h"
 #include "ma/container/pack.h"
 #include "ma/container/segment.h"

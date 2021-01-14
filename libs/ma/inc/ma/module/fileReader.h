@@ -645,7 +645,7 @@ class ProgressPrinter : public libMS::Module<libMS::Container, false, libMS::Con
             std::cout << "Open files:" << std::endl;
             size_t uiRemaining = 0;
             size_t uiDone = 0;
-            pQueue->iter( [&]( auto pStream ) {
+            pQueue->iter( [ & ]( auto pStream ) {
                 std::lock_guard<std::mutex> xLock2( pStream->xMutex );
                 if( pStream->tellg( ) == 0 )
                     uiRemaining++;

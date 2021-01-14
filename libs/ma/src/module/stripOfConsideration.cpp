@@ -9,9 +9,8 @@ using namespace libMA;
 using namespace libMS;
 
 
-std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute( std::shared_ptr<Seeds> pSeeds,
-                                                                      std::shared_ptr<NucSeq> pQuerySeq,
-                                                                      std::shared_ptr<Pack> pRefSeq )
+std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
+    std::shared_ptr<Seeds> pSeeds, std::shared_ptr<NucSeq> pQuerySeq, std::shared_ptr<Pack> pRefSeq )
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )

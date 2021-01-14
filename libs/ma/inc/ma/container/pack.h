@@ -13,6 +13,10 @@
 
 #define FASTA_READER
 
+#include <chrono>
+#include <type_traits>
+#include <cstdint>
+
 #include "ma/container/nucSeq.h"
 
 #ifdef FASTA_READER

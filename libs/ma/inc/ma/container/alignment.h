@@ -9,6 +9,7 @@
 
 #include "ma/container/segment.h"
 #include <sstream>
+#include <cmath>
 
 #define MULTIPLE_SEGMENTS_IN_TEMPLATE 0x001
 #define SEGMENT_PROPERLY_ALIGNED 0x002

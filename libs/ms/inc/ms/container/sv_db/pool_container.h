@@ -3,6 +3,7 @@
  * @brief implements libMS::PoolContainer a container that holds a connection to a database.
  * @author Markus Schmidt
  */
+#ifdef WITH_DB
 #pragma once
 
 #include "db_con_pool.h"
@@ -46,4 +47,5 @@ template <class DBCon> class PoolContainer : public Container
 
 void exportPoolContainer( libMS::SubmoduleOrganizer& xOrganizer );
 
+#endif
 #endif

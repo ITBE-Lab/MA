@@ -98,7 +98,9 @@ PYBIND11_MODULE( libMS, libMsModule )
     exportParameter( xOrganizer );
     exportContainer( xOrganizer );
     exportModuleClass( xOrganizer );
+#ifdef WITH_DB
     exportPoolContainer( xOrganizer );
+#endif
 } // function
 
 #endif
