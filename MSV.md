@@ -1,5 +1,5 @@
 # MSV - The Modular SV Caller
-MSV is the prototype of a SV caller that shall demonstrate the viability of the approaches proposed in the manuscript [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://@todo.com "") Currently, this prototype is usable with small genomes but not ready for the use with large genomes as e.g. the human genome. Further, it does not deliver calls in the VCF format but stores computed adjacency matrix entries in a database instead. 
+MSV is the prototype of a SV caller that shall demonstrate the viability of the approaches proposed in the manuscript [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://biorxiv.org/cgi/content/short/2021.01.12.426317v1 "bioRxiv preprint") Currently, this prototype is usable with small genomes but not ready for the use with large genomes as e.g. the human genome. Further, it does not deliver calls in the VCF format but stores computed adjacency matrix entries in a database instead. 
 
 ## Algorithmic Approach
 MSV breaks with the state-of-the-art approach for SV calling in two ways:
@@ -79,5 +79,5 @@ For computing recall & accuracy, adjust the Blur setting slider in the bottom ri
 After adjusting the slider, click the button "Compute Stats", which is the fourth button above the slider. After some time, the curves appear in the plot window below the slider. Using the tabs on top of the plot window, you can switch between the raw numbers (Tab “Min Score”) and the recall & accuracy rates (Tab “Recall & Accuracy”). You can zoom into the plots using the mouse wheel. Note: You must be zoomed in enough to see individual adjacency matrix entry crosses and ground-truth circles for computing recall & accuracy.
 
 ## Recreating the experiments of the manuscript
-The experiments of [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://@todo.com "")
+The experiments of [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://biorxiv.org/cgi/content/short/2021.01.12.426317v1 "bioRxiv preprint")
 can be recreated using the [MSV-EVAL repository](https://github.com/ITBE-Lab/MSV-EVAL "MSV-EVAL").
