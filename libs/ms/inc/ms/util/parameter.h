@@ -515,7 +515,7 @@ const std::pair<size_t, std::string> SOC_PARAMETERS = std::make_pair( 2, "Strip 
 const std::pair<size_t, std::string> PAIRED_PARAMETERS = std::make_pair( 0, "Paired Reads" );
 const std::pair<size_t, std::string> SAM_PARAMETERS = std::make_pair( 3, "SAM Output" );
 const std::pair<size_t, std::string> GENERAL_PARAMETER = std::make_pair( 0, "General Parameter" );
-const std::pair<size_t, std::string> SV_PARAMETERS = std::make_pair( 6, "SV Parameter" );
+const std::pair<size_t, std::string> SV_PARAMETERS = std::make_pair( 6, "SV Parameter - ONLY RELEVANT FOR MSV" );
 
 
 class Presetting : public ParameterSetBase
@@ -567,16 +567,13 @@ class Presetting : public ParameterSetBase
     // @todo depre start
     AlignerParameterPointer<int> xMaxDeltaDistanceInCLuster; // maximal distance between clusters
     AlignerParameterPointer<int> xPaddingReSeeding; // re seeding padding
-    AlignerParameterPointer<int> xNSoCs; // number of SoCs for SV analysis
     // @todo depre end
-    AlignerParameterPointer<int> xSecSeedSize; // maximal distance between clusters
     AlignerParameterPointer<int> xMinSeedSizeSV; // minimal seed size for the sv caller
     AlignerParameterPointer<int> xMaxAmbiguitySv; // max seed ambiguity for the sv caller
     AlignerParameterPointer<bool> xDoDummyJumps; // compute dummy jumps for first & last seed of read
     AlignerParameterPointer<int> xMinDistDummy; // minimal distance for seeds from read edge for dummy jumps
     AlignerParameterPointer<int> xMaxDistDummy; // minimal distance for seeds from read edge for dummy jumps
     AlignerParameterPointer<bool> xRevCompPairedReadMates; // reverse complement all paried read mates
-    AlignerParameterPointer<bool> xDoMateJumps; // compute jumps between paired reads
     AlignerParameterPointer<int> xMaxSizeReseed; // minimal edge size for which we reseed
     AlignerParameterPointer<int> xMinSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
     AlignerParameterPointer<int> xMaxSizeEdge; // minimal edge size for which we keep the edge (runtime improvement)
@@ -762,27 +759,64 @@ class Presetting : public ParameterSetBase
                                       SV_PARAMETERS, 200, checkPositiveValue ),
           xPaddingReSeeding( this, "re seeding padding", "padding for re seeding", SV_PARAMETERS, 100,
                              checkPositiveValue ),
-          xNSoCs( this, "Number of SoC's for SV calling", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
           // new SV
-          xSecSeedSize( this, "k-mer size", "k-mer size for reseeding", SV_PARAMETERS, 10, checkPositiveValue ),
-          xMinSeedSizeSV( this, "Minimal Seed Size SV", "@todo", SV_PARAMETERS, 18, checkPositiveValue ),
-          xMaxAmbiguitySv( this, "Maximal Ambiguity SV", "@todo", SV_PARAMETERS, 10000, checkPositiveValue ),
-          xDoDummyJumps( this, "Do Dummy Jumps", "@todo", SV_PARAMETERS, true ),
-          xMinDistDummy( this, "Minimal Dummy Distance", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
-          xMaxDistDummy( this, "Maximal Dummy Distance", "@todo", SV_PARAMETERS, 60, checkPositiveValue ),
-          xRevCompPairedReadMates( this, "Paired Mate - Mate Pair", "@todo", SV_PARAMETERS, true ),
-          xDoMateJumps( this, "Do Mate Jumps", "@todo", SV_PARAMETERS, false ),
-          xMaxSizeReseed( this, "Max Size Reseed", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
-          xMinSizeEdge( this, "Min Size Edge", "@todo", SV_PARAMETERS, 0, checkPositiveValue ),
-          xMaxSizeEdge( this, "Max Size Edge", "@todo", SV_PARAMETERS, 0, checkPositiveValue ),
-          xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "@todo", SV_PARAMETERS, 50, checkPositiveValue ),
-          xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
-          xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "@todo", SV_PARAMETERS, 20, checkPositiveValue ),
-          xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "@todo", SV_PARAMETERS, 10, checkPositiveValue ),
-          xMMFilterMaxOcc( this, "Max Occ MM Filter", "@todo", SV_PARAMETERS, 200, checkPositiveValue ),
-          xMinNtInSoc( this, "Min NT in SoC", "@todo", SV_PARAMETERS, 150, checkPositiveValue ),
-          xMinNtAfterReseeding( this, "Min NT after reseeding", "@todo", SV_PARAMETERS, 100, checkPositiveValue ),
-          xMinReadsInCall( this, "Min Reads in call", "@todo", SV_PARAMETERS, 2, checkPositiveValue ),
+          xMinSeedSizeSV(
+              this, "Minimal Seed Size SV",
+              "All seeds with size smaller than 'minimal seed length' are discarded.",
+              SV_PARAMETERS, 18, checkPositiveValue ),
+          xMaxAmbiguitySv( this, "Maximal Ambiguity SV",
+                           "Discard seeds that occur more than 'Maximal ambiguity' time on the reference. Set "
+                           "this option to zero in order to disable it."
+                           "Only relevant for MSV.",
+                           SV_PARAMETERS, 10000, checkPositiveValue ),
+          xDoDummyJumps( this, "Do Dummy Jumps",
+                         "Compute edges that connect to the sentinel vertex.", SV_PARAMETERS,
+                         true ),
+          xMinDistDummy(
+              this, "Minimal Dummy Distance",
+              "Keep edges that connect to the sentinel vertex only if their seed is at least <val> nt away from "
+              "the read's ends.",
+              SV_PARAMETERS, 50, checkPositiveValue ),
+          xMaxDistDummy(
+              this, "Maximal Dummy Distance",
+              "Keep edges that connect to the sentinel vertex only if their seed is less than <val> nt away from "
+              "the read's ends.",
+              SV_PARAMETERS, 60, checkPositiveValue ),
+          xRevCompPairedReadMates(
+              this, "Paired Mate - Mate Pair",
+              "Reverse complement sequences of mates while inserting into DB.", SV_PARAMETERS,
+              true ),
+          xMaxSizeReseed( this, "Max Size Reseed",
+                          "Reseeding rectangles are limited to a width and height of <val>.",
+                          SV_PARAMETERS, 50, checkPositiveValue ),
+          xMinSizeEdge(
+              this, "Min Size Edge",
+              "Discard all matrix entries that connect breakends closer than <val> nt.",
+              SV_PARAMETERS, 0, checkPositiveValue ),
+          xMaxSizeEdge( this, "Max Size Edge",
+                        "Discard all matrix entries that connect breakends further apart than <val> nt.  Set this "
+                        "option to zero in order to disable it.",
+                        SV_PARAMETERS, 0, checkPositiveValue ),
+          xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "- unused -", SV_PARAMETERS, 50, checkPositiveValue ),
+          xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "- unused -", SV_PARAMETERS, 10, checkPositiveValue ),
+          xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "- unused -", SV_PARAMETERS, 20,
+                                       checkPositiveValue ),
+          xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "- unused -", SV_PARAMETERS, 10, checkPositiveValue ),
+          xMMFilterMaxOcc(
+              this, "Max Occ MM Filter",
+              "Maximal number of occurrences for a k-mer during the filtering on reads.",
+              SV_PARAMETERS, 200, checkPositiveValue ),
+          xMinNtInSoc( this, "Min NT in SoC",
+                       "Discard all SoCs with a lower accumulative size of seeds than <val> (before reseeding). Only "
+                       "relevant for MSV.",
+                       SV_PARAMETERS, 150, checkPositiveValue ),
+          xMinNtAfterReseeding( this, "Min NT after reseeding",
+                                "Discard all SoCs with a lower accumulative size of seeds than <val> (after "
+                                "reseeding).",
+                                SV_PARAMETERS, 100, checkPositiveValue ),
+          xMinReadsInCall( this, "Min Reads in call",
+                           "Keep all SV-calls that are supported by at least <val> reads.",
+                           SV_PARAMETERS, 2, checkPositiveValue ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -844,9 +878,9 @@ class Presetting : public ParameterSetBase
           xDisableHeuristics( this, "Disable All Heuristics",
                               "Disables all runtime heuristics. (For debugging purposes)", HEURISTIC_PARAMETERS,
                               false ),
-          xMinimizerK( this, "Minimizers - k", "@todo", MINIMIZER_PARAMETERS, 15 ),
-          xMinimizerW( this, "Minimizers - w", "@todo", MINIMIZER_PARAMETERS, 10 ),
-          xMinimizerFlag( this, "Minimizers - flag", "@todo", MINIMIZER_PARAMETERS, 0 ),
+          xMinimizerK( this, "Minimizers - k", "Sequence size of minimizers", MINIMIZER_PARAMETERS, 15 ),
+          xMinimizerW( this, "Minimizers - w", "Window size of minimizers", MINIMIZER_PARAMETERS, 10 ),
+          xMinimizerFlag( this, "Minimizers - flag", "Flags for minimizers", MINIMIZER_PARAMETERS, 0 ),
           xMinimizerBucketBits( this, "Minimizers - bucket_bits", "@todo", MINIMIZER_PARAMETERS, 14 ),
           xMinimizerMiniBatchSize( this, "Minimizers - mini_batch_size", "@todo", MINIMIZER_PARAMETERS, 50000000 ),
           xMinimizerBatchSize( this, "Minimizers - batch_size", "@todo", MINIMIZER_PARAMETERS, 4000000000ULL )
@@ -987,11 +1021,13 @@ class GlobalParameter : public ParameterSetBase
 
     /* Constructor */
     GlobalParameter( )
-        : xJumpS( this, "fuzziness-s", "@todo", SV_PARAMETERS, 200 ),
-          xJumpSNeg( this, "fuzziness-s-neg", "@todo", SV_PARAMETERS, 200 ),
-          xJumpM( this, "fuzziness-m", "@todo", SV_PARAMETERS, 0.5 ),
-          xJumpH( this, "fuzziness-h", "@todo", SV_PARAMETERS, 25 ),
-          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "@todo", SV_PARAMETERS, 3, checkPositiveValue ),
+        : xJumpS( this, "fuzziness-s", "Maximal fuzziness for entries.", SV_PARAMETERS, 200 ),
+          xJumpSNeg( this, "fuzziness-s-neg", "Maximal fuzziness for entries.", SV_PARAMETERS,
+                     200 ),
+          xJumpM( this, "fuzziness-m", "Fuzziness slope.", SV_PARAMETERS, 0.5 ),
+          xJumpH( this, "fuzziness-h", "Fuzziness zero-point.", SV_PARAMETERS, 25 ),
+          xSeedDirFuzziness( this, "Seed Dir Fuzziness", "Absolute fuzziness in seed direction.", SV_PARAMETERS, 3,
+                             checkPositiveValue ),
           // DP:
           iMatch( this, "Match Score",
                   "Match score. (Used in the context of Dynamic Programming and for SoC width computation.)",

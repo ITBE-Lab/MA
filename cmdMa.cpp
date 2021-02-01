@@ -31,8 +31,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ma/container/pack.h"
 #include "ma/module/fileReader.h"
 #include "ma/module/fileWriter.h"
-#include "ma/util/export.h"
 #include "ma/util/execution-context.h"
+#include "ma/util/export.h"
 #include "ms/util/version.h"
 #include "util/debug.h"
 
@@ -193,6 +193,10 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
         // other options
         for( auto xPair : xCompleteMap )
         {
+            if( xPair.first == MINIMIZER_PARAMETERS || xPair.first == SV_PARAMETERS )
+                // Do not print MSV options
+                // Minimizers currently not accessible fo maCMD
+                continue;
             std::cout << xPair.first.second << " options:" << std::endl;
             // give out options sorted by name
             std::sort( xPair.second.begin( ),
@@ -393,7 +397,7 @@ int main( int argc, char* argv[] )
 
         std::pair<int, double> xPreviousProgress = std::make_pair( -1, 0 );
         std::cout << "starting alignment." << std::endl;
-        xExecutionContext.doAlign( [&] //
+        xExecutionContext.doAlign( [ & ] //
                                    ( double dProgress, int iCurrFile, int iFilesTotal ) //
                                    {
                                        dProgress = (int)( dProgress * 10 );
