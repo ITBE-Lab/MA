@@ -74,14 +74,17 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
                                                                     pPack,
                                                                 std::shared_ptr<Pledge<FMIndex>>
                                                                     pFMDIndex,
-                                                                std::shared_ptr<Pledge<NucSeq, true>>
-                                                                    pQueries,
+                                                                std::shared_ptr<Pledge<FileStreamQueue, false>>
+                                                                    pQueue,
                                                                 std::shared_ptr<TP_WRITER>
                                                                     pWriter,
                                                                 unsigned int uiThreads )
 {
     // set up the modules
-    auto pLock = std::make_shared<Lock<NucSeq>>( rParameters );
+    auto pFileStreamPicker = std::make_shared<QueuePicker<FileStream>>( rParameters );
+    auto pLock = std::make_shared<Lock<FileStream>>( rParameters );
+    auto pFileReader = std::make_shared<FileReader>( rParameters );
+    auto pFileStreamPlacer = std::make_shared<QueuePlacer<NucSeq, FileStream>>( rParameters );
     auto pSeeding = std::make_shared<BinarySeeding>( rParameters );
     auto pSOC = std::make_shared<StripOfConsideration>( rParameters );
     auto pHarmonization = std::make_shared<Harmonization>( rParameters );
@@ -89,11 +92,15 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
     auto pMappingQual = std::make_shared<MappingQuality>( rParameters );
     auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
     auto pCast = std::make_shared<Cast<SuffixArrayInterface, FMIndex>>( rParameters );
+    auto pProgressPrinter = std::make_shared<ProgressPrinter<FileStreamQueue>>( rParameters );
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
     BasePledge::parallelGraph( uiThreads, [&]( ) {
-        auto pQuery = promiseMe( pLock, pQueries );
+        auto pPickedFile = promiseMe( pFileStreamPicker, pQueue );
+        auto pLockedFile = promiseMe( pLock, pPickedFile );
+        auto pQuery_ = promiseMe( pFileReader, pLockedFile );
+        auto pQuery = promiseMe( pFileStreamPlacer, pQuery_, pLockedFile, pQueue );
         auto pSeeds = promiseMe( pSeeding, promiseMe( pCast, pFMDIndex ), pQuery );
         auto pSOCs = promiseMe( pSOC, pSeeds, pQuery, pPack, pFMDIndex );
         auto pHarmonized = promiseMe( pHarmonization, pSOCs, pQuery, pFMDIndex );
@@ -103,15 +110,17 @@ std::vector<std::shared_ptr<BasePledge>> libMA::setUpCompGraph( const ParameterS
         {
             auto pAlignmentsWInv = promiseMe( pSmallInversions, pAlignmentsWQuality, pQuery, pPack );
             auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWInv, pPack );
+            auto pEmptyContainer_ = promiseMe( pProgressPrinter, pEmptyContainer, pQueue );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQuery ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQuery ), pEmptyContainer_ );
             aRet.push_back( pUnlockResult );
         } // if
         else
         {
             auto pEmptyContainer = promiseMe( pWriter, pQuery, pAlignmentsWQuality, pPack );
+            auto pEmptyContainer_ = promiseMe( pProgressPrinter, pEmptyContainer, pQueue );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQuery ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pLockedFile ), pEmptyContainer_ );
             aRet.push_back( pUnlockResult );
         } // else
     } ); // parallelGraph
@@ -124,14 +133,17 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
                                  pPack,
                              std::shared_ptr<Pledge<FMIndex>>
                                  pFMDIndex,
-                             std::shared_ptr<Pledge<PairedReadsContainer, true>>
-                                 pQueries,
+                             std::shared_ptr<Pledge<PairedFileStreamQueue, false>>
+                                 pQueue,
                              std::shared_ptr<TP_PAIRED_WRITER>
                                  pWriter,
                              unsigned int uiThreads )
 {
     // set up the modules
-    auto pLock = std::make_shared<Lock<PairedReadsContainer>>( rParameters );
+    auto pFileStreamPicker = std::make_shared<QueuePicker<PairedFileStream>>( rParameters );
+    auto pLock = std::make_shared<Lock<PairedFileStream>>( rParameters );
+    auto pFileReader = std::make_shared<PairedFileReader>( rParameters );
+    auto pFileStreamPlacer = std::make_shared<QueuePlacer<PairedReadsContainer, PairedFileStream>>( rParameters );
     auto pGetFirst = std::make_shared<TupleGet<PairedReadsContainer, 0>>( rParameters );
     auto pGetSecond = std::make_shared<TupleGet<PairedReadsContainer, 1>>( rParameters );
     auto pSeeding = std::make_shared<BinarySeeding>( rParameters );
@@ -142,11 +154,15 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
     auto pSmallInversions = std::make_shared<SmallInversions>( rParameters );
     auto pPairedReads = std::make_shared<PairedReads>( rParameters );
     auto pCast = std::make_shared<Cast<SuffixArrayInterface, FMIndex>>( rParameters );
+    auto pProgressPrinter = std::make_shared<ProgressPrinter<PairedFileStreamQueue>>( rParameters );
 
     // create the graph
     std::vector<std::shared_ptr<BasePledge>> aRet;
     BasePledge::parallelGraph( uiThreads, [&]( ) {
-        auto pQueryTuple = promiseMe( pLock, pQueries );
+        auto pPickedFile = promiseMe( pFileStreamPicker, pQueue );
+        auto pLockedFile = promiseMe( pLock, pPickedFile );
+        auto pQueryTuple_ = promiseMe( pFileReader, pLockedFile );
+        auto pQueryTuple = promiseMe( pFileStreamPlacer, pQueryTuple_, pLockedFile, pQueue );
         auto pQueryA = promiseMe( pGetFirst, pQueryTuple );
         auto pQueryB = promiseMe( pGetSecond, pQueryTuple );
         auto pSeedsA = promiseMe( pSeeding, promiseMe( pCast, pFMDIndex ), pQueryA );
@@ -166,8 +182,9 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
             auto pAlignmentsWQuality =
                 promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWInvA, pAlignmentsWInvB, pPack );
             auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+            auto pEmptyContainer_ = promiseMe( pProgressPrinter, pEmptyContainer, pQueue );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pLockedFile ), pEmptyContainer_ );
             aRet.push_back( pUnlockResult );
         } // if
         else
@@ -175,8 +192,9 @@ libMA::setUpCompGraphPaired( const ParameterSetManager& rParameters,
             auto pAlignmentsWQuality =
                 promiseMe( pPairedReads, pQueryA, pQueryB, pAlignmentsWQualityA, pAlignmentsWQualityB, pPack );
             auto pEmptyContainer = promiseMe( pWriter, pQueryA, pQueryB, pAlignmentsWQuality, pPack );
+            auto pEmptyContainer_ = promiseMe( pProgressPrinter, pEmptyContainer, pQueue );
             auto pUnlockResult =
-                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pQueryTuple ), pEmptyContainer );
+                promiseMe( std::make_shared<UnLock<libMS::Container>>( rParameters, pLockedFile ), pEmptyContainer_ );
             aRet.push_back( pUnlockResult );
         } // else
     } ); // parallelGraph

@@ -215,11 +215,17 @@ void generateHelpMessage( ParameterSetManager& rManager, bool bFull = true )
     std::cout << "Compiled with following switches:";
     if( bLibMaWithPython )
         std::cout << " WITH_PYTHON";
-#ifdef WITH_POSTGRES
-    std::cout << " WITH_POSTGRES";
+#ifdef POSTGRESQL
+    std::cout << " WITH_POSTGRESQL";
+#endif
+#ifdef WITH_MYSQL
+    std::cout << " WITH_MYSQL";
 #endif
 #ifdef WITH_ZLIB
     std::cout << " WITH_ZLIB";
+#endif
+#ifdef WITH_DB
+    std::cout << " WITH_DB";
 #endif
 #if DEBUG_LEVEL > 0
     std::cout << " DEBUG_MODE";

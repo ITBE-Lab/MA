@@ -535,7 +535,6 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<double> xMeanPairedReadDistance; // Mean distance of paired reads
     AlignerParameterPointer<double> xStdPairedReadDistance; // Standard deviation of paired reads
     AlignerParameterPointer<double> xPairedBonus; // Score factor for paired reads
-    AlignerParameterPointer<bool> xPairedCheck; // Check paired reads
 
     // Seeding options:
     AlignerParameterPointer<AlignerParameterBase::ChoicesType> xSeedingTechnique; // Seeding Technique
@@ -670,9 +669,6 @@ class Presetting : public ParameterSetBase
                         "the computation of the mapping quality and for picking optimal alignment pairs. <val> < 1 "
                         "results in penalty; <val> > 1 results in bonus.",
                         PAIRED_PARAMETERS, 1.25, checkPositiveDoubleValue ),
-          xPairedCheck( this, "Check for Consistency",
-                        "Check if both paired read files comprise the same number of reads. (Intended for debugging.)",
-                        PAIRED_PARAMETERS, false ),
 
           // Seeding:
           xSeedingTechnique( this, "Seeding Technique", 's',

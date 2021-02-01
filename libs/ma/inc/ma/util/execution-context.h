@@ -95,10 +95,10 @@ class GenomeManager
     /* Create JSON that informs about genome */
     json createGenomeJSON( const std::string& rsGenomeTitle, const std::string& rsGenomePrefix )
     {
-        return {{"type", "MA Genome"},
-                {"version", {{"major", 1}, {"minor", 0}}},
-                {"name", rsGenomeTitle},
-                {"prefix", rsGenomePrefix}};
+        return { { "type", "MA Genome" },
+                 { "version", { { "major", 1 }, { "minor", 0 } } },
+                 { "name", rsGenomeTitle },
+                 { "prefix", rsGenomePrefix } };
     } // method
 
     // std::vector<json::json> findAllGenomesInFolder( const fs::path& sFolderPath )
@@ -288,21 +288,17 @@ class ExecutionContext
     /* Computes alignments for reads.
      * Throws an exception if something goes wrong.
      */
-    void
-    doAlign( std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
-                 []( double, int, int ) { return true; },
-             std::function<void( const std::string& )> fCheckCallBack =
-                 []( const std::string& rS ) { std::cout << rS << std::endl; } )
+    void doAlign(
+        std::function<bool( double dPercentageProgress, int iFileNum, int iNumFilesOverall )> fProgressCallBack =
+            []( double, int, int ) { return true; },
+        std::function<void( const std::string& )> fCheckCallBack =
+            []( const std::string& rS ) { std::cout << rS << std::endl; } )
     {
-#if 0
-        size_t uiConcurency = xParameterSetManager.pGeneralParameterSet->getNumThreads();
+        size_t uiConcurency = xParameterSetManager.pGeneralParameterSet->getNumThreads( );
 
         // For now, we build a computational graph for each call of doAlign
         // Possible Improvement: Cache the graph ...
         std::vector<std::shared_ptr<BasePledge>> aGraphSinks;
-
-        // For progress computation used merely.
-        std::shared_ptr<Reader> pxReader;
 
         const std::string sSAMFileName = xOutputManager.SAMFullFileName( );
 
@@ -313,7 +309,6 @@ class ExecutionContext
         if( xParameterSetManager.getSelected( )->usesPairedReads( ) )
         {
             // Paired reads.
-            // Wish AK: TP_PAIRED_WRITER -> PairedWriterType
             std::shared_ptr<TP_PAIRED_WRITER> pxPairedWriter;
             pxPairedWriter.reset(
                 new PairedFileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
@@ -322,77 +317,92 @@ class ExecutionContext
             if( this->xReadsManager.hasPrimaryPath( ) != this->xReadsManager.hasMatePath( ) )
                 throw std::runtime_error( "Cannot combine file and text input." );
 
-            std::shared_ptr<PairedFileReader> pxPairedFileReader;
+
+            std::shared_ptr<PairedFileStreamQueue> pFileStreamQueue;
+
             if( this->xReadsManager.hasPrimaryPath( ) && this->xReadsManager.hasMatePath( ) )
-                pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager,
-                                                                         xReadsManager.vsPrimaryQueryFullFileName,
-                                                                         xReadsManager.vsMateQueryFullFileName );
-            else
-                pxPairedFileReader = std::make_shared<PairedFileReader>( xParameterSetManager,
-                                                                         xReadsManager.fCallBackGetPrimaryQuery( ),
-                                                                         xReadsManager.fCallBackGetMateyQuery( ) );
-            pxReader = pxPairedFileReader;
-
-            if( xParameterSetManager.getSelected( )->xPairedCheck->get( ) )
             {
-                fCheckCallBack( "checking paired reads..." );
-                pxPairedFileReader->checkPaired( );
-                fCheckCallBack( "done checking paired reads" );
-            } // if
+                auto pInitVec = std::make_shared<ContainerVector<std::shared_ptr<FileStream>>>( );
+                for( auto& xPath : xReadsManager.vsPrimaryQueryFullFileName )
+                    pInitVec->push_back( std::make_shared<FileStreamFromPath>( xPath ) );
 
-            auto pxPairedQueriesPledge = promiseMe( pxPairedFileReader );
+                auto pInitMateVec = std::make_shared<ContainerVector<std::shared_ptr<FileStream>>>( );
+                for( auto& xPath : xReadsManager.vsMateQueryFullFileName )
+                    pInitMateVec->push_back( std::make_shared<FileStreamFromPath>( xPath ) );
+
+                pFileStreamQueue = combineFileStreams( std::make_shared<FileStreamQueue>( pInitVec ),
+                                                       std::make_shared<FileStreamQueue>( pInitMateVec ) );
+            }
+            else
+            {
+                auto pInitVec = std::make_shared<ContainerVector<std::shared_ptr<FileStream>>>( );
+                pInitVec->push_back( std::make_shared<StringStream>( xReadsManager.fCallBackGetPrimaryQuery( ) ) );
+
+                auto pInitMateVec = std::make_shared<ContainerVector<std::shared_ptr<FileStream>>>( );
+                pInitMateVec->push_back( std::make_shared<StringStream>( xReadsManager.fCallBackGetMateyQuery( ) ) );
+
+                pFileStreamQueue = combineFileStreams( std::make_shared<FileStreamQueue>( pInitVec ),
+                                                       std::make_shared<FileStreamQueue>( pInitMateVec ) );
+            } // else
+
+
+            auto pxFileStreamQueuePledge = std::make_shared<Pledge<PairedFileStreamQueue>>( );
+            pxFileStreamQueuePledge->set( pFileStreamQueue );
             aGraphSinks = setUpCompGraphPaired( xParameterSetManager,
                                                 xGenomeManager.getPackPledge( ), // Pack
                                                 xGenomeManager.getFMDIndexPledge( ), // FMD index
-                                                pxPairedQueriesPledge, // (for paired reads we require two queries!)
+                                                pxFileStreamQueuePledge, // (for paired reads we require two queries!)
                                                 pxPairedWriter, // Output writer module(output of alignments)
                                                 (unsigned int)uiConcurency ); // Number of threads
         } // if
         else
         {
             // Singular (Non-Paired) reads.
-            // Wish AK: TP_WRITER -> WriterType
             std::shared_ptr<TP_WRITER> pxWriter;
             pxWriter.reset(
                 new FileWriter( xParameterSetManager, sSAMFileName, xGenomeManager.getPackPledge( )->get( ) ) );
             std::string sPrimaryQuery;
 
-            std::shared_ptr<SingleFileReader> pxFileReader;
+            std::shared_ptr<FileStreamQueue> pFileStreamQueue;
+
             if( xReadsManager.hasPrimaryPath( ) )
             {
-                pxFileReader =
-                    std::make_shared<FileListReader>( xParameterSetManager, xReadsManager.vsPrimaryQueryFullFileName );
+                auto pInitVec = std::make_shared<ContainerVector<std::shared_ptr<FileStream>>>( );
+                for( auto& xPath : xReadsManager.vsPrimaryQueryFullFileName )
+                    pInitVec->push_back( std::make_shared<FileStreamFromPath>( xPath ) );
+                pFileStreamQueue = std::make_shared<FileStreamQueue>( pInitVec );
             }
             else
             {
-                sPrimaryQuery = xReadsManager.fCallBackGetPrimaryQuery( );
-                pxFileReader =
-                    std::make_shared<FileReader>( xParameterSetManager, sPrimaryQuery, sPrimaryQuery.size( ) );
+                auto pInitVec = std::make_shared<ContainerVector<std::shared_ptr<FileStream>>>( );
+                pInitVec->push_back( std::make_shared<StringStream>( sPrimaryQuery ) );
+                pFileStreamQueue = std::make_shared<FileStreamQueue>( pInitVec );
             } // else
 
-            pxReader = pxFileReader;
-            auto pxQueriesPledge = promiseMe( pxFileReader );
+            auto pxFileStreamQueuePledge = std::make_shared<Pledge<FileStreamQueue>>( );
+            pxFileStreamQueuePledge->set( pFileStreamQueue );
             aGraphSinks = setUpCompGraph( xParameterSetManager,
                                           xGenomeManager.getPackPledge( ), // Pack
                                           xGenomeManager.getFMDIndexPledge( ), // FMD index
-                                          pxQueriesPledge, // Queries
+                                          pxFileStreamQueuePledge, // Queries
                                           pxWriter, // Output writer module(output of alignments)
                                           (unsigned int)uiConcurency ); // Number of threads
         } // else
 
         // Compute the actual alignments.
         // Sets the progress bar after each finished alignment.
-        BasePledge::simultaneousGet( aGraphSinks,
-                                     [&]( ) {
+        BasePledge::simultaneousGet( aGraphSinks
+#if 0 // printer in graph now
+                                     ,[ & ]( ) {
                                          int iI1 = (int)pxReader->getCurrFileIndex( );
                                          int iI2 = (int)pxReader->getNumFiles( );
                                          return fProgressCallBack( ( (double)pxReader->getCurrPosInFile( ) * 100 ) /
                                                                        (double)pxReader->getFileSize( ),
                                                                    iI1, iI2 );
                                      } // lambda
+#endif
         ); // function call
 
-#endif
     } // method
 
     void doAlignCallbackLess( )

@@ -71,29 +71,30 @@ class mwxSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                        Presetting& rxParameterSet // Parameter used for the dialog
                        )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "Parameter Settings", // Title of Dialog
-                               [&] //
-                               ( wxWindow * pxHostWindow ) //
-                               { // Content of Dialog
-                                   this->iValue = 0;
-                                   auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "Parameter Settings", // Title of Dialog
+              [ & ] //
+              ( wxWindow * pxHostWindow ) //
+              { // Content of Dialog
+                  this->iValue = 0;
+                  auto* pxNotebook = new mwxPropertyNotebook( pxHostWindow );
 
-                                   for( auto xPair : rxParameterSet.xpParametersByCategory )
-                                   {
-                                       // xPair.first.second extracts the category name
-                                       auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
-                                       auto* pPanel = new mwxPropertyPanel(
-                                           pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
-                                       for( auto pParameter : xPair.second )
-                                           pPanel->append( pParameter );
-                                       pPanel->updateEnabledDisabled( );
-                                   } // for
+                  for( auto xPair : rxParameterSet.xpParametersByCategory )
+                  {
+                      // xPair.first.second extracts the category name
+                      auto* pxScrolledStatixBoxesContext = pxNotebook->addPage( xPair.first.second );
+                      auto* pPanel =
+                          new mwxPropertyPanel( pxScrolledStatixBoxesContext->addStaticBox( )->getConnector( ) );
+                      for( auto pParameter : xPair.second )
+                          pPanel->append( pParameter );
+                      pPanel->updateEnabledDisabled( );
+                  } // for
 
-                                   return pxNotebook;
-                               }, // lambda
-                               wxDefaultPosition,
-                               "Save as Custom" )
+                  return pxNotebook;
+              }, // lambda
+              wxDefaultPosition,
+              "Save as Custom" )
     {} // constructor
 
     /* Destructor */
@@ -112,19 +113,20 @@ class mwxPairedSettingsDialog : public mwxOK_Cancel_Dialog
     mwxPairedSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              Presetting& rxParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "Paired Reads Settings", // Title of Dialog
-                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
-                                   pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "Paired Reads Settings", // Title of Dialog
+              [ & ]( wxWindow* pxHostWindow ) { // Content of Dialog
+                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                  pxPropertyPanel->append( rxParameterSet.xMeanPairedReadDistance.pContent );
+                  pxPropertyPanel->append( rxParameterSet.xStdPairedReadDistance.pContent );
 
-                                   return pxPropertyPanel;
-                               }, // lambda
+                  return pxPropertyPanel;
+              }, // lambda
 
-                               wxDefaultPosition,
-                               "Save as Custom",
-                               true ) // fit the size of the dialog to the size of its content
+              wxDefaultPosition,
+              "Save as Custom",
+              true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
@@ -143,19 +145,20 @@ class mwxGlobalSettingsDialog : public mwxOK_Cancel_Dialog
     mwxGlobalSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                              GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                              )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "Global Settings", // Title of Dialog
-                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
-                                       .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
-                                       .updateEnabledDisabled( );
-                                   return pxPropertyPanel;
-                               }, // lambda
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "Global Settings", // Title of Dialog
+              [ & ]( wxWindow* pxHostWindow ) { // Content of Dialog
+                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                  pxPropertyPanel->append( rxGlobalParameterSet.pbUseMaxHardareConcurrency.pContent )
+                      .append( rxGlobalParameterSet.piNumberOfThreads.pContent )
+                      .updateEnabledDisabled( );
+                  return pxPropertyPanel;
+              }, // lambda
 
-                               wxDefaultPosition,
-                               "OK",
-                               true ) // fit the size of the dialog to the size of its content
+              wxDefaultPosition,
+              "OK",
+              true ) // fit the size of the dialog to the size of its content
     {} // constructor
 
     /* Destructor */
@@ -175,22 +178,22 @@ class mwxSAMSettingsDialog : public mwxOK_Cancel_Dialog
     mwxSAMSettingsDialog( wxWindow* pxHostWindow, // Host window of box context (responsible for destruction)
                           GeneralParameter& rxGlobalParameterSet // Parameter used for the dialog
                           )
-        : mwxOK_Cancel_Dialog( pxHostWindow, // host ( responsible for destruction)
-                               "SAM Settings", // Title of Dialog
-                               [&]( wxWindow* pxHostWindow ) { // Content of Dialog
-                                   auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
-                                   pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
-                                       .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
-                                       .append( rxGlobalParameterSet.xSAMOutputFileName.pContent,
-                                                "SAM File (*.sam)|*.sam" )
-                                       .updateEnabledDisabled( );
+        : mwxOK_Cancel_Dialog(
+              pxHostWindow, // host ( responsible for destruction)
+              "SAM Settings", // Title of Dialog
+              [ & ]( wxWindow* pxHostWindow ) { // Content of Dialog
+                  auto* pxPropertyPanel = new mwxPropertyPanel( pxHostWindow, NULL );
+                  pxPropertyPanel->append( rxGlobalParameterSet.xSAMOutputTypeChoice.pContent )
+                      .append( rxGlobalParameterSet.xSAMOutputPath.pContent )
+                      .append( rxGlobalParameterSet.xSAMOutputFileName.pContent, "SAM File (*.sam)|*.sam" )
+                      .updateEnabledDisabled( );
 
-                                   return pxPropertyPanel;
-                               }, // lambda
+                  return pxPropertyPanel;
+              }, // lambda
 
-                               wxDefaultPosition,
-                               "OK",
-                               true ) // fit the size of the dialog to the size of its content
+              wxDefaultPosition,
+              "OK",
+              true ) // fit the size of the dialog to the size of its content
     {} // constructor
 }; // class
 
@@ -267,14 +270,14 @@ class FMIndexCreationWizard : public wxWizard
             hideButtonByID( wxID_CANCEL );
 
             // FM-Index creation happens in a separated thread
-            pWorker = std::make_unique<std::thread>( [this]( ) {
+            pWorker = std::make_unique<std::thread>( [ this ]( ) {
                 try
                 {
                     xExecutionContext.xGenomeManager.makeIndexAndPackForGenome(
                         sGenomeFolderPath( ), // Folder for genome storage
                         sFastaFilePath( ), // Path to FASTA-file that contains genome
                         std::string( pxTextCtrlIndexName->GetValue( ).c_str( ) ), // Title of genome
-                        [this]( const std::string& sMessage ) {
+                        [ this ]( const std::string& sMessage ) {
                             queueStringMessage( wxEVT_WORKER_MESSAGE, sMessage );
                         } // lambda
                     );
@@ -449,7 +452,7 @@ class FMIndexCreationWizard : public wxWizard
             xWizardPages.Item( i - 1 )->SetNext( xWizardPages.Item( i ) );
         } // for
 
-        wxEvtHandler::Bind( wxEVT_WIZARD_PAGE_SHOWN, [&]( wxCommandEvent& rxEvent ) { onPageShown( ); } );
+        wxEvtHandler::Bind( wxEVT_WIZARD_PAGE_SHOWN, [ & ]( wxCommandEvent& rxEvent ) { onPageShown( ); } );
 
         // Bind worker events
         Bind( wxEVT_WORKER_MESSAGE, std::bind( &FMIndexCreationWizard::onWorkerPrint, this, std::placeholders::_1 ) );
@@ -647,7 +650,7 @@ class AlignFrame : public wxDialog
     int ShowModal( void )
     {
         // create worker thread, which communicates via events
-        pWorker = std::make_unique<std::thread>( [&]( ) {
+        pWorker = std::make_unique<std::thread>( [ & ]( ) {
             queueStringMessage( wxEVT_WORKER_MESSAGE, "Do alignment.\n" );
             // If sErrorMessage is empty, the alignment is fine succeeded
             std::string sErrorMessage;
@@ -763,11 +766,17 @@ class MA_MainFrame : public wxFrame
         sText.append( "\nCompiled with following switches:" );
         if( bLibMaWithPython )
             sText.append( " WITH_PYTHON" );
-#ifdef WITH_POSTGRES
-        sText.append( " WITH_POSTGRES" );
+#ifdef POSTGRESQL
+        sText.append( " WITH_POSTGRESQL" );
+#endif
+#ifdef WITH_MYSQL
+        sText.append( " WITH_MYSQL" );
 #endif
 #ifdef WITH_ZLIB
         sText.append( " WITH_ZLIB" );
+#endif
+#ifdef WITH_DB
+        sText.append( " WITH_DB" );
 #endif
 #if DEBUG_LEVEL > 0
         sText.append( " DEBUG_MODE" );
@@ -1061,7 +1070,7 @@ class MA_MainFrame : public wxFrame
             .append( "O&ptions\tF3", // Options
                      std::bind( &MA_MainFrame::doOptionsDialog, this, std::placeholders::_1 ) )
             .append( "E&xit\tAlt-X", // Exit
-                     [&]( wxCommandEvent& ) { this->Close( true ); } );
+                     [ & ]( wxCommandEvent& ) { this->Close( true ); } );
 
         this->xMenuBar->push_back( "&Genome" )
             .menu( ) // Genome Menu
@@ -1089,7 +1098,7 @@ class MA_MainFrame : public wxFrame
             ->addBoxSizer( // horizontal BoxSizer (top of frame)
                 wxHORIZONTAL,
                 wxSizerFlags( 0 ).Expand( ).Border( wxALL, 10 ),
-                [this]( mwxBoxSizer& pxBoxSizer ) // boxSizer content
+                [ this ]( mwxBoxSizer& pxBoxSizer ) // boxSizer content
                 {
                     // MA LOGO
                     pxBoxSizer.Add( new wxStaticBitmap( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
@@ -1102,7 +1111,7 @@ class MA_MainFrame : public wxFrame
                         "Aligner Settings",
                         wxVERTICAL,
                         wxSizerFlags( 0 ).Expand( ).Border( wxRIGHT, 5 ).Align( wxCENTER ),
-                        [&]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
+                        [ & ]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
                         {
                             // Parameter selection combo
                             pxBoxSizer.Add(
@@ -1134,7 +1143,7 @@ class MA_MainFrame : public wxFrame
                         "Output",
                         wxVERTICAL,
                         wxSizerFlags( 0 ).Expand( ).Border( wxRIGHT, 5 ),
-                        [&]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
+                        [ & ]( mwxStaticBoxSizer& pxBoxSizer ) // BoxSizer content
                         {
                             pxBoxSizer.Add( new mwxMapDrivenComboBox( //
                                                 pxBoxSizer.xConnector.pxWindow,
@@ -1180,13 +1189,13 @@ class MA_MainFrame : public wxFrame
             ->addBoxSizer(
                 wxHORIZONTAL,
                 wxSizerFlags( 0 ).Expand( ).Border( wxLEFT | wxRIGHT, 10 ),
-                [this]( mwxBoxSizer& pxBoxSizer ) // boxSizer content
+                [ this ]( mwxBoxSizer& pxBoxSizer ) // boxSizer content
                 {
                     // Text plus combo
                     pxBoxSizer.addBoxSizer( // vertical BoxSizer
                         wxVERTICAL,
                         wxSizerFlags( 1 ).Expand( ),
-                        [this]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
+                        [ this ]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
                         {
                             pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
                                                               wxT( "Reference genome" ), wxDefaultPosition,
@@ -1209,7 +1218,7 @@ class MA_MainFrame : public wxFrame
                               pxBoxSizer.pxConnector, "Index Selection", "Select Reference Genome Index",
                               "Genome descriptions (*.json)|*.json|All Files|*", false,
                               std::bind( &MA_MainFrame::onGenomeSelection, this, std::placeholders::_1 ), 1 ) )
-                            ->setClearHandler( [this]( ) { this->createIndexWizard( ); } ), // no clear button
+                            ->setClearHandler( [ this ]( ) { this->createIndexWizard( ); } ), // no clear button
                         wxSizerFlags( 0 ) );
 
                     // Initialize genome selection
@@ -1222,12 +1231,12 @@ class MA_MainFrame : public wxFrame
         pxFrameSizer->addBoxSizer(
             wxHORIZONTAL,
             wxSizerFlags( 1 ).Expand( ).Border( wxLEFT | wxRIGHT | wxBOTTOM, 10 ),
-            [this]( mwxBoxSizer& pxBoxSizer ) {
+            [ this ]( mwxBoxSizer& pxBoxSizer ) {
                 // Query Input Area (bsizer9)
                 pxBoxSizer.addBoxSizer(
                     wxVERTICAL,
                     wxSizerFlags( 1 ).Expand( ),
-                    [this]( mwxBoxSizer& pxBoxSizer ) { // BoxSizer content
+                    [ this ]( mwxBoxSizer& pxBoxSizer ) { // BoxSizer content
                         pxBoxSizer.Add( new wxStaticText( pxBoxSizer.pxConnector.pxWindow, wxID_ANY,
                                                           wxT( "Query reads" ), wxDefaultPosition, wxDefaultSize, 0 ),
                                         0, wxTOP | wxLEFT, 5 );
@@ -1243,7 +1252,7 @@ class MA_MainFrame : public wxFrame
                         pxBoxSizer.Add( this->xQueryTextCtrl, 1, wxALL | wxEXPAND, 5 );
 
                         // Set callback for xReadManager
-                        xExecutionContext.xReadsManager.fCallBackGetPrimaryQuery = [this]( ) {
+                        xExecutionContext.xReadsManager.fCallBackGetPrimaryQuery = [ this ]( ) {
                             return std::string( this->xQueryTextCtrl->GetValue( ).c_str( ) );
                         }; // lambda
 
@@ -1263,7 +1272,7 @@ class MA_MainFrame : public wxFrame
                         pxBoxSizer.Add( this->xMatesTextCtrl, 1, wxALL | wxEXPAND, 5 );
 
                         // Set callback for rReadManager
-                        xExecutionContext.xReadsManager.fCallBackGetMateyQuery = [this]( ) {
+                        xExecutionContext.xReadsManager.fCallBackGetMateyQuery = [ this ]( ) {
                             return std::string( this->xMatesTextCtrl->GetValue( ).c_str( ) );
                         }; // lambda
 
@@ -1276,7 +1285,7 @@ class MA_MainFrame : public wxFrame
                 pxBoxSizer.addBoxSizer( // vertical BoxSizer (inside bottom of frame) bSizer14
                     wxVERTICAL,
                     wxSizerFlags( 0 ).Expand( ),
-                    [this]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
+                    [ this ]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
                     {
                         // File Selection for Reads
                         pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(
@@ -1293,12 +1302,12 @@ class MA_MainFrame : public wxFrame
                         pxBoxSizer.addBoxSizer( // vertical BoxSizer bSizer12
                             wxVERTICAL,
                             wxSizerFlags( 1 ),
-                            [this]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
+                            [ this ]( mwxBoxSizer& pxBoxSizer ) // BoxSizer content
                             {
                                 pxBoxSizer.addBoxSizer( // vertical BoxSizer bSizer12
                                     wxVERTICAL,
                                     wxSizerFlags( 1 ),
-                                    [this]( mwxBoxSizer& pxBoxSizer ) // Section with paired control elements
+                                    [ this ]( mwxBoxSizer& pxBoxSizer ) // Section with paired control elements
                                     {
                                         this->xMatesControlElements = &pxBoxSizer;
                                         pxBoxSizer.Add( new mwxFileSelectDeleteButtonSizer(

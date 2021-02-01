@@ -43,8 +43,6 @@ packages installed: `git`, `cmake`, `make` and `build-essential`.\
 Get the github clone and use cmake (at least version 3.8) for building. This can be done via: 
 
     git clone https://github.com/ITBE-Lab/MA
-    # Currently, MA is not stable on the svCaller branch
-    git checkout release
     mkdir build
     cd build
     # see section Python Integration and WITH_DB below
@@ -131,6 +129,7 @@ Version 2.0.0:
     The harmonization is then applied multiple times, in order to extract all sets of mutually consistent seeds.
     If these sets do not overlap each other on the read, the smaller sets are reported as supplementary alignments. \
     These changes are what makes MA capable of recognizing Off-Diagonal Inversions, Inverted Duplications and Nested Inversions as shown in Fig. 2 of [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://www.biorxiv.org/content/10.1101/2021.01.12.426317v2 "").
+* Version 2.0.0 is an experimental release.
 * Via the python integration, MA is now capable of using Minimizers as well as the algorithms presented in [A performant bridge between fixed-size and variable-size seeding](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03642-y) in its seeding stage.
 
 These changes were made during the development of [MSV - The Modular SV Caller](MSV.md "MSV - Main Page").

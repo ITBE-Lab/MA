@@ -145,50 +145,52 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "ma/module/binarySeeding.h"
+#include "ma/module/compare_alignments.h"
 #include "ma/module/fileReader.h"
 #include "ma/module/fileWriter.h"
 #include "ma/module/harmonization.h"
 #include "ma/module/hashMapSeeding.h"
 #include "ma/module/mappingQuality.h"
+#include "ma/module/minimizerSeeding.h"
 #include "ma/module/needlemanWunsch.h"
 #include "ma/module/otherSeeding.h"
 #include "ma/module/pairedReads.h"
+#include "ma/module/sam_reader.h"
 #include "ma/module/smallInversions.h"
 #include "ma/module/splitter.h"
-#include "ma/module/sam_reader.h"
-#include "ma/module/compare_alignments.h"
 #include "ma/module/stripOfConsideration.h"
-#include "ma/module/minimizerSeeding.h"
 
 namespace libMA
 {
 
-typedef libMS::Module<libMS::Container, false, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack> TP_WRITER;
+typedef libMS::Module<libMS::Container, false, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack>
+    TP_WRITER;
 typedef libMS::Module<libMS::Container, false, NucSeq, NucSeq, libMS::ContainerVector<std::shared_ptr<Alignment>>, Pack>
     TP_PAIRED_WRITER;
 
-std::vector<std::shared_ptr<libMS::BasePledge>> DLL_PORT(MA) setUpCompGraph( const ParameterSetManager& rParameters,
-                                                                  std::shared_ptr<libMS::Pledge<Pack>>
-                                                                      pPack,
-                                                                  std::shared_ptr<libMS::Pledge<FMIndex>>
-                                                                      pFMDIndex,
-                                                                  std::shared_ptr<libMS::Pledge<NucSeq, true>>
-                                                                      pQueries,
-                                                                  std::shared_ptr<TP_WRITER>
-                                                                      pWriter,
-                                                                  unsigned int uiThreads );
+std::vector<std::shared_ptr<libMS::BasePledge>> DLL_PORT( MA )
+    setUpCompGraph( const ParameterSetManager& rParameters,
+                    std::shared_ptr<libMS::Pledge<Pack>>
+                        pPack,
+                    std::shared_ptr<libMS::Pledge<FMIndex>>
+                        pFMDIndex,
+                    std::shared_ptr<libMS::Pledge<libMA::FileStreamQueue, false>>
+                        pQueue,
+                    std::shared_ptr<TP_WRITER>
+                        pWriter,
+                    unsigned int uiThreads );
 
-std::vector<std::shared_ptr<libMS::BasePledge>>
-    DLL_PORT(MA) setUpCompGraphPaired( const ParameterSetManager& rParameters,
-                                   std::shared_ptr<libMS::Pledge<Pack>>
-                                       pPack,
-                                   std::shared_ptr<libMS::Pledge<FMIndex>>
-                                       pFMDIndex,
-                                   std::shared_ptr<libMS::Pledge<PairedReadsContainer, true>>
-                                       pQueries,
-                                   std::shared_ptr<TP_PAIRED_WRITER>
-                                       pWriter,
-                                   unsigned int uiThreads );
+std::vector<std::shared_ptr<libMS::BasePledge>> DLL_PORT( MA )
+    setUpCompGraphPaired( const ParameterSetManager& rParameters,
+                          std::shared_ptr<libMS::Pledge<Pack>>
+                              pPack,
+                          std::shared_ptr<libMS::Pledge<FMIndex>>
+                              pFMDIndex,
+                          std::shared_ptr<libMS::Pledge<libMA::PairedFileStreamQueue, false>>
+                              pQueue,
+                          std::shared_ptr<TP_PAIRED_WRITER>
+                              pWriter,
+                          unsigned int uiThreads );
 
 
 } // namespace libMA

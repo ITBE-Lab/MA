@@ -20,6 +20,7 @@ std::shared_ptr<NucSeq> randomNucSeq( size_t uiLen )
 
 int main( void )
 {
+#if 0
     auto pPack = makePledge<Pack>( );
     pPack->get( )->vAppendSequence( "chr1", "chr1-desc", *randomNucSeq( 65536 ) );
     auto pFmIndex = makePledge<FMIndex>( pPack->get( ) );
@@ -45,6 +46,6 @@ int main( void )
         xParameters.pGeneralParameterSet->piNumberOfThreads->get( ) );
 
     BasePledge::simultaneousGet( vGraphSinks );
-
+#endif
     return EXIT_SUCCESS;
 } /// main function
