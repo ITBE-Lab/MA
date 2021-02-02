@@ -60,37 +60,44 @@ else()
 endif()
 
 # Generate a version of MA based on the current commit
-
-# Get the latest abbreviated commit hash of the working branch
-execute_process(
-  COMMAND git log -1 --format=%h
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE GIT_COMMIT_HASH
-  RESULT_VARIABLE RESULT_COMMIT
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Check if there are any modified files
-execute_process(
-  COMMAND git status -s
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE GIT_STATUS
-  RESULT_VARIABLE RESULT_STATUS
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-if( "${GIT_STATUS}" STREQUAL "" )
-    set(GIT_STATUS "")
-else()
-    set(GIT_STATUS "-D")
-endif()
-
-if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
-    message( "-- libMA: WARNING cannot infer verison from git (maybe git.exe is not in your environment path?)" )
-    set(MA_VERSION "Unknown")
-else()
-    set(MA_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")
+if ( OVERRIDE_COMMIT_VERSION )
+    # Override commit version can be used to set the commit part of the version manually
+    # this is used for bioconda (we cannot automate getting the GIT_STATUS there)
+    # this adds a -O at the end to indivate that the version was *O*verridden
+    set(MA_VERSION "${PROJECT_VERSION}-${OVERRIDE_COMMIT_VERSION}-O")
     message( "-- libMA: Version = ${MA_VERSION}" )
+else()
+    # Get the latest abbreviated commit hash of the working branch
+    execute_process(
+        COMMAND git log -1 --format=%h
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        RESULT_VARIABLE RESULT_COMMIT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Check if there are any modified files
+    execute_process(
+        COMMAND git status -s
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_STATUS
+        RESULT_VARIABLE RESULT_STATUS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if( "${GIT_STATUS}" STREQUAL "" )
+        set(GIT_STATUS "")
+    else()
+        set(GIT_STATUS "-D")
+    endif()
+
+    if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
+        message( "-- libMA: WARNING cannot infer verison from git (maybe git.exe is not in your environment path?)" )
+        set(MA_VERSION "${PROJECT_VERSION}-UnknownCommit")
+    else()
+        set(MA_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")
+        message( "-- libMA: Version = ${MA_VERSION}" )
+    endif()
 endif()
 
 configure_file( # @todo so far this only triggers during configure not at build time

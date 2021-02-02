@@ -216,6 +216,11 @@ int main( int argc, char* argv[] )
                   << sLibMaVersion << "\". Something went wrong during building/linking." << std::endl;
         return 1;
     } // if
+    if( sizeof( void* ) * 8 != 64 )
+    {
+        std::cerr << "Fatal error: cmbMA has to be compiled for a 64 bit system." << std::endl;
+        return 1;
+    } // if
     ExecutionContext xExecutionContext;
     // change the way output works to a simple -o for the command line aligner.
     // Also disable Use Max Hardware concurrency parameter and set -t to max hardware_concurrency by default.
@@ -358,7 +363,7 @@ int main( int argc, char* argv[] )
 
         std::pair<int, double> xPreviousProgress = std::make_pair( -1, 0 );
         std::cerr << "starting alignment." << std::endl;
-        xExecutionContext.doAlign( [&] //
+        xExecutionContext.doAlign( [ & ] //
                                    ( double dProgress, int iCurrFile, int iFilesTotal ) //
                                    {
                                        dProgress = (int)( dProgress * 10 );
