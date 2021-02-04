@@ -40,7 +40,7 @@ template <> EXPORTED bool genericStringToValue<bool>( const std::string& sString
     if( sTmp == "true" )
         return true;
     if( sTmp == "false" )
-        return true;
+        return false;
     throw std::runtime_error( "Boolean flags accept no other values than 'true' and 'false'." );
 } // function
 
