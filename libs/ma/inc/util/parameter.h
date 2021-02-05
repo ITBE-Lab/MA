@@ -432,7 +432,7 @@ class ParameterSetBase
         } // while
         for( auto& rPair : xpParametersByCategory )
             rPair.second.erase( std::remove_if( rPair.second.begin( ), rPair.second.end( ),
-                                                [&pParameter]( const std::shared_ptr<AlignerParameterBase> pX ) {
+                                                [ &pParameter ]( const std::shared_ptr<AlignerParameterBase> pX ) {
                                                     return ( pX == pParameter );
                                                 } ),
                                 rPair.second.end( ) );
@@ -540,6 +540,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<bool> xEmulateNgmlrTags; // Emulate NGMLR's tag output
     AlignerParameterPointer<bool> xOutputMCigar; // Output M symbol in cigar
     AlignerParameterPointer<bool> xCGTag; // Output long CIGARS in CG tag
+    AlignerParameterPointer<bool> xSoftClip; // use soft clipping in alignments
 
     // Heuristic Options:
     AlignerParameterPointer<double> xSoCScoreDecreaseTolerance; // SoC Score Drop-off
@@ -648,13 +649,13 @@ class Presetting : public ParameterSetBase
           xSeedingTechnique( this, "Seeding Technique", 's',
                              "Technique used for the initial seeding. Available techniques are: maxSpan and SMEMs.",
                              SEEDING_PARAMETERS,
-                             AlignerParameterBase::ChoicesType{{"maxSpan", "Maximally Spanning"},
-                                                               {"SMEMs", "SMEMs"},
-                                                               {"MEMs", "MEMs"}
+                             AlignerParameterBase::ChoicesType{ { "maxSpan", "Maximally Spanning" },
+                                                                { "SMEMs", "SMEMs" },
+                                                                { "MEMs", "MEMs" }
 #ifdef WITH_ZLIB
-                                                               ,
-                                                               { "mini",
-                                                                 "Minimizers" }
+                                                                ,
+                                                                { "mini",
+                                                                  "Minimizers" }
 #endif
                              } ),
           xMinSeedLength( this, "Minimal Seed Length", 'l',
@@ -728,6 +729,10 @@ class Presetting : public ParameterSetBase
                   "Some programs crash, if cigars become too long. If this flag is enabled, the CG:B:I tag is used for "
                   "the output of long cigars (cigars with more than 65536 operations).",
                   SAM_PARAMETERS, true ),
+          xSoftClip( this, "Soft clip",
+                     "Output the full query for each alignment, instead of omitting the sequence before and after the "
+                     "alignment.",
+                     SAM_PARAMETERS, false ),
 
           // Heuristic
           xSoCScoreDecreaseTolerance( this, "SoC Score Drop-off",
@@ -813,13 +818,13 @@ class Presetting : public ParameterSetBase
 #endif
 #endif
     {
-        xMeanPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xStdPairedReadDistance->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xPairedBonus->fEnabled = [this]( void ) { return this->xUsePairedReads->get( ) == true; };
-        xZDropInversion->fEnabled = [this]( void ) { return this->xSearchInversions->get( ) == true; };
+        xMeanPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xStdPairedReadDistance->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xPairedBonus->fEnabled = [ this ]( void ) { return this->xUsePairedReads->get( ) == true; };
+        xZDropInversion->fEnabled = [ this ]( void ) { return this->xSearchInversions->get( ) == true; };
 #ifdef WITH_ZLIB
-        xMinimizerK->fEnabled = [this]( void ) { return this->xSeedingTechnique->get( ) == "mini"; };
-        xMinimizerW->fEnabled = [this]( void ) { return this->xSeedingTechnique->get( ) == "mini"; };
+        xMinimizerK->fEnabled = [ this ]( void ) { return this->xSeedingTechnique->get( ) == "mini"; };
+        xMinimizerW->fEnabled = [ this ]( void ) { return this->xSeedingTechnique->get( ) == "mini"; };
 #endif
     } // constructor
 
@@ -863,9 +868,9 @@ class GeneralParameter : public ParameterSetBase
     /* Constructor */
     GeneralParameter( )
         : xSAMOutputTypeChoice( this, "SAM File output", "Select output type for sam file.", GENERAL_PARAMETER,
-                                AlignerParameterBase::ChoicesType{{"Read_Folder", "In Read Folder"},
-                                                                  {"Specified_Folder", "In Specified Folder"},
-                                                                  {"Specified_File", "As Specified File"}} ),
+                                AlignerParameterBase::ChoicesType{ { "Read_Folder", "In Read Folder" },
+                                                                   { "Specified_Folder", "In Specified Folder" },
+                                                                   { "Specified_File", "As Specified File" } } ),
           xSAMOutputPath( this, "Folder for SAM Files",
                           "Folder for SAM output in the case that the output is not directed to the reads' folder.",
                           GENERAL_PARAMETER, fs::temp_directory_path( ) ),
@@ -883,9 +888,9 @@ class GeneralParameter : public ParameterSetBase
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
           pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
     {
-        xSAMOutputPath->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
-        xSAMOutputFileName->fEnabled = [this]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
-        piNumberOfThreads->fEnabled = [this]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
+        xSAMOutputPath->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
+        xSAMOutputFileName->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
+        piNumberOfThreads->fEnabled = [ this ]( void ) { return this->pbUseMaxHardareConcurrency->get( ) == false; };
     } // constructor
 
     /* Named copy Constructor */

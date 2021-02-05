@@ -33,15 +33,23 @@ std::shared_ptr<Container> FileWriter::execute( std::shared_ptr<NucSeq> pQuery,
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
         else
-            sCigar = bOutputMInsteadOfXAndEqual ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
-                                                : pAlignment->cigarString( *pPack );
+            sCigar = bOutputMInsteadOfXAndEqual 
+                         ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery->length( ), bSoftClip )
+                         : pAlignment->cigarString( *pPack, pQuery->length( ), bSoftClip );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 
         std::string sContigOther = "*";
         std::string sPosOther = "0";
         std::string sName = pQuery->sName;
-        std::string sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
+        std::string sSegment;
+        if( bSoftClip )
+            if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+                sSegment = pQuery->toStringComplement( );
+            else
+                sSegment = pQuery->toString( );
+        else
+            sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
         std::string sQual = pAlignment->getQueryQuality( *pQuery );
 
         std::string sRefName = pAlignment->getContig( *pPack );
@@ -181,16 +189,26 @@ std::shared_ptr<Container> PairedFileWriter::execute( std::shared_ptr<NucSeq> pQ
         if( bCGTag && pAlignment->data.size( ) >= uiMaxCigarLen )
             sCigar = std::to_string( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery ).append( "S" );
         else
-            sCigar = bOutputMInsteadOfXAndEqual ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
-                                                : pAlignment->cigarString( *pPack );
+            sCigar = bOutputMInsteadOfXAndEqual 
+                         ? pAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery1->length( ), bSoftClip )
+                         : pAlignment->cigarString( *pPack, pQuery1->length( ), bSoftClip );
 
         uint32_t flag = pAlignment->getSamFlag( *pPack );
 
         std::string sContigOther = "*";
         std::string sPosOther = "0";
         std::string sName = pAlignment->xStats.bFirst ? pQuery1->sName : pQuery2->sName;
-        // DEBUG( std::cout << "Aligned: " << sName << std::endl; )
-        std::string sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
+        // DEBUG( std::cout << "Aligned: " << sName << std::endl; )+
+
+        std::string sSegment;
+        if( bSoftClip )
+            if( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) )
+                sSegment = ( pAlignment->xStats.bFirst ? pQuery1 : pQuery2 )->toStringComplement( );
+            else
+                sSegment = ( pAlignment->xStats.bFirst ? pQuery1 : pQuery2 )->toString( );
+        else
+            sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
+
         std::string sQual = pAlignment->getQueryQuality( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2 );
         // paired
         flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;

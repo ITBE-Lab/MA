@@ -88,6 +88,7 @@ class TagGenerator
     const bool bCGTag; // NGMLR SAM emulation
     const size_t uiMaxCigarLen = 0x10000; // NGMLR SAM emulation
     const bool bForcedConsistentConsequtiveInsertionDeletionOrder; // NGMLR SAM emulation
+    const bool bSoftClip;
 
     TagGenerator( const ParameterSetManager& rParameters )
         : bMDTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
@@ -103,7 +104,8 @@ class TagGenerator
           bCVTag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bSATag( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
           bCGTag( rParameters.getSelected( )->xCGTag->get( ) ),
-          bForcedConsistentConsequtiveInsertionDeletionOrder( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) )
+          bForcedConsistentConsequtiveInsertionDeletionOrder( rParameters.getSelected( )->xEmulateNgmlrTags->get( ) ),
+          bSoftClip( rParameters.getSelected( )->xSoftClip->get( ) )
     {} // constructor
 
     std::string computeTag( const std::shared_ptr<NucSeq> pQuery,
@@ -206,7 +208,7 @@ class TagGenerator
             if( pPack->amountOfRegionCoveredByHole( pAlignment->uiBeginOnRef - 100, pAlignment->uiBeginOnRef ) > .8 ||
                 pPack->amountOfRegionCoveredByHole( pAlignment->uiEndOnRef, pAlignment->uiEndOnRef + 100 ) > .8 )
                 uiTag += 1;
-            if( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery >= pQuery->length( ) * 0.95 )
+            if( pAlignment->uiEndOnQuery - pAlignment->uiBeginOnQuery >= pQuery->length( ) * 0.95 || bSoftClip )
                 uiTag += 2;
             sTag.append( "\tSV:i:" ).append( std::to_string( uiTag ) );
         } // if
@@ -284,10 +286,11 @@ class TagGenerator
                 bFoundSupplementarySisters = true;
                 sSATag.append( pOtherAlignment->getContig( *pPack ) ).append( "," );
                 sSATag.append( std::to_string( pOtherAlignment->getSamPosition( *pPack ) ) ).append( "," );
-                sSATag.append( ( pPack->bPositionIsOnReversStrand( pAlignment->uiBeginOnRef ) ? "-," : "+," ) );
+                sSATag.append( ( pPack->bPositionIsOnReversStrand( pOtherAlignment->uiBeginOnRef ) ? "-," : "+," ) );
                 sSATag
-                    .append( bOutputMInsteadOfXAndEqual ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack )
-                                                        : pOtherAlignment->cigarString( *pPack ) )
+                    .append( bOutputMInsteadOfXAndEqual
+                                 ? pOtherAlignment->cigarStringWithMInsteadOfXandEqual( *pPack, pQuery->length( ) )
+                                 : pOtherAlignment->cigarString( *pPack, pQuery->length( ) ) )
                     .append( "," );
 
                 std::string sMapQual;
