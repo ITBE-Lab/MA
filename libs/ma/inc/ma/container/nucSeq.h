@@ -1173,7 +1173,7 @@ inline std::string buf_to_hex( char* pBuf, size_t uiSize )
     }
     return output;
 } // function
-
+#endif
 
 #ifdef WITH_MYSQL
 /* Integration of shared pointers to CompressedNucSeq objects as data-type in the MySQL interface.
@@ -1301,7 +1301,7 @@ template <> struct PGRowCell<CompNucSeqSharedPtr> : public PGRowCellBase<CompNuc
 }; // specialized class
 #endif
 
-
+#ifdef WITH_DB
 /** @brief Implements the binary representation of compressed sequences */
 template <typename DBCon>
 inline std::string csvPrint( DBCon& rxDBCon, const std::shared_ptr<libMA::CompressedNucSeq>& pCompNucSep )
