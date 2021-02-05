@@ -2,6 +2,8 @@
 MSV is the prototype of a SV caller that shall demonstrate the viability of the approaches proposed in the manuscript [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://biorxiv.org/cgi/content/short/2021.01.12.426317v1 "bioRxiv preprint") Currently, this prototype is usable with small genomes but not ready for the use with large genomes as e.g. the human genome. Further, it does not deliver calls in the VCF format but stores computed adjacency matrix entries in a database instead. 
 
 ## Algorithmic Approach
+[There is a blog about the algorithmic approach of MSV for nested SV.](http://itbe.hanyang.ac.kr/ak/MSV/ "MSV - blog")
+
 MSV breaks with the state-of-the-art approaches for split-read and read-pair SV calling in two ways:
 - Genomic rearrangements (SV) are detected via maximal extended matches (MEMs) instead of alignments. This approach eliminates the concealing effects that alignments have on SV.
 - Genomic rearrangements are represented using adjacency matrices of a skew symmetric graph model for avoiding ambiguities that are inherent to the representation of SV via deletions, insertions and other forms of atomic SV. Further, our skew symmetric graph model unifies forward strand and reverse strand.
