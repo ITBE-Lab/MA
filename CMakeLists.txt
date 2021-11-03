@@ -36,6 +36,8 @@ foreach(CACHE_VAR ${CACHE_VARS})
 endforeach()
 
 # Print info about the current call/environment of CMake
+message("// CC = \"${CMAKE_CC_COMPILER_ID}\"")
+message("// CXX = \"${CMAKE_CXX_COMPILER_ID}\"")
 # message("// CMAKE_ARGS: ${CMAKE_ARGS}")
 message("// CMAKE_BUILD_TYPE = \"${CMAKE_BUILD_TYPE}\"")
 # message("// CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
