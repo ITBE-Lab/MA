@@ -317,6 +317,21 @@ class NucSeq : public libMS::Container
         assert( uiSubscript < uiSize );
         return pxQualityRef[ uiSubscript ];
     } // method
+
+    void setConstQuality(uint8_t uiQ)
+    {
+        auto pxReallocRef2 = (uint8_t*)realloc( pxQualityRef, uxCapacity * sizeof( uint8_t ) );
+        if( pxReallocRef2 == NULL )
+        {
+            throw std::runtime_error(
+                ( std::string( "Memory Reallocation Failed for requested size " ) + std::to_string( uxCapacity ) )
+                    .c_str( ) );
+        } // if
+        pxQualityRef = pxReallocRef2;
+
+        for(size_t uiI = 0; uiI < uiSize; uiI++)
+            quality(uiI) = uiQ;
+    }
 #endif
 
     /** Resizes the internal buffer of the sequence to the requested value.

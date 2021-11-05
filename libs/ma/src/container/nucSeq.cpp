@@ -42,6 +42,7 @@ void exportNucSeq( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "length", &NucSeq::length )
         .def( "complement", &NucSeq::vSwitchAllBasePairsToComplement )
         .def( "reverse", &NucSeq::vReverseAll )
+        .def( "set_const_quality", &NucSeq::setConstQuality )
         .def( "__len__", &NucSeq::length )
         .def( "__str__", &NucSeq::toString )
 #if WITH_QUALITY

@@ -51,7 +51,7 @@ std::shared_ptr<libMS::Container> FileWriter::execute( std::shared_ptr<NucSeq> p
                 sSegment = pQuery->toString( );
         else
             sSegment = pAlignment->getQuerySequence( *pQuery, *pPack );
-        std::string sQual = pAlignment->getQueryQuality( *pQuery );
+        std::string sQual = bSoftClip ? pQuery->toQualString() : pAlignment->getQueryQuality( *pQuery );
 
         std::string sRefName = pAlignment->getContig( *pPack );
         // sam file format has 1-based indices bam 0-based...
@@ -211,7 +211,8 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
         else
             sSegment = pAlignment->getQuerySequence( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2, *pPack );
 
-        std::string sQual = pAlignment->getQueryQuality( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2 );
+        std::string sQual = bSoftClip ? (pAlignment->xStats.bFirst ? pQuery1->toQualString() : pQuery2->toQualString()) 
+                                      : pAlignment->getQueryQuality( pAlignment->xStats.bFirst ? *pQuery1 : *pQuery2 );
         // paired
         flag |= MULTIPLE_SEGMENTS_IN_TEMPLATE | SEGMENT_PROPERLY_ALIGNED;
         flag |= pAlignment->xStats.bFirst ? FIRST_IN_TEMPLATE : LAST_IN_TEMPLATE;
@@ -225,8 +226,7 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
             nucSeqIndex uiP2 = pPack->uiPositionToReverseStrand( pAlignment->xStats.pOther.lock( )->beginOnRef( ) );
             // get the distance of the alignments on the reference
             nucSeqIndex d = uiP1 < uiP2 ? uiP2 - uiP1 : uiP1 - uiP2;
-            // FIXED: std::llabs deleted
-            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( /* std::llabs( d ) */ d );
+            sTlen = ( pAlignment->xStats.bFirst ? "" : "-" ) + std::to_string( d );
 
             // assert( pQuery2 != nullptr );
             if( pPack->bPositionIsOnReversStrand( pAlignment->xStats.pOther.lock( )->uiBeginOnRef ) )
@@ -317,7 +317,7 @@ PairedFileWriter::execute( std::shared_ptr<NucSeq> pQuery1,
             // Position of the mate/next read
             sPosOther + "\t" +
             // observed Template length
-            /*sTlen*/ "0" + "\t" + // output information unavailable for now...
+            sTlen + "\t" +
             // segment sequence
             sSegment + "\t" +
             // ASCII of Phred-scaled base Quality+33
