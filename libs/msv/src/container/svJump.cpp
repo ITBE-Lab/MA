@@ -10,6 +10,8 @@ void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<SvJump, std::shared_ptr<SvJump>>( xOrganizer.util( ), "SvJump" )
         .def( py::init<const Seed&, const Seed&, int64_t>( ) )
         .def( py::init<const Seed&, nucSeqIndex, const bool, int64_t, nucSeqIndex>( ) )
+        .def( py::init<const nucSeqIndex, const nucSeqIndex, const nucSeqIndex, const nucSeqIndex, const bool,
+                       const bool, const nucSeqIndex, int64_t, int64_t>( ) )
         .def( "does_switch_strand", &SvJump::does_switch_strand )
         .def( "switch_strand_known", &SvJump::switch_strand_known )
         .def( "from_start", &SvJump::from_start )
