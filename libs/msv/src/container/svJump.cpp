@@ -64,7 +64,7 @@ void exportSVJump( libMS::SubmoduleOrganizer& xOrganizer )
         .def_readwrite( "to_forward", &SvCall::bToForward )
         .def_readwrite( "supporing_jump_ids", &SvCall::vSupportingJumpIds )
         .def_readwrite( "inserted_sequence", &SvCall::pInsertedSequence )
-        .def_readonly( "id", &SvCall::iId );
+        .def_readwrite( "id", &SvCall::iId );
 
 } // function
 #endif
