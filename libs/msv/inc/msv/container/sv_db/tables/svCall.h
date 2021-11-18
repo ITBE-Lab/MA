@@ -48,6 +48,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     std::shared_ptr<DBCon> pConnection;
     SQLQuery<DBCon, uint64_t> xQuerySize;
     SQLQuery<DBCon, uint64_t> xQuerySizeSpecific;
+    SQLQuery<DBCon, uint64_t> xQuerySizeSpecific2;
     SQLQuery<DBCon, int64_t> xCallArea;
     SQLQuery<DBCon, double> xMaxScore;
     SQLQuery<DBCon, double> xMinScore;
@@ -86,6 +87,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        { { { COLUMN_NAME, "score" },
                            { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<double>( ) },
                            { AS, "( supporting_reads * 1.0 ) / reference_ambiguity" } },
+                         { { COLUMN_NAME, "size" },
+                           { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<uint32_t>( ) },
+                           { AS, "GREATEST(to_pos - from_pos, inserted_sequence_size)" } },
                          { { COLUMN_NAME, "flipped_rectangle" },
                            { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<WKBUint64Rectangle>( ) },
                            { AS, "ST_FlipCoordinates(rectangle::geometry)" } },
@@ -103,6 +107,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
           xQuerySizeSpecific( pConnection, "SELECT COUNT(*) FROM sv_call_table "
                                            "WHERE sv_caller_run_id = ? "
                                            "AND score >= ? " ),
+          xQuerySizeSpecific2( pConnection, "SELECT COUNT(*) FROM sv_call_table "
+                                           "WHERE sv_caller_run_id = ? "
+                                           "AND size >= ? " ),
           xCallArea( pConnection,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
@@ -238,6 +245,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
         this->addIndex( json{ { INDEX_NAME, "runId_score" }, { INDEX_COLUMNS, "sv_caller_run_id, score" } } );
+        this->addIndex( json{ { INDEX_NAME, "runId_size" }, { INDEX_COLUMNS, "sv_caller_run_id, size" } } );
         this->addIndex( json{ { INDEX_NAME, "from_pos_idx" }, { INDEX_COLUMNS, "from_pos" } } );
         this->addIndex( json{ { INDEX_NAME, "to_pos_idx" }, { INDEX_COLUMNS, "to_pos" } } );
         this->addIndex( json{ { INDEX_NAME, "reconstruction_index" },
@@ -248,6 +256,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
+        this->dropIndex( json{ { INDEX_NAME, "runId_size" } } );
         this->dropIndex( json{ { INDEX_NAME, "from_pos_idx" } } );
         this->dropIndex( json{ { INDEX_NAME, "to_pos_idx" } } );
         this->dropIndex( json{ { INDEX_NAME, "reconstruction_index" } } );
@@ -266,6 +275,10 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline uint32_t numCalls( int64_t iCallerRunId, double dMinScore )
     {
         return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
+    } // method
+    inline uint32_t numCallsMinSize( int64_t iCallerRunId, int64_t iMinSize )
+    {
+        return xQuerySizeSpecific2.scalar( iCallerRunId, iMinSize );
     } // method
     inline uint32_t numCalls_py( int64_t iCallerRunId, double dMinScore )
     {
@@ -696,9 +709,12 @@ template <typename DBCon> class CallDescTable : public CallDescTable_t<DBCon>
 
     inline std::string getDesc( int64_t iId )
     {
+        std::string sVal = "";
         if( xGetDesc.execAndFetch( iId ) )
-            return xGetDesc.getVal( );
-        return "";
+            sVal = xGetDesc.getVal( );
+        while( !xGetDesc.eof( ) )
+            xGetDesc.next( );
+        return sVal;
     } // method
 
     void insert_py( int64_t iId, std::string sDesc )

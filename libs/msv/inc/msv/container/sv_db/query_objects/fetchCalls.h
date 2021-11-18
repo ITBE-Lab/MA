@@ -60,6 +60,7 @@ template <typename DBCon> class SvCallsFromDb
         OnlyWithDummyJumps,
         WithoutDummyJumps,
         MinQueryDist,
+        BySizeInsteadOfScore,
         DUMMY_FOR_COUNT // must be last
     };
     std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfiguration;
@@ -150,7 +151,11 @@ template <typename DBCon> class SvCallsFromDb
                 pQueryCount = std::make_unique<SQLQuery<DBCon, double>>(
                     pConnection,
                     std::string( // COALESCE used to prevent NULL values
-                        "SELECT COALESCE((SELECT MAX(inner_table.score) " ) +
+                        "SELECT COALESCE((SELECT MAX(inner_table.") +
+                        ( xConfiguration[ConfigFlags::BySizeInsteadOfScore] 
+                                ? "size"
+                                : "score") + 
+                        ") " +
                         sQueryText +
                         " ) , -1 ) AS data_score "
                         "FROM sv_call_table AS outer_table "
@@ -383,12 +388,14 @@ ORDER BY data_score DESC
 
     // pair(list(tuple(x, calls with score > x, true positives with score > x)), |gt|)
     std::pair<std::vector<std::tuple<double, uint32_t, uint32_t>>, uint32_t>
-    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist )
+    count( int64_t iSvCallerIdA, int64_t iSvCallerIdB, int64_t iAllowedDist, bool bByScore )
     {
         std::vector<std::tuple<double, uint32_t, uint32_t>> vRet;
         std::bitset<ConfigFlags::DUMMY_FOR_COUNT> xConfig;
         xConfig.set( ConfigFlags::WithOuterIntersection );
         xConfig.set( ConfigFlags::JustCount );
+        if( !bByScore )
+            xConfig.set( ConfigFlags::BySizeInsteadOfScore );
         initQuery( xConfig, false );
         std::vector<double> vScores = pQueryCount->template executeAndStoreInVector<0>(
             iSvCallerIdA, iAllowedDist, iAllowedDist, iSvCallerIdB, iAllowedDist * 2, iAllowedDist * 2 );
@@ -406,7 +413,12 @@ ORDER BY data_score DESC
         for( auto xPair : vGrouped )
         {
             if( xPair.first > 0 )
-                vRet.emplace_back( xPair.first, pSvCallTable->numCalls( iSvCallerIdA, xPair.first ), uiNumGT - uiCnt );
+                vRet.emplace_back(
+                        xPair.first,
+                        bByScore
+                            ? pSvCallTable->numCalls( iSvCallerIdA, xPair.first )
+                            : pSvCallTable->numCallsMinSize( iSvCallerIdA, xPair.first ),
+                        uiNumGT - uiCnt );
             uiCnt += xPair.second;
         } // for
         return std::pair<std::vector<std::tuple<double, uint32_t, uint32_t>>, uint32_t>( vRet, uiNumGT );

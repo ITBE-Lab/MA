@@ -79,7 +79,7 @@ def render_calls(self, render_all=False):
             stats_data_3 = {"x":[], "w":[], "t":[], "c":[], "l":[]}
             print("computing stats 1...")
             stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
-                                                                         self.widgets.get_blur())
+                                                                         self.widgets.get_blur(), self.by_score)
             print("done")
             stats_data_1["l"].append("Ground Truth")
             stats_data_1["x"].append([self.get_min_score(), self.get_max_score()])
