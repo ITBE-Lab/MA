@@ -9,6 +9,7 @@
 #include "ma/container/pack.h"
 #include "ms/container/sv_db/pool_container.h"
 #include "msv/container/svJump.h"
+#include "msv/container/sv_db/tables/svCallerRun.h"
 #include "sql_api.h"
 #include "util/geom.h"
 #include "util/system.h"
@@ -16,6 +17,7 @@
 #include "wkb_spatial.h"
 #include <csignal>
 #include <string>
+#include <memory>
 #include <type_traits>
 
 using namespace libMA;
@@ -48,7 +50,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     std::shared_ptr<DBCon> pConnection;
     SQLQuery<DBCon, uint64_t> xQuerySize;
     SQLQuery<DBCon, uint64_t> xQuerySizeSpecific;
-    SQLQuery<DBCon, uint64_t> xQuerySizeSpecific2;
     SQLQuery<DBCon, int64_t> xCallArea;
     SQLQuery<DBCon, double> xMaxScore;
     SQLQuery<DBCon, double> xMinScore;
@@ -60,6 +61,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xFilterCallsWithHighScore;
     SQLStatement<DBCon> xEnableExtension;
     SQLStatement<DBCon> xCopyPath;
+    SQLStatement<DBCon> xExtractSmallCalls;
 
   public:
     // Consider: Place the table on global level
@@ -87,9 +89,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                        { { { COLUMN_NAME, "score" },
                            { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<double>( ) },
                            { AS, "( supporting_reads * 1.0 ) / reference_ambiguity" } },
-                         { { COLUMN_NAME, "size" },
-                           { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<uint32_t>( ) },
-                           { AS, "GREATEST(to_pos - from_pos, inserted_sequence_size)" } },
                          { { COLUMN_NAME, "flipped_rectangle" },
                            { TYPE, DBCon::TypeTranslator::template getSQLColumnTypeName<WKBUint64Rectangle>( ) },
                            { AS, "ST_FlipCoordinates(rectangle::geometry)" } },
@@ -103,13 +102,9 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                   jSvCallTableDef( ) ), // table definition
           pConnection( pConnection ),
           xQuerySize( pConnection, "SELECT COUNT(*) FROM sv_call_table" ),
-
           xQuerySizeSpecific( pConnection, "SELECT COUNT(*) FROM sv_call_table "
                                            "WHERE sv_caller_run_id = ? "
                                            "AND score >= ? " ),
-          xQuerySizeSpecific2( pConnection, "SELECT COUNT(*) FROM sv_call_table "
-                                           "WHERE sv_caller_run_id = ? "
-                                           "AND size >= ? " ),
           xCallArea( pConnection,
                      "SELECT SUM( from_size * to_size ) FROM sv_call_table "
                      "WHERE sv_caller_run_id = ? "
@@ -185,7 +180,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                          // enforce that outer and inner overlap
                          rectanglesOverlapSQL( "outer_", "subquery" ) +
                          // enforce that outer has no overlap with it's own run
-                         selfIntersectionSQL( "outer_", "outer_2" ) )
+                         selfIntersectionSQL( "outer_", "outer_2" ) ),
+          xExtractSmallCalls( pConnection,
+                                     "UPDATE sv_call_table "
+                                     "SET sv_caller_run_id = ? "
+                                     "WHERE sv_caller_run_id = ? "
+                                     "AND GREATEST(to_pos - from_pos, inserted_sequence_size) < ? " )
     {} // default constructor
 
 
@@ -245,7 +245,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         // see: https://dev.mysql.com/doc/refman/5.7/en/create-table-generated-columns.html
         // and: https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html
         this->addIndex( json{ { INDEX_NAME, "runId_score" }, { INDEX_COLUMNS, "sv_caller_run_id, score" } } );
-        this->addIndex( json{ { INDEX_NAME, "runId_size" }, { INDEX_COLUMNS, "sv_caller_run_id, size" } } );
         this->addIndex( json{ { INDEX_NAME, "from_pos_idx" }, { INDEX_COLUMNS, "from_pos" } } );
         this->addIndex( json{ { INDEX_NAME, "to_pos_idx" }, { INDEX_COLUMNS, "to_pos" } } );
         this->addIndex( json{ { INDEX_NAME, "reconstruction_index" },
@@ -256,7 +255,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         this->dropIndex( json{ { INDEX_NAME, "rectangle" } } );
         this->dropIndex( json{ { INDEX_NAME, "runId_score" } } );
-        this->dropIndex( json{ { INDEX_NAME, "runId_size" } } );
         this->dropIndex( json{ { INDEX_NAME, "from_pos_idx" } } );
         this->dropIndex( json{ { INDEX_NAME, "to_pos_idx" } } );
         this->dropIndex( json{ { INDEX_NAME, "reconstruction_index" } } );
@@ -276,10 +274,6 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     {
         return xQuerySizeSpecific.scalar( iCallerRunId, dMinScore );
     } // method
-    inline uint32_t numCallsMinSize( int64_t iCallerRunId, int64_t iMinSize )
-    {
-        return xQuerySizeSpecific2.scalar( iCallerRunId, iMinSize );
-    } // method
     inline uint32_t numCalls_py( int64_t iCallerRunId, double dMinScore )
     {
         return numCalls( iCallerRunId, dMinScore );
@@ -298,6 +292,13 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     inline void deleteCall( SvCall& rCall )
     {
         deleteCall( rCall.iId );
+    } // method
+
+    inline void extractSmallCalls(int64_t iCallerRunId, int64_t iMaxSize, std::string sName, std::string sDesc)
+    {
+        auto pRun = std::make_shared<SvCallerRunTable<DBCon>>( pConnection );
+        auto iNewId = pRun->insert( sName, sDesc, pRun->getSvJumpRunId( iCallerRunId) );
+        xExtractSmallCalls.exec( iNewId, iCallerRunId, iMaxSize );
     } // method
 
     inline void copyPath( int64_t iCallerRunIdFrom, int64_t iCallerRunIdTo, int64_t iAllowedDist )

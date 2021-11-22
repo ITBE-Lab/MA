@@ -130,7 +130,7 @@ class ReadPlot:
             active_scroll="wheel_zoom"
         )
         stat_plot1.yaxis.axis_label = "Num Calls"
-        stat_plot1.xaxis.axis_label = "Min Score" if render.by_score else "Min Size"
+        stat_plot1.xaxis.axis_label = "Min Score"
         self.stat_lines_1 = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
         stat_plot1.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines_1,
                                   legend_field="l")
@@ -145,7 +145,7 @@ class ReadPlot:
             ],
             active_scroll="wheel_zoom"
         )
-        stat_plot4.xaxis.axis_label = "Min Score" if render.by_score else "Min Size"
+        stat_plot4.xaxis.axis_label = "Min Score"
         self.stat_lines_4 = ColumnDataSource({"l":[], "x":[], "y":[], "c":[]})
         stat_plot4.multi_line(xs="x", ys="y", line_color="c", line_width=5, source=self.stat_lines_4,
                                   legend_field="l")

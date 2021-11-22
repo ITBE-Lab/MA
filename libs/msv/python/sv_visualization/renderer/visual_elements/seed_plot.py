@@ -67,6 +67,11 @@ class SeedPlot:
         self.bottom_plot.rect(y="category", x="center", height=1, width="size",
                               color="c", line_width=1, source=self.seeds, name="seeds")
 
+        self.left_plot.rect(x=0, y=0, width=1, height=1,
+                            color=None, line_width=0, name="invisible_rect")
+        self.bottom_plot.rect(x=0, y=0, width=1, height=1,
+                            color=None, line_width=0, name="invisible_rect")
+
         hover_seeds = HoverTool(tooltips=[("read id", "@r_id"),
                                           ("read name", "@r_name"),
                                           ("q, r, l", "@q, @r, @l"),

@@ -79,7 +79,7 @@ def render_calls(self, render_all=False):
             stats_data_3 = {"x":[], "w":[], "t":[], "c":[], "l":[]}
             print("computing stats 1...")
             stats, gt_total = self.count_calls_from_db.count(self.get_run_id(), self.get_gt_id(),
-                                                                         self.widgets.get_blur(), self.by_score)
+                                                                         self.widgets.get_blur())
             print("done")
             stats_data_1["l"].append("Ground Truth")
             stats_data_1["x"].append([self.get_min_score(), self.get_max_score()])
@@ -113,7 +113,7 @@ def render_calls(self, render_all=False):
                     stats_data_4["y"][-1].append(num_tp/gt_total) # recall
                     stats_data_4["y"][-2].append(num_tp/num_calls) # accuracy
             if self.print_to_tsv:
-                with open(self.widgets.file_input.value + "-" + self.widgets.run_id_dropdown.value + ".tsv",
+                with open(self.widgets.file_input.value + "-" + self.widgets.run_id_dropdown.value+ "-" + str(self.widgets.get_blur()) + ".tsv",
                           "w") as out_file:
                     out_file.write("//|ground truth| = " + str(gt_total) + "\n")
                     out_file.write("//#supporting reads\t#true positives\t#num entries\trecall\taccuracy\n")
