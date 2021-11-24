@@ -405,7 +405,7 @@ ORDER BY data_score DESC
         size_t uiNumGT = vScores.size( );
         for( auto xPair : vGrouped )
         {
-            if( xPair.first > 0 )
+            if( xPair.first >= 0 )
                 vRet.emplace_back(
                         xPair.first,
                         pSvCallTable->numCalls( iSvCallerIdA, xPair.first ),
