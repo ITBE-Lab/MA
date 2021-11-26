@@ -299,6 +299,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         auto pRun = std::make_shared<SvCallerRunTable<DBCon>>( pConnection );
         auto iNewId = pRun->insert( sName, sDesc, pRun->getSvJumpRunId( iCallerRunId) );
         xExtractSmallCalls.exec( iNewId, iCallerRunId, iMaxSize );
+        genIndices( iNewId );
     } // method
 
     inline void copyPath( int64_t iCallerRunIdFrom, int64_t iCallerRunIdTo, int64_t iAllowedDist )

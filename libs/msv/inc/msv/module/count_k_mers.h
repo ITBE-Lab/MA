@@ -437,26 +437,29 @@ class MMFilteredSeeding : public Module<Seeds, false, minimizer::Index, NucSeq, 
         const char* sSeq = (const char*)pQuery->pxSequenceRef;
         const int iSize = (int)pQuery->length( );
         // pack arguments for c function
-        auto xPtr = std::make_pair( pCounter, uiMaxOcc );
+        auto xPtr = std::make_tuple( pCounter, uiMaxOcc, pQuery->sName );
         auto pRet = pMMIndex->seed_one(
             sSeq, iSize, bRectangular, pPack,
             // lambda function filters query minimizers before they are turned to seeds via hash table lookup
             [/*cannot capture since lambda needs to be passed to c as function pointer*/]( mm128_t* a, size_t& n,
                                                                                            void* pArg ) {
                 // unpack arguments from c function
-                auto pPair = static_cast<std::pair<std::shared_ptr<HashCounter>, nucSeqIndex>*>( pArg );
+                auto pPair = static_cast<std::tuple<std::shared_ptr<HashCounter>, nucSeqIndex, std::string>*>( pArg );
+                //std::cout << "MMFilteredSeeding::n " << n << " " << std::get<2>(*pPair) << std::endl;
                 size_t uiI = 0;
                 while( uiI < n )
                 {
-                    if( !pPair->first->isUnique( minimizer::Index::_getHash( a[ uiI ] ), pPair->second ) )
+                    if( !std::get<0>(*pPair)->isUnique( minimizer::Index::_getHash( a[ uiI ] ), std::get<1>(*pPair) ) )
                         a[ uiI ] = a[ --n ];
                     else
                         uiI++;
                 } // while
+              //  std::cout << "MMFilteredSeeding::n " << n << " " << std::get<2>(*pPair) << std::endl;
             },
             // c function can only take void* as arguments
             static_cast<void*>( &xPtr ) );
         pQuery->vTranslateToNumericForm( );
+            //std::cout << "MMFilteredSeeding::pRet " << pRet->size() << " " << pQuery->sName << std::endl;
         return pRet;
     } // method
 

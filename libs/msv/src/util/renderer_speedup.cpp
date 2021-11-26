@@ -224,6 +224,7 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     } // scope of xGuard2
                     auto pRead = pReadTable->getRead( iReadId );
                     auto pMinimizers = xSeeding.execute( pMMIndex, pRead, pPack, pCounter );
+                    std::cout << pMinimizers->size() << " minimizers for read " << pRead->sName << std::endl;
                     auto pLumpedSeeds = xLumping.execute( pMinimizers, pRead, pPack );
                     auto pSoCs = xSoc.execute( pLumpedSeeds, pRead, pPack );
                     auto pFilteredSeeds = xSocFilter.execute( pSoCs );
@@ -245,8 +246,15 @@ std::shared_ptr<ReadInfo> seedDisplaysForReadIds( const ParameterSetManager& rPa
                     //            xReseedOutExtraInfo.vParlindromeSeed[ uiK ],
                     //            xReseedOutExtraInfo.vOverlappingSeed[ uiK ], iReadId, pRead->sName, pRead, true,
                     //            pCounter, xReseedOutExtraInfo.vSocIds[ uiK ] );
-                    // for( auto& xSeeds : pFilteredSeeds->xContent )
-                    //    for( auto& rSeed : *xSeeds )
+                    //while(pSoCs->empty( ))
+                    //{
+                        //auto pSeeds = pSoCs->pop( );
+                        for( auto& rSeed : *pMinimizers )
+                            vSeedsNIndex.emplace_back( 0, rSeed, 0, false, true, iReadId, pRead->sName, pRead, true,
+                                                       pCounter, 0 );
+                    //}// while
+                     //for( auto& xSeeds : pFilteredSeeds->xContent )
+                    //   for( auto& rSeed : *xSeeds )
                     //        vSeedsNIndex.emplace_back( 0, rSeed, 0, false, true, iReadId, pRead->sName, pRead, true,
                     //                                   pCounter, 0 );
                     for( auto& rSeed : *xReseedOutExtraInfo.pRemovedSeeds )

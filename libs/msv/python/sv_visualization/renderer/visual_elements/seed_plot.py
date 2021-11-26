@@ -22,6 +22,7 @@ class SeedPlot:
         self.left_plot.xaxis.major_label_orientation = math.pi/2
         self.left_plot.yaxis.axis_label = "Reference Position"
         self.left_plot.xaxis.axis_label = "Read Id"
+        self.left_plot.rect(x=0.5, y=0, width=1, height=1, color="white", alpha=0)
 
         self.bottom_plot = figure(
             width=900,
@@ -35,6 +36,7 @@ class SeedPlot:
         self.bottom_plot.xaxis.axis_label = "Reference Position"
         self.bottom_plot.yaxis.axis_label = "Read Id"
         self.bottom_plot.xaxis.major_label_orientation = math.pi/4
+        self.bottom_plot.rect(x=0.5, y=0, width=1, height=1, color="white", alpha=0)
         
         # make the axis lables appear
         self.bottom_plot.rect(x=0, y=0, width=1, height=1, color="white", alpha=0)

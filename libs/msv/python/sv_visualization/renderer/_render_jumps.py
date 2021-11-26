@@ -136,6 +136,7 @@ def render_jumps(self, jump_list=[], render_all=False):
 
     # render the seeds in the main seed plot
     if len(self.read_ids)*self.read_penalty_factor >= self.get_max_num_ele() and not render_all:
+        print("not rendering", len(self.read_ids), "reads")
         self.read_ids = set()
     with self.measure("render_reads"):
         self.render_reads(render_all)

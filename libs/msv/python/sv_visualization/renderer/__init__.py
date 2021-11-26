@@ -25,7 +25,12 @@ class Renderer():
         self.w = None
         self.h = None
         self.params = ParameterSetManager()
-        self.params.set_selected("SV-PacBio")
+        #self.params.set_selected("SV-PacBio")
+        self.params.set_selected("SV-Illumina")
+        self.params.by_name("Min NT in SoC").set(10)
+        self.params.by_name("Minimal Harmonization Score").set(10)
+        self.params.by_name("Min NT after reseeding").set(40)
+        self.params.by_name("Max Occ MM Filter").set(10000)
         self.quads = []
         self.read_ids = set() # @todo make two dicts? read ids new and read ids old?
         self.give_up_factor = 1000
