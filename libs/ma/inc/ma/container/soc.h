@@ -127,8 +127,8 @@ class SoCPriorityQueue : public libMS::Container
     std::vector<double> vSlopes;
     std::vector<double> vIntercepts;
     std::vector<std::shared_ptr<Seeds>> vIngroup;
-    nucSeqIndex uiQLen;
 #endif
+    nucSeqIndex uiQLen;
     /// @brief The index of the next SoC during the extraction process.
     unsigned int uiSoCIndex = 0;
     /// @brief The complete seed set.
@@ -154,13 +154,13 @@ class SoCPriorityQueue : public libMS::Container
      * If compiled in debug mode this class checks for correct usage.
      * In release mode incorrect usage results in undefined behaviour.
      */
-    SoCPriorityQueue( std::shared_ptr<Seeds> pSeeds ) : pSeeds( pSeeds ), vMaxima( )
+    SoCPriorityQueue( std::shared_ptr<Seeds> pSeeds, nucSeqIndex uiQLen ) : uiQLen(uiQLen), pSeeds( pSeeds ), vMaxima( )
     {} // constructor
 
     /**
      * @brief Create a new SoC priority queue without a seed set.
      */
-    SoCPriorityQueue( ) : pSeeds( nullptr ), vMaxima( )
+    SoCPriorityQueue( ) : uiQLen(0), pSeeds( nullptr ), vMaxima( )
     {} // constructor
 
     /// @brief Returns the size (usable in either state).

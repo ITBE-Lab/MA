@@ -14,7 +14,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
 {
     // make sure that we return at least an SoC set
     if( pSeeds->empty( ) )
-        return std::make_shared<SoCPriorityQueue>( pSeeds );
+        return std::make_shared<SoCPriorityQueue>( pSeeds, pQuerySeq->length() );
 
     const nucSeqIndex uiQLen = pQuerySeq->length( );
 
@@ -53,7 +53,7 @@ std::shared_ptr<SoCPriorityQueue> StripOfConsiderationSeeds::execute(
 #endif
 
     // positions to remember the maxima
-    auto pSoCs = std::make_shared<SoCPriorityQueue>( pSeeds );
+    auto pSoCs = std::make_shared<SoCPriorityQueue>( pSeeds, pQuerySeq->length() );
     DEBUG( pSoCs->uiQLen = uiQLen; ) // DEBUG
 
     // find the SOC maxima

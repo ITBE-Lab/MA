@@ -66,8 +66,7 @@ class AlignerParameterBase
     /* Delete copy constructor */
     AlignerParameterBase( const AlignerParameterBase& rxOtherSet ) = delete;
     AlignerParameterBase( AlignerParameterBase&& other ) = default; // required for getting emplace with maps working
-    AlignerParameterBase&
-    operator=( AlignerParameterBase&& other ) = default; // required for getting emplace with maps working
+    //AlignerParameterBase& operator=( AlignerParameterBase&& other ) = default; // required for getting emplace with maps working
 
     // Callback that is called on demand.
     // By default a parameter is always active.
@@ -583,7 +582,9 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxRefAmbiguityJump; // Max Ref Ambiguity Jump
     AlignerParameterPointer<int> xMMFilterMaxOcc; // xMMFilterMaxOcc
     AlignerParameterPointer<int> xMinNtInSoc; // Min NT in SoC
+    AlignerParameterPointer<double> xMinNtInSocRelative; // Min NT in SoC Relative
     AlignerParameterPointer<int> xMinNtAfterReseeding; // Min NT after reseeding
+    AlignerParameterPointer<double> xMinNtAfterReseedingRelative; // Min NT after reseeding Relative
     AlignerParameterPointer<int> xMinReadsInCall; // Min Reads in Call
 
     // Heuristic Options:
@@ -612,7 +613,7 @@ class Presetting : public ParameterSetBase
     /* Delete copy constructor */
     Presetting( const Presetting& rxOtherSet ) = delete;
     Presetting( Presetting&& other ) = default; // required for getting emplace with maps working
-    Presetting& operator=( Presetting&& other ) = default; // required for getting emplace with maps working
+    //Presetting& operator=( Presetting&& other ) = default; // required for getting emplace with maps working
 
     /* Constructor */
     Presetting( const std::string sName )
@@ -810,10 +811,18 @@ class Presetting : public ParameterSetBase
                        "Discard all SoCs with a lower accumulative size of seeds than <val> (before reseeding). Only "
                        "relevant for MSV.",
                        SV_PARAMETERS, 150, checkPositiveValue ),
+          xMinNtInSocRelative( this, "Relative Min NT in SoC",
+                       "Discard all SoCs with a lower accumulative size of seeds than <val>*read_size "
+                       " (before reseeding). SoCs will only be discarded if this condition and Min NT in SoC both are met.",
+                       SV_PARAMETERS, 1, checkPositiveValue ),
           xMinNtAfterReseeding( this, "Min NT after reseeding",
                                 "Discard all SoCs with a lower accumulative size of seeds than <val> (after "
                                 "reseeding).",
                                 SV_PARAMETERS, 100, checkPositiveValue ),
+          xMinNtAfterReseedingRelative( this, "Relative Min NT after reseeding",
+                                "Discard all SoCs with a lower accumulative size of seeds than <val> (after "
+                                "reseeding). SoCs will only be discarded if this condition and Min NT after reseeding both are met.",
+                                SV_PARAMETERS, 1, checkPositiveValue ),
           xMinReadsInCall( this, "Min Reads in call",
                            "Keep all SV-calls that are supported by at least <val> reads.",
                            SV_PARAMETERS, 2, checkPositiveValue ),
@@ -1076,6 +1085,12 @@ class ParameterSetManager
     // Presets for aligner configuration
     std::map<std::string, std::shared_ptr<Presetting>> xParametersSets;
 
+    void setCommonSvParameters(std::shared_ptr<Presetting> pPre)
+    {
+        pPre->xMaximalSeedAmbiguity->set( 1 );
+        pPre->xRectangularSoc->set( false );
+    }
+
     ParameterSetManager( ) : pGeneralParameterSet( std::make_shared<GeneralParameter>( ) )
     {
         xParametersSets.emplace( "default", std::make_shared<Presetting>( "Default" ) );
@@ -1104,28 +1119,27 @@ class ParameterSetManager
         xParametersSets[ "nanopore" ]->xMinNumSoC->set( 5 );
 
         xParametersSets.emplace( "sv-illumina", std::make_shared<Presetting>( "SV-Illumina" ) );
-        xParametersSets[ "sv-illumina" ]->xMaximalSeedAmbiguity->set( 1 );
-        xParametersSets[ "sv-illumina" ]->xMinNtInSoc->set( 25 );
-        xParametersSets[ "sv-illumina" ]->xRectangularSoc->set( false );
+        setCommonSvParameters( xParametersSets[ "sv-illumina" ] );
         xParametersSets[ "sv-illumina" ]->xDoDummyJumps->set( false );
-        xParametersSets[ "sv-illumina" ]->xHarmScoreMinRel->set( 0 );
         xParametersSets[ "sv-illumina" ]->xMinReadsInCall->set( 10 );
-        xParametersSets[ "sv-illumina" ]->xHarmScoreMin->set( xParametersSets[ "sv-illumina" ]->xMinNtInSoc->get( ) );
         xParametersSets[ "sv-illumina" ]->xMaxSizeEdge->set( 200 );
-
+        xParametersSets[ "sv-illumina" ]->xHarmScoreMin->set( 10 );
+        xParametersSets[ "sv-illumina" ]->xHarmScoreMinRel->set( 0.1 );
+        xParametersSets[ "sv-illumina" ]->xMinNtAfterReseedingRelative->set( 0.4 );
+        xParametersSets[ "sv-illumina" ]->xMinNtInSoc->set( 25 );
+        xParametersSets[ "sv-illumina" ]->xMinNtInSocRelative->set( 0.1 );
 
         // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
+        setCommonSvParameters( xParametersSets[ "sv-pacbio" ] );
         xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 3000 );
         xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 1000 );
-        xParametersSets[ "sv-pacbio" ]->xMaximalSeedAmbiguity->set( 1 );
         xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
-        xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
         xParametersSets[ "sv-pacbio" ]->xMinNtAfterReseeding->set( 600 );
-        xParametersSets[ "sv-pacbio" ]->xRectangularSoc->set( false );
         xParametersSets[ "sv-pacbio" ]->xHarmScoreMinRel->set( 0 );
-        xParametersSets[ "sv-pacbio" ]->xHarmScoreMin->set( xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->get( ) );
+        xParametersSets[ "sv-pacbio" ]->xHarmScoreMin->set( 25 );
+        xParametersSets[ "sv-pacbio" ]->xMinNtInSoc->set( 25 );
 
         // Initially select Illumina
         this->pSelectedParamSet = xParametersSets[ "default" ];

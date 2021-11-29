@@ -695,12 +695,15 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
     FilterOverlappingSoCs<false> xFilter1;
     FilterOverlappingSoCs<true> xFilter2;
     nucSeqIndex uiMinNt;
+    double dMinNtRelative;
     const nucSeqIndex uiSoCHeight = 100;
 
     template <typename F, typename G>
     void filterIsolated( F&& fGetStart, G&& fGetEnd, std::shared_ptr<Seeds> pSeedsSetIn,
-                         std::shared_ptr<Seeds> pSeedsSetOut, HelperRetVal* pOutExtra )
+                         std::shared_ptr<Seeds> pSeedsSetOut, HelperRetVal* pOutExtra, nucSeqIndex uiQLen )
     {
+        assert( uiQLen > 0 );
+        const nucSeqIndex uiThreshold = std::min(uiMinNt, (nucSeqIndex) (dMinNtRelative*uiQLen));
         // @todo sorting often squared
         std::sort( pSeedsSetIn->begin( ), pSeedsSetIn->end( ),
                    [ & ]( auto& xA, auto& xB ) { return fGetStart( xA ) < fGetStart( xB ); } );
@@ -712,7 +715,7 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
             if( fGetStart( xSeed ) > uiMax + uiSoCHeight )
             {
                 // last SoC had to little NT in it
-                if( uiNumNtLast < uiMinNt )
+                if( uiNumNtLast < uiThreshold )
                 {
                     if( pOutExtra != nullptr )
                         for( size_t uiI = pSeedsSetOut->size( ) - uiSizeLastSoC; uiI < pSeedsSetOut->size( ); uiI++ )
@@ -728,7 +731,7 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
             uiSizeLastSoC++;
         } // for
         // very last SoC had to little NT in it
-        if( uiNumNtLast < uiMinNt )
+        if( uiNumNtLast < uiThreshold )
         {
             if( pOutExtra != nullptr )
                 for( size_t uiI = pSeedsSetOut->size( ) - uiSizeLastSoC; uiI < pSeedsSetOut->size( ); uiI++ )
@@ -743,7 +746,8 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
           xDupRem( rParameters ),
           xFilter1( rParameters ),
           xFilter2( rParameters ),
-          uiMinNt( rParameters.getSelected( )->xMinNtAfterReseeding->get( ) )
+          uiMinNt( rParameters.getSelected( )->xMinNtAfterReseeding->get( ) ),
+          dMinNtRelative( rParameters.getSelected( )->xMinNtAfterReseedingRelative->get( ) )
     {} // constructor
 
     /**
@@ -762,11 +766,11 @@ class RecursiveReseedingSoCs : public libMS::Module<Seeds, false, SeedsSet, Pack
             // gaps on query
             auto pTmp = std::make_shared<Seeds>( );
             filterIsolated( []( Seed& rS ) { return rS.start( ); }, []( Seed& rS ) { return rS.end( ); }, pR, pTmp,
-                            pOutExtra );
+                            pOutExtra, pQuery->length( ) );
             filterIsolated(
                 []( Seed& rS ) { return ( rS.bOnForwStrand ? rS.start_ref( ) : rS.start_ref( ) - rS.size( ) ); },
                 []( Seed& rS ) { return ( rS.bOnForwStrand ? rS.end_ref( ) : rS.start_ref( ) ); }, pTmp, pReseeded,
-                pOutExtra );
+                pOutExtra, pQuery->length( ) );
         } // for
         if( pOutExtra != nullptr )
             pOutExtra->uiCurrSocID = 0;

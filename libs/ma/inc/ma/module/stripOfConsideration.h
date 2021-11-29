@@ -188,18 +188,22 @@ class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
 
   public:
     const nucSeqIndex uiMinNt;
+    const double dMinNtRelative;
 
     GetAllFeasibleSoCs( const ParameterSetManager& rParameters )
         : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
-          uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) )
+          uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) ),
+          dMinNtRelative( rParameters.getSelected( )->xMinNtInSocRelative->get( ) )
     {} // constructor
 
 
     virtual std::shared_ptr<Seeds> DLL_PORT( MA ) execute( std::shared_ptr<SoCPriorityQueue> pSoCs )
     {
+        assert( pSoCs->uiQLen > 0 );
+        const nucSeqIndex uiThreshold = std::min(uiMinNt, (nucSeqIndex) (dMinNtRelative*pSoCs->uiQLen));
         auto pRet = std::make_shared<Seeds>( );
 
-        while( !pSoCs->empty( ) && pSoCs->getScoreOfNextSoC( ) >= uiMinNt )
+        while( !pSoCs->empty( ) && pSoCs->getScoreOfNextSoC( ) >= uiThreshold )
         {
             auto pSeeds = pSoCs->pop( );
             std::sort( pSeeds->begin( ), pSeeds->end( ),
@@ -212,7 +216,7 @@ class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
                 if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
                 {
                     // last SoC had to little NT in it
-                    if( uiNumNtLast < uiMinNt )
+                    if( uiNumNtLast < uiThreshold )
                         pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
                     uiNumNtLast = 0;
                     uiSizeLastSoC = 0;
@@ -223,7 +227,7 @@ class GetAllFeasibleSoCs : public libMS::Module<Seeds, false, SoCPriorityQueue>
                 uiSizeLastSoC++;
             } // for
             // very last SoC had to little NT in it
-            if( uiNumNtLast < uiMinNt )
+            if( uiNumNtLast < uiThreshold )
                 pRet->resize( pRet->size( ) - uiSizeLastSoC ); // remove it
         } // while
 
@@ -237,18 +241,22 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
 
   public:
     nucSeqIndex uiMinNt;
+    const double dMinNtRelative;
 
     GetAllFeasibleSoCsAsSet( const ParameterSetManager& rParameters )
         : uiSoCHeight( rParameters.getSelected( )->xSoCWidth->get( ) ), // same as width
-          uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) )
+          uiMinNt( rParameters.getSelected( )->xMinNtInSoc->get( ) ),
+          dMinNtRelative( rParameters.getSelected( )->xMinNtInSocRelative->get( ) )
     {} // constructor
 
 
     virtual std::shared_ptr<SeedsSet> DLL_PORT( MA ) execute( std::shared_ptr<SoCPriorityQueue> pSoCs )
     {
+        assert( pSoCs->uiQLen > 0 );
+        const nucSeqIndex uiThreshold = std::min(uiMinNt, (nucSeqIndex) (dMinNtRelative*pSoCs->uiQLen));
         auto pRet = std::make_shared<SeedsSet>( );
 
-        while( !pSoCs->empty( ) && pSoCs->getScoreOfNextSoC( ) >= uiMinNt )
+        while( !pSoCs->empty( ) && pSoCs->getScoreOfNextSoC( ) >= uiThreshold )
         {
 #if 0 // turn on/off the splitting of SoCs on gaps
             auto pSeeds = pSoCs->pop( );
@@ -265,7 +273,7 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
                 if( xSeed.start( ) > uiMaxQ + uiSoCHeight )
                 {
                     // last SoC had to little NT in it
-                    if( uiNumNtLast < uiMinNt )
+                    if( uiNumNtLast < uiThreshold )
                         pRet->xContent.pop_back( ); // remove it
                     pRet->xContent.push_back( std::make_shared<Seeds>( ) );
                     uiNumNtLast = 0;
@@ -275,7 +283,7 @@ class GetAllFeasibleSoCsAsSet : public libMS::Module<SeedsSet, false, SoCPriorit
                 pRet->xContent.back( )->push_back( xSeed );
             } // for
             // very last SoC had to little NT in it
-            if( uiNumNtLast < uiMinNt )
+            if( uiNumNtLast < uiThreshold )
                 pRet->xContent.pop_back( ); // remove it
 #endif
         } // while
