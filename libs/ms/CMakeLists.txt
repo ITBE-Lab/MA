@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
-project("MS Lib" VERSION 2.0.0 DESCRIPTION "Modular Structure library")
+project("MS Lib" VERSION 2.0.1 DESCRIPTION "Modular Structure library")
 
 
 if( PythonLibs_FOUND )
@@ -199,10 +199,10 @@ endif()
 
 if(NOT RESULT_COMMIT STREQUAL "0" OR NOT RESULT_STATUS STREQUAL "0")
     message( "--libMS: WARNING cannot infer version from git (maybe git.exe is not in your environment path?)" )
-    set(MS_VERSION "Unknown")
+    set(MA_VERSION "Unknown")
 else()
-    set(MS_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")
-    message( "--libMS: Version = ${MS_VERSION}" )
+    set(MA_VERSION "${PROJECT_VERSION}-${GIT_COMMIT_HASH}${GIT_STATUS}")
+    message( "--libMS: Version = ${MA_VERSION}" )
 endif()
 
 configure_file( # @todo so far this only triggers during configure not at build time

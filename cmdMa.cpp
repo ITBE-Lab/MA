@@ -394,6 +394,11 @@ int main( int argc, char* argv[] )
             generateHelpMessage( xExecutionContext.xParameterSetManager );
             return 0;
         } // if
+        if( xExecutionContext.xParameterSetManager.pGeneralParameterSet->pbPrintVerstion->get( ) )
+        {
+            std::cout << MA_VERSION << std::endl;
+            return 0;
+        } // if
 
         std::pair<int, double> xPreviousProgress = std::make_pair( -1, 0 );
         std::cout << "starting alignment." << std::endl;

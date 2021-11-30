@@ -951,6 +951,7 @@ class GeneralParameter : public ParameterSetBase
     AlignerParameterPointer<bool> pbUseMaxHardareConcurrency; // Exploit all cores
     AlignerParameterPointer<int> piNumberOfThreads; // selected number of threads
     AlignerParameterPointer<bool> pbPrintHelpMessage; // Print the help message to stdout
+    AlignerParameterPointer<bool> pbPrintVerstion; // Print the version to stdout
 
     /* Constructor */
     GeneralParameter( )
@@ -972,7 +973,8 @@ class GeneralParameter : public ParameterSetBase
                              "Number of threads used in the context of alignments. This options is only available, if "
                              "'use all processor cores' is off.",
                              GENERAL_PARAMETER, 1, checkPositiveValue ),
-          pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false )
+          pbPrintHelpMessage( this, "Help", 'h', "Print the complete help text.", GENERAL_PARAMETER, false ),
+          pbPrintVerstion( this, "Version", 'v', "Print the version and exit.", GENERAL_PARAMETER, false )
     {
         xSAMOutputPath->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 1; };
         xSAMOutputFileName->fEnabled = [ this ]( void ) { return this->xSAMOutputTypeChoice->uiSelection == 2; };
