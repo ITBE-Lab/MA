@@ -27,11 +27,12 @@ class_<Vector, holder_type> bind_vector_ext( handle scope, std::string const& na
 
     // If the value_type is unregistered (e.g. a converting type) or is itself registered
     // module-local then make the vector binding module-local as well:
-    using vtype = typename Vector::value_type;
-    auto vtype_info = detail::get_type_info( typeid( vtype ) );
-    bool local = !vtype_info || vtype_info->module_local;
+    //using vtype = typename Vector::value_type;
+    //auto vtype_info = detail::get_type_info( typeid( vtype ) );
+    //bool local = !vtype_info || vtype_info->module_local;
+    // @note for this to work vectors cannot be module local!!!!
 
-    Class_ cl( scope, name.c_str( ), pybind11::module_local( local ), std::forward<Args>( args )... );
+    Class_ cl( scope, name.c_str( ), /*pybind11::module_local( local ),*/ std::forward<Args>( args )... );
 
     // Declare the buffer interface if a buffer_protocol() is passed in
     detail::vector_buffer<Vector, Class_, Args...>( cl );

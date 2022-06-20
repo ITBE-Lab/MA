@@ -331,7 +331,7 @@ inline ThreadPool::ThreadPool( size_t threads )
                      */
                     task( i );
                 }
-                catch( std::exception e )
+                catch( std::exception& e )
                 {
                     std::cerr << "exception when executing task:" << std::endl;
                     std::cerr << e.what( ) << std::endl;

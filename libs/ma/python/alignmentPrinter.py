@@ -6,6 +6,7 @@
 # @author Markus Schmidt
 
 from MS import *
+from MA import *
 
 ##
 # @brief Print the given Alignment.
