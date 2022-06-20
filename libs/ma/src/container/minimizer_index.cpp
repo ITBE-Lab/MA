@@ -1,5 +1,7 @@
 #define USE_DLL_EXPORT
 #include "ma/container/minimizer_index.h"
+
+#ifdef WITH_ZLIB
 using namespace minimizer;
 
 #ifdef _MSC_VER
@@ -27,4 +29,5 @@ void exportMinimizerIndex( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "set_max_occ", &Index::setMaxOcc );
 #endif
 } // function
+#endif
 #endif

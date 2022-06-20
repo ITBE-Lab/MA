@@ -506,5 +506,7 @@ class Index : public libMS::Container
 
 
 #ifdef WITH_PYTHON
+#ifdef WITH_ZLIB
 void exportMinimizerIndex( libMS::SubmoduleOrganizer& xOrganizer );
+#endif
 #endif

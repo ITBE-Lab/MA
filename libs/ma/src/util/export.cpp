@@ -59,11 +59,16 @@ PYBIND11_MODULE( libMA, libMaModule )
     exportSoC( xOrganizer );
     exportOtherSeeding( xOrganizer );
     exportHashMapSeeding( xOrganizer );
+#ifdef WITH_ZLIB
     exportMinimizerIndex( xOrganizer );
+#endif
     exportExecutionContext( xOrganizer );
     exportSamFileReader( xOrganizer );
     exportCompareAlignments( xOrganizer );
+    
+#ifdef WITH_ZLIB
     exportMinimizerSeeding( xOrganizer );
+#endif
 } // function
 
 #endif
