@@ -1032,10 +1032,10 @@ class GlobalParameter : public ParameterSetBase
 
     /* Constructor */
     GlobalParameter( )
-        : xJumpS( this, "fuzziness-s", "Maximal fuzziness for entries.", SV_PARAMETERS, 200 ),
+        : xJumpS( this, "fuzziness-s", "Maximal fuzziness for entries.", SV_PARAMETERS, 400 ),
           xJumpSNeg( this, "fuzziness-s-neg", "Maximal fuzziness for entries.", SV_PARAMETERS,
-                     200 ),
-          xJumpM( this, "fuzziness-m", "Fuzziness slope.", SV_PARAMETERS, 0.5 ),
+                     400 ),
+          xJumpM( this, "fuzziness-m", "Fuzziness slope.", SV_PARAMETERS, 0.25 ),
           xJumpH( this, "fuzziness-h", "Fuzziness zero-point.", SV_PARAMETERS, 25 ),
           xSeedDirFuzziness( this, "Seed Dir Fuzziness", "Absolute fuzziness in seed direction.", SV_PARAMETERS, 3,
                              checkPositiveValue ),
@@ -1124,20 +1124,19 @@ class ParameterSetManager
         setCommonSvParameters( xParametersSets[ "sv-illumina" ] );
         xParametersSets[ "sv-illumina" ]->xDoDummyJumps->set( false );
         xParametersSets[ "sv-illumina" ]->xMinReadsInCall->set( 10 );
-        xParametersSets[ "sv-illumina" ]->xMaxSizeEdge->set( 200 );
+        //xParametersSets[ "sv-illumina" ]->xMaxSizeEdge->set( 200 );
         xParametersSets[ "sv-illumina" ]->xHarmScoreMin->set( 10 );
         xParametersSets[ "sv-illumina" ]->xHarmScoreMinRel->set( 0.1 );
         xParametersSets[ "sv-illumina" ]->xMinNtAfterReseedingRelative->set( 0.4 );
         xParametersSets[ "sv-illumina" ]->xMinNtInSoc->set( 25 );
         xParametersSets[ "sv-illumina" ]->xMinNtInSocRelative->set( 0.1 );
 
-        // xParametersSets[ "sv-illumina" ]->xMinSeedSizeSV->set( 16 ); @todo does this help or no ?
 
         xParametersSets.emplace( "sv-pacbio", std::make_shared<Presetting>( "SV-PacBio" ) );
         setCommonSvParameters( xParametersSets[ "sv-pacbio" ] );
         xParametersSets[ "sv-pacbio" ]->xSoCWidth->set( 3000 );
         xParametersSets[ "sv-pacbio" ]->xMaxSizeReseed->set( 1000 );
-        xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
+        //xParametersSets[ "sv-pacbio" ]->xMinSizeEdge->set( 200 );
         xParametersSets[ "sv-pacbio" ]->xMinNtAfterReseeding->set( 600 );
         xParametersSets[ "sv-pacbio" ]->xHarmScoreMinRel->set( 0 );
         xParametersSets[ "sv-pacbio" ]->xHarmScoreMin->set( 25 );

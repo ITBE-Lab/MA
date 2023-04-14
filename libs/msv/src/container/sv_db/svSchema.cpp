@@ -117,6 +117,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "filter_calls_with_high_score", &SvCallTable<DBConSingle>::filterCallsWithHighScore )
         .def( "gen_indices", &SvCallTable<DBConSingle>::genIndices )
         .def( "extract_small_calls", &SvCallTable<DBConSingle>::extractSmallCalls )
+        .def( "extract_large_calls", &SvCallTable<DBConSingle>::extractLargeCalls )
         .def( "insert_call", &SvCallTable<DBConSingle>::insertCall );
 
     py::class_<KMerFilterTable<DBConSingle>, std::shared_ptr<KMerFilterTable<DBConSingle>>>( xOrganizer.util( ),
@@ -183,6 +184,8 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
                                                                                                "SvCallerRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) )
         .def( "getIds", &SvCallerRunTable<DBConSingle>::getIds )
+        .def( "getId", &SvCallerRunTable<DBConSingle>::getId )
+        .def( "hasName", &SvCallerRunTable<DBConSingle>::hasName )
         .def( "getName", &SvCallerRunTable<DBConSingle>::getName )
         .def( "exists", &SvCallerRunTable<DBConSingle>::exists )
         .def( "getDesc", &SvCallerRunTable<DBConSingle>::getDesc )

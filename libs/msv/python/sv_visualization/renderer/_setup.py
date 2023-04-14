@@ -86,7 +86,8 @@ def setup(self):
         if not self.db_conn is None:
             run_table = SvCallerRunTable(self.db_conn)
             for run_id in run_table.getIds():
-                text = run_table.getName(run_id) + " - " + run_table.getDate(run_id) + " - " + run_table.getDesc(run_id)
+                text = str(run_id) + " - " + run_table.getName(run_id) + " - " + run_table.getDate(run_id) + " - "
+                text += run_table.getDesc(run_id)
                 text += " - " + str(SvCallTable(self.db_conn).num_calls(run_id, self.widgets.score_slider.value[0]))
                 text += " entries"
                 menu.append((text, str(run_id)))

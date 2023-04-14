@@ -62,6 +62,7 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
     SQLStatement<DBCon> xEnableExtension;
     SQLStatement<DBCon> xCopyPath;
     SQLStatement<DBCon> xExtractSmallCalls;
+    SQLStatement<DBCon> xExtractLargeCalls;
 
   public:
     // Consider: Place the table on global level
@@ -185,7 +186,12 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
                                      "UPDATE sv_call_table "
                                      "SET sv_caller_run_id = ? "
                                      "WHERE sv_caller_run_id = ? "
-                                     "AND GREATEST(to_pos - from_pos, inserted_sequence_size) < ? " )
+                                     "AND GREATEST(to_pos - from_pos, inserted_sequence_size) < ? " ),
+          xExtractLargeCalls( pConnection,
+                                     "UPDATE sv_call_table "
+                                     "SET sv_caller_run_id = ? "
+                                     "WHERE sv_caller_run_id = ? "
+                                     "AND GREATEST(to_pos - from_pos, inserted_sequence_size) >= ? " )
     {} // default constructor
 
 
@@ -294,12 +300,24 @@ template <typename DBCon> class SvCallTable : public SvCallTableType<DBCon>
         deleteCall( rCall.iId );
     } // method
 
-    inline void extractSmallCalls(int64_t iCallerRunId, int64_t iMaxSize, std::string sName, std::string sDesc)
+    inline PriKeyDefaultType extractSmallCalls(int64_t iCallerRunId, int64_t iMaxSize, std::string sName, 
+                                               std::string sDesc)
     {
         auto pRun = std::make_shared<SvCallerRunTable<DBCon>>( pConnection );
-        auto iNewId = pRun->insert( sName, sDesc, pRun->getSvJumpRunId( iCallerRunId) );
+        PriKeyDefaultType iNewId = pRun->insert( sName, sDesc, pRun->getSvJumpRunId( iCallerRunId) );
         xExtractSmallCalls.exec( iNewId, iCallerRunId, iMaxSize );
         genIndices( iNewId );
+        return iNewId;
+    } // method
+
+    inline PriKeyDefaultType extractLargeCalls(int64_t iCallerRunId, int64_t iMinSize, std::string sName, 
+                                               std::string sDesc)
+    {
+        auto pRun = std::make_shared<SvCallerRunTable<DBCon>>( pConnection );
+        PriKeyDefaultType iNewId = pRun->insert( sName, sDesc, pRun->getSvJumpRunId( iCallerRunId) );
+        xExtractLargeCalls.exec( iNewId, iCallerRunId, iMinSize );
+        genIndices( iNewId );
+        return iNewId;
     } // method
 
     inline void copyPath( int64_t iCallerRunIdFrom, int64_t iCallerRunIdTo, int64_t iAllowedDist )
