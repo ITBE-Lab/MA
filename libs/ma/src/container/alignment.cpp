@@ -274,6 +274,7 @@ void DLL_PORT( MA ) Alignment::removeDangeling( )
         uiLength -= data.back( ).second;
         data.pop_back( );
     } // if
+    //iScore = reCalcScore();
     DEBUG( if( reCalcScore( ) != iScore ) {
         std::cerr << "WARNING set wrong score or removed wrong elements in remove dangeling" << std::endl;
         for( auto tup : vCopyOfData )
@@ -297,7 +298,11 @@ void DLL_PORT( MA ) Alignment::removeDangeling( )
 int64_t Alignment::reCalcScore( ) const
 {
     int64_t iScore = 0;
+    //int64_t iSVScore = -pGlobalParams->uiSVPenalty->get( );
     for( unsigned int index = 0; index < data.size( ); index++ )
+    {
+        //if(iScore < iSVScore)
+        //    iScore = iSVScore;
         switch( std::get<0>( data[ index ] ) )
         {
             case MatchType::deletion:
@@ -316,6 +321,9 @@ int64_t Alignment::reCalcScore( ) const
                 iScore += pGlobalParams->iMatch->get( ) * data[ index ].second;
                 break;
         } // switch
+        //if(iScore - pGlobalParams->uiSVPenalty->get( ) > iSVScore)
+        //    iSVScore = iScore - pGlobalParams->uiSVPenalty->get( );
+    }
     return iScore;
 } // function
 
@@ -380,8 +388,12 @@ void exportAlignment( libMS::SubmoduleOrganizer& xOrganizer )
                         std::shared_ptr<libMS::ContainerVector<std::shared_ptr<Alignment>>>>(
         xOrganizer.container(), "AlignmentVector", "docstr" );
 
+    xOrganizer.container().def("toAlignmentVector", [](std::shared_ptr<libMS::Container> pPtr){
+        return std::dynamic_pointer_cast<libMS::ContainerVector<std::shared_ptr<Alignment>>>(pPtr);
+    });
+
     // tell boost python that pointers of these classes can be converted implicitly
-    py::implicitly_convertible<libMS::ContainerVector<std::shared_ptr<Alignment>>, libMS::Container>( );
+    py::implicitly_convertible<libMS::Container, libMS::ContainerVector<std::shared_ptr<Alignment>>>( );
 
 } // function
 #endif

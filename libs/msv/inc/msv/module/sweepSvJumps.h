@@ -10,6 +10,7 @@
 #include "msv/container/squeezedVector.h"
 #include "msv/container/sv_db/query_objects/callInserter.h" // NEW DB API implemented
 #include "msv/container/sv_db/query_objects/fetchSvJump.h"
+#include "msv/container/sv_db/tables/coverage.h"
 #include "msv/module/abstractFilter.h"
 #include "msv/util/statisticSequenceAnalysis.h"
 #include <cmath>
@@ -634,27 +635,44 @@ class FilterDiagonalLineCalls
  *  - if we don't switch strand we have to match the two 'left's and two 'right's
  *  - we always have to pick one 'from' and one 'to' together.
  */
+template <typename DBCon>
 class ComputeCallAmbiguity
-    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack>
+    : public Module<CompleteBipartiteSubgraphClusterVector, false, CompleteBipartiteSubgraphClusterVector, Pack, PoolContainer<DBCon>>
 {
     nucSeqIndex uiDistance;
+    size_t uiSvJumpRunId;
+    size_t uiBinSize;
 
   public:
-    ComputeCallAmbiguity( const ParameterSetManager& rParameters )
-        : uiDistance( rParameters.getSelected( )->xMaxCallSizeShortCallFilter->get( ) )
+    ComputeCallAmbiguity( const ParameterSetManager& rParameters, size_t uiSvJumpRunId )
+        : uiDistance( rParameters.getSelected( )->xMaxRegionSizeForAmbiguityFilter->get( ) ),
+          uiSvJumpRunId(uiSvJumpRunId),
+          uiBinSize(pGlobalParams->xCoverageBinSize->get())
     {} // constructor
 
     std::shared_ptr<CompleteBipartiteSubgraphClusterVector>
-    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pPack )
+    execute( std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, std::shared_ptr<Pack> pPack,
+             std::shared_ptr<PoolContainer<DBCon>> pPool )
     {
-        for( auto pCall : pCalls->vContent )
-        {
-            auto f = pCall->xXAxis.start( ) + pCall->xXAxis.size( ) / 2;
-            auto t = pCall->xYAxis.start( ) + pCall->xYAxis.size( ) / 2;
+        pPool->xPool.run(
+            [ this ]( auto pConnection, std::shared_ptr<CompleteBipartiteSubgraphClusterVector> pCalls, 
+                      std::shared_ptr<Pack> pPack )
+            {
+                CoverageTable<DBCon> xCovTable(pConnection);
+                for( auto pCall : pCalls->vContent )
+                {
+                    auto f = pCall->xXAxis.start( ) + pCall->xXAxis.size( ) / 2;
+                    auto t = pCall->xYAxis.start( ) + pCall->xYAxis.size( ) / 2;
 
-            pCall->uiReferenceAmbiguity =
-                sampleSequenceAmbiguity( f, t, pCall->bFromForward, pCall->bToForward, pPack, uiDistance, 5 );
-        } // for
+                    pCall->uiReferenceAmbiguity =
+                        sampleSequenceAmbiguity( f, t, pCall->bFromForward, pCall->bToForward, pPack, uiDistance, 5 ) + 
+                        xCovTable.getCoverage(uiSvJumpRunId, f / uiBinSize) +
+                        xCovTable.getCoverage(uiSvJumpRunId, t / uiBinSize)
+                        ;
+                } // for
+            },
+            pCalls, pPack
+        );
         return pCalls;
     } // method
 }; // class

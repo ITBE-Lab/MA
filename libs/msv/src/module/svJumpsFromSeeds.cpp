@@ -401,6 +401,7 @@ void exportSvJumpsFromSeeds( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<FilterJumpsByRegion, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegion" );
     exportModule<FilterJumpsByRegionSquare, int64_t, int64_t>( xOrganizer, "FilterJumpsByRegionSquare" );
     exportModule<FilterJumpsByRefAmbiguity>( xOrganizer, "FilterJumpsByRefAmbiguity" );
+    exportModule<CollectSeedCoverage>( xOrganizer, "CollectSeedCoverage" );
 
     xOrganizer.util( ).def( "compute_seeds_area", &computeSeeds );
 } // function

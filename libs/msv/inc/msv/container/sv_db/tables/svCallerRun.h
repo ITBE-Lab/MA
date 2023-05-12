@@ -49,7 +49,7 @@ template <typename DBCon> class SvCallerRunTable : public SvCallerRunTableType<D
                                        jSvCallerRunTableDef ),
           pDatabase( pDB ),
           xDelete( pDB, "DELETE FROM sv_caller_run_table WHERE _name_ = ?" ),
-          xGetId( pDB, "SELECT id FROM sv_caller_run_table WHERE _name_ = ? ORDER BY time_stamp ASC LIMIT 1" ),
+          xGetId( pDB, "SELECT id FROM sv_caller_run_table WHERE _name_ = ? ORDER BY time_stamp DESC LIMIT 1" ),
           xHasId( pDB, "SELECT COUNT(*) FROM sv_caller_run_table WHERE _name_ = ?" ),
           xGetIds( pDB, "SELECT id FROM sv_caller_run_table" ),
           xGetName( pDB, "SELECT _name_, _desc_, time_stamp, "

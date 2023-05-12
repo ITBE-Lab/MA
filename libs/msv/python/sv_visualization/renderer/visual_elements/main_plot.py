@@ -3,12 +3,13 @@ from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
 import copy
 from bokeh.events import Tap
+from .size_factor import PLOT_SIZE_FAC
 
 class MainPlot:
     def __init__(self, renderer):
         self.plot = figure(
-            width=900,
-            height=900,
+            width=int(90 * PLOT_SIZE_FAC),
+            height=int(90 * PLOT_SIZE_FAC),
             tools=[
                 "pan", "box_zoom",
                 "wheel_zoom", "save",

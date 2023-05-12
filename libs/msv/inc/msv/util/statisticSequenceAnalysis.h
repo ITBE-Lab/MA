@@ -51,7 +51,6 @@ inline nucSeqIndex sampleSequenceAmbiguity( NucSeq& rSequence, double t )
 
 inline nucSeqIndex DLL_PORT( MSV ) sampleAmbiguity( std::shared_ptr<NucSeq> pSeqA, std::shared_ptr<NucSeq> pSeqB )
 {
-    // + 1 to avoind division by zero error
     return std::max( 1, (int)sampleSequenceAmbiguity( *pSeqA, *pSeqB, 0.001 ) - (int)pSeqA->length( ) -
                             (int)pSeqB->length( ) );
 } // method

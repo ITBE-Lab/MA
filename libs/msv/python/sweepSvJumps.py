@@ -34,7 +34,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
         filter2 = FilterFuzzyCalls(parameter_set_manager)
         filter5 = FilterDiagonalLineCalls(parameter_set_manager)
         filter6 = FilterLowScoreCalls(parameter_set_manager)
-        call_ambiguity = ComputeCallAmbiguity(parameter_set_manager)
+        call_ambiguity = ComputeCallAmbiguity(parameter_set_manager, run_id)
 
         get_call_inserter = GetCallVectorInserter(parameter_set_manager, DbConn(dataset_name), name, desc, run_id)
         call_inserter_module = CallVectorInserterModule(parameter_set_manager)
@@ -76,7 +76,7 @@ def sweep_sv_jumps(parameter_set_manager, dataset_name, run_id, name, desc, sequ
             #filter3_pledge = promise_me(filter5, filter2_pledge)
             #analyze.register("FilterDiagonalLineCalls", filter3_pledge, True)
 
-            call_ambiguity_pledge = promise_me(call_ambiguity, sweep2_pledge, pack_pledge)
+            call_ambiguity_pledge = promise_me(call_ambiguity, sweep2_pledge, pack_pledge, pool_pledge)
             analyze.register("ComputeCallAmbiguity", call_ambiguity_pledge, True)
 
             #filter6_pledge = promise_me(filter6, call_ambiguity_pledge)

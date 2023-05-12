@@ -7,6 +7,7 @@ from MA import *
 from MSV import *
 import copy
 import threading
+from .size_factor import PLOT_SIZE_FAC
 
 class Widgets:
     def __init__(self, renderer):

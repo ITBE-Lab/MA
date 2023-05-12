@@ -13,6 +13,7 @@
 #include "ms/module/module.h"
 #include "msv/container/svJump.h"
 #include "msv/container/sv_db/tables/svJump.h"
+#include "msv/container/sv_db/tables/coverage.h"
 #include "msv/module/abstractFilter.h"
 
 namespace libMSV
@@ -925,6 +926,32 @@ class FilterJumpsByRefAmbiguity
         uiFilterKept += pJumps->size( );
 #endif
         return pJumps;
+    } // method
+}; // class
+
+
+class CollectSeedCoverage : public libMS::Module<libMS::Container, false, Seeds, CoverageCollector>
+{
+    const size_t uiBinSize;
+  public:
+    CollectSeedCoverage( const ParameterSetManager&  )
+        : uiBinSize(pGlobalParams->xCoverageBinSize->get())
+    {} // constructor
+
+    std::shared_ptr<libMS::Container>
+    execute( std::shared_ptr<Seeds> pSeeds, std::shared_ptr<CoverageCollector> pCollector )
+    {
+        std::set<int64_t> xCoveredBinIds;
+        for( Seed& rSeed : *pSeeds )
+        {
+            const nucSeqIndex uiStartBinId = rSeed.start_ref_cons_rev() / uiBinSize;
+            const nucSeqIndex uiEndBinId = 1 + (rSeed.end_ref_cons_rev() - 1) / uiBinSize;
+            
+            for(nucSeqIndex uiX = uiStartBinId; uiX < uiEndBinId; uiX++)
+                xCoveredBinIds.insert(uiX);
+        } // for
+        pCollector->addRead(xCoveredBinIds);
+        return std::make_shared<libMS::Container>();
     } // method
 }; // class
 

@@ -579,6 +579,7 @@ class Presetting : public ParameterSetBase
     AlignerParameterPointer<int> xMaxFuzzinessFilter; // maximal fuzziness for sv calls
     AlignerParameterPointer<int> xMaxSuppNtShortCallFilter; // maximal number of nt for short call low support filter
     AlignerParameterPointer<int> xMaxCallSizeShortCallFilter; // maximal call size for short call low support filter
+    AlignerParameterPointer<int> xMaxRegionSizeForAmbiguityFilter; // max size of the 
     AlignerParameterPointer<int> xMaxRefAmbiguityJump; // Max Ref Ambiguity Jump
     AlignerParameterPointer<int> xMMFilterMaxOcc; // xMMFilterMaxOcc
     AlignerParameterPointer<int> xMinNtInSoc; // Min NT in SoC
@@ -801,6 +802,8 @@ class Presetting : public ParameterSetBase
           xMaxFuzzinessFilter( this, "Max Fuzziness Filter", "- unused -", SV_PARAMETERS, 50, checkPositiveValue ),
           xMaxSuppNtShortCallFilter( this, "Max Supp Nt", "- unused -", SV_PARAMETERS, 10, checkPositiveValue ),
           xMaxCallSizeShortCallFilter( this, "Max Call Size Filter", "- unused -", SV_PARAMETERS, 20,
+                                       checkPositiveValue ),
+          xMaxRegionSizeForAmbiguityFilter( this, "Max Regionsize Ambiguity Filter", "", SV_PARAMETERS, 200,
                                        checkPositiveValue ),
           xMaxRefAmbiguityJump( this, "Max Ref Ambiguity Jump", "- unused -", SV_PARAMETERS, 10, checkPositiveValue ),
           xMMFilterMaxOcc(
@@ -1028,6 +1031,7 @@ class GlobalParameter : public ParameterSetBase
     AlignerParameterPointer<int> iExtend;
     AlignerParameterPointer<int> iGap2;
     AlignerParameterPointer<int> iExtend2;
+    AlignerParameterPointer<int> xCoverageBinSize; // Coveragebin size
     AlignerParameterPointer<int> uiSVPenalty;
 
     /* Constructor */
@@ -1052,6 +1056,9 @@ class GlobalParameter : public ParameterSetBase
                  DP_PARAMETERS, 24, checkPositiveValue ),
           iExtend2( this, "Second Extend Penalty", "Second penalty for gap extension. (Two piece affine gap costs)",
                     DP_PARAMETERS, 1, checkPositiveValue ),
+          xCoverageBinSize( this, "Coveragebin size",
+                           "Binsize for storing the seed coverage on the genome",
+                           SV_PARAMETERS, 100, checkPositiveValue ),
           uiSVPenalty( this, "Pick Local Seed Set C - Maximal Gap Penalty",
                        "Maximal gap cost penalty during local seed set computation.", HEURISTIC_PARAMETERS, 100,
                        checkPositiveValue )

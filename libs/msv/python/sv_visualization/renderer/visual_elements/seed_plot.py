@@ -6,13 +6,14 @@ from bokeh.models import FuncTickFormatter
 from bokeh.events import Tap
 import math
 import copy
+from .size_factor import PLOT_SIZE_FAC
 
 class SeedPlot:
     def __init__(self, main_plot, renderer):
-        self.plot_width = 300
+        self.plot_width = int(40 * PLOT_SIZE_FAC)
         self.left_plot = figure(
             width=self.plot_width,
-            height=900,
+            height=int(90 * PLOT_SIZE_FAC),
             y_range=main_plot.plot.y_range,
             x_range=(0,0),
             tools=["xpan", "xwheel_zoom"],
@@ -25,7 +26,7 @@ class SeedPlot:
         self.left_plot.rect(x=0.5, y=0, width=1, height=1, color="white", alpha=0)
 
         self.bottom_plot = figure(
-            width=900,
+            width=int(90 * PLOT_SIZE_FAC),
             height=self.plot_width,
             x_range=main_plot.plot.x_range,
             y_range=self.left_plot.x_range,

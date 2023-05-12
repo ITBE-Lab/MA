@@ -120,6 +120,13 @@ The building of the GUI can be disabled using `-DWITH_GUI=OFF`.
 
 ## Changelog:
 
+Version 2.0.2:
+
+* fix for the artifact filter, that removes seeds too far from the median delta distance of all seads in a harmonized SoC. Now the filter only removes seeds if this is advantageous to the SW score of the alignment.
+
+Version 2.0.1:
+
+* Revision for MSV - no changes to MA.
 
 Version 2.0.0:
 

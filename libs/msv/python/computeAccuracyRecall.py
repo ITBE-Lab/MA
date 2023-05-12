@@ -9,7 +9,7 @@ def compute_accuracy_recall(dataset_name, blurs, gt_ids, run_ids, out_prefix):
             if not gt_id is None:
                 for run_id in run_ids[gt_id]:
                     if not run_id is None:
-                        print("computing", blur, gt_id, run_id)
+                        print("computing", dataset_name, blur, gt_id, run_id, out_prefix)
                         stats, gt_total = count_calls_from_db.count(run_id, gt_id, blur)
                         with open(out_prefix + dataset_name + "-" + str(run_id) + "-" + str(blur) + ".tsv", "w") as out_file:
                             out_file.write("//|ground truth| = " + str(gt_total) + "\n")

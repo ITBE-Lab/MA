@@ -9,6 +9,7 @@
 #include "msv/container/sv_db/query_objects/fetchCalls.h"
 #include "msv/container/sv_db/query_objects/fetchSvJump.h"
 #include "msv/container/sv_db/query_objects/jumpInserter.h"
+#include "msv/container/sv_db/query_objects/coverageUpdater.h"
 #include "msv/container/sv_db/query_objects/kMerInserter.h"
 #include "msv/container/sv_db/query_objects/nucSeqSql.h"
 #include "msv/container/sv_db/query_objects/readInserter.h"
@@ -135,6 +136,21 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     py::class_<SvJumpRunTable<DBConSingle>, std::shared_ptr<SvJumpRunTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "JumpRunTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
+
+
+    py::class_<CoverageCollector, libMS::Container, std::shared_ptr<CoverageCollector>>( xOrganizer.util( ), "CoverageCollector" )
+        .def( py::init<libMA::nucSeqIndex>( ) );
+
+    py::class_<CoverageTable<DBConSingle>, std::shared_ptr<CoverageTable<DBConSingle>>>( xOrganizer.util( ),
+                                                                                           "CoverageTable" )
+        .def( py::init<std::shared_ptr<DBConSingle>>( ) )
+        .def( "get_coverage", &CoverageTable<DBConSingle>::getCoverage )
+        .def( "drop_indices", &CoverageTable<DBConSingle>::dropIndices )
+        .def( "create_indices", &CoverageTable<DBConSingle>::createIndices )
+        .def( "init_coverage", &CoverageTable<DBConSingle>::initCoverage )
+        .def( "init_coverage_from_col", &CoverageTable<DBConSingle>::initCoverageFromColl )
+        ;
+
     py::class_<SequencerTable<DBConSingle>, std::shared_ptr<SequencerTable<DBConSingle>>>( xOrganizer.util( ),
                                                                                            "SequencerTable" )
         .def( py::init<std::shared_ptr<DBConSingle>>( ) );
@@ -218,6 +234,7 @@ void exportSoCDbWriter( libMS::SubmoduleOrganizer& xOrganizer )
     exportCallsFromDb( xOrganizer );
     exportSvJump( xOrganizer );
     exportSvJumpInserter( xOrganizer );
+    exportCoverageUpdater( xOrganizer );
     exportNucSeqSql( xOrganizer );
     exportReadInserter( xOrganizer );
     exportKMerInserter( xOrganizer );

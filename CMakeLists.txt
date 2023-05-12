@@ -5,7 +5,7 @@
 
 cmake_minimum_required (VERSION 3.8)
 
-project("MA" VERSION 2.0.1 DESCRIPTION "MA - The Modular Aligner")
+project("MA" VERSION 2.0.2 DESCRIPTION "MA - The Modular Aligner")
 
 # optional features
 option(WITH_PYTHON "Build python integration of libMS." ON)

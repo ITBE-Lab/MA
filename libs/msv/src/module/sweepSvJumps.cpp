@@ -45,7 +45,7 @@ void exportSweepSvJump( libMS::SubmoduleOrganizer& xOrganizer )
     exportModule<FilterLowScoreCalls>( xOrganizer, "FilterLowScoreCalls" );
     exportModule<FilterDiagonalLineCalls>( xOrganizer, "FilterDiagonalLineCalls" );
     exportModule<FilterFuzzyCalls>( xOrganizer, "FilterFuzzyCalls" );
-    exportModule<ComputeCallAmbiguity>( xOrganizer, "ComputeCallAmbiguity" );
+    exportModule<ComputeCallAmbiguity<DBCon>, size_t>( xOrganizer, "ComputeCallAmbiguity" );
 
     py::class_<AbstractFilter>( xOrganizer.util( ), "AbstractFilter" )
         .def_readwrite_static( "silent", &AbstractFilter::bSilent );

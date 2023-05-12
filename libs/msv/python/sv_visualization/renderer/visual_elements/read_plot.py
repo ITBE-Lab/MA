@@ -5,12 +5,13 @@ from bokeh.models import BasicTickFormatter, Tabs, Panel
 from bokeh.palettes import Plasma256
 from bokeh.events import Tap
 import math
+from .size_factor import PLOT_SIZE_FAC
 
 class ReadPlotNucs:
     def __init__(self, nuc_plot, read_plot):
         self.left_plot = figure(
-            width=100,
-            height=400,
+            width=int(20 * PLOT_SIZE_FAC),
+            height=int(40 * PLOT_SIZE_FAC),
             y_range=read_plot.plot.y_range,
             tools=["ypan", "ywheel_zoom"],
             active_scroll="ywheel_zoom",
@@ -21,8 +22,8 @@ class ReadPlotNucs:
         self.left_plot.yaxis.axis_label = "Read Position"
 
         self.bottom_plot = figure(
-            width=900,
-            height=200,
+            width=int(90 * PLOT_SIZE_FAC),
+            height=int(20 * PLOT_SIZE_FAC),
             x_range=read_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",
@@ -64,8 +65,8 @@ class ReadPlot:
     def __init__(self, nuc_plot, renderer):
 
         self.plot = figure(
-            width=900,
-            height=400,
+            width=int(90 * PLOT_SIZE_FAC),
+            height=int(40 * PLOT_SIZE_FAC),
             tools=[
                 "pan", "box_zoom",
                 "wheel_zoom", "reset"
@@ -121,8 +122,8 @@ class ReadPlot:
 
         self.recalc_stat = True
         stat_plot1 = figure(
-            width=900,
-            height=250,
+            width=int(90 * PLOT_SIZE_FAC),
+            height=int(50 * PLOT_SIZE_FAC),
             tools=[
                 "pan", "box_zoom",
                 "wheel_zoom", "reset"
@@ -137,8 +138,8 @@ class ReadPlot:
         tab1 = Panel(child=stat_plot1, title="Min Score")
 
         stat_plot4 = figure(
-            width=900,
-            height=250,
+            width=int(90 * PLOT_SIZE_FAC),
+            height=stat_plot1.height,
             tools=[
                 "pan", "box_zoom",
                 "wheel_zoom", "reset"
@@ -152,7 +153,7 @@ class ReadPlot:
         tab4 = Panel(child=stat_plot4, title="Recall & Accuracy")
 
         stat_plot2 = figure(
-            width=900,
+            width=int(90 * PLOT_SIZE_FAC),
             height=stat_plot1.height,
             tools=[
                 "pan", "box_zoom",
@@ -168,7 +169,7 @@ class ReadPlot:
         tab2 = Panel(child=stat_plot2, title="Blur")
 
         stat_plot3 = figure(
-            width=900,
+            width=int(90 * PLOT_SIZE_FAC),
             height=stat_plot1.height,
             tools=[
                 "pan", "box_zoom",

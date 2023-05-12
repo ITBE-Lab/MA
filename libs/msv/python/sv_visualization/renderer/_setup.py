@@ -95,3 +95,7 @@ def setup(self):
         self.widgets.ground_truth_id_dropdown.menu = menu
 
         self.render()
+    elif dataset_name is None:
+        print("missing .json file for", dataset_name)
+    else:
+        print("missing .json file for", dataset_name, "at:", JSON_PREFIX + dataset_name + "/info.json")

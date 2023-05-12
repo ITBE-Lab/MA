@@ -26,6 +26,16 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
                                             "python built comp graph")
         jump_inserter_module = JumpInserterModule(parameter_set_manager)
 
+        #cov_table.init_coverage(get_jump_inserter.cpp_module.id, 
+        #            pack.unpacked_size_single_strand // parameter_set_manager.by_name("Coveragebin size").get())
+        #get_coverage_updater = GetCoverageUpdater(parameter_set_manager, get_jump_inserter.cpp_module.id)
+        #coverage_updater_module = CoverageUpdaterModule(parameter_set_manager)
+        cc_module = CollectSeedCoverage(parameter_set_manager)
+
+        join_module = ContainerJoin(parameter_set_manager)
+
+        cc_col = Pledge()
+        cc_col.set(CoverageCollector(pack.unpacked_size_single_strand))
         mm_pledge = Pledge()
         mm_pledge.set(mm_index)
         pack_pledge = Pledge()
@@ -81,14 +91,26 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
                 write_to_db_pledge = promise_me(jump_inserter_module, jump_inserter, pool_pledge, filtered_jumps,
                                                 query_pledge)
                 analyze.register("JumpInserterModule", write_to_db_pledge, True)
-                unlock_pledge = promise_me(UnLock(parameter_set_manager, query_pledge), write_to_db_pledge)
+                #cov_updater = promise_me(get_coverage_updater, pool_pledge)
+                #inserter_vec.append(cov_updater)
+                #analyze.register("GetCovUpdater", cov_updater, True)
+                #write_to_db_pledge_2 = promise_me(coverage_updater_module, cov_updater, pool_pledge, 
+                #                                  filtered_seeds_pledge_3)
+                #analyze.register("CoverageUpdaterModule", write_to_db_pledge_2, True)
+                write_to_db_pledge_2 = promise_me(cc_module, filtered_seeds_pledge_3, cc_col)
+                join_pledge = promise_me(join_module, write_to_db_pledge, write_to_db_pledge_2)
+                analyze.register("Join", join_pledge, True)
+                unlock_pledge = promise_me(UnLock(parameter_set_manager, query_pledge), join_pledge)
                 analyze.register("UnLock", unlock_pledge, True)
                 res.append(unlock_pledge)
 
             # drain all sources
             res.simultaneous_get(parameter_set_manager.get_num_threads())
             for inserter in inserter_vec:
-                inserter.get().close(pool_pledge.get()) # @todo for some reason the destructor does not trigger automatically :(
+                # @todo for some reason the destructor does not trigger automatically :(
+                inserter.get().close(pool_pledge.get()) 
+
+            cov_table.init_coverage_from_col(get_jump_inserter.cpp_module.id, cc_col.get())
 
             analyze.analyze(runtime_file)
 
@@ -100,6 +122,9 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
     jump_table = SvJumpTable(db_conn)
     jump_table.drop_indices(0) # number does nothing at the moment
 
+    cov_table = CoverageTable(db_conn)
+    cov_table.drop_indices()
+
     jump_id = scope()
 
     analyze = AnalyzeRuntimes()
@@ -109,6 +134,7 @@ def compute_sv_jumps(parameter_set_manager, mm_index, pack, dataset_name, seq_id
     print("creating index...")
     start = datetime.datetime.now()
     jump_table.create_indices( jump_id )
+    cov_table.create_indices()
     end = datetime.datetime.now()
     delta = end - start
     analyze.register("create_indices", delta.total_seconds(), False, lambda x: x)

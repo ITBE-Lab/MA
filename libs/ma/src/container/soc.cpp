@@ -7,11 +7,15 @@
 using namespace libMA;
 
 #ifdef WITH_PYTHON
+#include <pybind11/stl.h>
 
 void exportSoC( libMS::SubmoduleOrganizer& xOrganizer )
 {
 #if DEBUG_LEVEL >= 1
-    py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( xOrganizer._util(), "nucSeqPairVector", "docstr" );
+    //py::bind_vector<std::vector<std::pair<nucSeqIndex, nucSeqIndex>>>( xOrganizer._util(), "nucSeqPairVector", "docstr" )
+    //    .def("length", &std::vector<std::pair<nucSeqIndex, nucSeqIndex>>::size)
+    //    .def("at", [](std::vector<std::pair<nucSeqIndex, nucSeqIndex>>& rSelf, size_t uiI){return rSelf[uiI];})
+    //    ;
 
     py::class_<SoCPriorityQueue::blub>( xOrganizer._util(), "nucSeqNucSeqInterval" )
         .def_readwrite( "first", &SoCPriorityQueue::blub::first )
@@ -32,7 +36,8 @@ void exportSoC( libMS::SubmoduleOrganizer& xOrganizer )
         .def( "pop", &SoCPriorityQueue::pop )
         .def( "make_heap", &SoCPriorityQueue::make_heap )
         .def( "__len__", &SoCPriorityQueue::size )
-            DEBUG(.def_readwrite( "scores", &SoCPriorityQueue::vScores )
+            DEBUG(
+                      .def_readwrite( "scores", &SoCPriorityQueue::vScores )
                       .def_readwrite( "extract", &SoCPriorityQueue::vExtractOrder )
                       .def_readwrite( "vSoCs", &SoCPriorityQueue::vSoCs )
                       .def_readwrite( "vHarmSoCs", &SoCPriorityQueue::vHarmSoCs )

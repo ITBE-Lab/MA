@@ -63,7 +63,8 @@ MSV represents SV calls (genomic rearrangements) via a skew-symmetric graph mode
 
 You can start the visualization tool from MA's main directory via the command:
 
-    bokeh serve --show MSV/sv_visualization/bokeh_server.py
+    cd build/MSV/sv_visualization
+    bokeh serve --show /bokeh_server.py
 This opens a browser window.
 
 Using the top-right drop-down buttons, select your dataset, run-id and ground-truth.
@@ -83,3 +84,14 @@ After adjusting the slider, click the button "Compute Stats", which is the fourt
 ## Recreating the experiments of the manuscript
 The experiments of [[Preprint] State-of-the-art structural variant calling: What went conceptually wrong and how to fix it?](https://biorxiv.org/cgi/content/short/2021.01.12.426317v1 "bioRxiv preprint")
 can be recreated using the [MSV-EVAL repository](https://github.com/ITBE-Lab/MSV-EVAL "MSV-EVAL").
+
+## Changelog
+
+Version 2.0.2:
+
+* 2nd revision for MSV
+* The confidence scores for variant calls now make use of coverage information. Before, the conficance of a call was the number of reads supporting the call. Now it is the number of reads supporting over the the coverage in the region of the call. This helps with making calls in real world data, where coverage is uneven.
+
+Version 2.0.1:
+
+* 1st Revision for MSV - only minor changes.

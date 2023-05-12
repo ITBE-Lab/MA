@@ -1,12 +1,13 @@
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.plotting import ColumnDataSource
+from .size_factor import PLOT_SIZE_FAC
 
 class NucPlot:
     def __init__(self, main_plot):
         self.left_plot = figure(
-            width=40,
-            height=900,
+            width=int(4 * PLOT_SIZE_FAC),
+            height=int(90 * PLOT_SIZE_FAC),
             y_range=main_plot.plot.y_range,
             tools=["ypan", "ywheel_zoom"],
             active_scroll="ywheel_zoom",
@@ -16,8 +17,8 @@ class NucPlot:
         self.left_plot.grid.visible = False
 
         self.bottom_plot = figure(
-            width=900,
-            height=40,
+            width=int(90 * PLOT_SIZE_FAC),
+            height=int(4 * PLOT_SIZE_FAC),
             x_range=main_plot.plot.x_range,
             tools=["xpan", "xwheel_zoom"],
             active_scroll="xwheel_zoom",

@@ -153,7 +153,14 @@ std::shared_ptr<Seeds> Harmonization::applyFilters( std::shared_ptr<Seeds>& pIn 
             double dDeltaDistDiff =
                 std::abs( iDeltaDistToPre - iDeltaDistToPost ) * 2 / ( (double)iDeltaDistToPre + iDeltaDistToPost );
 
-            if( dDeltaDistDiff < dMaxDeltaDist && (uint64_t)iDeltaDistToPre > uiMinDeltaDist )
+            int64_t iScoreSeed = rCenter.size() * pGlobalParams->iMatch->get( );
+            int64_t iIndelPenalty = std::min((int64_t)pGlobalParams->uiSVPenalty->get( ) * 2, 
+                                    (int64_t)(pGlobalParams->iGap->get( ) * 2 + 
+                                        pGlobalParams->iExtend->get( ) * (iDeltaDistToPre + iDeltaDistToPost))
+                                );
+
+            if( dDeltaDistDiff < dMaxDeltaDist && (uint64_t)iDeltaDistToPre > uiMinDeltaDist && 
+                iScoreSeed < iIndelPenalty * 2 )
             {
                 // the filter triggered ->
                 // we flag the seed to be ignored by setting it's size to zero
@@ -255,6 +262,8 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
     pSeeds->xStats = pSeedsIn->xStats;
     if( pSeedsIn->size( ) > 1 )
     {
+        
+        DEBUG( pSoCIn->vSoCs.push_back( pSeedsIn ); ) // DEBUG
 #if USE_RANSAC == 1 // switch between ransac line angle + intercept estimation & 45deg median line
         std::vector<double> vX, vY;
         vX.reserve( pSeedsIn->size( ) );
@@ -281,7 +290,8 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
         pSeedsIn->erase( std::remove_if( pSeedsIn->begin( ), pSeedsIn->end( ),
                                          [ & ]( const Seed& rS ) {
                                              return deltaDistance( rS, xSlopeIntercept.first,
-                                                                   (int64_t)xSlopeIntercept.second ) > fMAD;
+                                                                   (int64_t)xSlopeIntercept.second ) > fMAD && 
+                                                                   rS.size() < 50;
                                          } ),
                          pSeedsIn->end( ) );
 
@@ -301,8 +311,8 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
         for( Seeds::iterator pSeed = pSeedsIn->begin( ); pSeed != pSeedsIn->end( ); pSeed++ )
         {
             pShadows->push_back( std::make_tuple( pSeed, pSeed->start( ), pSeed->end_ref( ) ) );
-            // std::cout << "(" << pSeed->start() << "," << pSeed->start_ref() << "," <<
-            // pSeed->size() << ")," << std::endl;
+            //std::cout << "1 (" << pSeed->start() << "," << pSeed->start_ref() << "," <<
+            //pSeed->size() << ")" << std::endl;
         } // for
 
         // perform the line sweep algorithm on the left shadows
@@ -312,8 +322,12 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
 
         // get the right shadows
         for( auto& xT : *pShadows2 )
+        {
             pShadows->push_back(
                 std::make_tuple( std::get<0>( xT ), std::get<0>( xT )->start_ref( ), std::get<0>( xT )->end( ) ) );
+            //std::cout << "2 (" << std::get<0>( xT )->start_ref() << "," << std::get<0>( xT )->end() << "," <<
+            //std::get<0>( xT )->size() << ")" << std::endl;
+        }
 
         // perform the line sweep algorithm on the right shadows
         pShadows = linesweep( pShadows, (int64_t)xSlopeIntercept.second, xSlopeIntercept.first );
@@ -321,7 +335,11 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
         pSeeds->reserve( pShadows->size( ) );
 
         for( auto& xT : *pShadows )
+        {
             pSeeds->push_back( *std::get<0>( xT ) );
+            // std::cout << "3 (" << std::get<0>( xT )->start() << "," << std::get<0>( xT )->start_ref() << "," <<
+            // std::get<0>( xT )->size() << ")" << std::endl;
+        }
 
         pSeeds->bConsistent = true;
 
@@ -367,7 +385,8 @@ std::shared_ptr<Seeds> Harmonization::harmonizeOne( std::shared_ptr<Seeds>& pSee
                pSoCIn->vIngroup.push_back( std::make_shared<Seeds>( ) );
                pSoCIn->vSlopes.push_back( 0 );
                pSoCIn->vIntercepts.push_back( 0 );
-               pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) ); ) // DEBUG
+               pSoCIn->vHarmSoCs.push_back( std::make_shared<Seeds>( pSeeds ) );
+               pSoCIn->vSoCs.push_back( std::make_shared<Seeds>( pSeeds ) ); ) // DEBUG
     } // else
     return pSeeds;
 }
